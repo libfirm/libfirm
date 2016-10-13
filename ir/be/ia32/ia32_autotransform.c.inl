@@ -26,7 +26,7 @@ static ir_node *transform_f1663153(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP); get_ia32_attr(new_node)->addr.immediate = get_ia32_immediate_attr(is_ia32_Immediate(var1) ? var1 : be_transform_node(var1))->imm; set_ia32_commutative(new_node);
+	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; get_ia32_attr(new_node)->addr.immediate = get_ia32_immediate_attr(is_ia32_Immediate(var1) ? var1 : be_transform_node(var1))->imm; set_ia32_commutative(new_node);
 	return new_node;
 }
 // Add32(IMM_1,VAR_0) ==> ia32_Lea_imm
@@ -57,7 +57,7 @@ static ir_node *transform_f1663154(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP); get_ia32_attr(new_node)->addr.immediate = get_ia32_immediate_attr(is_ia32_Immediate(var1) ? var1 : be_transform_node(var1))->imm; set_ia32_commutative(new_node);
+	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; get_ia32_attr(new_node)->addr.immediate = get_ia32_immediate_attr(is_ia32_Immediate(var1) ? var1 : be_transform_node(var1))->imm; set_ia32_commutative(new_node);
 	return new_node;
 }
 // Add32(VAR_0,const32[4294967295]) ==> ia32_Dec
@@ -81,7 +81,7 @@ static ir_node *transform_f1663155(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Add32(const32[4294967295],VAR_0) ==> ia32_Dec
@@ -105,7 +105,7 @@ static ir_node *transform_f1663156(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Add32(const32[1],VAR_0) ==> ia32_Inc
@@ -129,7 +129,7 @@ static ir_node *transform_f1663157(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Add32(VAR_0,const32[1]) ==> ia32_Inc
@@ -153,7 +153,7 @@ static ir_node *transform_f1663158(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Add32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3) ==> ia32_Add_src_index
@@ -201,7 +201,7 @@ static ir_node *transform_f1663159(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -227,7 +227,7 @@ static ir_node *transform_f1663160(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -285,7 +285,7 @@ static ir_node *transform_f1663161(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -311,7 +311,7 @@ static ir_node *transform_f1663162(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -369,7 +369,7 @@ static ir_node *transform_f1663163(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -395,7 +395,7 @@ static ir_node *transform_f1663164(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -453,7 +453,7 @@ static ir_node *transform_f1663165(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -479,7 +479,7 @@ static ir_node *transform_f1663166(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -528,7 +528,7 @@ static ir_node *transform_f1663167(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -553,7 +553,7 @@ static ir_node *transform_f1663168(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -611,7 +611,7 @@ static ir_node *transform_f1663169(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -637,7 +637,7 @@ static ir_node *transform_f1663170(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -695,7 +695,7 @@ static ir_node *transform_f1663171(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -721,7 +721,7 @@ static ir_node *transform_f1663172(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -779,7 +779,7 @@ static ir_node *transform_f1663173(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -805,7 +805,7 @@ static ir_node *transform_f1663174(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -863,7 +863,7 @@ static ir_node *transform_f1663175(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -889,7 +889,7 @@ static ir_node *transform_f1663176(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -938,7 +938,7 @@ static ir_node *transform_f1663177(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -963,7 +963,7 @@ static ir_node *transform_f1663178(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -1000,7 +1000,7 @@ static ir_node *transform_f1663179(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node);
+	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node);
 	return new_node;
 }
 // Add32(VAR_1,VAR_0) ==> ia32_Lea
@@ -1027,7 +1027,7 @@ static ir_node *transform_f1663180(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node);
+	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node);
 	return new_node;
 }
 // And32(IMM_1,VAR_0) ==> ia32_And
@@ -1058,7 +1058,7 @@ static ir_node *transform_f1663181(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // And32(VAR_0,IMM_1) ==> ia32_And
@@ -1089,7 +1089,7 @@ static ir_node *transform_f1663182(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // And32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3) ==> ia32_And_src_index
@@ -1137,7 +1137,7 @@ static ir_node *transform_f1663183(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1163,7 +1163,7 @@ static ir_node *transform_f1663184(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -1221,7 +1221,7 @@ static ir_node *transform_f1663185(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1247,7 +1247,7 @@ static ir_node *transform_f1663186(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -1296,7 +1296,7 @@ static ir_node *transform_f1663187(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1321,7 +1321,7 @@ static ir_node *transform_f1663188(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -1379,7 +1379,7 @@ static ir_node *transform_f1663189(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1405,7 +1405,7 @@ static ir_node *transform_f1663190(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -1463,7 +1463,7 @@ static ir_node *transform_f1663191(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1489,7 +1489,7 @@ static ir_node *transform_f1663192(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -1538,7 +1538,7 @@ static ir_node *transform_f1663193(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1563,7 +1563,7 @@ static ir_node *transform_f1663194(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -1600,7 +1600,7 @@ static ir_node *transform_f1663195(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // And32(VAR_1,VAR_0) ==> ia32_And
@@ -1627,7 +1627,7 @@ static ir_node *transform_f1663196(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Eor32(VAR_0,IMM_1) ==> ia32_Xor
@@ -1658,7 +1658,7 @@ static ir_node *transform_f1663197(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Eor32(IMM_1,VAR_0) ==> ia32_Xor
@@ -1689,7 +1689,7 @@ static ir_node *transform_f1663198(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Eor32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))) ==> ia32_Xor_src_index
@@ -1737,7 +1737,7 @@ static ir_node *transform_f1663199(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1763,7 +1763,7 @@ static ir_node *transform_f1663200(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -1821,7 +1821,7 @@ static ir_node *transform_f1663201(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1847,7 +1847,7 @@ static ir_node *transform_f1663202(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -1896,7 +1896,7 @@ static ir_node *transform_f1663203(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1921,7 +1921,7 @@ static ir_node *transform_f1663204(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -1979,7 +1979,7 @@ static ir_node *transform_f1663205(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2005,7 +2005,7 @@ static ir_node *transform_f1663206(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -2063,7 +2063,7 @@ static ir_node *transform_f1663207(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2089,7 +2089,7 @@ static ir_node *transform_f1663208(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -2138,7 +2138,7 @@ static ir_node *transform_f1663209(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2163,7 +2163,7 @@ static ir_node *transform_f1663210(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -2200,7 +2200,7 @@ static ir_node *transform_f1663211(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Eor32(VAR_0,VAR_1) ==> ia32_Xor
@@ -2227,7 +2227,7 @@ static ir_node *transform_f1663212(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Or32(VAR_0,IMM_1) ==> ia32_Or
@@ -2258,7 +2258,7 @@ static ir_node *transform_f1663213(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Or32(IMM_1,VAR_0) ==> ia32_Or
@@ -2289,7 +2289,7 @@ static ir_node *transform_f1663214(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Or32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3) ==> ia32_Or_src_index
@@ -2337,7 +2337,7 @@ static ir_node *transform_f1663215(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2363,7 +2363,7 @@ static ir_node *transform_f1663216(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -2421,7 +2421,7 @@ static ir_node *transform_f1663217(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2447,7 +2447,7 @@ static ir_node *transform_f1663218(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -2496,7 +2496,7 @@ static ir_node *transform_f1663219(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2521,7 +2521,7 @@ static ir_node *transform_f1663220(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -2579,7 +2579,7 @@ static ir_node *transform_f1663221(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2605,7 +2605,7 @@ static ir_node *transform_f1663222(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -2663,7 +2663,7 @@ static ir_node *transform_f1663223(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2689,7 +2689,7 @@ static ir_node *transform_f1663224(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -2738,7 +2738,7 @@ static ir_node *transform_f1663225(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2763,7 +2763,7 @@ static ir_node *transform_f1663226(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -2800,7 +2800,7 @@ static ir_node *transform_f1663227(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Or32(VAR_0,VAR_1) ==> ia32_Or
@@ -2827,7 +2827,7 @@ static ir_node *transform_f1663228(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Shl32(VAR_0,IMM_1) ==> ia32_Shl
@@ -2858,7 +2858,7 @@ static ir_node *transform_f1663229(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Shl(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Shl(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Shl32(VAR_0,VAR_1) ==> ia32_Shl
@@ -2885,7 +2885,7 @@ static ir_node *transform_f1663230(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Shl(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Shl(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Shr32(VAR_0,IMM_1) ==> ia32_Shr
@@ -2916,7 +2916,7 @@ static ir_node *transform_f1663231(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Shr(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Shr(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Shr32(VAR_0,VAR_1) ==> ia32_Shr
@@ -2943,7 +2943,7 @@ static ir_node *transform_f1663232(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Shr(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Shr(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Shrs32(VAR_0,IMM_1) ==> ia32_Sar
@@ -2974,7 +2974,7 @@ static ir_node *transform_f1663233(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sar(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Sar(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Shrs32(VAR_0,VAR_1) ==> ia32_Sar
@@ -3001,7 +3001,7 @@ static ir_node *transform_f1663234(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sar(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Sar(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Sub32(VAR_0,IMM_1) ==> ia32_Sub
@@ -3032,7 +3032,7 @@ static ir_node *transform_f1663235(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sub(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Sub(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Sub32(VAR_0,const32[1]) ==> ia32_Dec
@@ -3056,7 +3056,7 @@ static ir_node *transform_f1663236(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Sub32(VAR_0,const32[4294967295]) ==> ia32_Inc
@@ -3080,7 +3080,7 @@ static ir_node *transform_f1663237(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Sub32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))) ==> ia32_Sub_src_index
@@ -3128,7 +3128,7 @@ static ir_node *transform_f1663238(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sub(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Sub(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -3154,7 +3154,7 @@ static ir_node *transform_f1663239(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -3212,7 +3212,7 @@ static ir_node *transform_f1663240(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sub(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Sub(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -3238,7 +3238,7 @@ static ir_node *transform_f1663241(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -3287,7 +3287,7 @@ static ir_node *transform_f1663242(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sub(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Sub(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -3312,7 +3312,7 @@ static ir_node *transform_f1663243(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -3349,7 +3349,7 @@ static ir_node *transform_f1663244(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sub(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Sub(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Not32(Minus32(VAR_0)) ==> ia32_Dec
@@ -3373,7 +3373,7 @@ static ir_node *transform_f1663245(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Not32(VAR_0) ==> ia32_Not
@@ -3394,7 +3394,7 @@ static ir_node *transform_f1663246(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Not(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Not(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Minus32(Not32(VAR_0)) ==> ia32_Inc
@@ -3418,7 +3418,7 @@ static ir_node *transform_f1663247(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))) ==> ia32_Load_index
@@ -3480,7 +3480,7 @@ static ir_node *transform_f1663249(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -3526,7 +3526,7 @@ static ir_node *transform_f1663250(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Load(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_Load_mode(node));
+	new_node = new_bd_ia32_Load(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_Load_mode(node));
 	return new_node;
 }
 // PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))) ==> ia32_Load_index
@@ -3588,7 +3588,7 @@ static ir_node *transform_f1663252(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -3634,7 +3634,7 @@ static ir_node *transform_f1663253(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Load(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_Load_mode(node));
+	new_node = new_bd_ia32_Load(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_Load_mode(node));
 	return new_node;
 }
 // PROJ_1(load32(VAR_1,VAR_0)) ==> ia32_Load
@@ -3686,7 +3686,7 @@ static ir_node *transform_f1663255(ir_node *node, ir_node *block, dbg_info *dbgi
 		if (get_irn_n_edges(pred) > 1) {
 			/* this is needed, because sometimes we have loops that are only
 			   reachable through the ProjM */
-			be_enqueue_preds(node);
+			be_enqueue_operands(node);
 			/* do it in 2 steps, to silence firm verifier */
 			ir_node *const res = new_r_Proj(pred, mode_M, pn_Load_M);
 			set_Proj_num(res, pn_ia32_M);
@@ -3723,7 +3723,7 @@ static ir_node *transform_f1663256(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Load(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_ls_mode(new_node, get_Load_mode(node));
+	new_node = new_bd_ia32_Load(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_Load_mode(node));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Add32(const32[4294967295],PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_DecMem_index
@@ -3895,7 +3895,7 @@ static ir_node *transform_f1663258(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Add32(const32[4294967295],PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_DecMem_index
@@ -4067,7 +4067,7 @@ static ir_node *transform_f1663260(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Add32(const32[4294967295],PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_DecMem
@@ -4189,7 +4189,7 @@ static ir_node *transform_f1663262(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Add32(const32[1],PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_IncMem_index
@@ -4361,7 +4361,7 @@ static ir_node *transform_f1663264(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Add32(const32[1],PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_IncMem_index
@@ -4533,7 +4533,7 @@ static ir_node *transform_f1663266(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Add32(const32[1],PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_IncMem
@@ -4655,7 +4655,7 @@ static ir_node *transform_f1663268(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Add32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_AddMem_index
@@ -4833,7 +4833,7 @@ static ir_node *transform_f1663270(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Add32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_AddMem_index
@@ -5011,7 +5011,7 @@ static ir_node *transform_f1663272(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Add32(VAR_2,PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_AddMem
@@ -5139,7 +5139,7 @@ static ir_node *transform_f1663274(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Add32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),const32[1]))) ==> ia32_IncMem_index
@@ -5311,7 +5311,7 @@ static ir_node *transform_f1663276(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Add32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),const32[1]))) ==> ia32_IncMem_index
@@ -5483,7 +5483,7 @@ static ir_node *transform_f1663278(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Add32(PROJ_1(load32(VAR_1,VAR_0)),const32[1]))) ==> ia32_IncMem
@@ -5605,7 +5605,7 @@ static ir_node *transform_f1663280(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Add32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),const32[4294967295]))) ==> ia32_DecMem_index
@@ -5777,7 +5777,7 @@ static ir_node *transform_f1663282(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Add32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),const32[4294967295]))) ==> ia32_DecMem_index
@@ -5949,7 +5949,7 @@ static ir_node *transform_f1663284(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Add32(PROJ_1(load32(VAR_1,VAR_0)),const32[4294967295]))) ==> ia32_DecMem
@@ -6071,7 +6071,7 @@ static ir_node *transform_f1663286(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Add32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_AddMem_index
@@ -6249,7 +6249,7 @@ static ir_node *transform_f1663288(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Add32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_AddMem_index
@@ -6427,7 +6427,7 @@ static ir_node *transform_f1663290(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Add32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_AddMem
@@ -6555,7 +6555,7 @@ static ir_node *transform_f1663292(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),And32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_AndMem_index
@@ -6733,7 +6733,7 @@ static ir_node *transform_f1663294(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),And32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_AndMem_index
@@ -6911,7 +6911,7 @@ static ir_node *transform_f1663296(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,And32(VAR_2,PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_AndMem
@@ -7039,7 +7039,7 @@ static ir_node *transform_f1663298(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),And32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_AndMem_index
@@ -7217,7 +7217,7 @@ static ir_node *transform_f1663300(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),And32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_AndMem_index
@@ -7395,7 +7395,7 @@ static ir_node *transform_f1663302(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,And32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_AndMem
@@ -7523,7 +7523,7 @@ static ir_node *transform_f1663304(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Eor32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_XorMem_index
@@ -7701,7 +7701,7 @@ static ir_node *transform_f1663306(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Eor32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_XorMem_index
@@ -7879,7 +7879,7 @@ static ir_node *transform_f1663308(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Eor32(VAR_2,PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_XorMem
@@ -8007,7 +8007,7 @@ static ir_node *transform_f1663310(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Eor32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_XorMem_index
@@ -8185,7 +8185,7 @@ static ir_node *transform_f1663312(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Eor32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_XorMem_index
@@ -8363,7 +8363,7 @@ static ir_node *transform_f1663314(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Eor32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_XorMem
@@ -8491,7 +8491,7 @@ static ir_node *transform_f1663316(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Or32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_OrMem_index
@@ -8669,7 +8669,7 @@ static ir_node *transform_f1663318(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Or32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_OrMem_index
@@ -8847,7 +8847,7 @@ static ir_node *transform_f1663320(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Or32(VAR_2,PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_OrMem
@@ -8975,7 +8975,7 @@ static ir_node *transform_f1663322(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Or32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_OrMem_index
@@ -9153,7 +9153,7 @@ static ir_node *transform_f1663324(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Or32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_OrMem_index
@@ -9331,7 +9331,7 @@ static ir_node *transform_f1663326(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Or32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_OrMem
@@ -9459,7 +9459,7 @@ static ir_node *transform_f1663328(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Shl32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_ShlMem_index
@@ -9637,7 +9637,7 @@ static ir_node *transform_f1663330(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_ShlMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_ShlMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Shl32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_ShlMem_index
@@ -9815,7 +9815,7 @@ static ir_node *transform_f1663332(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_ShlMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_ShlMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Shl32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_ShlMem
@@ -9943,7 +9943,7 @@ static ir_node *transform_f1663334(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_ShlMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_ShlMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Shr32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_ShrMem_index
@@ -10121,7 +10121,7 @@ static ir_node *transform_f1663336(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_ShrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_ShrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Shr32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_ShrMem_index
@@ -10299,7 +10299,7 @@ static ir_node *transform_f1663338(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_ShrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_ShrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Shr32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_ShrMem
@@ -10427,7 +10427,7 @@ static ir_node *transform_f1663340(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_ShrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_ShrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Shrs32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_SarMem_index
@@ -10605,7 +10605,7 @@ static ir_node *transform_f1663342(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_SarMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_SarMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Shrs32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_SarMem_index
@@ -10783,7 +10783,7 @@ static ir_node *transform_f1663344(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_SarMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_SarMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Shrs32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_SarMem
@@ -10911,7 +10911,7 @@ static ir_node *transform_f1663346(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_SarMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_SarMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Sub32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),const32[1]))) ==> ia32_DecMem_index
@@ -11083,7 +11083,7 @@ static ir_node *transform_f1663348(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Sub32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),const32[1]))) ==> ia32_DecMem_index
@@ -11255,7 +11255,7 @@ static ir_node *transform_f1663350(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Sub32(PROJ_1(load32(VAR_1,VAR_0)),const32[1]))) ==> ia32_DecMem
@@ -11377,7 +11377,7 @@ static ir_node *transform_f1663352(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Sub32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),const32[4294967295]))) ==> ia32_IncMem_index
@@ -11549,7 +11549,7 @@ static ir_node *transform_f1663354(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Sub32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),const32[4294967295]))) ==> ia32_IncMem_index
@@ -11721,7 +11721,7 @@ static ir_node *transform_f1663356(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Sub32(PROJ_1(load32(VAR_1,VAR_0)),const32[4294967295]))) ==> ia32_IncMem
@@ -11843,7 +11843,7 @@ static ir_node *transform_f1663358(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Sub32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_SubMem_index
@@ -12021,7 +12021,7 @@ static ir_node *transform_f1663360(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_SubMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_SubMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Sub32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_SubMem_index
@@ -12199,7 +12199,7 @@ static ir_node *transform_f1663362(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_SubMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_SubMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Sub32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_SubMem
@@ -12327,7 +12327,7 @@ static ir_node *transform_f1663364(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_SubMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_SubMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Not32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_NotMem_index
@@ -12493,7 +12493,7 @@ static ir_node *transform_f1663366(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_NotMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_NotMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Not32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_NotMem_index
@@ -12659,7 +12659,7 @@ static ir_node *transform_f1663368(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_NotMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_NotMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Not32(PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_NotMem
@@ -12775,7 +12775,7 @@ static ir_node *transform_f1663370(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_NotMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_NotMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Minus32(Not32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))))))) ==> ia32_IncMem_index
@@ -12947,7 +12947,7 @@ static ir_node *transform_f1663372(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Minus32(Not32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))))))) ==> ia32_IncMem_index
@@ -13119,7 +13119,7 @@ static ir_node *transform_f1663374(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Minus32(Not32(PROJ_1(load32(VAR_1,VAR_0)))))) ==> ia32_IncMem
@@ -13241,7 +13241,7 @@ static ir_node *transform_f1663376(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Not32(Minus32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))))))) ==> ia32_DecMem_index
@@ -13413,7 +13413,7 @@ static ir_node *transform_f1663378(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Not32(Minus32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))))))) ==> ia32_DecMem_index
@@ -13585,7 +13585,7 @@ static ir_node *transform_f1663380(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Not32(Minus32(PROJ_1(load32(VAR_1,VAR_0)))))) ==> ia32_DecMem
@@ -13707,7 +13707,7 @@ static ir_node *transform_f1663382(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(VAR_2,Add32(VAR_0,VAR_1),VAR_3)) ==> ia32_Store_index
@@ -13793,7 +13793,7 @@ static ir_node *transform_f1663384(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Store(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_Store(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(VAR_2,Add32(VAR_1,VAR_0),VAR_3)) ==> ia32_Store_index
@@ -13879,7 +13879,7 @@ static ir_node *transform_f1663386(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Store(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_Store(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(store32(VAR_1,VAR_0,VAR_2)) ==> ia32_Store
@@ -13947,7 +13947,7 @@ static ir_node *transform_f1663388(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Store(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_Store(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
 	return new_node;
 }
 // PROJ_0(cond(cmp32_s[4](const32[0],Sub32(VAR_0,VAR_1)))) ==> compound-ia_jcc[8](ia32_Cmp(VAR_0,VAR_1))
