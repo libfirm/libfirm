@@ -26,7 +26,7 @@ static ir_node *transform_f1663153(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; get_ia32_attr(new_node)->addr.immediate = get_ia32_immediate_attr(is_ia32_Immediate(var1) ? var1 : be_transform_node(var1))->imm; set_ia32_commutative(new_node);
+	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, X86_SIZE_32); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; get_ia32_attr(new_node)->addr.immediate = get_ia32_immediate_attr(is_ia32_Immediate(var1) ? var1 : be_transform_node(var1))->imm; set_ia32_commutative(new_node);
 	return new_node;
 }
 // Add32(IMM_1,VAR_0) ==> ia32_Lea_imm
@@ -57,7 +57,7 @@ static ir_node *transform_f1663154(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; get_ia32_attr(new_node)->addr.immediate = get_ia32_immediate_attr(is_ia32_Immediate(var1) ? var1 : be_transform_node(var1))->imm; set_ia32_commutative(new_node);
+	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, X86_SIZE_32); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; get_ia32_attr(new_node)->addr.immediate = get_ia32_immediate_attr(is_ia32_Immediate(var1) ? var1 : be_transform_node(var1))->imm; set_ia32_commutative(new_node);
 	return new_node;
 }
 // Add32(VAR_0,const32[4294967295]) ==> ia32_Dec
@@ -81,7 +81,7 @@ static ir_node *transform_f1663155(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Add32(const32[4294967295],VAR_0) ==> ia32_Dec
@@ -105,7 +105,7 @@ static ir_node *transform_f1663156(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Add32(const32[1],VAR_0) ==> ia32_Inc
@@ -129,7 +129,7 @@ static ir_node *transform_f1663157(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Add32(VAR_0,const32[1]) ==> ia32_Inc
@@ -153,7 +153,7 @@ static ir_node *transform_f1663158(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Add32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3) ==> ia32_Add_src_index
@@ -201,7 +201,7 @@ static ir_node *transform_f1663159(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -285,7 +285,7 @@ static ir_node *transform_f1663161(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -369,7 +369,7 @@ static ir_node *transform_f1663163(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -453,7 +453,7 @@ static ir_node *transform_f1663165(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -528,7 +528,7 @@ static ir_node *transform_f1663167(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -611,7 +611,7 @@ static ir_node *transform_f1663169(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -695,7 +695,7 @@ static ir_node *transform_f1663171(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -779,7 +779,7 @@ static ir_node *transform_f1663173(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -863,7 +863,7 @@ static ir_node *transform_f1663175(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -938,7 +938,7 @@ static ir_node *transform_f1663177(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Add(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1000,7 +1000,7 @@ static ir_node *transform_f1663179(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node);
+	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), X86_SIZE_32); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node);
 	return new_node;
 }
 // Add32(VAR_1,VAR_0) ==> ia32_Lea
@@ -1027,7 +1027,7 @@ static ir_node *transform_f1663180(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node);
+	new_node = new_bd_ia32_Lea(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), X86_SIZE_32); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node);
 	return new_node;
 }
 // And32(IMM_1,VAR_0) ==> ia32_And
@@ -1058,7 +1058,7 @@ static ir_node *transform_f1663181(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // And32(VAR_0,IMM_1) ==> ia32_And
@@ -1089,7 +1089,7 @@ static ir_node *transform_f1663182(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // And32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3) ==> ia32_And_src_index
@@ -1137,7 +1137,7 @@ static ir_node *transform_f1663183(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1221,7 +1221,7 @@ static ir_node *transform_f1663185(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1296,7 +1296,7 @@ static ir_node *transform_f1663187(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1379,7 +1379,7 @@ static ir_node *transform_f1663189(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1463,7 +1463,7 @@ static ir_node *transform_f1663191(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1538,7 +1538,7 @@ static ir_node *transform_f1663193(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_And(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1600,7 +1600,7 @@ static ir_node *transform_f1663195(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // And32(VAR_1,VAR_0) ==> ia32_And
@@ -1627,7 +1627,7 @@ static ir_node *transform_f1663196(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_And(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Eor32(VAR_0,IMM_1) ==> ia32_Xor
@@ -1658,7 +1658,7 @@ static ir_node *transform_f1663197(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Eor32(IMM_1,VAR_0) ==> ia32_Xor
@@ -1689,7 +1689,7 @@ static ir_node *transform_f1663198(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Eor32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))) ==> ia32_Xor_src_index
@@ -1737,7 +1737,7 @@ static ir_node *transform_f1663199(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1821,7 +1821,7 @@ static ir_node *transform_f1663201(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1896,7 +1896,7 @@ static ir_node *transform_f1663203(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -1979,7 +1979,7 @@ static ir_node *transform_f1663205(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2063,7 +2063,7 @@ static ir_node *transform_f1663207(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2138,7 +2138,7 @@ static ir_node *transform_f1663209(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Xor(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2200,7 +2200,7 @@ static ir_node *transform_f1663211(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Eor32(VAR_0,VAR_1) ==> ia32_Xor
@@ -2227,7 +2227,7 @@ static ir_node *transform_f1663212(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Xor(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Or32(VAR_0,IMM_1) ==> ia32_Or
@@ -2258,7 +2258,7 @@ static ir_node *transform_f1663213(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Or32(IMM_1,VAR_0) ==> ia32_Or
@@ -2289,7 +2289,7 @@ static ir_node *transform_f1663214(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Or32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3) ==> ia32_Or_src_index
@@ -2337,7 +2337,7 @@ static ir_node *transform_f1663215(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2421,7 +2421,7 @@ static ir_node *transform_f1663217(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2496,7 +2496,7 @@ static ir_node *transform_f1663219(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2579,7 +2579,7 @@ static ir_node *transform_f1663221(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2663,7 +2663,7 @@ static ir_node *transform_f1663223(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2738,7 +2738,7 @@ static ir_node *transform_f1663225(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Or(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -2800,7 +2800,7 @@ static ir_node *transform_f1663227(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Or32(VAR_0,VAR_1) ==> ia32_Or
@@ -2827,7 +2827,7 @@ static ir_node *transform_f1663228(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Or(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Shl32(VAR_0,IMM_1) ==> ia32_Shl
@@ -2858,7 +2858,7 @@ static ir_node *transform_f1663229(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Shl(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Shl(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Shl32(VAR_0,VAR_1) ==> ia32_Shl
@@ -2885,7 +2885,7 @@ static ir_node *transform_f1663230(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Shl(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Shl(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Shr32(VAR_0,IMM_1) ==> ia32_Shr
@@ -2916,7 +2916,7 @@ static ir_node *transform_f1663231(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Shr(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Shr(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Shr32(VAR_0,VAR_1) ==> ia32_Shr
@@ -2943,7 +2943,7 @@ static ir_node *transform_f1663232(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Shr(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Shr(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Shrs32(VAR_0,IMM_1) ==> ia32_Sar
@@ -2974,7 +2974,7 @@ static ir_node *transform_f1663233(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sar(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Sar(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Shrs32(VAR_0,VAR_1) ==> ia32_Sar
@@ -3001,7 +3001,7 @@ static ir_node *transform_f1663234(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sar(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Sar(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Sub32(VAR_0,IMM_1) ==> ia32_Sub
@@ -3032,7 +3032,7 @@ static ir_node *transform_f1663235(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sub(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Sub(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Sub32(VAR_0,const32[1]) ==> ia32_Dec
@@ -3056,7 +3056,7 @@ static ir_node *transform_f1663236(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Sub32(VAR_0,const32[4294967295]) ==> ia32_Inc
@@ -3080,7 +3080,7 @@ static ir_node *transform_f1663237(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Sub32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))) ==> ia32_Sub_src_index
@@ -3128,7 +3128,7 @@ static ir_node *transform_f1663238(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sub(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Sub(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -3212,7 +3212,7 @@ static ir_node *transform_f1663240(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sub(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Sub(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -3287,7 +3287,7 @@ static ir_node *transform_f1663242(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sub(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
+	new_node = new_bd_ia32_Sub(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), noreg_GP, x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_commutative(new_node); set_ia32_op_type(new_node, ia32_AddrModeS); set_irn_mode(new_node, mode_T);
 		new_node = be_new_Proj(new_node, 0);
 	return new_node;
 }
@@ -3349,7 +3349,7 @@ static ir_node *transform_f1663244(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Sub(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Sub(dbgi, block, noreg_GP, noreg_GP, nomem, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_commutative(new_node); set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Not32(Minus32(VAR_0)) ==> ia32_Dec
@@ -3373,7 +3373,7 @@ static ir_node *transform_f1663245(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Dec(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Not32(VAR_0) ==> ia32_Not
@@ -3394,7 +3394,7 @@ static ir_node *transform_f1663246(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Not(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Not(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // Minus32(Not32(VAR_0)) ==> ia32_Inc
@@ -3418,7 +3418,7 @@ static ir_node *transform_f1663247(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_ls_mode(new_node, get_irn_mode(node)); set_ia32_am_support(new_node, ia32_am_none);
+	new_node = new_bd_ia32_Inc(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), x86_size_from_mode(get_irn_mode(node))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_REG; set_ia32_am_support(new_node, ia32_am_none);
 	return new_node;
 }
 // PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))) ==> ia32_Load_index
@@ -3526,7 +3526,7 @@ static ir_node *transform_f1663250(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Load(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_Load_mode(node));
+	new_node = new_bd_ia32_Load(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_Load_mode(node)), false); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))) ==> ia32_Load_index
@@ -3634,7 +3634,7 @@ static ir_node *transform_f1663253(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Load(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_Load_mode(node));
+	new_node = new_bd_ia32_Load(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_Load_mode(node)), false); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_1(load32(VAR_1,VAR_0)) ==> ia32_Load
@@ -3723,7 +3723,7 @@ static ir_node *transform_f1663256(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Load(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_Load_mode(node));
+	new_node = new_bd_ia32_Load(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_Load_mode(node)), false); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Add32(const32[4294967295],PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_DecMem_index
@@ -3895,7 +3895,7 @@ static ir_node *transform_f1663258(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Add32(const32[4294967295],PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_DecMem_index
@@ -4067,7 +4067,7 @@ static ir_node *transform_f1663260(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Add32(const32[4294967295],PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_DecMem
@@ -4189,7 +4189,7 @@ static ir_node *transform_f1663262(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Add32(const32[1],PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_IncMem_index
@@ -4361,7 +4361,7 @@ static ir_node *transform_f1663264(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Add32(const32[1],PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_IncMem_index
@@ -4533,7 +4533,7 @@ static ir_node *transform_f1663266(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Add32(const32[1],PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_IncMem
@@ -4655,7 +4655,7 @@ static ir_node *transform_f1663268(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Add32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_AddMem_index
@@ -4833,7 +4833,7 @@ static ir_node *transform_f1663270(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Add32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_AddMem_index
@@ -5011,7 +5011,7 @@ static ir_node *transform_f1663272(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Add32(VAR_2,PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_AddMem
@@ -5139,7 +5139,7 @@ static ir_node *transform_f1663274(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Add32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),const32[1]))) ==> ia32_IncMem_index
@@ -5311,7 +5311,7 @@ static ir_node *transform_f1663276(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Add32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),const32[1]))) ==> ia32_IncMem_index
@@ -5483,7 +5483,7 @@ static ir_node *transform_f1663278(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Add32(PROJ_1(load32(VAR_1,VAR_0)),const32[1]))) ==> ia32_IncMem
@@ -5605,7 +5605,7 @@ static ir_node *transform_f1663280(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Add32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),const32[4294967295]))) ==> ia32_DecMem_index
@@ -5777,7 +5777,7 @@ static ir_node *transform_f1663282(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Add32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),const32[4294967295]))) ==> ia32_DecMem_index
@@ -5949,7 +5949,7 @@ static ir_node *transform_f1663284(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Add32(PROJ_1(load32(VAR_1,VAR_0)),const32[4294967295]))) ==> ia32_DecMem
@@ -6071,7 +6071,7 @@ static ir_node *transform_f1663286(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Add32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_AddMem_index
@@ -6249,7 +6249,7 @@ static ir_node *transform_f1663288(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Add32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_AddMem_index
@@ -6427,7 +6427,7 @@ static ir_node *transform_f1663290(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Add32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_AddMem
@@ -6555,7 +6555,7 @@ static ir_node *transform_f1663292(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AddMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),And32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_AndMem_index
@@ -6733,7 +6733,7 @@ static ir_node *transform_f1663294(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),And32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_AndMem_index
@@ -6911,7 +6911,7 @@ static ir_node *transform_f1663296(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,And32(VAR_2,PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_AndMem
@@ -7039,7 +7039,7 @@ static ir_node *transform_f1663298(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),And32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_AndMem_index
@@ -7217,7 +7217,7 @@ static ir_node *transform_f1663300(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),And32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_AndMem_index
@@ -7395,7 +7395,7 @@ static ir_node *transform_f1663302(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,And32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_AndMem
@@ -7523,7 +7523,7 @@ static ir_node *transform_f1663304(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_AndMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Eor32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_XorMem_index
@@ -7701,7 +7701,7 @@ static ir_node *transform_f1663306(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Eor32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_XorMem_index
@@ -7879,7 +7879,7 @@ static ir_node *transform_f1663308(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Eor32(VAR_2,PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_XorMem
@@ -8007,7 +8007,7 @@ static ir_node *transform_f1663310(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Eor32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_XorMem_index
@@ -8185,7 +8185,7 @@ static ir_node *transform_f1663312(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Eor32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_XorMem_index
@@ -8363,7 +8363,7 @@ static ir_node *transform_f1663314(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Eor32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_XorMem
@@ -8491,7 +8491,7 @@ static ir_node *transform_f1663316(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_XorMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Or32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_OrMem_index
@@ -8669,7 +8669,7 @@ static ir_node *transform_f1663318(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Or32(VAR_3,PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_OrMem_index
@@ -8847,7 +8847,7 @@ static ir_node *transform_f1663320(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Or32(VAR_2,PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_OrMem
@@ -8975,7 +8975,7 @@ static ir_node *transform_f1663322(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Or32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_OrMem_index
@@ -9153,7 +9153,7 @@ static ir_node *transform_f1663324(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Or32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_OrMem_index
@@ -9331,7 +9331,7 @@ static ir_node *transform_f1663326(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Or32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_OrMem
@@ -9459,7 +9459,7 @@ static ir_node *transform_f1663328(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_OrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Shl32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_ShlMem_index
@@ -9637,7 +9637,7 @@ static ir_node *transform_f1663330(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_ShlMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_ShlMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Shl32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_ShlMem_index
@@ -9815,7 +9815,7 @@ static ir_node *transform_f1663332(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_ShlMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_ShlMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Shl32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_ShlMem
@@ -9943,7 +9943,7 @@ static ir_node *transform_f1663334(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_ShlMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_ShlMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Shr32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_ShrMem_index
@@ -10121,7 +10121,7 @@ static ir_node *transform_f1663336(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_ShrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_ShrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Shr32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_ShrMem_index
@@ -10299,7 +10299,7 @@ static ir_node *transform_f1663338(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_ShrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_ShrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Shr32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_ShrMem
@@ -10427,7 +10427,7 @@ static ir_node *transform_f1663340(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_ShrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_ShrMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Shrs32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_SarMem_index
@@ -10605,7 +10605,7 @@ static ir_node *transform_f1663342(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_SarMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_SarMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Shrs32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_SarMem_index
@@ -10783,7 +10783,7 @@ static ir_node *transform_f1663344(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_SarMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_SarMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Shrs32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_SarMem
@@ -10911,7 +10911,7 @@ static ir_node *transform_f1663346(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_SarMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_SarMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Sub32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),const32[1]))) ==> ia32_DecMem_index
@@ -11083,7 +11083,7 @@ static ir_node *transform_f1663348(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Sub32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),const32[1]))) ==> ia32_DecMem_index
@@ -11255,7 +11255,7 @@ static ir_node *transform_f1663350(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Sub32(PROJ_1(load32(VAR_1,VAR_0)),const32[1]))) ==> ia32_DecMem
@@ -11377,7 +11377,7 @@ static ir_node *transform_f1663352(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Sub32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),const32[4294967295]))) ==> ia32_IncMem_index
@@ -11549,7 +11549,7 @@ static ir_node *transform_f1663354(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Sub32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),const32[4294967295]))) ==> ia32_IncMem_index
@@ -11721,7 +11721,7 @@ static ir_node *transform_f1663356(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Sub32(PROJ_1(load32(VAR_1,VAR_0)),const32[4294967295]))) ==> ia32_IncMem
@@ -11843,7 +11843,7 @@ static ir_node *transform_f1663358(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Sub32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))),VAR_3))) ==> ia32_SubMem_index
@@ -12021,7 +12021,7 @@ static ir_node *transform_f1663360(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_SubMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_SubMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Sub32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))),VAR_3))) ==> ia32_SubMem_index
@@ -12199,7 +12199,7 @@ static ir_node *transform_f1663362(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_SubMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_SubMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Sub32(PROJ_1(load32(VAR_1,VAR_0)),VAR_2))) ==> ia32_SubMem
@@ -12327,7 +12327,7 @@ static ir_node *transform_f1663364(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_SubMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_SubMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Not32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1)))))) ==> ia32_NotMem_index
@@ -12493,7 +12493,7 @@ static ir_node *transform_f1663366(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_NotMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_NotMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Not32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0)))))) ==> ia32_NotMem_index
@@ -12659,7 +12659,7 @@ static ir_node *transform_f1663368(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_NotMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_NotMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Not32(PROJ_1(load32(VAR_1,VAR_0))))) ==> ia32_NotMem
@@ -12775,7 +12775,7 @@ static ir_node *transform_f1663370(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_NotMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_NotMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Minus32(Not32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))))))) ==> ia32_IncMem_index
@@ -12947,7 +12947,7 @@ static ir_node *transform_f1663372(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Minus32(Not32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))))))) ==> ia32_IncMem_index
@@ -13119,7 +13119,7 @@ static ir_node *transform_f1663374(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Minus32(Not32(PROJ_1(load32(VAR_1,VAR_0)))))) ==> ia32_IncMem
@@ -13241,7 +13241,7 @@ static ir_node *transform_f1663376(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_IncMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_1,VAR_0))),Add32(VAR_1,VAR_0),Not32(Minus32(PROJ_1(load32(VAR_2,Add32(VAR_1,VAR_0))))))) ==> ia32_DecMem_index
@@ -13413,7 +13413,7 @@ static ir_node *transform_f1663378(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_2,Add32(VAR_0,VAR_1))),Add32(VAR_0,VAR_1),Not32(Minus32(PROJ_1(load32(VAR_2,Add32(VAR_0,VAR_1))))))) ==> ia32_DecMem_index
@@ -13585,7 +13585,7 @@ static ir_node *transform_f1663380(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(PROJ_0(load32(VAR_1,VAR_0)),VAR_0,Not32(Minus32(PROJ_1(load32(VAR_1,VAR_0)))))) ==> ia32_DecMem
@@ -13707,7 +13707,7 @@ static ir_node *transform_f1663382(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_DecMem(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(store32(VAR_2,Add32(VAR_0,VAR_1),VAR_3)) ==> ia32_Store_index
@@ -13793,7 +13793,7 @@ static ir_node *transform_f1663384(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Store(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_Store(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(VAR_2,Add32(VAR_1,VAR_0),VAR_3)) ==> ia32_Store_index
@@ -13879,7 +13879,7 @@ static ir_node *transform_f1663386(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Store(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_Store(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), is_ia32_Immediate(var3) ? var3 : be_transform_node(var3), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE_INDEX;
 	return new_node;
 }
 // PROJ_0(store32(VAR_1,VAR_0,VAR_2)) ==> ia32_Store
@@ -13947,7 +13947,7 @@ static ir_node *transform_f1663388(ir_node *node, ir_node *block, dbg_info *dbgi
 		return NULL;
 	}
 	ir_node *new_node = NULL;
-	new_node = new_bd_ia32_Store(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2)); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE; set_ia32_ls_mode(new_node, get_irn_mode(get_Store_value(node)));
+	new_node = new_bd_ia32_Store(dbgi, block, is_ia32_Immediate(var0) ? var0 : be_transform_node(var0), noreg_GP, is_ia32_Immediate(var1) ? var1 : be_transform_node(var1), is_ia32_Immediate(var2) ? var2 : be_transform_node(var2), x86_size_from_mode(get_irn_mode(get_Store_value(node)))); get_ia32_attr(new_node)->addr.variant = X86_ADDR_BASE;
 	return new_node;
 }
 // PROJ_0(cond(cmp32_s[4](const32[0],Sub32(VAR_0,VAR_1)))) ==> compound-ia_jcc[8](ia32_Cmp(VAR_0,VAR_1))
@@ -14061,7 +14061,7 @@ static ir_node *transform_f1663391(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -14178,7 +14178,7 @@ static ir_node *transform_f1663394(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -14295,7 +14295,7 @@ static ir_node *transform_f1663397(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -14412,7 +14412,7 @@ static ir_node *transform_f1663400(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -14529,7 +14529,7 @@ static ir_node *transform_f1663403(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -14646,7 +14646,7 @@ static ir_node *transform_f1663406(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -14763,7 +14763,7 @@ static ir_node *transform_f1663409(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -14880,7 +14880,7 @@ static ir_node *transform_f1663412(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -15075,7 +15075,7 @@ static ir_node *transform_f1663415(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -15270,7 +15270,7 @@ static ir_node *transform_f1663418(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -15417,7 +15417,7 @@ static ir_node *transform_f1663421(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -15564,7 +15564,7 @@ static ir_node *transform_f1663424(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -15711,7 +15711,7 @@ static ir_node *transform_f1663427(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -15858,7 +15858,7 @@ static ir_node *transform_f1663430(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -16005,7 +16005,7 @@ static ir_node *transform_f1663433(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -16152,7 +16152,7 @@ static ir_node *transform_f1663436(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -16299,7 +16299,7 @@ static ir_node *transform_f1663439(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -16446,7 +16446,7 @@ static ir_node *transform_f1663442(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -16602,7 +16602,7 @@ static ir_node *transform_f1663445(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -16758,7 +16758,7 @@ static ir_node *transform_f1663448(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -16914,7 +16914,7 @@ static ir_node *transform_f1663451(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -17070,7 +17070,7 @@ static ir_node *transform_f1663454(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -17265,7 +17265,7 @@ static ir_node *transform_f1663457(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -17460,7 +17460,7 @@ static ir_node *transform_f1663460(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -17655,7 +17655,7 @@ static ir_node *transform_f1663463(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -17850,7 +17850,7 @@ static ir_node *transform_f1663466(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -17997,7 +17997,7 @@ static ir_node *transform_f1663469(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -18144,7 +18144,7 @@ static ir_node *transform_f1663472(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -18291,7 +18291,7 @@ static ir_node *transform_f1663475(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -18438,7 +18438,7 @@ static ir_node *transform_f1663478(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -18585,7 +18585,7 @@ static ir_node *transform_f1663481(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -18732,7 +18732,7 @@ static ir_node *transform_f1663484(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -18879,7 +18879,7 @@ static ir_node *transform_f1663487(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -19026,7 +19026,7 @@ static ir_node *transform_f1663490(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -19173,7 +19173,7 @@ static ir_node *transform_f1663493(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -19320,7 +19320,7 @@ static ir_node *transform_f1663496(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -19467,7 +19467,7 @@ static ir_node *transform_f1663499(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -19614,7 +19614,7 @@ static ir_node *transform_f1663502(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -19761,7 +19761,7 @@ static ir_node *transform_f1663505(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -19908,7 +19908,7 @@ static ir_node *transform_f1663508(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -20055,7 +20055,7 @@ static ir_node *transform_f1663511(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -20202,7 +20202,7 @@ static ir_node *transform_f1663514(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -20301,7 +20301,7 @@ static ir_node *transform_f1663517(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f37_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f38_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f39_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f37_node, f38_node, false); set_ia32_ls_mode(f39_node, mode_Is);
+ir_node *f39_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f37_node, f38_node, X86_SIZE_32, false);
 ir_node *f40_node = new_bd_ia32_Jcc(dbgi, block, f39_node, 13);
 new_node = f40_node;
 
@@ -20400,7 +20400,7 @@ static ir_node *transform_f1663520(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f33_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f34_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f35_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f33_node, f34_node, false); set_ia32_ls_mode(f35_node, mode_Is);
+ir_node *f35_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f33_node, f34_node, X86_SIZE_32, false);
 ir_node *f36_node = new_bd_ia32_Jcc(dbgi, block, f35_node, 12);
 new_node = f36_node;
 
@@ -20499,7 +20499,7 @@ static ir_node *transform_f1663523(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f45_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f46_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f47_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f45_node, f46_node, false); set_ia32_ls_mode(f47_node, mode_Is);
+ir_node *f47_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f45_node, f46_node, X86_SIZE_32, false);
 ir_node *f48_node = new_bd_ia32_Jcc(dbgi, block, f47_node, 15);
 new_node = f48_node;
 
@@ -20598,7 +20598,7 @@ static ir_node *transform_f1663526(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f41_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f42_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f43_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f41_node, f42_node, false); set_ia32_ls_mode(f43_node, mode_Is);
+ir_node *f43_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f41_node, f42_node, X86_SIZE_32, false);
 ir_node *f44_node = new_bd_ia32_Jcc(dbgi, block, f43_node, 14);
 new_node = f44_node;
 
@@ -20715,7 +20715,7 @@ static ir_node *transform_f1663529(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -20832,7 +20832,7 @@ static ir_node *transform_f1663532(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -20949,7 +20949,7 @@ static ir_node *transform_f1663535(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -21066,7 +21066,7 @@ static ir_node *transform_f1663538(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -21183,7 +21183,7 @@ static ir_node *transform_f1663541(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -21300,7 +21300,7 @@ static ir_node *transform_f1663544(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -21417,7 +21417,7 @@ static ir_node *transform_f1663547(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -21534,7 +21534,7 @@ static ir_node *transform_f1663550(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -21729,7 +21729,7 @@ static ir_node *transform_f1663553(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -21924,7 +21924,7 @@ static ir_node *transform_f1663556(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -22071,7 +22071,7 @@ static ir_node *transform_f1663559(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -22218,7 +22218,7 @@ static ir_node *transform_f1663562(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -22365,7 +22365,7 @@ static ir_node *transform_f1663565(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -22512,7 +22512,7 @@ static ir_node *transform_f1663568(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -22659,7 +22659,7 @@ static ir_node *transform_f1663571(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -22806,7 +22806,7 @@ static ir_node *transform_f1663574(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -22953,7 +22953,7 @@ static ir_node *transform_f1663577(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -23100,7 +23100,7 @@ static ir_node *transform_f1663580(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -23256,7 +23256,7 @@ static ir_node *transform_f1663583(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -23412,7 +23412,7 @@ static ir_node *transform_f1663586(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -23568,7 +23568,7 @@ static ir_node *transform_f1663589(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -23724,7 +23724,7 @@ static ir_node *transform_f1663592(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -23919,7 +23919,7 @@ static ir_node *transform_f1663595(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -24114,7 +24114,7 @@ static ir_node *transform_f1663598(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -24309,7 +24309,7 @@ static ir_node *transform_f1663601(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -24504,7 +24504,7 @@ static ir_node *transform_f1663604(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -24651,7 +24651,7 @@ static ir_node *transform_f1663607(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -24798,7 +24798,7 @@ static ir_node *transform_f1663610(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -24945,7 +24945,7 @@ static ir_node *transform_f1663613(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -25092,7 +25092,7 @@ static ir_node *transform_f1663616(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -25239,7 +25239,7 @@ static ir_node *transform_f1663619(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -25386,7 +25386,7 @@ static ir_node *transform_f1663622(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -25533,7 +25533,7 @@ static ir_node *transform_f1663625(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -25680,7 +25680,7 @@ static ir_node *transform_f1663628(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -25827,7 +25827,7 @@ static ir_node *transform_f1663631(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -25974,7 +25974,7 @@ static ir_node *transform_f1663634(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -26121,7 +26121,7 @@ static ir_node *transform_f1663637(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -26268,7 +26268,7 @@ static ir_node *transform_f1663640(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -26415,7 +26415,7 @@ static ir_node *transform_f1663643(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -26562,7 +26562,7 @@ static ir_node *transform_f1663646(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -26709,7 +26709,7 @@ static ir_node *transform_f1663649(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -26856,7 +26856,7 @@ static ir_node *transform_f1663652(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -26955,7 +26955,7 @@ static ir_node *transform_f1663655(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f41_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f42_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f43_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f41_node, f42_node, false); set_ia32_ls_mode(f43_node, mode_Is);
+ir_node *f43_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f41_node, f42_node, X86_SIZE_32, false);
 ir_node *f44_node = new_bd_ia32_Jcc(dbgi, block, f43_node, 14);
 new_node = f44_node;
 
@@ -27054,7 +27054,7 @@ static ir_node *transform_f1663658(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f37_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f38_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f39_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f37_node, f38_node, false); set_ia32_ls_mode(f39_node, mode_Is);
+ir_node *f39_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f37_node, f38_node, X86_SIZE_32, false);
 ir_node *f40_node = new_bd_ia32_Jcc(dbgi, block, f39_node, 13);
 new_node = f40_node;
 
@@ -27153,7 +27153,7 @@ static ir_node *transform_f1663661(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f33_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f34_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f35_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f33_node, f34_node, false); set_ia32_ls_mode(f35_node, mode_Is);
+ir_node *f35_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f33_node, f34_node, X86_SIZE_32, false);
 ir_node *f36_node = new_bd_ia32_Jcc(dbgi, block, f35_node, 12);
 new_node = f36_node;
 
@@ -27252,7 +27252,7 @@ static ir_node *transform_f1663664(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f45_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f46_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f47_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f45_node, f46_node, false); set_ia32_ls_mode(f47_node, mode_Is);
+ir_node *f47_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f45_node, f46_node, X86_SIZE_32, false);
 ir_node *f48_node = new_bd_ia32_Jcc(dbgi, block, f47_node, 15);
 new_node = f48_node;
 
@@ -27369,7 +27369,7 @@ static ir_node *transform_f1663667(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -27486,7 +27486,7 @@ static ir_node *transform_f1663670(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -27603,7 +27603,7 @@ static ir_node *transform_f1663673(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -27720,7 +27720,7 @@ static ir_node *transform_f1663676(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -27837,7 +27837,7 @@ static ir_node *transform_f1663679(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -27954,7 +27954,7 @@ static ir_node *transform_f1663682(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -28071,7 +28071,7 @@ static ir_node *transform_f1663685(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -28188,7 +28188,7 @@ static ir_node *transform_f1663688(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -28383,7 +28383,7 @@ static ir_node *transform_f1663691(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -28578,7 +28578,7 @@ static ir_node *transform_f1663694(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -28725,7 +28725,7 @@ static ir_node *transform_f1663697(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -28872,7 +28872,7 @@ static ir_node *transform_f1663700(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -29019,7 +29019,7 @@ static ir_node *transform_f1663703(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -29166,7 +29166,7 @@ static ir_node *transform_f1663706(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -29313,7 +29313,7 @@ static ir_node *transform_f1663709(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -29460,7 +29460,7 @@ static ir_node *transform_f1663712(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -29607,7 +29607,7 @@ static ir_node *transform_f1663715(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -29754,7 +29754,7 @@ static ir_node *transform_f1663718(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -29910,7 +29910,7 @@ static ir_node *transform_f1663721(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -30066,7 +30066,7 @@ static ir_node *transform_f1663724(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -30222,7 +30222,7 @@ static ir_node *transform_f1663727(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -30378,7 +30378,7 @@ static ir_node *transform_f1663730(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -30573,7 +30573,7 @@ static ir_node *transform_f1663733(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -30768,7 +30768,7 @@ static ir_node *transform_f1663736(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -30963,7 +30963,7 @@ static ir_node *transform_f1663739(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -31158,7 +31158,7 @@ static ir_node *transform_f1663742(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -31305,7 +31305,7 @@ static ir_node *transform_f1663745(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -31452,7 +31452,7 @@ static ir_node *transform_f1663748(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -31599,7 +31599,7 @@ static ir_node *transform_f1663751(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -31746,7 +31746,7 @@ static ir_node *transform_f1663754(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -31893,7 +31893,7 @@ static ir_node *transform_f1663757(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -32040,7 +32040,7 @@ static ir_node *transform_f1663760(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -32187,7 +32187,7 @@ static ir_node *transform_f1663763(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -32334,7 +32334,7 @@ static ir_node *transform_f1663766(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -32481,7 +32481,7 @@ static ir_node *transform_f1663769(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -32628,7 +32628,7 @@ static ir_node *transform_f1663772(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -32775,7 +32775,7 @@ static ir_node *transform_f1663775(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -32922,7 +32922,7 @@ static ir_node *transform_f1663778(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -33069,7 +33069,7 @@ static ir_node *transform_f1663781(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -33216,7 +33216,7 @@ static ir_node *transform_f1663784(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -33363,7 +33363,7 @@ static ir_node *transform_f1663787(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -33510,7 +33510,7 @@ static ir_node *transform_f1663790(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -33609,7 +33609,7 @@ static ir_node *transform_f1663793(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f33_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f34_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f35_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f33_node, f34_node, false); set_ia32_ls_mode(f35_node, mode_Is);
+ir_node *f35_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f33_node, f34_node, X86_SIZE_32, false);
 ir_node *f36_node = new_bd_ia32_Jcc(dbgi, block, f35_node, 12);
 new_node = f36_node;
 
@@ -33708,7 +33708,7 @@ static ir_node *transform_f1663796(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f37_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f38_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f39_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f37_node, f38_node, false); set_ia32_ls_mode(f39_node, mode_Is);
+ir_node *f39_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f37_node, f38_node, X86_SIZE_32, false);
 ir_node *f40_node = new_bd_ia32_Jcc(dbgi, block, f39_node, 13);
 new_node = f40_node;
 
@@ -33807,7 +33807,7 @@ static ir_node *transform_f1663799(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f41_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f42_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f43_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f41_node, f42_node, false); set_ia32_ls_mode(f43_node, mode_Is);
+ir_node *f43_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f41_node, f42_node, X86_SIZE_32, false);
 ir_node *f44_node = new_bd_ia32_Jcc(dbgi, block, f43_node, 14);
 new_node = f44_node;
 
@@ -33906,7 +33906,7 @@ static ir_node *transform_f1663802(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f45_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f46_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f47_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f45_node, f46_node, false); set_ia32_ls_mode(f47_node, mode_Is);
+ir_node *f47_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f45_node, f46_node, X86_SIZE_32, false);
 ir_node *f48_node = new_bd_ia32_Jcc(dbgi, block, f47_node, 15);
 new_node = f48_node;
 
@@ -34023,7 +34023,7 @@ static ir_node *transform_f1663805(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -34140,7 +34140,7 @@ static ir_node *transform_f1663808(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -34257,7 +34257,7 @@ static ir_node *transform_f1663811(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -34374,7 +34374,7 @@ static ir_node *transform_f1663814(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -34491,7 +34491,7 @@ static ir_node *transform_f1663817(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -34608,7 +34608,7 @@ static ir_node *transform_f1663820(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -34725,7 +34725,7 @@ static ir_node *transform_f1663823(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -34842,7 +34842,7 @@ static ir_node *transform_f1663826(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -35037,7 +35037,7 @@ static ir_node *transform_f1663829(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -35232,7 +35232,7 @@ static ir_node *transform_f1663832(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -35379,7 +35379,7 @@ static ir_node *transform_f1663835(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -35526,7 +35526,7 @@ static ir_node *transform_f1663838(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -35673,7 +35673,7 @@ static ir_node *transform_f1663841(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -35820,7 +35820,7 @@ static ir_node *transform_f1663844(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -35967,7 +35967,7 @@ static ir_node *transform_f1663847(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -36114,7 +36114,7 @@ static ir_node *transform_f1663850(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -36261,7 +36261,7 @@ static ir_node *transform_f1663853(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -36408,7 +36408,7 @@ static ir_node *transform_f1663856(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -36564,7 +36564,7 @@ static ir_node *transform_f1663859(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -36720,7 +36720,7 @@ static ir_node *transform_f1663862(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -36876,7 +36876,7 @@ static ir_node *transform_f1663865(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -37032,7 +37032,7 @@ static ir_node *transform_f1663868(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -37227,7 +37227,7 @@ static ir_node *transform_f1663871(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -37422,7 +37422,7 @@ static ir_node *transform_f1663874(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -37617,7 +37617,7 @@ static ir_node *transform_f1663877(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -37812,7 +37812,7 @@ static ir_node *transform_f1663880(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -37959,7 +37959,7 @@ static ir_node *transform_f1663883(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -38106,7 +38106,7 @@ static ir_node *transform_f1663886(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -38253,7 +38253,7 @@ static ir_node *transform_f1663889(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -38400,7 +38400,7 @@ static ir_node *transform_f1663892(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -38547,7 +38547,7 @@ static ir_node *transform_f1663895(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -38694,7 +38694,7 @@ static ir_node *transform_f1663898(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -38841,7 +38841,7 @@ static ir_node *transform_f1663901(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -38988,7 +38988,7 @@ static ir_node *transform_f1663904(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -39135,7 +39135,7 @@ static ir_node *transform_f1663907(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -39282,7 +39282,7 @@ static ir_node *transform_f1663910(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -39429,7 +39429,7 @@ static ir_node *transform_f1663913(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -39576,7 +39576,7 @@ static ir_node *transform_f1663916(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -39723,7 +39723,7 @@ static ir_node *transform_f1663919(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -39870,7 +39870,7 @@ static ir_node *transform_f1663922(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -40017,7 +40017,7 @@ static ir_node *transform_f1663925(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -40164,7 +40164,7 @@ static ir_node *transform_f1663928(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -40263,7 +40263,7 @@ static ir_node *transform_f1663931(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f37_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f38_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f39_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f37_node, f38_node, false); set_ia32_ls_mode(f39_node, mode_Is);
+ir_node *f39_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f37_node, f38_node, X86_SIZE_32, false);
 ir_node *f40_node = new_bd_ia32_Jcc(dbgi, block, f39_node, 13);
 new_node = f40_node;
 
@@ -40362,7 +40362,7 @@ static ir_node *transform_f1663934(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f33_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f34_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f35_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f33_node, f34_node, false); set_ia32_ls_mode(f35_node, mode_Is);
+ir_node *f35_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f33_node, f34_node, X86_SIZE_32, false);
 ir_node *f36_node = new_bd_ia32_Jcc(dbgi, block, f35_node, 12);
 new_node = f36_node;
 
@@ -40461,7 +40461,7 @@ static ir_node *transform_f1663937(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f41_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f42_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f43_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f41_node, f42_node, false); set_ia32_ls_mode(f43_node, mode_Is);
+ir_node *f43_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f41_node, f42_node, X86_SIZE_32, false);
 ir_node *f44_node = new_bd_ia32_Jcc(dbgi, block, f43_node, 14);
 new_node = f44_node;
 
@@ -40560,7 +40560,7 @@ static ir_node *transform_f1663940(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f45_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f46_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f47_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f45_node, f46_node, false); set_ia32_ls_mode(f47_node, mode_Is);
+ir_node *f47_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f45_node, f46_node, X86_SIZE_32, false);
 ir_node *f48_node = new_bd_ia32_Jcc(dbgi, block, f47_node, 15);
 new_node = f48_node;
 
@@ -40659,7 +40659,7 @@ static ir_node *transform_f1663943(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f13_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f14_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, false); set_ia32_ls_mode(f15_node, mode_Is);
+ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, X86_SIZE_32, false);
 ir_node *f16_node = new_bd_ia32_Jcc(dbgi, block, f15_node, 5);
 new_node = f16_node;
 
@@ -40758,7 +40758,7 @@ static ir_node *transform_f1663946(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f13_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f14_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, false); set_ia32_ls_mode(f15_node, mode_Is);
+ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, X86_SIZE_32, false);
 ir_node *f16_node = new_bd_ia32_Jcc(dbgi, block, f15_node, 5);
 new_node = f16_node;
 
@@ -40857,7 +40857,7 @@ static ir_node *transform_f1663949(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f9_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f10_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, false); set_ia32_ls_mode(f11_node, mode_Is);
+ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, X86_SIZE_32, false);
 ir_node *f12_node = new_bd_ia32_Jcc(dbgi, block, f11_node, 4);
 new_node = f12_node;
 
@@ -40956,7 +40956,7 @@ static ir_node *transform_f1663952(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f9_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f10_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, false); set_ia32_ls_mode(f11_node, mode_Is);
+ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, X86_SIZE_32, false);
 ir_node *f12_node = new_bd_ia32_Jcc(dbgi, block, f11_node, 4);
 new_node = f12_node;
 
@@ -41055,7 +41055,7 @@ static ir_node *transform_f1663955(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f13_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f14_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, false); set_ia32_ls_mode(f15_node, mode_Is);
+ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, X86_SIZE_32, false);
 ir_node *f16_node = new_bd_ia32_Jcc(dbgi, block, f15_node, 5);
 new_node = f16_node;
 
@@ -41154,7 +41154,7 @@ static ir_node *transform_f1663958(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f9_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f10_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, false); set_ia32_ls_mode(f11_node, mode_Is);
+ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, X86_SIZE_32, false);
 ir_node *f12_node = new_bd_ia32_Jcc(dbgi, block, f11_node, 4);
 new_node = f12_node;
 
@@ -41253,7 +41253,7 @@ static ir_node *transform_f1663961(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f9_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f10_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, false); set_ia32_ls_mode(f11_node, mode_Is);
+ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, X86_SIZE_32, false);
 ir_node *f12_node = new_bd_ia32_Jcc(dbgi, block, f11_node, 4);
 new_node = f12_node;
 
@@ -41352,7 +41352,7 @@ static ir_node *transform_f1663964(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f13_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f14_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, false); set_ia32_ls_mode(f15_node, mode_Is);
+ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, X86_SIZE_32, false);
 ir_node *f16_node = new_bd_ia32_Jcc(dbgi, block, f15_node, 5);
 new_node = f16_node;
 
@@ -41451,7 +41451,7 @@ static ir_node *transform_f1663967(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f13_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f14_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, false); set_ia32_ls_mode(f15_node, mode_Is);
+ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, X86_SIZE_32, false);
 ir_node *f16_node = new_bd_ia32_Jcc(dbgi, block, f15_node, 5);
 new_node = f16_node;
 
@@ -41550,7 +41550,7 @@ static ir_node *transform_f1663970(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f13_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f14_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, false); set_ia32_ls_mode(f15_node, mode_Is);
+ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, X86_SIZE_32, false);
 ir_node *f16_node = new_bd_ia32_Jcc(dbgi, block, f15_node, 5);
 new_node = f16_node;
 
@@ -41649,7 +41649,7 @@ static ir_node *transform_f1663973(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f9_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f10_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, false); set_ia32_ls_mode(f11_node, mode_Is);
+ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, X86_SIZE_32, false);
 ir_node *f12_node = new_bd_ia32_Jcc(dbgi, block, f11_node, 4);
 new_node = f12_node;
 
@@ -41748,7 +41748,7 @@ static ir_node *transform_f1663976(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f9_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f10_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, false); set_ia32_ls_mode(f11_node, mode_Is);
+ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, X86_SIZE_32, false);
 ir_node *f12_node = new_bd_ia32_Jcc(dbgi, block, f11_node, 4);
 new_node = f12_node;
 
@@ -41847,7 +41847,7 @@ static ir_node *transform_f1663979(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f13_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f14_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, false); set_ia32_ls_mode(f15_node, mode_Is);
+ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, X86_SIZE_32, false);
 ir_node *f16_node = new_bd_ia32_Jcc(dbgi, block, f15_node, 5);
 new_node = f16_node;
 
@@ -41946,7 +41946,7 @@ static ir_node *transform_f1663982(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f13_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f14_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, false); set_ia32_ls_mode(f15_node, mode_Is);
+ir_node *f15_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f13_node, f14_node, X86_SIZE_32, false);
 ir_node *f16_node = new_bd_ia32_Jcc(dbgi, block, f15_node, 5);
 new_node = f16_node;
 
@@ -42045,7 +42045,7 @@ static ir_node *transform_f1663985(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f9_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f10_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, false); set_ia32_ls_mode(f11_node, mode_Is);
+ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, X86_SIZE_32, false);
 ir_node *f12_node = new_bd_ia32_Jcc(dbgi, block, f11_node, 4);
 new_node = f12_node;
 
@@ -42144,7 +42144,7 @@ static ir_node *transform_f1663988(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f9_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f10_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, false); set_ia32_ls_mode(f11_node, mode_Is);
+ir_node *f11_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f9_node, f10_node, X86_SIZE_32, false);
 ir_node *f12_node = new_bd_ia32_Jcc(dbgi, block, f11_node, 4);
 new_node = f12_node;
 
@@ -42339,7 +42339,7 @@ static ir_node *transform_f1663991(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -42534,7 +42534,7 @@ static ir_node *transform_f1663994(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -42651,7 +42651,7 @@ static ir_node *transform_f1663997(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -42768,7 +42768,7 @@ static ir_node *transform_f1664000(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -42885,7 +42885,7 @@ static ir_node *transform_f1664003(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -43002,7 +43002,7 @@ static ir_node *transform_f1664006(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -43119,7 +43119,7 @@ static ir_node *transform_f1664009(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -43236,7 +43236,7 @@ static ir_node *transform_f1664012(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -43353,7 +43353,7 @@ static ir_node *transform_f1664015(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -43470,7 +43470,7 @@ static ir_node *transform_f1664018(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -43626,7 +43626,7 @@ static ir_node *transform_f1664021(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -43782,7 +43782,7 @@ static ir_node *transform_f1664024(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -43938,7 +43938,7 @@ static ir_node *transform_f1664027(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -44094,7 +44094,7 @@ static ir_node *transform_f1664030(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -44193,7 +44193,7 @@ static ir_node *transform_f1664033(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f1_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f2_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f3_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f1_node, f2_node, false); set_ia32_ls_mode(f3_node, mode_Is);
+ir_node *f3_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f1_node, f2_node, X86_SIZE_32, false);
 ir_node *f4_node = new_bd_ia32_Jcc(dbgi, block, f3_node, 2);
 new_node = f4_node;
 
@@ -44292,7 +44292,7 @@ static ir_node *transform_f1664036(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f17_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f18_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f19_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f17_node, f18_node, false); set_ia32_ls_mode(f19_node, mode_Is);
+ir_node *f19_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f17_node, f18_node, X86_SIZE_32, false);
 ir_node *f20_node = new_bd_ia32_Jcc(dbgi, block, f19_node, 6);
 new_node = f20_node;
 
@@ -44391,7 +44391,7 @@ static ir_node *transform_f1664039(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f5_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f6_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f7_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f5_node, f6_node, false); set_ia32_ls_mode(f7_node, mode_Is);
+ir_node *f7_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f5_node, f6_node, X86_SIZE_32, false);
 ir_node *f8_node = new_bd_ia32_Jcc(dbgi, block, f7_node, 3);
 new_node = f8_node;
 
@@ -44490,7 +44490,7 @@ static ir_node *transform_f1664042(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f21_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f22_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f23_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f21_node, f22_node, false); set_ia32_ls_mode(f23_node, mode_Is);
+ir_node *f23_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f21_node, f22_node, X86_SIZE_32, false);
 ir_node *f24_node = new_bd_ia32_Jcc(dbgi, block, f23_node, 7);
 new_node = f24_node;
 
@@ -44685,7 +44685,7 @@ static ir_node *transform_f1664045(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -44880,7 +44880,7 @@ static ir_node *transform_f1664048(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -44997,7 +44997,7 @@ static ir_node *transform_f1664051(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -45114,7 +45114,7 @@ static ir_node *transform_f1664054(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -45231,7 +45231,7 @@ static ir_node *transform_f1664057(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -45348,7 +45348,7 @@ static ir_node *transform_f1664060(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -45465,7 +45465,7 @@ static ir_node *transform_f1664063(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -45582,7 +45582,7 @@ static ir_node *transform_f1664066(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -45699,7 +45699,7 @@ static ir_node *transform_f1664069(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -45816,7 +45816,7 @@ static ir_node *transform_f1664072(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -45972,7 +45972,7 @@ static ir_node *transform_f1664075(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -46128,7 +46128,7 @@ static ir_node *transform_f1664078(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -46284,7 +46284,7 @@ static ir_node *transform_f1664081(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -46440,7 +46440,7 @@ static ir_node *transform_f1664084(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -46539,7 +46539,7 @@ static ir_node *transform_f1664087(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f17_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f18_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f19_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f17_node, f18_node, false); set_ia32_ls_mode(f19_node, mode_Is);
+ir_node *f19_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f17_node, f18_node, X86_SIZE_32, false);
 ir_node *f20_node = new_bd_ia32_Jcc(dbgi, block, f19_node, 6);
 new_node = f20_node;
 
@@ -46638,7 +46638,7 @@ static ir_node *transform_f1664090(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f21_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f22_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f23_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f21_node, f22_node, false); set_ia32_ls_mode(f23_node, mode_Is);
+ir_node *f23_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f21_node, f22_node, X86_SIZE_32, false);
 ir_node *f24_node = new_bd_ia32_Jcc(dbgi, block, f23_node, 7);
 new_node = f24_node;
 
@@ -46737,7 +46737,7 @@ static ir_node *transform_f1664093(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f5_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f6_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f7_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f5_node, f6_node, false); set_ia32_ls_mode(f7_node, mode_Is);
+ir_node *f7_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f5_node, f6_node, X86_SIZE_32, false);
 ir_node *f8_node = new_bd_ia32_Jcc(dbgi, block, f7_node, 3);
 new_node = f8_node;
 
@@ -46836,7 +46836,7 @@ static ir_node *transform_f1664096(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f1_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f2_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f3_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f1_node, f2_node, false); set_ia32_ls_mode(f3_node, mode_Is);
+ir_node *f3_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f1_node, f2_node, X86_SIZE_32, false);
 ir_node *f4_node = new_bd_ia32_Jcc(dbgi, block, f3_node, 2);
 new_node = f4_node;
 
@@ -47031,7 +47031,7 @@ static ir_node *transform_f1664099(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -47226,7 +47226,7 @@ static ir_node *transform_f1664102(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -47343,7 +47343,7 @@ static ir_node *transform_f1664105(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -47460,7 +47460,7 @@ static ir_node *transform_f1664108(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -47577,7 +47577,7 @@ static ir_node *transform_f1664111(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -47694,7 +47694,7 @@ static ir_node *transform_f1664114(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -47811,7 +47811,7 @@ static ir_node *transform_f1664117(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -47928,7 +47928,7 @@ static ir_node *transform_f1664120(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -48045,7 +48045,7 @@ static ir_node *transform_f1664123(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -48162,7 +48162,7 @@ static ir_node *transform_f1664126(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -48318,7 +48318,7 @@ static ir_node *transform_f1664129(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -48474,7 +48474,7 @@ static ir_node *transform_f1664132(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -48630,7 +48630,7 @@ static ir_node *transform_f1664135(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -48786,7 +48786,7 @@ static ir_node *transform_f1664138(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -48885,7 +48885,7 @@ static ir_node *transform_f1664141(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f17_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f18_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f19_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f17_node, f18_node, false); set_ia32_ls_mode(f19_node, mode_Is);
+ir_node *f19_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f17_node, f18_node, X86_SIZE_32, false);
 ir_node *f20_node = new_bd_ia32_Jcc(dbgi, block, f19_node, 6);
 new_node = f20_node;
 
@@ -48984,7 +48984,7 @@ static ir_node *transform_f1664144(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f5_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f6_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f7_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f5_node, f6_node, false); set_ia32_ls_mode(f7_node, mode_Is);
+ir_node *f7_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f5_node, f6_node, X86_SIZE_32, false);
 ir_node *f8_node = new_bd_ia32_Jcc(dbgi, block, f7_node, 3);
 new_node = f8_node;
 
@@ -49083,7 +49083,7 @@ static ir_node *transform_f1664147(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f1_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f2_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f3_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f1_node, f2_node, false); set_ia32_ls_mode(f3_node, mode_Is);
+ir_node *f3_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f1_node, f2_node, X86_SIZE_32, false);
 ir_node *f4_node = new_bd_ia32_Jcc(dbgi, block, f3_node, 2);
 new_node = f4_node;
 
@@ -49182,7 +49182,7 @@ static ir_node *transform_f1664150(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f21_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f22_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f23_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f21_node, f22_node, false); set_ia32_ls_mode(f23_node, mode_Is);
+ir_node *f23_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f21_node, f22_node, X86_SIZE_32, false);
 ir_node *f24_node = new_bd_ia32_Jcc(dbgi, block, f23_node, 7);
 new_node = f24_node;
 
@@ -49377,7 +49377,7 @@ static ir_node *transform_f1664153(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -49572,7 +49572,7 @@ static ir_node *transform_f1664156(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -49689,7 +49689,7 @@ static ir_node *transform_f1664159(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -49806,7 +49806,7 @@ static ir_node *transform_f1664162(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -49923,7 +49923,7 @@ static ir_node *transform_f1664165(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -50040,7 +50040,7 @@ static ir_node *transform_f1664168(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -50157,7 +50157,7 @@ static ir_node *transform_f1664171(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -50274,7 +50274,7 @@ static ir_node *transform_f1664174(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -50391,7 +50391,7 @@ static ir_node *transform_f1664177(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -50508,7 +50508,7 @@ static ir_node *transform_f1664180(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -50664,7 +50664,7 @@ static ir_node *transform_f1664183(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -50820,7 +50820,7 @@ static ir_node *transform_f1664186(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -50976,7 +50976,7 @@ static ir_node *transform_f1664189(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f29_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f30_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, false); set_ia32_ls_mode(f31_node, mode_Is);
+ir_node *f31_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f29_node, f30_node, X86_SIZE_32, false);
 ir_node *f32_node = new_bd_ia32_Jcc(dbgi, block, f31_node, 9);
 new_node = f32_node;
 
@@ -51132,7 +51132,7 @@ static ir_node *transform_f1664192(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f25_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f26_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, false); set_ia32_ls_mode(f27_node, mode_Is);
+ir_node *f27_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f25_node, f26_node, X86_SIZE_32, false);
 ir_node *f28_node = new_bd_ia32_Jcc(dbgi, block, f27_node, 8);
 new_node = f28_node;
 
@@ -51231,7 +51231,7 @@ static ir_node *transform_f1664195(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f21_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f22_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f23_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f21_node, f22_node, false); set_ia32_ls_mode(f23_node, mode_Is);
+ir_node *f23_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f21_node, f22_node, X86_SIZE_32, false);
 ir_node *f24_node = new_bd_ia32_Jcc(dbgi, block, f23_node, 7);
 new_node = f24_node;
 
@@ -51330,7 +51330,7 @@ static ir_node *transform_f1664198(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f17_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f18_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f19_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f17_node, f18_node, false); set_ia32_ls_mode(f19_node, mode_Is);
+ir_node *f19_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f17_node, f18_node, X86_SIZE_32, false);
 ir_node *f20_node = new_bd_ia32_Jcc(dbgi, block, f19_node, 6);
 new_node = f20_node;
 
@@ -51429,7 +51429,7 @@ static ir_node *transform_f1664201(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f1_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f2_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f3_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f1_node, f2_node, false); set_ia32_ls_mode(f3_node, mode_Is);
+ir_node *f3_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f1_node, f2_node, X86_SIZE_32, false);
 ir_node *f4_node = new_bd_ia32_Jcc(dbgi, block, f3_node, 2);
 new_node = f4_node;
 
@@ -51528,7 +51528,7 @@ static ir_node *transform_f1664204(ir_node *node, ir_node *block, dbg_info *dbgi
 	ir_node *new_node = NULL;
 	ir_node *f5_node = is_ia32_Immediate(var0) ? var0 : be_transform_node(var0);
 ir_node *f6_node = is_ia32_Immediate(var1) ? var1 : be_transform_node(var1);
-ir_node *f7_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f5_node, f6_node, false); set_ia32_ls_mode(f7_node, mode_Is);
+ir_node *f7_node = new_bd_ia32_Cmp(dbgi, block, noreg_GP, noreg_GP, nomem, f5_node, f6_node, X86_SIZE_32, false);
 ir_node *f8_node = new_bd_ia32_Jcc(dbgi, block, f7_node, 3);
 new_node = f8_node;
 
