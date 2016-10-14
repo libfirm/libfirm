@@ -583,9 +583,7 @@ static bool prevents_AM(ir_node *const block, ir_node *const am_candidate,
 		return false;
 
 	if (is_Sync(other)) {
-		int i;
-
-		for (i = get_Sync_n_preds(other) - 1; i >= 0; --i) {
+		for (int i = get_Sync_n_preds(other); i-- != 0;) {
 			ir_node *const pred = get_Sync_pred(other, i);
 
 			if (get_nodes_block(pred) != block)
@@ -602,16 +600,16 @@ static bool prevents_AM(ir_node *const block, ir_node *const am_candidate,
 		}
 
 		return false;
-	} else {
-		/* Do not block ourselves from getting eaten */
-		if (is_Proj(other) && get_Proj_pred(other) == am_candidate)
-			return false;
-
-		if (!heights_reachable_in_block(heights, other, am_candidate))
-			return false;
-
-		return true;
 	}
+
+	/* Do not block ourselves from getting eaten */
+	if (is_Proj(other) && get_Proj_pred(other) == am_candidate)
+		return false;
+
+	if (!heights_reachable_in_block(heights, other, am_candidate))
+		return false;
+
+	return true;
 }
 
 static bool cmp_can_use_sub_flags(ir_node *cmp, ir_node *sub, bool *swap)
@@ -711,9 +709,8 @@ static bool ia32_use_source_address_mode(ir_node *block, ir_node *node,
 			if (ia32_cg_config.use_sse2) {
 				if (is_simple_sse_Const(node))
 					return false;
-			} else {
-				if (is_simple_x87_Const(node))
-					return false;
+			} else if (is_simple_x87_Const(node)) {
+				return false;
 			}
 			if (get_irn_n_edges(node) > 1)
 				return false;
