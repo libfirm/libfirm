@@ -5658,6 +5658,12 @@ void ia32_transform_graph(ir_graph *irg)
 	int cse_last = get_opt_cse();
 	set_opt_cse(0);
 
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
+			         | IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+	                         | IR_GRAPH_PROPERTY_NO_TUPLES
+	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+
 	be_transform_graph(irg, ia32_pretransform_node);
 
 	set_opt_cse(cse_last);
