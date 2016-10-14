@@ -1079,7 +1079,7 @@ static void peephole_ia32_Rol(ir_node *node)
 void ia32_peephole_optimization(ir_graph *irg)
 {
 	/* we currently do it in 2 passes because:
-	 *    Lea -> Add could be usefull as flag producer for Test later
+	 *    Lea -> Add could be useful as flag producer for Test later
 	 */
 
 	/* pass 1 */
