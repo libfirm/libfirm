@@ -156,6 +156,8 @@ static ir_node *make_binop(ir_node *const node, cons_binop *const cons,
 	ir_node  *const binop = cons(dbgi, block, noreg, noreg, nomem, left, right,
 	                             size);
 	arch_set_irn_register_out(binop, pn_ia32_res, reg);
+	if (get_irn_mode(node) == mode_T)
+		set_irn_mode(binop, mode_T);
 	replace(node, binop);
 	return binop;
 }
@@ -266,6 +268,8 @@ static ir_node *make_not(ir_node *const xor, ir_node *(*const cons)(dbg_info*, i
 	ir_node  *const left  = get_irn_n(xor, n_ia32_Xor_left);
 	ir_node  *const not   = cons(dbgi, block, left, size);
 	arch_set_irn_register_out(not, pn_ia32_Not_res, reg);
+	if (get_irn_mode(xor) == mode_T)
+		set_irn_mode(not, mode_T);
 	replace(xor, not);
 	return not;
 }
