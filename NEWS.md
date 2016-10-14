@@ -42,6 +42,7 @@ libFirm 1.22.1 (2016-01-07)
 * amd64, arm: Avoid redundant sign/zero extension right before a store
 * amd64: Avoid redundant sign/zero extension for truncation
 * amd64: Mark floating point constants as candidates for rematerialization
+* amd64: Improve block schedule by removing empty basic blocks
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
