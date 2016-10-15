@@ -573,6 +573,18 @@ static ir_node *gen_Unknown(ir_node *node)
 	return res;
 }
 
+static bool prevents_AM_one(ir_node *const other, ir_node *const am_candidate)
+{
+	/* Do not block ourselves from getting eaten */
+	if (is_Proj(other) && get_Proj_pred(other) == am_candidate)
+		return false;
+
+	if (!heights_reachable_in_block(heights, other, am_candidate))
+		return false;
+
+	return true;
+}
+
 /**
  * Checks whether other node inputs depend on the am_candidate (via mem-proj).
  */
@@ -585,31 +597,14 @@ static bool prevents_AM(ir_node *const block, ir_node *const am_candidate,
 	if (is_Sync(other)) {
 		for (int i = get_Sync_n_preds(other); i-- != 0;) {
 			ir_node *const pred = get_Sync_pred(other, i);
-
-			if (get_nodes_block(pred) != block)
-				continue;
-
-			/* Do not block ourselves from getting eaten */
-			if (is_Proj(pred) && get_Proj_pred(pred) == am_candidate)
-				continue;
-
-			if (!heights_reachable_in_block(heights, pred, am_candidate))
-				continue;
-
-			return true;
+			if (get_nodes_block(pred) == block && prevents_AM_one(pred, am_candidate))
+				return true;
 		}
 
 		return false;
 	}
 
-	/* Do not block ourselves from getting eaten */
-	if (is_Proj(other) && get_Proj_pred(other) == am_candidate)
-		return false;
-
-	if (!heights_reachable_in_block(heights, other, am_candidate))
-		return false;
-
-	return true;
+	return prevents_AM_one(other, am_candidate);
 }
 
 static bool cmp_can_use_sub_flags(ir_node *cmp, ir_node *sub, bool *swap)
