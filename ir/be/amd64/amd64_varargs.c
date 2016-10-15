@@ -313,8 +313,6 @@ void amd64_lower_va_arg(ir_node *const node)
 	}
 	ir_node *const tuple_in[] = { mem, result };
 	turn_into_tuple(node, ARRAY_SIZE(tuple_in), tuple_in);
-
-	clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES | IR_GRAPH_PROPERTY_NO_BADS);
 }
 
 /*
