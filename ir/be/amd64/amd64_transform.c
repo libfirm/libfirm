@@ -398,13 +398,13 @@ ir_tarval *create_sign_tv(ir_mode *mode)
 	return tarval_bitcast(sign, mode);
 }
 
-static ir_node *gen_x87_Const(ir_node *const block, ir_tarval *tv)
+static ir_node *gen_x87_Const(dbg_info *const dbgi, ir_node *const block, ir_tarval *tv)
 {
 	/* TODO: avoid code duplication with ia32 backend */
 	if (tarval_is_null(tv)) {
-		return new_bd_amd64_fldz(NULL, block);
+		return new_bd_amd64_fldz(dbgi, block);
 	} else if (tarval_is_one(tv)) {
-		return new_bd_amd64_fld1(NULL, block);
+		return new_bd_amd64_fld1(dbgi, block);
 	} else {
 		ir_mode *mode = get_tarval_mode(tv);
 		/* try to reduce the mode to produce smaller sized entities */
@@ -424,7 +424,7 @@ static ir_node *gen_x87_Const(ir_node *const block, ir_tarval *tv)
 		x86_addr_t addr;
 		init_lconst_addr(&addr, entity);
 		x86_insn_size_t size = x86_size_from_mode(mode);
-		ir_node *load = new_bd_amd64_fld(NULL, block, ARRAY_SIZE(in), in,
+		ir_node *load = new_bd_amd64_fld(dbgi, block, ARRAY_SIZE(in), in,
 		                                 mem_reqs, size, AMD64_OP_ADDR, addr);
 		set_irn_pinned(load, false);
 		return be_new_Proj(load, pn_amd64_fld_res);
@@ -440,7 +440,7 @@ static ir_node *gen_Const(ir_node *const node)
 
 	if (!mode_needs_gp_reg(mode)) {
 		if (mode == x86_mode_E) {
-			return gen_x87_Const(block, tv);
+			return gen_x87_Const(dbgi, block, tv);
 		} else if (tarval_is_null(tv)) {
 			return new_bd_amd64_xorp_0(dbgi, block, X86_SIZE_64);
 		}
