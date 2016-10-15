@@ -31,7 +31,7 @@ libFirm 1.22.1 (2016-01-07)
 * api: Remove `get_{class,segment,struct,union}_{ident,name}()`, use `get_compound_{ident,name}()` instead
 * ir: Improve IR graph verifier
 * arm: Improve address mode use in instruction selection
-* ir: Slightly improve preservation of debug info during transformations
+* be, ir: Improve preservation of debug info during transformations
 * amd64: Improve use of `lea` in instruction selection
 * sparc: Support the asm constaint `K`
 * sparc: Support computed goto

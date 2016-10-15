@@ -79,9 +79,7 @@ static ir_entity *get_nonlazyptr(be_main_env_t *env, ir_entity *entity)
 	return result;
 }
 
-static ir_node *get_eip_relative(ir_graph *const irg,
-                                 x86_immediate_kind_t const kind,
-								 ir_entity *const entity)
+static ir_node *get_eip_relative(dbg_info *const dbgi, ir_graph *const irg, x86_immediate_kind_t const kind, ir_entity *const entity)
 {
 	/* Everything else is accessed relative to EIP. */
 	ir_node *const pic_base = ia32_get_pic_base(irg);
@@ -89,22 +87,21 @@ static ir_node *get_eip_relative(ir_graph *const irg,
 	set_irn_mode(pic_base, mode_P);
 	ir_node *const block    = get_irg_start_block(irg);
 	ir_mode *const offset_mode = get_reference_offset_mode(mode_P);
-	ir_node *reloc = be_new_Relocation(irg, (unsigned)kind, entity, offset_mode);
+	ir_node *const reloc       = be_new_Relocation(dbgi, irg, (unsigned)kind, entity, offset_mode);
 	/* All ok now for locally constructed stuff. */
-	ir_node *const add      = new_rd_Add(NULL, block, pic_base, reloc);
+	ir_node *const add         = new_rd_Add(dbgi, block, pic_base, reloc);
 	/* Make sure the walker doesn't visit this add again. */
 	mark_irn_visited(add);
 	return add;
 }
 
-static ir_node *get_table_load(ir_graph *irg, x86_immediate_kind_t const kind,
-                               ir_entity *const entity)
+static ir_node *get_table_load(dbg_info *const dbgi, ir_graph *const irg, x86_immediate_kind_t const kind, ir_entity *const entity)
 {
-	ir_node *const addr  = get_eip_relative(irg, kind, entity);
+	ir_node *const addr  = get_eip_relative(dbgi, irg, kind, entity);
 	ir_type *const type  = get_entity_type(entity);
 	ir_node *const nomem = get_irg_no_mem(irg);
 	ir_node *const block = get_irg_start_block(irg);
-	ir_node *const load  = new_rd_Load(NULL, block, nomem, addr, mode_P, type,
+	ir_node *const load  = new_rd_Load(dbgi, block, nomem, addr, mode_P, type,
 	                                   cons_floats);
 	return new_r_Proj(load, mode_P, pn_Load_res);
 }
@@ -119,8 +116,9 @@ static void fix_address_elf(ir_node *const node, void *const data)
 		if (is_tls_entity(entity))
 			continue;
 
-		ir_graph *const irg = get_irn_irg(node);
-		ir_node  *      res;
+		ir_node        *res;
+		dbg_info *const dbgi = get_irn_dbg_info(pred);
+		ir_graph *const irg  = get_irn_irg(node);
 		if (i == n_Call_ptr && is_Call(node)) {
 			/* Calls can jump to relative addresses, so we can directly jump to
 			 * the (relatively) known call address or the trampoline */
@@ -129,10 +127,10 @@ static void fix_address_elf(ir_node *const node, void *const data)
 				continue;
 
 			if (be_options.pic_style == BE_PIC_ELF_PLT) {
-				res = be_new_Relocation(irg, X86_IMM_PLT, entity, mode_P);
+				res = be_new_Relocation(dbgi, irg, X86_IMM_PLT, entity, mode_P);
 			} else {
 				assert(be_options.pic_style == BE_PIC_ELF_NO_PLT);
-				res = get_table_load(irg, X86_IMM_GOT, entity);
+				res = get_table_load(dbgi, irg, X86_IMM_GOT, entity);
 			}
 		} else {
 			ir_visibility const visibility = get_entity_visibility(entity);
@@ -140,9 +138,9 @@ static void fix_address_elf(ir_node *const node, void *const data)
 			 && visibility != ir_visibility_external_private) {
 				assert(visibility == ir_visibility_local
 				    || visibility == ir_visibility_private);
-				res = get_eip_relative(irg, X86_IMM_GOTOFF, entity);
+				res = get_eip_relative(dbgi, irg, X86_IMM_GOTOFF, entity);
 			} else {
-				res = get_table_load(irg, X86_IMM_GOT, entity);
+				res = get_table_load(dbgi, irg, X86_IMM_GOT, entity);
 			}
 		}
 		set_irn_n(node, i, res);
@@ -161,9 +159,10 @@ static void fix_address_macho(ir_node *const node, void *const data)
 		if (is_tls_entity(entity))
 			continue;
 
-		ir_graph      *const irg = get_irn_irg(node);
-		be_main_env_t *const be  = be_get_irg_main_env(irg);
 		ir_node             *res;
+		dbg_info      *const dbgi = get_irn_dbg_info(pred);
+		ir_graph      *const irg  = get_irn_irg(node);
+		be_main_env_t *const be   = be_get_irg_main_env(irg);
 		if (i == n_Call_ptr && is_Call(node)) {
 			/* Calls can jump to relative addresses, so we can directly jump to
 			 * the (relatively) known call address or the trampoline */
@@ -172,15 +171,15 @@ static void fix_address_macho(ir_node *const node, void *const data)
 				continue;
 
 			ir_entity *const trampoline = get_trampoline(be, entity);
-			res = be_new_Relocation(irg, X86_IMM_ADDR, trampoline, mode_P);
+			res = be_new_Relocation(dbgi, irg, X86_IMM_ADDR, trampoline, mode_P);
 		} else {
 			/* Everything else is accessed relative to EIP. */
 			if (entity_has_definition(entity)
 			 && !(get_entity_linkage(entity) & IR_LINKAGE_MERGE)) {
-				res = get_eip_relative(irg, X86_IMM_PICBASE_REL, entity);
+				res = get_eip_relative(dbgi, irg, X86_IMM_PICBASE_REL, entity);
 			} else {
 				ir_entity *const nonlazyptr = get_nonlazyptr(be, entity);
-				res = get_table_load(irg, X86_IMM_PICBASE_REL, nonlazyptr);
+				res = get_table_load(dbgi, irg, X86_IMM_PICBASE_REL, nonlazyptr);
 			}
 		}
 		set_irn_n(node, i, res);

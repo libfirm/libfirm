@@ -35,14 +35,14 @@ static bool is_externally_visible(ir_entity const *const entity)
 	panic("invalid visibility in %+F", entity);
 }
 
-static ir_node *create_gotpcrel_load(ir_graph  *irg, ir_entity *const entity)
+static ir_node *create_gotpcrel_load(dbg_info *const dbgi, ir_graph *const irg, ir_entity *const entity)
 {
 	ir_node *const addr
-		= be_new_Relocation(irg, X86_IMM_GOTPCREL, entity, mode_P);
+		= be_new_Relocation(dbgi, irg, X86_IMM_GOTPCREL, entity, mode_P);
 	ir_type *const type  = get_entity_type(entity);
 	ir_node *const nomem = get_irg_no_mem(irg);
 	ir_node *const block = get_irg_start_block(irg);
-	ir_node *const load  = new_rd_Load(NULL, block, nomem, addr, mode_P,
+	ir_node *const load  = new_rd_Load(dbgi, block, nomem, addr, mode_P,
 	                                   type, cons_floats);
 	return new_r_Proj(load, mode_P, pn_Load_res);
 }
@@ -57,17 +57,18 @@ static void fix_address_pic_mach_o(ir_node *const node, void *const data)
 		if (is_tls_entity(entity))
 			continue;
 
-		ir_graph *const irg = get_irn_irg(node);
-		ir_node  *      res;
+		ir_node        *res;
+		dbg_info *const dbgi = get_irn_dbg_info(pred);
+		ir_graph *const irg  = get_irn_irg(node);
 		if (i == n_Call_ptr && is_Call(node)) {
 			// Somehow we can always call PC relative. Are there trampolines
 			// involved?
-			res = be_new_Relocation(irg, X86_IMM_PCREL, entity, mode_P);
+			res = be_new_Relocation(dbgi, irg, X86_IMM_PCREL, entity, mode_P);
 		} else if (entity_has_definition(entity)
 		        && !(get_entity_linkage(entity) & IR_LINKAGE_MERGE)) {
-			res = be_new_Relocation(irg, X86_IMM_PCREL, entity, mode_P);
+			res = be_new_Relocation(dbgi, irg, X86_IMM_PCREL, entity, mode_P);
 		} else {
-			res = create_gotpcrel_load(irg, entity);
+			res = create_gotpcrel_load(dbgi, irg, entity);
 		}
 		set_irn_n(node, i, res);
 	}
@@ -83,6 +84,7 @@ static void fix_address_pic_elf(ir_node *const node, void *const data)
 		if (is_tls_entity(entity))
 			continue;
 
+		dbg_info *const dbgi        = get_irn_dbg_info(pred);
 		ir_graph *const irg         = get_irn_irg(node);
 		bool      const ext_visible = is_externally_visible(entity);
 		ir_node  *      res;
@@ -91,11 +93,11 @@ static void fix_address_pic_elf(ir_node *const node, void *const data)
 			 * goes through the PLT */
 			x86_immediate_kind_t const reloc
 				= ext_visible ? X86_IMM_PLT : X86_IMM_PCREL;
-			res = be_new_Relocation(irg, reloc, entity, mode_P);
+			res = be_new_Relocation(dbgi, irg, reloc, entity, mode_P);
 		} else if (!ext_visible) {
-			res = be_new_Relocation(irg, X86_IMM_PCREL, entity, mode_P);
+			res = be_new_Relocation(dbgi, irg, X86_IMM_PCREL, entity, mode_P);
 		} else {
-			res = create_gotpcrel_load(irg, entity);
+			res = create_gotpcrel_load(dbgi, irg, entity);
 		}
 		set_irn_n(node, i, res);
 	}

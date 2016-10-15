@@ -449,11 +449,10 @@ ir_node *be_new_Asm(dbg_info *const dbgi, ir_node *const block, int const n_ins,
 	return asmn;
 }
 
-ir_node *be_new_Relocation(ir_graph *irg, unsigned kind, ir_entity *entity,
-                           ir_mode *mode)
+ir_node *be_new_Relocation(dbg_info *const dbgi, ir_graph *const irg, unsigned const kind, ir_entity *const entity, ir_mode *const mode)
 {
 	ir_node *const block = get_irg_start_block(irg);
-	ir_node *const node  = new_ir_node(NULL, irg, block, op_be_Relocation,
+	ir_node *const node  = new_ir_node(dbgi, irg, block, op_be_Relocation,
 	                                   mode, 0, NULL);
 	be_relocation_attr_t *const attr
 		= (be_relocation_attr_t*)get_irn_generic_attr(node);

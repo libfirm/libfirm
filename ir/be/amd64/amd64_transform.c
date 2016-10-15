@@ -469,7 +469,7 @@ static ir_node *gen_Address(ir_node *const node)
 	return new_bd_amd64_mov_imm(dbgi, block, X86_SIZE_64, &imm);
 }
 
-static ir_node *create_picaddr_lea(ir_node *const block,
+static ir_node *create_picaddr_lea(dbg_info *const dbgi, ir_node *const block,
                                    x86_immediate_kind_t const kind,
                                    ir_entity *const entity)
 {
@@ -480,11 +480,12 @@ static ir_node *create_picaddr_lea(ir_node *const block,
 		},
 		.variant = X86_ADDR_RIP,
 	};
-	return new_bd_amd64_lea(NULL, block, 0, NULL, NULL, X86_SIZE_64, addr);
+	return new_bd_amd64_lea(dbgi, block, 0, NULL, NULL, X86_SIZE_64, addr);
 }
 
 static ir_node *gen_be_Relocation(ir_node *const node)
 {
+	dbg_info            *const dbgi   = get_irn_dbg_info(node);
 	ir_node             *const block  = be_transform_nodes_block(node);
 	ir_entity           *const entity = be_get_Relocation_entity(node);
 	x86_immediate_kind_t const kind
@@ -496,11 +497,11 @@ static ir_node *gen_be_Relocation(ir_node *const node)
 			.kind   = X86_IMM_ADDR,
 			.entity = entity,
 		};
-		return new_bd_amd64_mov_imm(NULL, block, X86_SIZE_64, &imm);
+		return new_bd_amd64_mov_imm(dbgi, block, X86_SIZE_64, &imm);
 	}
 	case X86_IMM_PCREL:
 	case X86_IMM_GOTPCREL: /* can GOTPCREL happen here? */
-		return create_picaddr_lea(block, kind, entity);
+		return create_picaddr_lea(dbgi, block, kind, entity);
 	default:
 		break;
 	}
@@ -1547,7 +1548,7 @@ static ir_node *gen_Switch(ir_node *const node)
 	x86_addr_t addr;
 	if (be_options.pic_style != BE_PIC_NONE) {
 		ir_node *const base
-			= create_picaddr_lea(new_block, X86_IMM_PCREL, entity);
+			= create_picaddr_lea(dbgi, new_block, X86_IMM_PCREL, entity);
 		ir_node *load_in[3];
 		int load_arity = 0;
 		int load_base = load_arity++;
