@@ -181,7 +181,8 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		if (tv == tarval_bad || tv == tarval_unknown) {
 			return place_conv(node, dest_mode);
 		} else {
-			return new_r_Const(irg, tv);
+			dbg_info *const dbgi = get_irn_dbg_info(node);
+			return new_rd_Const(dbgi, irg, tv);
 		}
 	}
 
