@@ -272,50 +272,46 @@ static ir_node *load_va_from_register_or_stack(dbg_info *dbgi, ir_node *block,
 	return phi;
 }
 
-void amd64_lower_va_arg(ir_node *node)
+void amd64_lower_va_arg(ir_node *const node)
 {
-	static const size_t n_gp_args  = 6;
-	static const size_t n_xmm_args = 8;
-	static const size_t gp_size    = 8;
-	static const size_t xmm_size   = 16;
+	const size_t n_gp_args  =  6;
+	const size_t n_xmm_args =  8;
+	const size_t gp_size    =  8;
+	const size_t xmm_size   = 16;
 
-	ir_type *restype = get_method_res_type(get_Builtin_type(node), 0);
-	ir_mode *resmode = get_type_mode(restype);
-	if (resmode == NULL) {
+	ir_type *const restype = get_method_res_type(get_Builtin_type(node), 0);
+	ir_mode       *resmode = get_type_mode(restype);
+	if (!resmode)
 		resmode = mode_P;
-	}
-	ir_mode *mode_long_double = get_type_mode(be_get_backend_param()->type_long_double);
 
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_graph *irg   = get_irn_irg(node);
-	ir_node  *block = get_nodes_block(node);
-	ir_node  *ap    = get_irn_n(node, pn_Builtin_max + 1);
-	ir_node  *mem   = get_Builtin_mem(node);
-	ir_node  *result;
-	if (resmode == mode_long_double) {
+	ir_node        *result;
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = get_nodes_block(node);
+	ir_node  *const ap    = get_irn_n(node, pn_Builtin_max + 1);
+	ir_node        *mem   = get_Builtin_mem(node);
+	if (resmode == get_type_mode(be_get_backend_param()->type_long_double)) {
 		result = load_va_from_stack(dbgi, block, resmode, restype, ap, &mem);
 	} else {
-		ir_node   *max;
 		ir_entity *offset_entity;
-		ir_node   *stride;
+		long       size;
+		long       maxv = n_gp_args * gp_size;
 		if (be_mode_needs_gp_reg(resmode)) {
-			max           = new_r_Const_long(irg, mode_Is, n_gp_args * gp_size);
 			offset_entity = va_list_members.gp_offset;
-			stride        = new_r_Const_long(irg, mode_Is, gp_size);
+			size          = gp_size;
 		} else if (mode_is_float(resmode)) {
-			max           = new_r_Const_long(irg, mode_Is,
-			                                 n_gp_args * gp_size + n_xmm_args * xmm_size);
 			offset_entity = va_list_members.xmm_offset;
-			stride        = new_r_Const_long(irg, mode_Is, xmm_size);
+			size          = xmm_size;
+			maxv         += n_xmm_args * xmm_size;
 		} else {
 			panic("amd64_lower_va_arg does not support mode %+F", resmode);
 		}
-		result = load_va_from_register_or_stack(dbgi, block,
-		                                        resmode, restype,
-		                                        max, offset_entity, stride,
-		                                        ap, &mem);
+		ir_mode  *const omode  = get_type_mode(get_entity_type(offset_entity));
+		ir_graph *const irg    = get_irn_irg(node);
+		ir_node  *const max    = new_r_Const_long(irg, omode, maxv);
+		ir_node  *const stride = new_r_Const_long(irg, omode, size);
+		result = load_va_from_register_or_stack(dbgi, block, resmode, restype, max, offset_entity, stride, ap, &mem);
 	}
-	ir_node *tuple_in[] = { mem, result };
+	ir_node *const tuple_in[] = { mem, result };
 	turn_into_tuple(node, ARRAY_SIZE(tuple_in), tuple_in);
 
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES | IR_GRAPH_PROPERTY_NO_BADS);
