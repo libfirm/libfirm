@@ -43,6 +43,7 @@ libFirm 1.22.1 (2016-01-07)
 * amd64: Avoid redundant sign/zero extension for truncation
 * amd64: Mark floating point constants as candidates for rematerialization
 * amd64: Improve block schedule by removing empty basic blocks
+* amd64: Use cltd/cqto for sign extension before a division
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)

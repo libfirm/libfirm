@@ -624,22 +624,6 @@ static bool needs_extension(ir_node *op)
 	return !be_upper_bits_clean(op, mode);
 }
 
-static ir_node *create_sar(dbg_info *dbgi, ir_node *const new_block,
-                           x86_insn_size_t size, ir_node *const value,
-                           int32_t immediate)
-{
-	amd64_shift_attr_t attr;
-	memset(&attr, 0, sizeof(attr));
-	attr.base.op_mode = AMD64_OP_SHIFT_IMM;
-	attr.base.size    = size;
-	attr.immediate    = immediate;
-	ir_node *in[1]    = { value };
-	ir_node *const sar = new_bd_amd64_sar(dbgi, new_block, ARRAY_SIZE(in), in,
-	                                      reg_reqs, &attr);
-	arch_set_irn_register_req_out(sar, 0, &amd64_requirement_gp_same_0);
-	return be_new_Proj(sar, pn_amd64_sar_res);
-}
-
 static bool use_address_matching(ir_mode *mode, match_flags_t flags,
                                  ir_node *block,
                                  ir_node *op1, ir_node *op2,
@@ -1190,8 +1174,11 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 	                        arch_register_req_t const**, x86_insn_size_t);
 	/* We have to extend the value to a 2nd register */
 	if (mode_is_signed(mode)) {
-		int32_t bits = x86_bytes_from_size(size) * 8;
-		upper_value = create_sar(dbgi, new_block, size, new_op1, bits-1);
+		if (size == X86_SIZE_64) {
+			upper_value = new_bd_amd64_cqto(dbgi, new_block, new_op1);
+		} else {
+			upper_value = new_bd_amd64_cltd(dbgi, new_block, new_op1);
+		}
 		constructor = new_bd_amd64_idiv;
 	} else {
 		ir_node *const xor0 = new_bd_amd64_xor_0(dbgi, new_block, X86_SIZE_32);

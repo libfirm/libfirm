@@ -122,6 +122,13 @@ my $binop_commutative = {
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 };
 
+my $sextop = {
+	in_reqs  => [ "rax" ],
+	out_reqs => [ "rdx" ],
+	ins      => [ "val" ],
+	init     => "arch_set_additional_pressure(res, &amd64_reg_classes[CLASS_amd64_gp], 1);",
+};
+
 my $divop = {
 	irn_flags => [ "modify_flags" ],
 	state     => "pinned",
@@ -334,6 +341,20 @@ add => {
 and => {
 	template => $binop_commutative,
 	emit     => "and%M %AM",
+},
+
+cltd => {
+	template => $sextop,
+	emit     => "cltd",
+	fixed    => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n"
+	           ."x86_insn_size_t size    = X86_SIZE_32;\n",
+},
+
+cqto => {
+	template => $sextop,
+	emit     => "cqto",
+	fixed    => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n"
+	           ."x86_insn_size_t size    = X86_SIZE_64;\n",
 },
 
 div => {
