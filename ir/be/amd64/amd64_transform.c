@@ -2554,13 +2554,18 @@ static ir_node *gen_Store(ir_node *const node)
 	return make_store_for_mode(mode, dbgi, block, arity, in, &attr, pinned);
 }
 
+static bool amd64_mode_needs_gp_reg(ir_mode *const mode)
+{
+	return be_mode_needs_gp_reg(mode) && mode != amd64_mode_xmm;
+}
+
 ir_node *amd64_new_spill(ir_node *const value, ir_node *const after)
 {
 	x86_insn_size_t             size;
 	construct_binop_func        cons;
 	arch_register_req_t const **reqs;
 	ir_mode            *const   mode = get_irn_mode(value);
-	if (!mode_is_float(mode) && mode != amd64_mode_xmm) {
+	if (amd64_mode_needs_gp_reg(mode)) {
 		size = X86_SIZE_64;
 		cons = &new_bd_amd64_mov_store;
 		reqs = reg_reg_mem_reqs;
@@ -2630,20 +2635,18 @@ ir_node *amd64_new_reload(ir_node *value, ir_node *spill, ir_node *before)
 	unsigned        pn_res;
 	create_mov_func cons;
 	x86_insn_size_t size;
-	if (mode_is_float(mode) || mode == amd64_mode_xmm) {
-		if (mode == x86_mode_E) {
-			size   = X86_SIZE_80;
-			cons   = &new_bd_amd64_fld;
-			pn_res = pn_amd64_fld_res;
-		} else {
-			size   = X86_SIZE_128;
-			cons   = &create_sse_spill;
-			pn_res = pn_amd64_movdqu_res;
-		}
-	} else {
+	if (amd64_mode_needs_gp_reg(mode)) {
 		size   = X86_SIZE_64;
 		cons   = &new_bd_amd64_mov_gp;
 		pn_res = pn_amd64_mov_gp_res;
+	} else if (mode == x86_mode_E) {
+		size   = X86_SIZE_80;
+		cons   = &new_bd_amd64_fld;
+		pn_res = pn_amd64_fld_res;
+	} else {
+		size   = X86_SIZE_128;
+		cons   = &create_sse_spill;
+		pn_res = pn_amd64_movdqu_res;
 	}
 	ir_node *const load = cons(NULL, block, ARRAY_SIZE(in), in, reg_mem_reqs,
 	                           size, AMD64_OP_ADDR, addr);
