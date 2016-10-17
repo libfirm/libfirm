@@ -1688,6 +1688,24 @@ static ir_node *gen_Return(ir_node *const node)
 	return ret;
 }
 
+static int make_store_value(amd64_binop_addr_attr_t *const attr, ir_mode *const mode, ir_node *val, ir_node **const in)
+{
+	int arity = 0;
+	if (!mode_needs_gp_reg(mode)) {
+		goto store_reg;
+	} else if (match_immediate_32(&attr->u.immediate, val, false)) {
+		attr->base.base.op_mode = AMD64_OP_ADDR_IMM;
+	} else {
+		val = be_skip_downconv(val, false);
+store_reg:
+		attr->base.base.op_mode = AMD64_OP_ADDR_REG;
+		int const reg_input = arity++;
+		in[reg_input]     = be_transform_node(val);
+		attr->u.reg_input = reg_input;
+	}
+	return arity;
+}
+
 static ir_node *make_store_for_mode(ir_mode *const mode, dbg_info *const dbgi, ir_node *const block, int const arity, ir_node *const *const in, amd64_binop_addr_attr_t const *const attr, bool const pinned)
 {
 	construct_binop_func               cons;
@@ -1828,44 +1846,43 @@ no_call_mem:;
 
 	/* parameters */
 	for (size_t p = 0; p < n_params; ++p) {
-		ir_node                  *value = get_Call_param(node, p);
-		const reg_or_stackslot_t *param = &cconv->parameters[p];
-
-		ir_node *new_value = be_transform_node(value);
+		ir_node                  *const value = get_Call_param(node, p);
+		reg_or_stackslot_t const *const param = &cconv->parameters[p];
 
 		/* put value into registers */
 		if (param->reg != NULL) {
-			in[in_arity]     = new_value;
+			in[in_arity]     = be_transform_node(value);
 			in_req[in_arity] = param->reg->single_req;
 			++in_arity;
-			continue;
-		}
+		} else {
+			ir_mode *mode = get_type_mode(get_method_param_type(type, p));
+			x86_insn_size_t size = x86_size_from_mode(mode);
+			if (size < X86_SIZE_32)
+				size = X86_SIZE_32;
 
-		ir_mode *mode  = get_type_mode(get_method_param_type(type, p));
-		x86_insn_size_t size = x86_size_from_mode(mode);
-		if (size < X86_SIZE_32)
-			size = X86_SIZE_32;
-
-		/* we need a store if we're here */
-		amd64_binop_addr_attr_t attr = {
-			.base = {
+			amd64_binop_addr_attr_t attr = {
 				.base = {
-					.op_mode = AMD64_OP_ADDR_REG,
-					.size    = size,
-				},
-				.addr = {
-					.immediate = {
-						.kind   = X86_IMM_VALUE,
-						.offset = param->offset,
+					.base = {
+						.size = size,
 					},
-					.variant    = X86_ADDR_BASE,
-					.base_input = 1,
+					.addr = {
+						.immediate = {
+							.kind   = X86_IMM_VALUE,
+							.offset = param->offset,
+						},
+						.variant = X86_ADDR_BASE,
+					},
 				},
-			},
-		};
-		ir_node *const nomem = get_irg_no_mem(irg);
-		ir_node *const in[]  = { new_value, callframe, nomem };
-		sync_ins[sync_arity++] = make_store_for_mode(mode, dbgi, new_block, ARRAY_SIZE(in), in, &attr, false);
+			};
+
+			ir_node *in[3];
+			int      arity = make_store_value(&attr, mode, value, in);
+
+			attr.base.addr.base_input = arity;
+			in[arity++]               = callframe;
+			in[arity++]               = get_irg_no_mem(irg);
+			sync_ins[sync_arity++]    = make_store_for_mode(mode, dbgi, new_block, arity, in, &attr, false);
+		}
 	}
 
 	/* memory input */
@@ -2516,28 +2533,14 @@ static ir_node *gen_Store(ir_node *const node)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_node  *const block = be_transform_nodes_block(node);
-	ir_node        *val   = get_Store_value(node);
+	ir_node  *const val   = get_Store_value(node);
 	ir_mode  *const mode  = get_irn_mode(val);
 
 	amd64_binop_addr_attr_t attr;
 	memset(&attr, 0, sizeof(attr));
 
-
 	ir_node *in[4];
-	int      arity = 0;
-
-	if (!mode_needs_gp_reg(mode)) {
-		goto store_reg;
-	} else if (match_immediate_32(&attr.u.immediate, val, false)) {
-		attr.base.base.op_mode = AMD64_OP_ADDR_IMM;
-	} else {
-		val = be_skip_downconv(val, false);
-store_reg:
-		attr.base.base.op_mode = AMD64_OP_ADDR_REG;
-		int reg_input    = arity++;
-		in[reg_input]    = be_transform_node(val);
-		attr.u.reg_input = reg_input;
-	}
+	int      arity = make_store_value(&attr, mode, val, in);
 
 	ir_node *ptr     = get_Store_ptr(node);
 	perform_address_matching(ptr, &arity, in, &attr.base.addr);
