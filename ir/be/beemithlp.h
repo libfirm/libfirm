@@ -39,7 +39,7 @@ void be_init_emitters(void);
 void be_emit_nothing(ir_node const *node);
 
 /**
- * Emit code for a node by calling a handler registeres with be_set_emitter().
+ * Emit code for a node by calling a handler registered with be_set_emitter().
  */
 void be_emit_node(ir_node const *node);
 

@@ -44,17 +44,6 @@ static pmap         *delay_slots;
 
 static bool emitting_delay_slot;
 
-/**
- * indent before instruction. (Adds additional indentation when emitting
- * delay slots)
- */
-static void sparc_emit_indent(void)
-{
-	be_emit_char('\t');
-	if (emitting_delay_slot)
-		be_emit_char(' ');
-}
-
 static void sparc_emit_immediate(int32_t value, ir_entity *entity)
 {
 	if (entity == NULL) {
@@ -535,19 +524,7 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 
 void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 {
-	va_list ap;
-	va_start(ap, fmt);
-	sparc_emit_indent();
-	for (;;) {
-		char const *start = fmt;
-
-		while (*fmt != '%' && *fmt != '\0')
-			++fmt;
-		be_emit_string_len(start, fmt - start);
-		if (*fmt == '\0')
-			break;
-		++fmt;
-
+	BE_EMITF(node, fmt, ap, emitting_delay_slot) {
 		bool plus = false;
 		if (*fmt == '+') {
 			plus = true;
@@ -555,10 +532,6 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 		}
 
 		switch (*fmt++) {
-		case '%':
-			be_emit_char('%');
-			break;
-
 		case 'A': {
 			const sparc_jmp_cond_attr_t *attr
 				= get_sparc_jmp_cond_attr_const(node);
@@ -680,8 +653,6 @@ unknown:
 			panic("unknown format conversion in sparc_emitf()");
 		}
 	}
-	be_emit_finish_line_gas(node);
-	va_end(ap);
 }
 
 /**

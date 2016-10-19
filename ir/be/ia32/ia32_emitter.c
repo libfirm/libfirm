@@ -341,34 +341,8 @@ static void ia32_emit_am(ir_node const *const node)
 
 void ia32_emitf(ir_node const *const node, char const *fmt, ...)
 {
-	va_list ap;
-	va_start(ap, fmt);
-
-	be_emit_char('\t');
-	for (;;) {
-		const char      *start = fmt;
-		ia32_emit_mod_t  mod   = EMIT_NONE;
-
-		while (*fmt != '%' && *fmt != '\n' && *fmt != '\0')
-			++fmt;
-		if (fmt != start) {
-			be_emit_string_len(start, fmt - start);
-		}
-
-		if (*fmt == '\n') {
-			be_emit_char('\n');
-			be_emit_write_line();
-			be_emit_char('\t');
-			++fmt;
-			if (*fmt == '\0')
-				break;
-			continue;
-		}
-
-		if (*fmt == '\0')
-			break;
-
-		++fmt;
+	BE_EMITF(node, fmt, ap, false) {
+		ia32_emit_mod_t mod = EMIT_NONE;
 		for (;;) {
 			switch (*fmt) {
 			case '*': mod |= EMIT_ALTERNATE_AM; break;
@@ -388,10 +362,6 @@ end_of_mods:
 		switch (*fmt++) {
 			arch_register_t const *reg;
 			ir_node         const *imm;
-
-			case '%':
-				be_emit_char('%');
-				break;
 
 			case 'A': {
 				switch (*fmt++) {
@@ -627,9 +597,6 @@ unknown:
 				panic("unknown format conversion");
 		}
 	}
-
-	be_emit_finish_line_gas(node);
-	va_end(ap);
 }
 
 /**

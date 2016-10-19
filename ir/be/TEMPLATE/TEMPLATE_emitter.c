@@ -63,23 +63,8 @@ static void TEMPLATE_emit_cfop_target(const ir_node *node)
 
 void TEMPLATE_emitf(const ir_node *node, const char *format, ...)
 {
-	va_list ap;
-	va_start(ap, format);
-	be_emit_char('\t');
-	for (;;) {
-		const char *start = format;
-		while (*format != '%' && *format != '\0')
-			++format;
-		be_emit_string_len(start, format-start);
-		if (*format == '\0')
-			break;
-		++format;
-
+	BE_EMITF(node, format, ap, false) {
 		switch (*format++) {
-		case '%':
-			be_emit_char('%');
-			break;
-
 		case 'S': {
 			if (!is_digit(*format))
 				goto unknown;
@@ -129,20 +114,11 @@ void TEMPLATE_emitf(const ir_node *node, const char *format, ...)
 			break;
 		}
 
-		case '\n':
-			be_emit_char('\n');
-			be_emit_write_line();
-			be_emit_char('\t');
-			break;
-
 		default:
 unknown:
 			panic("unknown format conversion");
 		}
 	}
-	va_end(ap);
-	be_emit_finish_line_gas(node);
-
 }
 
 /**

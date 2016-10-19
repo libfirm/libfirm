@@ -237,33 +237,8 @@ static void arm_emit_cfop_target(const ir_node *irn)
 
 void arm_emitf(const ir_node *node, const char *format, ...)
 {
-	va_list ap;
-	va_start(ap, format);
-	be_emit_char('\t');
-	for (;;) {
-		const char *start = format;
-		while (*format != '%' && *format != '\n'  && *format != '\0')
-			++format;
-		be_emit_string_len(start, format - start);
-
-		if (*format == '\0')
-			break;
-
-		if (*format == '\n') {
-			++format;
-			be_emit_char('\n');
-			be_emit_write_line();
-			be_emit_char('\t');
-			continue;
-		}
-
-		++format;
-
+	BE_EMITF(node, format, ap, false) {
 		switch (*format++) {
-		case '%':
-			be_emit_char('%');
-			break;
-
 		case 'A':
 			arm_emit_address_mode(node);
 			break;
@@ -357,8 +332,6 @@ unknown:
 			panic("unknown format conversion");
 		}
 	}
-	va_end(ap);
-	be_emit_finish_line_gas(node);
 }
 
 static ent_or_tv_t *get_ent_or_tv_entry(const ent_or_tv_t *key)

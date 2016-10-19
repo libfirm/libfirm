@@ -96,4 +96,25 @@ static inline size_t be_emit_get_column(void)
 	return obstack_object_size(&emit_obst);
 }
 
+#define BE_EMITF(node, fmt, ap, in_delay_slot) \
+	va_list ap; \
+	va_start(ap, fmt); \
+	be_emit_char('\t'); \
+	if (in_delay_slot) \
+		be_emit_char(' '); \
+	for (size_t n;;) \
+		if (n = strcspn(fmt, "\n%"), be_emit_string_len(fmt, n), fmt += n, *fmt == '\0') { \
+			be_emit_finish_line_gas(node); \
+			va_end(ap); \
+			break; \
+		} else if (*fmt == '\n') { \
+			++fmt; \
+			be_emit_char('\n'); \
+			be_emit_write_line(); \
+			be_emit_char('\t'); \
+		} else if (*++fmt == '%') { \
+			++fmt; \
+			be_emit_char('%'); \
+		} else
+
 #endif
