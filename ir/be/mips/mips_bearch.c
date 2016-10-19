@@ -9,6 +9,7 @@
 #include "gen_mips_new_nodes.h"
 #include "gen_mips_regalloc_if.h"
 #include "irprog_t.h"
+#include "lower_dw.h"
 #include "mips_bearch_t.h"
 #include "mips_emitter.h"
 #include "mips_transform.h"
@@ -91,8 +92,25 @@ static void mips_generate_code(FILE *const output, char const *const cup_name)
 	be_finish();
 }
 
+static void mips_lower64(void)
+{
+	ir_mode *const word_unsigned = mips_reg_classes[CLASS_mips_gp].mode;
+	ir_mode *const word_signed   = find_signed_mode(word_unsigned);
+	lwrdw_param_t lower_dw_params = {
+		.create_intrinsic = NULL, // TODO
+		.word_unsigned    = word_unsigned,
+		.word_signed      = word_signed,
+		.doubleword_size  = 64,
+		.big_endian       = be_is_big_endian(),
+	};
+
+	ir_prepare_dw_lowering(&lower_dw_params);
+	ir_lower_dw_ops();
+}
+
 static void mips_lower_for_target(void)
 {
+	mips_lower64();
 }
 
 static unsigned mips_get_op_estimated_cost(ir_node const *const node)
