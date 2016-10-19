@@ -53,6 +53,24 @@ static ir_node *get_Start_sp(ir_graph *const irg)
 	return be_get_Start_proj(irg, &mips_registers[REG_SP]);
 }
 
+static ir_node *get_Start_zero(ir_graph *const irg)
+{
+	return be_get_Start_proj(irg, &mips_registers[REG_ZERO]);
+}
+
+static ir_node *gen_Const(ir_node *const node)
+{
+	ir_mode *const mode = get_irn_mode(node);;
+	if (be_mode_needs_gp_reg(mode)) {
+		long const val = get_Const_long(node);
+		if (val == 0) {
+			ir_graph *const irg = get_irn_irg(node);
+			return get_Start_zero(irg);
+		}
+	}
+	panic("TODO");
+}
+
 static ir_node *gen_Proj_Start(ir_node *const node)
 {
 	ir_graph *const irg = get_irn_irg(node);
@@ -84,8 +102,25 @@ static ir_node *gen_Return(ir_node *const node)
 	in[n_mips_jr_addr]    = be_get_Start_proj(irg, &mips_registers[REG_RA]);
 	reqs[n_mips_jr_addr]  = &mips_class_reg_req_gp;
 
-	if (n_res != 0)
-		panic("return values not supported yet");
+	if (n_res != 0) {
+		static arch_register_req_t const *const res_reqs[] = {
+			&mips_single_reg_req_gp_v0,
+			&mips_single_reg_req_gp_v1,
+		};
+		if (n_res > ARRAY_SIZE(res_reqs))
+			panic("too many return values");
+		for (size_t i = 0; i != n_res; ++i) {
+			ir_node *const res  = get_Return_res(node, i);
+			ir_mode *const mode = get_irn_mode(res);
+			if (be_mode_needs_gp_reg(mode)) {
+				in[p]   = be_transform_node(res);
+				reqs[p] = res_reqs[i];
+				++p;
+			} else {
+				panic("only gp return values supported yet");
+			}
+		}
+	}
 
 	for (size_t i = 0; i != ARRAY_SIZE(callee_saves); ++i) {
 		arch_register_t const *const reg = &mips_registers[callee_saves[i]];
@@ -121,6 +156,7 @@ static void mips_register_transformers(void)
 {
 	be_start_transform_setup();
 
+	be_set_transform_function(op_Const,  gen_Const);
 	be_set_transform_function(op_Return, gen_Return);
 	be_set_transform_function(op_Start,  gen_Start);
 

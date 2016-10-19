@@ -16,6 +16,7 @@
 /**
  * fmt  parameter               output
  * ---- ----------------------  ---------------------------------------------
+ * %R   arch_register_t const*  register
  * %Sx  <node>                  source register x
  *
  * x starts at 0
