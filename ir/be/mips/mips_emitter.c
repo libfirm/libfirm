@@ -28,6 +28,10 @@ void mips_emitf(ir_node const *const node, char const *fmt, ...)
 {
 	BE_EMITF(node, fmt, ap, false) {
 		switch (*fmt++) {
+		case 'R':
+			emit_register(va_arg(ap, arch_register_t const*));
+			break;
+
 		case 'S': {
 			if (!is_digit(*fmt))
 				goto unknown;
@@ -43,10 +47,27 @@ unknown:
 	}
 }
 
+static void emit_be_Copy(ir_node const *const node)
+{
+	ir_node               *const op  = be_get_Copy_op(node);
+	arch_register_t const *const in  = arch_get_irn_register(op);
+	arch_register_t const *const out = arch_get_irn_register(node);
+	if (in == out)
+		return;
+
+	if (in->cls == &mips_reg_classes[CLASS_mips_gp]) {
+		mips_emitf(node, "move\t%R, %R", out, in);
+	} else {
+		panic("unexpected register class");
+	}
+}
+
 static void mips_register_emitters(void)
 {
 	be_init_emitters();
 	mips_register_spec_emitters();
+
+	be_set_emitter(op_be_Copy, emit_be_Copy);
 }
 
 static void mips_gen_block(ir_node *const block)

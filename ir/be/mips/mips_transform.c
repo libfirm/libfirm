@@ -10,9 +10,12 @@
 #include "betranshlp.h"
 #include "gen_mips_new_nodes.h"
 #include "gen_mips_regalloc_if.h"
+#include "mips_cconv.h"
 #include "nodes.h"
 #include "panic.h"
 #include "util.h"
+
+static mips_calling_convention_t cur_cconv;
 
 static be_stack_env_t stack_env;
 
@@ -53,6 +56,24 @@ static ir_node *get_Start_sp(ir_graph *const irg)
 	return be_get_Start_proj(irg, &mips_registers[REG_SP]);
 }
 
+static ir_node *get_Start_zero(ir_graph *const irg)
+{
+	return be_get_Start_proj(irg, &mips_registers[REG_ZERO]);
+}
+
+static ir_node *gen_Const(ir_node *const node)
+{
+	ir_mode *const mode = get_irn_mode(node);;
+	if (be_mode_needs_gp_reg(mode)) {
+		long const val = get_Const_long(node);
+		if (val == 0) {
+			ir_graph *const irg = get_irn_irg(node);
+			return get_Start_zero(irg);
+		}
+	}
+	panic("TODO");
+}
+
 static ir_node *gen_Proj_Start(ir_node *const node)
 {
 	ir_graph *const irg = get_irn_irg(node);
@@ -84,8 +105,13 @@ static ir_node *gen_Return(ir_node *const node)
 	in[n_mips_ret_addr]    = be_get_Start_proj(irg, &mips_registers[REG_RA]);
 	reqs[n_mips_ret_addr]  = &mips_class_reg_req_gp;
 
-	if (n_res != 0)
-		panic("return values not supported yet");
+	mips_reg_or_slot_t *const results = cur_cconv.results;
+	for (size_t i = 0; i != n_res; ++i) {
+		ir_node *const res = get_Return_res(node, i);
+		in[p]   = be_transform_node(res);
+		reqs[p] = results[i].reg->single_req;
+		++p;
+	}
 
 	for (size_t i = 0; i != ARRAY_SIZE(callee_saves); ++i) {
 		arch_register_t const *const reg = &mips_registers[callee_saves[i]];
@@ -121,6 +147,7 @@ static void mips_register_transformers(void)
 {
 	be_start_transform_setup();
 
+	be_set_transform_function(op_Const,  gen_Const);
 	be_set_transform_function(op_Return, gen_Return);
 	be_set_transform_function(op_Start,  gen_Start);
 
@@ -147,6 +174,12 @@ void mips_transform_graph(ir_graph *const irg)
 	mips_register_transformers();
 	mips_set_allocatable_regs(irg);
 	be_stack_init(&stack_env);
+
+	ir_entity *const fun_ent  = get_irg_entity(irg);
+	ir_type   *const fun_type = get_entity_type(fun_ent);
+	mips_determine_calling_convention(&cur_cconv, fun_type);
 	be_transform_graph(irg, NULL);
+	mips_free_calling_convention(&cur_cconv);
+
 	be_stack_finish(&stack_env);
 }
