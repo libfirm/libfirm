@@ -16,6 +16,8 @@
 /**
  * fmt  parameter               output
  * ---- ----------------------  ---------------------------------------------
+ * %Dx  <node>                  destination register x
+ * %I   <node>                  immediate
  * %R   arch_register_t const*  register
  * %Sx  <node>                  source register x
  *

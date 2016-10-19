@@ -61,14 +61,45 @@ static ir_node *get_Start_zero(ir_graph *const irg)
 	return be_get_Start_proj(irg, &mips_registers[REG_ZERO]);
 }
 
+static inline bool is_simm16(long const val)
+{
+	return -32768 <= val && val < 32768;
+}
+
+static inline bool is_uimm16(long const val)
+{
+	return 0 <= val && val < 65536;
+}
+
 static ir_node *gen_Const(ir_node *const node)
 {
-	ir_mode *const mode = get_irn_mode(node);;
+	ir_mode *const mode = get_irn_mode(node);
 	if (be_mode_needs_gp_reg(mode)) {
 		long const val = get_Const_long(node);
 		if (val == 0) {
 			ir_graph *const irg = get_irn_irg(node);
 			return get_Start_zero(irg);
+		} else if (is_simm16(val)) {
+			dbg_info *const dbgi  = get_irn_dbg_info(node);
+			ir_node  *const block = be_transform_nodes_block(node);
+			ir_graph *const irg   = get_irn_irg(node);
+			ir_node  *const zero  = get_Start_zero(irg);
+			return new_bd_mips_addiu(dbgi, block, zero, val);
+		} else {
+			ir_node        *res;
+			dbg_info *const dbgi  = get_irn_dbg_info(node);
+			ir_node  *const block = be_transform_nodes_block(node);
+			int32_t   const hi    = (uint32_t)val >> 16;
+			if (hi != 0) {
+				res = new_bd_mips_lui(dbgi, block, hi);
+			} else {
+				ir_graph *const irg = get_irn_irg(node);
+				res = get_Start_zero(irg);
+			}
+			int32_t const lo = val & 0xFFFF;
+			if (lo != 0)
+				res = new_bd_mips_ori(dbgi, block, res, lo);
+			return res;
 		}
 	}
 	panic("TODO");

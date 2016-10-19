@@ -46,9 +46,34 @@ my $mode_gp = "mode_Iu"; # TODO
 %init_attr = (
 	mips_attr_t =>
 		"be_info_init_irn(res, irn_flags, in_reqs, n_res);",
+	mips_immediate_attr_t =>
+		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
+		"\tattr->val = val;",
 );
 
+my $immediateOp = {
+	irn_flags => [ "rematerializable" ],
+	in_reqs   => [ "cls-gp" ],
+	out_reqs  => [ "cls-gp" ],
+	ins       => [ "left" ],
+	outs      => [ "res" ],
+	attr_type => "mips_immediate_attr_t",
+	attr      => "int32_t const val",
+	emit      => "{name}\t%D0, %S0, %I",
+};
+
 %nodes = (
+
+addiu => { template => $immediateOp },
+
+lui => {
+	template  => $immediateOp,
+	in_reqs   => [],
+	ins       => [],
+	emit      => "lui\t%D0, %I",
+},
+
+ori => { template => $immediateOp },
 
 ret => {
 	state    => "pinned",
