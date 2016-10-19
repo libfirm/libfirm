@@ -5,6 +5,8 @@
 
 #include "mips_emitter.h"
 
+#include <inttypes.h>
+
 #include "bearch.h"
 #include "beblocksched.h"
 #include "beemithlp.h"
@@ -18,6 +20,12 @@
 #include "panic.h"
 #include "util.h"
 
+static void emit_immediate(ir_node const *const node)
+{
+	mips_immediate_attr_t const *const imm = get_mips_immediate_attr_const(node);
+	be_emit_irprintf("%" PRId32, imm->val);
+}
+
 static void emit_register(arch_register_t const *const reg)
 {
 	be_emit_char('$');
@@ -28,6 +36,16 @@ void mips_emitf(ir_node const *const node, char const *fmt, ...)
 {
 	BE_EMITF(node, fmt, ap, false) {
 		switch (*fmt++) {
+		case 'D': {
+			if (!is_digit(*fmt))
+				goto unknown;
+			unsigned const pos = *fmt++ - '0';
+			emit_register(arch_get_irn_register_out(node, pos));
+			break;
+		}
+
+		case 'I': emit_immediate(node); break;
+
 		case 'R':
 			emit_register(va_arg(ap, arch_register_t const*));
 			break;
