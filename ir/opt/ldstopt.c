@@ -745,6 +745,36 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c)
 	return res;
 }
 
+static ir_entity *find_entity(ir_node *ptr)
+{
+	switch (get_irn_opcode(ptr)) {
+	case iro_Address:
+		return get_Address_entity(ptr);
+
+	case iro_Offset:
+		return get_Offset_entity(ptr);
+
+	case iro_Member: {
+		ir_node *pred = get_Member_ptr(ptr);
+		if (get_irg_frame(get_irn_irg(ptr)) == pred)
+			return get_Member_entity(ptr);
+
+		return find_entity(pred);
+	}
+
+	case iro_Add: {
+		ir_node *const right = get_Add_right(ptr);
+		if (mode_is_reference(get_irn_mode(right)))
+			return find_entity(right);
+	} /* FALLTHROUGH */
+	case iro_Sub:
+		return find_entity(get_binop_left(ptr));
+
+	default:
+		return NULL;
+	}
+}
+
 /**
  * optimize a Load
  *
@@ -772,6 +802,25 @@ static changes_t optimize_load(ir_node *load)
 		exchange(info->projs[pn_Load_M], mem);
 		kill_and_reduce_usage(load);
 		return res | DF_CHANGED;
+	}
+
+	/* a load from an entity which is never written to can be replaced by
+	 * the value of the entity's initializer. */
+	ir_entity *entity = find_entity(ptr);
+	if (entity != NULL && get_entity_kind(entity) == IR_ENTITY_NORMAL
+	    && !(get_entity_usage(entity) & ir_usage_write)) {
+
+		set_entity_linkage(entity, IR_LINKAGE_CONSTANT);
+		ir_node *ptr  = get_Load_ptr(load);
+		ir_mode *mode = get_Load_mode(load);
+		ir_node *val  = predict_load(ptr, mode);
+		if (val != NULL) {
+			ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
+			exchange(info->projs[pn_Load_res], val);
+			exchange(info->projs[pn_Load_M], get_Load_mem(load));
+			kill_and_reduce_usage(load);
+			return DF_CHANGED;
+		}
 	}
 
 	track_load_env_t env = { .ptr = ptr };
@@ -968,36 +1017,6 @@ static changes_t follow_store_mem_chain(ir_node *store, ir_node *start,
 		}
 	}
 	return res;
-}
-
-static ir_entity *find_entity(ir_node *ptr)
-{
-	switch (get_irn_opcode(ptr)) {
-	case iro_Address:
-		return get_Address_entity(ptr);
-
-	case iro_Offset:
-		return get_Offset_entity(ptr);
-
-	case iro_Member: {
-		ir_node *pred = get_Member_ptr(ptr);
-		if (get_irg_frame(get_irn_irg(ptr)) == pred)
-			return get_Member_entity(ptr);
-
-		return find_entity(pred);
-	}
-
-	case iro_Add: {
-		ir_node *const right = get_Add_right(ptr);
-		if (mode_is_reference(get_irn_mode(right)))
-			return find_entity(right);
-	} /* FALLTHROUGH */
-	case iro_Sub:
-		return find_entity(get_binop_left(ptr));
-
-	default:
-		return NULL;
-	}
 }
 
 /**
