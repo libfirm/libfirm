@@ -612,16 +612,6 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn,
 			}
 			break;
 
-		/* skip tuples */
-		case iro_Tuple:
-			foreach_irn_out_r(succ, k, proj) {
-				if (is_Proj(proj) && get_Proj_num(proj) == (unsigned)succ_pos) {
-					res |= determine_entity_usage(proj, entity);
-					break;
-				}
-			}
-			break;
-
 		case iro_Builtin: {
 			ir_builtin_kind kind = get_Builtin_kind(succ);
 			/* the parameters of the may_alias builtin do not lead to
@@ -846,7 +836,7 @@ static void analyse_irp_globals_entity_usage(void)
 	}
 
 	foreach_irp_irg(i, irg) {
-		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_NO_TUPLES);
 		irg_walk_graph(irg, NULL, check_global_address, NULL);
 	}
 
