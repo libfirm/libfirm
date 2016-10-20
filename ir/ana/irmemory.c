@@ -846,7 +846,7 @@ static void analyse_irp_globals_entity_usage(void)
 	}
 
 	foreach_irp_irg(i, irg) {
-		assure_irg_outs(irg);
+		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 		irg_walk_graph(irg, NULL, check_global_address, NULL);
 	}
 
