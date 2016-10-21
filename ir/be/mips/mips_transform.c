@@ -48,6 +48,13 @@ static unsigned const caller_saves[] = {
 	REG_RA,
 };
 
+static unsigned const param_regs_gp[] = {
+	REG_A0,
+	REG_A1,
+	REG_A2,
+	REG_A3,
+};
+
 static ir_node *get_Start_sp(ir_graph *const irg)
 {
 	return be_get_Start_proj(irg, &mips_registers[REG_SP]);
@@ -100,6 +107,26 @@ static ir_node *gen_Const(ir_node *const node)
 		}
 	}
 	panic("TODO");
+}
+
+static ir_node *gen_Proj_Proj_Start(ir_node *const node)
+{
+	assert(get_Proj_num(get_Proj_pred(node)) == pn_Start_T_args);
+
+	ir_graph *const irg = get_irn_irg(node);
+	unsigned  const num = get_Proj_num(node);
+	assert(num < ARRAY_SIZE(param_regs_gp));
+	return be_get_Start_proj(irg, &mips_registers[param_regs_gp[num]]);
+}
+
+static ir_node *gen_Proj_Proj(ir_node *const node)
+{
+	ir_node *const pred      = get_Proj_pred(node);
+	ir_node *const pred_pred = get_Proj_pred(pred);
+	switch (get_irn_opcode(pred_pred)) {
+	case iro_Start: return gen_Proj_Proj_Start(node);
+	default:        panic("unexpected Proj-Proj");
+	}
 }
 
 static ir_node *gen_Proj_Start(ir_node *const node)
@@ -179,7 +206,22 @@ static ir_node *gen_Start(ir_node *const node)
 		outs[callee_saves[i]] = BE_START_REG;
 	}
 
-	ir_graph *const irg = get_irn_irg(node);
+	ir_graph  *const irg  = get_irn_irg(node);
+	ir_entity *const ent  = get_irg_entity(irg);
+	ir_type   *const type = get_entity_type(ent);
+	unsigned         n_gp = 0;
+	for (size_t i = 0, n = get_method_n_params(type); i != n; ++i) {
+		ir_type *const param_type = get_method_param_type(type, i);
+		ir_mode *const param_mode = get_type_mode(param_type);
+		if (be_mode_needs_gp_reg(param_mode)) {
+			if (n_gp == ARRAY_SIZE(param_regs_gp))
+				panic("memory parameters not supported yet");
+			outs[param_regs_gp[n_gp++]] = BE_START_REG;
+		} else {
+			panic("unsupported parameter mode");
+		}
+	}
+
 	return be_new_Start(irg, outs);
 }
 
@@ -191,6 +233,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Return, gen_Return);
 	be_set_transform_function(op_Start,  gen_Start);
 
+	be_set_transform_proj_function(op_Proj,  gen_Proj_Proj);
 	be_set_transform_proj_function(op_Start, gen_Proj_Start);
 }
 
