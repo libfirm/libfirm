@@ -111,6 +111,10 @@ lui => {
 
 ori => { template => $immediateOp },
 
+slt => { template => $binOp },
+
+sltu => { template => $binOp },
+
 subu => { template => $binOp },
 
 );
