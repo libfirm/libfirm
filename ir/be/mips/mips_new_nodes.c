@@ -78,6 +78,8 @@ void mips_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 			case iro_mips_addu:
 			case iro_mips_last:
 			case iro_mips_ret:
+			case iro_mips_slt:
+			case iro_mips_sltu:
 			case iro_mips_subu:
 				break;
 			}

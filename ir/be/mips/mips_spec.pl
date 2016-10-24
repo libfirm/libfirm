@@ -111,6 +111,10 @@ ret => {
 	emit     => "jr\t%S2\nnop",
 },
 
+slt => { template => $binOp },
+
+sltu => { template => $binOp },
+
 subu => { template => $binOp },
 
 );
