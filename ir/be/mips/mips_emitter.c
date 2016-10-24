@@ -91,7 +91,7 @@ static void emit_be_Copy(ir_node const *const node)
 static void emit_mips_bcc(ir_node const *const node)
 {
 	mips_cond_t            const cond  = get_mips_cond_attr_const(node)->cond;
-	char            const *const fmt   = "b%C\t%S0, %S1, %L\nnop";
+	char            const *const fmt   = cond == mips_cc_eq || cond == mips_cc_ne ? "b%C\t%S0, %S1, %L\nnop" : "b%C\t%S0, %L\nnop";
 	be_cond_branch_projs_t const projs = be_get_cond_branch_projs(node);
 	if (be_is_fallthrough(projs.t)) {
 		mips_emitf(node, fmt, mips_negate_cond(cond), projs.f);

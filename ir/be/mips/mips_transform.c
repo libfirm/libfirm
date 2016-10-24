@@ -100,37 +100,55 @@ static ir_node *gen_Cond(ir_node *const node)
 		ir_mode *const mode = get_irn_mode(l);
 		if (be_mode_needs_gp_reg(mode) && get_mode_size_bits(mode) == MIPS_MACHINE_SIZE) {
 			ir_relation const rel = get_Cmp_relation(sel);
-			switch (rel) {
-			{
-				mips_cond_t cc;
-			case ir_relation_equal:        cc = mips_cc_eq; goto bcc;
-			case ir_relation_less_greater: cc = mips_cc_ne; goto bcc;
+			ir_node    *const r   = get_Cmp_right(sel);
+			if (mode_is_signed(mode) && is_irn_null(r)) {
+				switch (rel) {
+					mips_cond_t cc;
+				case ir_relation_greater:       cc = mips_cc_gtz; goto bccrelz;
+				case ir_relation_greater_equal: cc = mips_cc_gez; goto bccrelz;
+				case ir_relation_less:          cc = mips_cc_ltz; goto bccrelz;
+				case ir_relation_less_equal:    cc = mips_cc_lez; goto bccrelz;
+bccrelz:;
+					dbg_info *const dbgi  = get_irn_dbg_info(node);
+					ir_node  *const block = be_transform_nodes_block(node);
+					ir_node  *const new_l = be_transform_node(l);
+					return new_bd_mips_bcc_z(dbgi, block, new_l, cc);
+
+				default: goto normal;
+				}
+			} else {
+normal:
+				switch (rel) {
+				{
+					mips_cond_t cc;
+				case ir_relation_equal:        cc = mips_cc_eq; goto bcc;
+				case ir_relation_less_greater: cc = mips_cc_ne; goto bcc;
 bcc:;
-				dbg_info *const dbgi  = get_irn_dbg_info(node);
-				ir_node  *const block = be_transform_nodes_block(node);
-				ir_node  *const new_l = be_transform_node(l);
-				ir_node  *const r     = get_Cmp_right(sel);
-				ir_node  *const new_r = be_transform_node(r);
-				return new_bd_mips_bcc(dbgi, block, new_l, new_r, cc);
-			}
+					dbg_info *const dbgi  = get_irn_dbg_info(node);
+					ir_node  *const block = be_transform_nodes_block(node);
+					ir_node  *const new_l = be_transform_node(l);
+					ir_node  *const new_r = be_transform_node(r);
+					return new_bd_mips_bcc(dbgi, block, new_l, new_r, cc);
+				}
 
-			case ir_relation_greater:
-			case ir_relation_greater_equal:
-			case ir_relation_less:
-			case ir_relation_less_equal:
-				break;
+				case ir_relation_greater:
+				case ir_relation_greater_equal:
+				case ir_relation_less:
+				case ir_relation_less_equal:
+					break;
 
-			case ir_relation_false:
-			case ir_relation_less_equal_greater:
-			case ir_relation_true:
-			case ir_relation_unordered:
-			case ir_relation_unordered_equal:
-			case ir_relation_unordered_greater:
-			case ir_relation_unordered_greater_equal:
-			case ir_relation_unordered_less:
-			case ir_relation_unordered_less_equal:
-			case ir_relation_unordered_less_greater:
-				panic("unexpected relation");
+				case ir_relation_false:
+				case ir_relation_less_equal_greater:
+				case ir_relation_true:
+				case ir_relation_unordered:
+				case ir_relation_unordered_equal:
+				case ir_relation_unordered_greater:
+				case ir_relation_unordered_greater_equal:
+				case ir_relation_unordered_less:
+				case ir_relation_unordered_less_equal:
+				case ir_relation_unordered_less_greater:
+					panic("unexpected relation");
+				}
 			}
 		}
 	}
