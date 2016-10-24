@@ -81,14 +81,16 @@ addu => { template => $binOp },
 addiu => { template => $immediateOp },
 
 bcc => {
-	state     => "pinned",
-	op_flags  => [ "cfopcode", "forking" ],
-	in_reqs   => [ "cls-gp", "cls-gp" ],
-	ins       => [ "left", "right" ],
-	out_reqs  => [ "exec", "exec" ],
-	outs      => [ "false", "true" ],
-	attr_type => "mips_cond_attr_t",
-	attr      => "mips_cond_t const cond",
+	state        => "pinned",
+	op_flags     => [ "cfopcode", "forking" ],
+	constructors => {
+		""  => { in_reqs => [ "cls-gp", "cls-gp" ], ins => [ "left", "right" ] },
+		"z" => { in_reqs => [ "cls-gp" ],           ins => [ "left" ]          },
+	},
+	out_reqs     => [ "exec", "exec" ],
+	outs         => [ "false", "true" ],
+	attr_type    => "mips_cond_attr_t",
+	attr         => "mips_cond_t const cond",
 },
 
 jr => {

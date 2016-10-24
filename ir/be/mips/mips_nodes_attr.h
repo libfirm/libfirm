@@ -18,6 +18,10 @@ typedef enum mips_cond_t {
 	/* Flipping the lowest bit negates the condition. */
 	mips_cc_eq,
 	mips_cc_ne,
+	mips_cc_ltz,
+	mips_cc_gez,
+	mips_cc_lez,
+	mips_cc_gtz,
 } mips_cond_t;
 
 static inline mips_cond_t mips_negate_cond(mips_cond_t const c)
