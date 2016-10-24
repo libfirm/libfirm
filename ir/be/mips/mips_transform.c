@@ -10,6 +10,7 @@
 #include "betranshlp.h"
 #include "gen_mips_new_nodes.h"
 #include "gen_mips_regalloc_if.h"
+#include "mips_bearch_t.h"
 #include "nodes.h"
 #include "panic.h"
 #include "util.h"
@@ -91,6 +92,51 @@ static ir_node *gen_Add(ir_node *const node)
 		}
 		ir_node *const new_r = be_transform_node(r);
 		return new_bd_mips_addu(dbgi, block, new_l, new_r);
+	}
+	panic("TODO");
+}
+
+static ir_node *gen_Cond(ir_node *const node)
+{
+	ir_node *const sel = get_Cond_selector(node);
+	if (is_Cmp(sel)) {
+		ir_node *const l    = get_Cmp_left(sel);
+		ir_mode *const mode = get_irn_mode(l);
+		if (be_mode_needs_gp_reg(mode) && get_mode_size_bits(mode) == MIPS_MACHINE_SIZE) {
+			ir_relation const rel = get_Cmp_relation(sel);
+			switch (rel) {
+			{
+				mips_cond_t cc;
+			case ir_relation_equal:        cc = mips_cc_eq; goto bcc;
+			case ir_relation_less_greater: cc = mips_cc_ne; goto bcc;
+bcc:;
+				dbg_info *const dbgi  = get_irn_dbg_info(node);
+				ir_node  *const block = be_transform_nodes_block(node);
+				ir_node  *const new_l = be_transform_node(l);
+				ir_node  *const r     = get_Cmp_right(sel);
+				ir_node  *const new_r = be_transform_node(r);
+				return new_bd_mips_bcc(dbgi, block, new_l, new_r, cc);
+			}
+
+			case ir_relation_greater:
+			case ir_relation_greater_equal:
+			case ir_relation_less:
+			case ir_relation_less_equal:
+				break;
+
+			case ir_relation_false:
+			case ir_relation_less_equal_greater:
+			case ir_relation_true:
+			case ir_relation_unordered:
+			case ir_relation_unordered_equal:
+			case ir_relation_unordered_greater:
+			case ir_relation_unordered_greater_equal:
+			case ir_relation_unordered_less:
+			case ir_relation_unordered_less_equal:
+			case ir_relation_unordered_less_greater:
+				panic("unexpected relation");
+			}
+		}
 	}
 	panic("TODO");
 }
@@ -280,12 +326,14 @@ static void mips_register_transformers(void)
 	be_start_transform_setup();
 
 	be_set_transform_function(op_Add,    gen_Add);
+	be_set_transform_function(op_Cond,   gen_Cond);
 	be_set_transform_function(op_Const,  gen_Const);
 	be_set_transform_function(op_Minus,  gen_Minus);
 	be_set_transform_function(op_Return, gen_Return);
 	be_set_transform_function(op_Start,  gen_Start);
 	be_set_transform_function(op_Sub,    gen_Sub);
 
+	be_set_transform_proj_function(op_Cond,  be_duplicate_node);
 	be_set_transform_proj_function(op_Proj,  gen_Proj_Proj);
 	be_set_transform_proj_function(op_Start, gen_Proj_Start);
 }

@@ -18,6 +18,7 @@
 void mips_dump_node(FILE *F, const ir_node *n, dump_reason_t reason);
 
 int mips_attrs_equal(ir_node const *a, ir_node const *b);
+int mips_cond_attrs_equal(ir_node const *a, ir_node const *b);
 int mips_immediate_attrs_equal(ir_node const *a, ir_node const *b);
 
 #endif

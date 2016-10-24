@@ -16,6 +16,7 @@
 /**
  * fmt  parameter               output
  * ---- ----------------------  ---------------------------------------------
+ * %C   int (mips_cond_t)       condition code
  * %Dx  <node>                  destination register x
  * %I   <node>                  immediate
  * %R   arch_register_t const*  register
