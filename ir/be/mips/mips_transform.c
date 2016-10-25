@@ -66,6 +66,11 @@ static ir_node *get_Start_zero(ir_graph *const irg)
 	return be_get_Start_proj(irg, &mips_registers[REG_ZERO]);
 }
 
+static inline bool is_uimm5(long const val)
+{
+	return 0 <= val && val < 32;
+}
+
 static inline bool is_simm16(long const val)
 {
 	return -32768 <= val && val < 32768;
@@ -355,6 +360,48 @@ static ir_node *gen_Return(ir_node *const node)
 	return jr;
 }
 
+typedef ir_node *cons_binop(dbg_info*, ir_node*, ir_node*, ir_node*);
+typedef ir_node *cons_binop_imm(dbg_info*, ir_node*, ir_node*, int32_t);
+
+static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_binop_imm *const cons_imm)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	ir_node  *const l     = get_binop_left(node);
+	ir_node  *const new_l = be_transform_node(l);
+	ir_node  *const r     = get_binop_right(node);
+	if (is_Const(r)) {
+		long const val = get_Const_long(r);
+		if (is_uimm5(val))
+			return cons_imm(dbgi, block, new_l, val);
+	}
+	ir_node *const new_r = be_transform_node(r);
+	return cons(dbgi, block, new_l, new_r);
+}
+
+static ir_node *gen_Shl(ir_node *const node)
+{
+	return gen_shift_op(node, &new_bd_mips_sllv, &new_bd_mips_sll);
+}
+
+static ir_node *gen_Shr(ir_node *const node)
+{
+	ir_mode *const mode = get_irn_mode(node);
+	unsigned const size = get_mode_size_bits(mode);
+	if (size == MIPS_MACHINE_SIZE)
+		return gen_shift_op(node, &new_bd_mips_srlv, &new_bd_mips_srl);
+	panic("unhandled Shr");
+}
+
+static ir_node *gen_Shrs(ir_node *const node)
+{
+	ir_mode *const mode = get_irn_mode(node);
+	unsigned const size = get_mode_size_bits(mode);
+	if (size == MIPS_MACHINE_SIZE)
+		return gen_shift_op(node, &new_bd_mips_srav, &new_bd_mips_sra);
+	panic("unhandled Shrs");
+}
+
 static ir_node *gen_Start(ir_node *const node)
 {
 	be_start_out outs[N_MIPS_REGISTERS] = {
@@ -410,6 +457,9 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Const,  gen_Const);
 	be_set_transform_function(op_Minus,  gen_Minus);
 	be_set_transform_function(op_Return, gen_Return);
+	be_set_transform_function(op_Shl,    gen_Shl);
+	be_set_transform_function(op_Shr,    gen_Shr);
+	be_set_transform_function(op_Shrs,   gen_Shrs);
 	be_set_transform_function(op_Start,  gen_Start);
 	be_set_transform_function(op_Sub,    gen_Sub);
 

@@ -8,6 +8,7 @@
 #include "bera.h"
 #include "gen_mips_new_nodes.h"
 #include "gen_mips_regalloc_if.h"
+#include "irarch_t.h"
 #include "irprog_t.h"
 #include "lower_dw.h"
 #include "mips_emitter.h"
@@ -21,12 +22,22 @@ static int mips_is_mux_allowed(ir_node *const sel, ir_node *const mux_false, ir_
 	return false;
 }
 
+static ir_settings_arch_dep_t const mips_arch_dep = {
+	.also_use_subs        = true,
+	.maximum_shifts       = 4,
+	.highest_shift_amount = 63,
+	.evaluate             = NULL,
+	.allow_mulhs          = true,
+	.allow_mulhu          = true,
+	.max_bits_for_mulh    = 32,
+};
+
 static backend_params mips_backend_params = {
 	.byte_order_big_endian         = false,
 	.pic_supported                 = false,
 	.unaligned_memaccess_supported = false,
 	.modulo_shift                  = 32,
-	.dep_param                     = NULL, // TODO
+	.dep_param                     = &mips_arch_dep,
 	.allow_ifconv                  = &mips_is_mux_allowed,
 	.machine_size                  = 32,
 	.mode_float_arithmetic         = NULL,  /* will be set later */ // TODO
