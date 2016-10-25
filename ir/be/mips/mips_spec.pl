@@ -111,9 +111,21 @@ ret => {
 	emit     => "jr\t%S2\nnop",
 },
 
+sll => { template => $immediateOp },
+
+sllv => { template => $binOp },
+
 slt => { template => $binOp },
 
 sltu => { template => $binOp },
+
+sra => { template => $immediateOp },
+
+srav => { template => $binOp },
+
+srl => { template => $immediateOp },
+
+srlv => { template => $binOp },
 
 subu => { template => $binOp },
 

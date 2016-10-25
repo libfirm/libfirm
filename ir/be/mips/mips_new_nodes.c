@@ -56,7 +56,10 @@ void mips_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 		case dump_node_opcode_txt:
 			fprintf(F, "%s", get_irn_opname(n));
 			switch ((mips_opcodes)get_mips_irn_opcode(n)) {
-			case iro_mips_addiu: {
+			case iro_mips_addiu:
+			case iro_mips_sll:
+			case iro_mips_sra:
+			case iro_mips_srl: {
 				mips_immediate_attr_t const *const imm = get_mips_immediate_attr_const(n);
 				fprintf(F, " %+" PRId32, imm->val);
 				break;
@@ -78,8 +81,11 @@ void mips_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 			case iro_mips_addu:
 			case iro_mips_last:
 			case iro_mips_ret:
+			case iro_mips_sllv:
 			case iro_mips_slt:
 			case iro_mips_sltu:
+			case iro_mips_srav:
+			case iro_mips_srlv:
 			case iro_mips_subu:
 				break;
 			}
