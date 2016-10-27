@@ -547,12 +547,11 @@ Suf => {
 },
 
 Dvf => {
-	in_reqs   => [ "fpa", "fpa" ],
+	template  => $binopf,
+	irn_flags => [],
 	out_reqs  => [ "fpa", "mem" ],
 	emit      => 'dvf%MA %D0, %S0, %S1',
 	outs      => [ "res", "M" ],
-	attr_type => "arm_farith_attr_t",
-	attr      => "ir_mode *op_mode",
 	mode      => "first",
 },
 
