@@ -400,6 +400,12 @@ my $noregop = {
 	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
 };
 
+my $fpcwop = {
+	op_flags => [ "uses_memory" ],
+	state    => "pinned",
+	fixed    => "x86_insn_size_t const size = X86_SIZE_16;",
+};
+
 %nodes = (
 
 Immediate => {
@@ -996,35 +1002,29 @@ ChangeCW => {
 },
 
 FldCW => {
-	op_flags => [ "uses_memory" ],
-	state    => "pinned",
+	template => $fpcwop,
 	in_reqs  => [ "gp", "gp", "mem" ],
 	out_reqs => [ "fpcw" ],
 	ins      => [ "base", "index", "mem" ],
 	latency  => 5,
-	fixed    => "x86_insn_size_t const size = X86_SIZE_16;",
 	emit     => "fldcw %AM",
 },
 
 FnstCW => {
-	op_flags => [ "uses_memory" ],
-	state    => "pinned",
+	template => $fpcwop,
 	in_reqs  => [ "gp", "gp", "mem", "fp_cw" ],
 	out_reqs => [ "mem" ],
 	ins      => [ "base", "index", "mem", "fpcw" ],
 	latency  => 5,
-	fixed    => "x86_insn_size_t const size = X86_SIZE_16;",
 	emit     => "fnstcw %AM",
 },
 
 FnstCWNOP => {
-	op_flags => [ "uses_memory" ],
-	state    => "pinned",
+	template => $fpcwop,
 	in_reqs  => [ "fp_cw" ],
 	out_reqs => [ "mem" ],
 	ins      => [ "fpcw" ],
 	latency  => 0,
-	fixed    => "x86_insn_size_t const size = X86_SIZE_16;",
 	emit     => "",
 },
 
