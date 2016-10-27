@@ -406,6 +406,14 @@ my $fpcwop = {
 	fixed    => "x86_insn_size_t const size = X86_SIZE_16;",
 };
 
+my $emmsop = {
+	op_flags    => [ "keep" ],
+	out_reqs    => [ "none" ],
+	attrs_equal => "attrs_equal_false",
+	fixed       => "x86_insn_size_t const size = X86_SIZE_32;"
+	              ."\t$x87sim",
+};
+
 %nodes = (
 
 Immediate => {
@@ -1945,23 +1953,15 @@ ffreep => {
 },
 
 emms => {
-	op_flags    => [ "keep" ],
-	out_reqs    => [ "none" ],
-	attrs_equal => "attrs_equal_false",
-	emit        => "emms",
-	fixed       => "x86_insn_size_t const size = X86_SIZE_32;"
-	              ."\t".$x87sim,
-	latency     => 3,
+	template => $emmsop,
+	emit     => "emms",
+	latency  => 3,
 },
 
 femms => {
-	op_flags    => [ "keep" ],
-	out_reqs    => [ "none" ],
-	attrs_equal => "attrs_equal_false",
-	emit        => "femms",
-	fixed       => "x86_insn_size_t const size = X86_SIZE_32;"
-	              ."\t".$x87sim,
-	latency     => 3,
+	template => $emmsop,
+	emit     => "femms",
+	latency  => 3,
 },
 
 # Spilling and reloading of SSE registers
