@@ -280,11 +280,6 @@ AddCC => {
 	emit     => "addcc %S0, %SI1, %D0",
 },
 
-AddCCZero => {
-	template => $binopcczero_operand,
-	emit     => "addcc %S0, %SI1, %%g0",
-},
-
 AddX => {
 	template => $binopx_operand,
 	emit     => "addx %S0, %SI1, %D0",
@@ -311,11 +306,6 @@ Sub => {
 SubCC => {
 	template => $binopcc_operand,
 	emit     => "subcc %S0, %SI1, %D0",
-},
-
-SubCCZero => {
-	template => $binopcczero_operand,
-	emit     => "subcc %S0, %SI1, %%g0",
 },
 
 SubX => {
