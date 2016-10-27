@@ -33,6 +33,9 @@ foreach my $op (sort(keys(%nodes))) {
 	my $n = $nodes{$op};
 
 	my $emit = $n->{emit};
+	if (!defined($emit) && defined($n->{template})) {
+		$emit = $n->{template}->{emit};
+	}
 	if (defined($emit)) {
 		my $emit_func;
 		if ($emit eq "") {
@@ -42,6 +45,8 @@ foreach my $op (sort(keys(%nodes))) {
 
 			$obst_func .= "static void $emit_func(ir_node const *const node)\n";
 			$obst_func .= "{\n";
+			my $name = $n->{name} // lc($op);
+			$emit =~ s/{name}/$name/g;
 			foreach my $template (split(/\n/, $emit)) {
 				if ($template ne '') {
 					$obst_func .= "\t${arch}_emitf(node, \"$template\");\n";
