@@ -102,8 +102,8 @@ static inline size_t be_emit_get_column(void)
 	be_emit_char('\t'); \
 	if (in_delay_slot) \
 		be_emit_char(' '); \
-	for (size_t n;;) \
-		if (n = strcspn(fmt, "\n%"), be_emit_string_len(fmt, n), fmt += n, *fmt == '\0') { \
+	for (size_t node##__n;;) \
+		if (node##__n = strcspn(fmt, "\n%"), be_emit_string_len(fmt, node##__n), fmt += node##__n, *fmt == '\0') { \
 			be_emit_finish_line_gas(node); \
 			va_end(ap); \
 			break; \

@@ -586,7 +586,7 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 			}
 			break;
 
-		case 'O':
+		case 'O': {
 			if (!is_digit(*fmt))
 				goto unknown;
 			unsigned const pos = *fmt++ - '0';
@@ -597,6 +597,7 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 			if (!plus)
 				be_emit_char(']');
 			break;
+		}
 
 		case 'R': {
 			arch_register_t const *const reg = va_arg(ap, const arch_register_t*);
