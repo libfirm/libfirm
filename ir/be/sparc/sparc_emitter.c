@@ -340,6 +340,11 @@ static bool can_move_down_into_delayslot(const ir_node *node, const ir_node *to)
 	}
 }
 
+static bool is_restore(ir_node const *const node)
+{
+	return is_sparc_Restore(node) || is_sparc_RestoreZero(node);
+}
+
 static bool can_move_up_into_delayslot(const ir_node *node, const ir_node *to)
 {
 	if (!be_can_move_up(heights, node, to))
@@ -354,7 +359,7 @@ static bool can_move_up_into_delayslot(const ir_node *node, const ir_node *to)
 
 	/* register window cycling effects at Restore aren't correctly represented
 	 * in the graph yet so we need this exception here */
-	if (is_sparc_Restore(node) || is_sparc_RestoreZero(node)) {
+	if (is_restore(node)) {
 		return false;
 	} else if (is_sparc_Call(to)) {
 		/* node must not overwrite any of the inputs of the call,
@@ -495,8 +500,7 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 				continue;
 			/* restore doesn't model register window switching correctly,
 			 * so it appears like we could move it, which is not true */
-			if (is_sparc_Restore(schedpoint)
-			    || is_sparc_RestoreZero(schedpoint))
+			if (is_restore(schedpoint))
 				continue;
 			if (tries++ >= PICK_DELAY_SLOT_MAX_DISTANCE)
 				break;
@@ -1042,8 +1046,7 @@ static void emit_sparc_Return(const ir_node *node)
 	/* hack: we don't explicitely model register changes because of the
 	 * restore node. So we have to do it manually here */
 	const ir_node *delay_slot = pmap_get(ir_node, delay_slots, node);
-	if (delay_slot != NULL &&
-	    (is_sparc_Restore(delay_slot) || is_sparc_RestoreZero(delay_slot))) {
+	if (delay_slot && is_restore(delay_slot)) {
 		destreg = "%i7";
 	}
 	char const *const offset = get_method_calling_convention(type) & cc_compound_ret ? "12" : "8";
