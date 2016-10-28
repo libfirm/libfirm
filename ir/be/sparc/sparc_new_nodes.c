@@ -36,11 +36,6 @@ bool sparc_has_load_store_attr(const ir_node *node)
 	    || is_sparc_Stf(node) || is_sparc_IJmp(node);
 }
 
-static bool has_jmp_cond_attr(const ir_node *node)
-{
-	return is_sparc_Bicc(node) || is_sparc_fbfcc(node);
-}
-
 #ifndef NDEBUG
 static bool has_switch_jmp_attr(const ir_node *node)
 {
@@ -91,7 +86,7 @@ void sparc_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			ir_fprintf(F, "load store mode: %+F\n", attr->load_store_mode);
 			fprintf(F, "is frame entity: %s\n", be_dump_yesno(attr->is_frame_entity));
 		}
-		if (has_jmp_cond_attr(n)) {
+		if (is_sparc_cond_branch(n)) {
 			const sparc_jmp_cond_attr_t *attr
 				= get_sparc_jmp_cond_attr_const(n);
 			fprintf(F, "relation: %d (%s)\n", (int)attr->relation,
@@ -158,13 +153,13 @@ const sparc_load_store_attr_t *get_sparc_load_store_attr_const(const ir_node *no
 
 sparc_jmp_cond_attr_t *get_sparc_jmp_cond_attr(ir_node *node)
 {
-	assert(has_jmp_cond_attr(node));
+	assert(is_sparc_cond_branch(node));
 	return (sparc_jmp_cond_attr_t*) get_irn_generic_attr_const(node);
 }
 
 const sparc_jmp_cond_attr_t *get_sparc_jmp_cond_attr_const(const ir_node *node)
 {
-	assert(has_jmp_cond_attr(node));
+	assert(is_sparc_cond_branch(node));
 	return (const sparc_jmp_cond_attr_t*) get_irn_generic_attr_const(node);
 }
 

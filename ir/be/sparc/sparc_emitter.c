@@ -446,9 +446,8 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 	static const unsigned PICK_DELAY_SLOT_MAX_DISTANCE = 10;
 	assert(has_delay_slot(node));
 
-	if (is_sparc_Bicc(node) || is_sparc_fbfcc(node)) {
+	if (is_sparc_cond_branch(node))
 		optimize_fallthrough(node);
-	}
 
 	unsigned tries = 0;
 	sched_foreach_reverse_before(node, schedpoint) {
@@ -509,7 +508,7 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 			if (can_move_up_into_delayslot(schedpoint, node)) {
 				/* it's fine to move the insn across blocks */
 				return schedpoint;
-			} else if (is_sparc_Bicc(node) || is_sparc_fbfcc(node)) {
+			} else if (is_sparc_cond_branch(node)) {
 				ir_node *proj = get_Block_cfgpred(succ, 0);
 				unsigned nr   = get_Proj_num(proj);
 				if ((nr == pn_sparc_Bicc_true || nr == pn_sparc_fbfcc_true)
