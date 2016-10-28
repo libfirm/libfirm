@@ -1041,15 +1041,11 @@ static void emit_sparc_Return(const ir_node *node)
 	ir_entity *entity = get_irg_entity(irg);
 	ir_type   *type   = get_entity_type(entity);
 
-	const char *destreg = "%o7";
-
-	/* hack: we don't explicitely model register changes because of the
+	/* hack: we don't explicitly model register changes because of the
 	 * restore node. So we have to do it manually here */
-	const ir_node *delay_slot = pmap_get(ir_node, delay_slots, node);
-	if (delay_slot && is_restore(delay_slot)) {
-		destreg = "%i7";
-	}
-	char const *const offset = get_method_calling_convention(type) & cc_compound_ret ? "12" : "8";
+	ir_node const *const delay_slot = pmap_get(ir_node, delay_slots, node);
+	char    const *const destreg    = delay_slot && is_restore(delay_slot) ? "%i7" : "%o7";
+	char    const *const offset     = get_method_calling_convention(type) & cc_compound_ret ? "12" : "8";
 	sparc_emitf(node, "jmp %s+%s", destreg, offset);
 	fill_delay_slot(node);
 }
