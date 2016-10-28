@@ -376,25 +376,23 @@ static bool value_last_used_here(be_lv_t *lv, ir_node *here, ir_node *value)
  */
 static void mark_non_address_nodes(ir_node *node, void *env)
 {
-	be_lv_t *lv = (be_lv_t*)env;
+	if (is_Load(node)) {
+		/* Nothing to do. Especially, do not mark the pointer, because we want to
+		 * turn it into AM. */
+		return;
+	}
+	if (is_Store(node)) {
+		/* Do not mark the pointer, because we want to turn it into AM. */
+		ir_node *val = get_Store_value(node);
+		x86_mark_non_am(val);
+		return;
+	}
 
 	ir_mode *mode = get_irn_mode(node);
 	if (!be_mode_needs_gp_reg(mode) && mode != mode_b)
 		return;
 
 	switch (get_irn_opcode(node)) {
-	case iro_Load:
-		/* Nothing to do. Especially, do not mark the pointer, because we want to
-		 * turn it into AM. */
-		break;
-
-	case iro_Store: {
-		/* Do not mark the pointer, because we want to turn it into AM. */
-		ir_node *val = get_Store_value(node);
-		x86_mark_non_am(val);
-		break;
-	}
-
 	case iro_Shl:
 	case iro_Add: {
 		/* only 1 user: AM folding is always beneficial */
@@ -422,6 +420,7 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		 * an addition and has the same register pressure for the case that only
 		 * one operand dies, but is faster (on Pentium 4).
 		 * && instead of || only folds AM if both operands do not die here */
+		be_lv_t *lv = (be_lv_t*)env;
 		if (!value_last_used_here(lv, node, left)
 		 || !value_last_used_here(lv, node, right)) {
 			return;
