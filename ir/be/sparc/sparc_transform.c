@@ -2195,14 +2195,9 @@ static ir_node *gen_Proj_Store(ir_node *node)
 	/* renumber the proj */
 	switch (get_sparc_irn_opcode(new_store)) {
 	case iro_sparc_St:
-		if (pn == pn_Store_M) {
-			return new_store;
-		}
-		break;
 	case iro_sparc_Stf:
-		if (pn == pn_Store_M) {
+		if (pn == pn_Store_M)
 			return new_store;
-		}
 		break;
 	default:
 		break;
