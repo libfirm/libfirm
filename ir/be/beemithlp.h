@@ -71,4 +71,11 @@ static inline ir_node *be_emit_get_prev_block(ir_node const *const block)
 	return (ir_node*)get_irn_link(block);
 }
 
+typedef struct be_cond_branch_projs_t {
+	ir_node *f;
+	ir_node *t;
+} be_cond_branch_projs_t;
+
+be_cond_branch_projs_t be_get_cond_branch_projs(ir_node const *node);
+
 #endif

@@ -17,6 +17,7 @@
 #include "dbginfo.h"
 #include "debug.h"
 #include "firm_types.h"
+#include "iredges.h"
 #include "irnode_t.h"
 #include "irop_t.h"
 #include "util.h"
@@ -67,4 +68,20 @@ void be_emit_init_cf_links(ir_node **const block_schedule)
 		set_irn_link(block, prev);
 		prev = block;
 	}
+}
+
+be_cond_branch_projs_t be_get_cond_branch_projs(ir_node const *const node)
+{
+	be_cond_branch_projs_t projs = { NULL, NULL };
+	foreach_out_edge(node, edge) {
+		ir_node *const proj = get_edge_src_irn(edge);
+		unsigned const pn   = get_Proj_num(proj);
+		switch (pn) {
+		case pn_Cond_false: projs.f = proj; continue;
+		case pn_Cond_true:  projs.t = proj; continue;
+		}
+		panic("invalid Proj for branch");
+	}
+	assert(projs.f && projs.t);
+	return projs;
 }

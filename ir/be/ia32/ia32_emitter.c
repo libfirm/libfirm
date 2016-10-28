@@ -689,20 +689,18 @@ static void emit_ia32_Jcc(const ir_node *node)
 {
 	x86_condition_code_t cc = ia32_determine_final_cc(node, n_ia32_Jcc_eflags);
 
-	/* get both Projs */
-	ir_node const *proj_true   = get_Proj_for_pn(node, pn_ia32_Jcc_true);
-	ir_node const *target_true = be_emit_get_cfop_target(proj_true);
-	ir_node const *proj_false  = get_Proj_for_pn(node, pn_ia32_Jcc_false);
+	be_cond_branch_projs_t projs = be_get_cond_branch_projs(node);
+
+	ir_node const *target_true = be_emit_get_cfop_target(projs.t);
 	ir_node const *block       = get_nodes_block(node);
 	if (fallthrough_possible(block, target_true)) {
 		/* exchange both proj's so the second one can be omitted */
-		const ir_node *t = proj_true;
-
-		proj_true  = proj_false;
-		proj_false = t;
-		cc         = x86_negate_condition_code(cc);
+		ir_node *const t = projs.t;
+		projs.t = projs.f;
+		projs.f = t;
+		cc      = x86_negate_condition_code(cc);
 	}
-	const ir_node *target_false = be_emit_get_cfop_target(proj_false);
+	const ir_node *target_false = be_emit_get_cfop_target(projs.f);
 	bool           fallthrough  = fallthrough_possible(block, target_false);
 	/* if we can't have a fallthrough anyway, put the more likely case first */
 	if (!fallthrough) {
@@ -711,10 +709,10 @@ static void emit_ia32_Jcc(const ir_node *node)
 		double freq_true  = get_block_execfreq(target_true);
 		double freq_false = get_block_execfreq(target_false);
 		if (freq_false > freq_true) {
-			const ir_node *t = proj_true;
-			proj_true  = proj_false;
-			proj_false = t;
-			cc         = x86_negate_condition_code(cc);
+			ir_node *const t = projs.t;
+			projs.t = projs.f;
+			projs.f = t;
+			cc      = x86_negate_condition_code(cc);
 		}
 	}
 
@@ -723,19 +721,19 @@ static void emit_ia32_Jcc(const ir_node *node)
 		/* Some floating point comparisons require a test of the parity flag,
 		 * which indicates that the result is unordered */
 		if (cc & x86_cc_negated) {
-			ia32_emitf(proj_true, "jp %L");
+			ia32_emitf(projs.t, "jp %L");
 		} else {
 			/* we need a local label if the false proj is a fallthrough
 			 * as the falseblock might have no label emitted then */
 			if (fallthrough) {
 				need_parity_label = true;
-				ia32_emitf(proj_false, "jp 1f");
+				ia32_emitf(projs.f, "jp 1f");
 			} else {
-				ia32_emitf(proj_false, "jp %L");
+				ia32_emitf(projs.f, "jp %L");
 			}
 		}
 	}
-	ia32_emitf(proj_true, "j%PX %L", (int)cc);
+	ia32_emitf(projs.t, "j%PX %L", (int)cc);
 	if (need_parity_label) {
 		be_emit_cstring("1:\n");
 		be_emit_write_line();
@@ -743,9 +741,9 @@ static void emit_ia32_Jcc(const ir_node *node)
 
 	/* the second Proj might be a fallthrough */
 	if (!fallthrough) {
-		ia32_emitf(proj_false, "jmp %L");
+		ia32_emitf(projs.f, "jmp %L");
 	} else if (be_options.verbose_asm) {
-		ia32_emitf(proj_false, "/* fallthrough to %L */");
+		ia32_emitf(projs.f, "/* fallthrough to %L */");
 	}
 }
 

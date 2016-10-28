@@ -673,51 +673,40 @@ static x86_condition_code_t determine_final_cc(ir_node const *const flags,
  */
 static void emit_amd64_jcc(const ir_node *irn)
 {
-	const ir_node         *proj_true  = NULL;
-	const ir_node         *proj_false = NULL;
 	const ir_node         *flags = get_irn_n(irn, n_amd64_jcc_eflags);
 	const amd64_cc_attr_t *attr  = get_amd64_cc_attr_const(irn);
 	x86_condition_code_t   cc    = determine_final_cc(flags, attr->cc);
 
-	foreach_out_edge(irn, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		unsigned nr = get_Proj_num(proj);
-		if (nr == pn_Cond_true) {
-			proj_true = proj;
-		} else {
-			proj_false = proj;
-		}
-	}
+	be_cond_branch_projs_t projs = be_get_cond_branch_projs(irn);
 
 	ir_node const *const block       = get_nodes_block(irn);
-	ir_node const *const true_target = be_emit_get_cfop_target(proj_true);
+	ir_node const *const true_target = be_emit_get_cfop_target(projs.t);
 	if (be_emit_get_prev_block(true_target) == block) {
 		/* exchange both proj's so the second one can be omitted */
-		const ir_node *t = proj_true;
-
-		proj_true  = proj_false;
-		proj_false = t;
-		cc         = x86_negate_condition_code(cc);
+		ir_node *const t = projs.t;
+		projs.t = projs.f;
+		projs.f = t;
+		cc      = x86_negate_condition_code(cc);
 	}
 
 	if (cc & x86_cc_float_parity_cases) {
 		/* Some floating point comparisons require a test of the parity flag,
 		 * which indicates that the result is unordered */
 		if (cc & x86_cc_negated) {
-			amd64_emitf(proj_true, "jp %L");
+			amd64_emitf(projs.t, "jp %L");
 		} else {
-			amd64_emitf(proj_false, "jp %L");
+			amd64_emitf(projs.f, "jp %L");
 		}
 	}
 
 	/* emit the true proj */
-	amd64_emitf(proj_true, "j%PX %L", (int)cc);
+	amd64_emitf(projs.t, "j%PX %L", (int)cc);
 
-	ir_node const *const false_target = be_emit_get_cfop_target(proj_false);
+	ir_node const *const false_target = be_emit_get_cfop_target(projs.f);
 	if (be_emit_get_prev_block(false_target) != block) {
-		amd64_emitf(proj_false, "jmp %L");
+		amd64_emitf(projs.f, "jmp %L");
 	} else if (be_options.verbose_asm) {
-		amd64_emitf(proj_false, "/* fallthrough to %L */");
+		amd64_emitf(projs.f, "/* fallthrough to %L */");
 	}
 }
 

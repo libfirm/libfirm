@@ -393,17 +393,7 @@ static void emit_arm_fConst(const ir_node *irn)
  */
 static void emit_arm_B(const ir_node *irn)
 {
-	const ir_node *proj_true  = NULL;
-	const ir_node *proj_false = NULL;
-	foreach_out_edge(irn, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		unsigned nr   = get_Proj_num(proj);
-		if (nr == pn_Cond_true) {
-			proj_true = proj;
-		} else {
-			proj_false = proj;
-		}
-	}
+	be_cond_branch_projs_t projs = be_get_cond_branch_projs(irn);
 
 	ir_node *const op1 = get_irn_n(irn, n_arm_B_flags);
 	assert(is_arm_Cmn(op1) || is_arm_Cmp(op1) || is_arm_Tst(op1));
@@ -418,14 +408,13 @@ static void emit_arm_B(const ir_node *irn)
 	assert(relation != ir_relation_true);
 
 	ir_node const *const block       = get_nodes_block(irn);
-	ir_node const *const true_target = be_emit_get_cfop_target(proj_true);
+	ir_node const *const true_target = be_emit_get_cfop_target(projs.t);
 	if (be_emit_get_prev_block(true_target) == block) {
 		/* exchange both proj's so the second one can be omitted */
-		const ir_node *t = proj_true;
-
-		proj_true  = proj_false;
-		proj_false = t;
-		relation   = get_negated_relation(relation);
+		ir_node *const t = projs.t;
+		projs.t  = projs.f;
+		projs.f  = t;
+		relation = get_negated_relation(relation);
 	}
 
 	char const *suffix;
@@ -442,13 +431,13 @@ static void emit_arm_B(const ir_node *irn)
 	}
 
 	/* emit the true proj */
-	arm_emitf(irn, "b%s %t", suffix, proj_true);
+	arm_emitf(irn, "b%s %t", suffix, projs.t);
 
-	ir_node const *const false_target = be_emit_get_cfop_target(proj_false);
+	ir_node const *const false_target = be_emit_get_cfop_target(projs.f);
 	if (be_emit_get_prev_block(false_target) != block) {
-		arm_emitf(irn, "b %t", proj_false);
+		arm_emitf(irn, "b %t", projs.f);
 	} else if (be_options.verbose_asm) {
-		arm_emitf(irn, "/* fallthrough to %t */", proj_false);
+		arm_emitf(irn, "/* fallthrough to %t */", projs.f);
 	}
 }
 

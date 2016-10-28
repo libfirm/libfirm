@@ -408,30 +408,15 @@ static bool can_move_up_into_delayslot(const ir_node *node, const ir_node *to)
 
 static void optimize_fallthrough(ir_node *node)
 {
-	ir_node *proj_true  = NULL;
-	ir_node *proj_false = NULL;
-
-	assert((unsigned)pn_sparc_Bicc_false == (unsigned)pn_sparc_fbfcc_false);
-	assert((unsigned)pn_sparc_Bicc_true  == (unsigned)pn_sparc_fbfcc_true);
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		unsigned pn   = get_Proj_num(proj);
-		if (pn == pn_sparc_Bicc_true) {
-			proj_true = proj;
-		} else {
-			assert(pn == pn_sparc_Bicc_false);
-			proj_false = proj;
-		}
-	}
-	assert(proj_true != NULL && proj_false != NULL);
+	be_cond_branch_projs_t const projs = be_get_cond_branch_projs(node);
 
 	ir_node const *const block       = get_nodes_block(node);
-	ir_node const *const true_target = be_emit_get_cfop_target(proj_true);
+	ir_node const *const true_target = be_emit_get_cfop_target(projs.t);
 
 	if (be_emit_get_prev_block(true_target) == block) {
 		/* exchange both proj destinations so the second one can be omitted */
-		set_Proj_num(proj_true,  pn_sparc_Bicc_false);
-		set_Proj_num(proj_false, pn_sparc_Bicc_true);
+		set_Proj_num(projs.t, pn_sparc_Bicc_false);
+		set_Proj_num(projs.f, pn_sparc_Bicc_true);
 
 		sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr(node);
 		attr->relation = get_negated_relation(attr->relation);
@@ -1135,36 +1120,23 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 {
 	const sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr_const(node);
 	ir_relation    relation    = attr->relation;
-	const ir_node *proj_true   = NULL;
-	const ir_node *proj_false  = NULL;
 
-	assert((unsigned)pn_sparc_Bicc_false == (unsigned)pn_sparc_fbfcc_false);
-	assert((unsigned)pn_sparc_Bicc_true  == (unsigned)pn_sparc_fbfcc_true);
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		unsigned nr   = get_Proj_num(proj);
-		if (nr == pn_sparc_Bicc_true) {
-			proj_true = proj;
-		} else {
-			assert(nr == pn_sparc_Bicc_false);
-			proj_false = proj;
-		}
-	}
+	be_cond_branch_projs_t const projs = be_get_cond_branch_projs(node);
 
 	/* emit the true proj */
-	sparc_emitf(node, "%s%A %L", get_cc(relation), proj_true);
+	sparc_emitf(node, "%s%A %L", get_cc(relation), projs.t);
 	fill_delay_slot(node);
 
 	const ir_node *block       = get_nodes_block(node);
-	const ir_node *proj_target = be_emit_get_cfop_target(proj_false);
+	const ir_node *proj_target = be_emit_get_cfop_target(projs.f);
 	if (be_emit_get_prev_block(proj_target) != block) {
-		sparc_emitf(node, "ba %L", proj_false);
+		sparc_emitf(node, "ba %L", projs.f);
 		/* TODO: fill this slot as well */
 		emitting_delay_slot = true;
 		sparc_emitf(NULL, "nop");
 		emitting_delay_slot = false;
 	} else if (be_options.verbose_asm) {
-		sparc_emitf(node, "/* fallthrough to %L */", proj_false);
+		sparc_emitf(node, "/* fallthrough to %L */", projs.f);
 	}
 }
 
