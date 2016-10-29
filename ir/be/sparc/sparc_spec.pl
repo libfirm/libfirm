@@ -637,12 +637,12 @@ XNorCCZero => {
 	emit     => "xnorcc %S0, %SI1, %%g0",
 },
 
-Mul => {
+SMul => {
 	template => $binop_operand,
 	emit     => "smul %S0, %SI1, %D0",
 },
 
-MulCCZero => {
+SMulCCZero => {
 	template => $binopcczero_operand,
 	emit     => "smulcc %S0, %SI1, %%g0",
 },

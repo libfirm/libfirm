@@ -902,7 +902,7 @@ static ir_node *gen_Mul(ir_node *node)
 	}
 
 	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
-	                        new_bd_sparc_Mul_reg, new_bd_sparc_Mul_imm);
+	                        new_bd_sparc_SMul_reg, new_bd_sparc_SMul_imm);
 }
 
 /**
@@ -1322,8 +1322,8 @@ static ir_node *gen_Cmp(ir_node *node)
 			return new_node;
 		} else if (is_Mul(op1)) {
 			ir_node *new_node = gen_helper_binop(op1, MATCH_COMMUTATIVE,
-			                        new_bd_sparc_MulCCZero_reg,
-			                        new_bd_sparc_MulCCZero_imm);
+			                        new_bd_sparc_SMulCCZero_reg,
+			                        new_bd_sparc_SMulCCZero_imm);
 			arch_set_irn_register(new_node, &sparc_registers[REG_PSR]);
 			return new_node;
 		}
