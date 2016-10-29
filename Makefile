@@ -219,4 +219,7 @@ $(builddir)/%.ok: $(builddir)/%.exe
 .PHONY: test
 test: $(UNITTESTS_OK)
 
+.PHONY: gen
+gen: $(IR_SPEC_GENERATED_INCLUDES) $(libfirm_GEN_SOURCES)
+
 -include $(libfirm_DEPS)
