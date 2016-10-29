@@ -52,12 +52,12 @@ static bool ia32_transform_sub_to_neg_add(ir_node *const irn,
 
 	/* generate the neg src2 */
 	ir_node *res;
-	if (is_ia32_xSub(irn)) {
+	if (is_ia32_Subs(irn)) {
 		x86_insn_size_t const size = get_ia32_attr_const(irn)->size;
 		assert(get_irn_mode(irn) != mode_T);
 
 		ir_node *const noreg_fp = ia32_new_NoReg_xmm(irg);
-		res = new_bd_ia32_xXor(dbgi, block, noreg, noreg, nomem, in2, noreg_fp,
+		res = new_bd_ia32_Xorp(dbgi, block, noreg, noreg, nomem, in2, noreg_fp,
 		                       size);
 		ir_entity *entity = ia32_gen_fp_known_const(size == X86_SIZE_32
 		                                            ? ia32_SSIGN : ia32_DSIGN);
@@ -71,7 +71,7 @@ static bool ia32_transform_sub_to_neg_add(ir_node *const irn,
 		sched_add_before(irn, res);
 
 		/* generate the add */
-		res = new_bd_ia32_xAdd(dbgi, block, noreg, noreg, nomem, res, in1,
+		res = new_bd_ia32_Adds(dbgi, block, noreg, noreg, nomem, res, in1,
 		                       size);
 	} else {
 		ir_node *flags_proj  = NULL;
@@ -216,7 +216,7 @@ static bool ia32_handle_2addr(ir_node *const node, arch_register_req_t const *co
 		}
 	} else if (is_ia32_ShlD(node)) {
 		return ia32_transform_ShlD_to_ShrD_imm(node, reg);
-	} else if (is_ia32_Sub(node) || is_ia32_Sbb(node) || is_ia32_xSub(node)) {
+	} else if (is_ia32_Sub(node) || is_ia32_Sbb(node) || is_ia32_Subs(node)) {
 		return ia32_transform_sub_to_neg_add(node, reg);
 	}
 	return false;

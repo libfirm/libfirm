@@ -362,7 +362,7 @@ static ir_node *gen_Const(ir_node *node)
 					.offset = be_get_tv_bits32(tv, 0),
 				};
 				ir_node *cnst = new_bd_ia32_Const(dbgi, block, &imm);
-				res = new_bd_ia32_xMovd(dbgi, block, cnst);
+				res = new_bd_ia32_Movd(dbgi, block, cnst);
 			} else {
 #ifdef CONSTRUCT_SSE_CONST
 				if (mode == ia32_mode_float64 && be_get_tv_bits32(tv, 0) == 0) {
@@ -1458,7 +1458,7 @@ static ir_node *gen_Add(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2)
-			return gen_binop(node, op1, op2, new_bd_ia32_xAdd,
+			return gen_binop(node, op1, op2, new_bd_ia32_Adds,
 			                 match_commutative | match_am);
 		else
 			return gen_binop_x87_float(node, op1, op2, new_bd_ia32_fadd);
@@ -1529,7 +1529,7 @@ static ir_node *gen_Mul(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2)
-			return gen_binop(node, op1, op2, new_bd_ia32_xMul,
+			return gen_binop(node, op1, op2, new_bd_ia32_Muls,
 			                 match_commutative | match_am);
 		else
 			return gen_binop_x87_float(node, op1, op2, new_bd_ia32_fmul);
@@ -1658,7 +1658,7 @@ static ir_node *gen_Sub(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2)
-			return gen_binop(node, op1, op2, new_bd_ia32_xSub, match_am);
+			return gen_binop(node, op1, op2, new_bd_ia32_Subs, match_am);
 		else
 			return gen_binop_x87_float(node, op1, op2, new_bd_ia32_fsub);
 	}
@@ -1812,7 +1812,7 @@ static ir_node *gen_Div(ir_node *node)
 	ir_mode *const mode = get_Div_resmode(node);
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
-			return gen_binop(node, op1, op2, new_bd_ia32_xDiv, match_am);
+			return gen_binop(node, op1, op2, new_bd_ia32_Divs, match_am);
 		} else {
 			return gen_binop_x87_float(node, op1, op2, new_bd_ia32_fdiv);
 		}
@@ -1930,7 +1930,7 @@ static ir_node *gen_Minus(ir_node *node)
 			ir_node        *const noreg_xmm = ia32_new_NoReg_xmm(irg);
 			ir_node        *const base      = get_global_base(irg);
 			x86_insn_size_t const size      = x86_size_from_mode(mode);
-			ir_node        *const new_node  = new_bd_ia32_xXor(dbgi, block, base, noreg_GP, nomem, new_op, noreg_xmm, size);
+			ir_node        *const new_node  = new_bd_ia32_Xorp(dbgi, block, base, noreg_GP, nomem, new_op, noreg_xmm, size);
 
 			ir_entity      *const ent
 				= ia32_gen_fp_known_const(size == X86_SIZE_32 ? ia32_SSIGN
@@ -1997,7 +1997,7 @@ static ir_node *create_float_abs(dbg_info *const dbgi, ir_node *const new_block,
 		ir_node        *const noreg_fp = ia32_new_NoReg_xmm(irg);
 		ir_node        *const base     = get_global_base(irg);
 		x86_insn_size_t const size     = x86_size_from_mode(mode);
-		new_node = new_bd_ia32_xAnd(dbgi, new_block, base, noreg_GP, nomem,
+		new_node = new_bd_ia32_Andp(dbgi, new_block, base, noreg_GP, nomem,
 		                            new_op, noreg_fp, size);
 
 		ir_entity *ent = ia32_gen_fp_known_const(size == X86_SIZE_32
@@ -2898,9 +2898,7 @@ static ir_node *create_Ucomi(ir_node *node)
 	x86_address_t *addr = &am.addr;
 	ir_node  *new_block = be_transform_node(src_block);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *new_node  = new_bd_ia32_Ucomi(dbgi, new_block, addr->base,
-	                                        addr->index, addr->mem, am.new_op1,
-	                                        am.new_op2, am.ins_permuted);
+	ir_node  *new_node  = new_bd_ia32_Ucomis(dbgi, new_block, addr->base, addr->index, addr->mem, am.new_op1, am.new_op2, am.ins_permuted);
 	set_am_attributes(new_node, &am);
 	new_node = fix_mem_proj(new_node, &am);
 	return new_node;
@@ -3403,21 +3401,21 @@ static ir_node *gen_Mux(ir_node *node)
 			if (relation == ir_relation_less || relation == ir_relation_less_equal) {
 				if (cmp_left == mux_true && cmp_right == mux_false) {
 					/* Mux(a <= b, a, b) => MIN */
-					return gen_binop(node, cmp_left, cmp_right, new_bd_ia32_xMin,
+					return gen_binop(node, cmp_left, cmp_right, new_bd_ia32_Mins,
 			                 match_commutative | match_am | match_two_users);
 				} else if (cmp_left == mux_false && cmp_right == mux_true) {
 					/* Mux(a <= b, b, a) => MAX */
-					return gen_binop(node, cmp_left, cmp_right, new_bd_ia32_xMax,
+					return gen_binop(node, cmp_left, cmp_right, new_bd_ia32_Maxs,
 			                 match_commutative | match_am | match_two_users);
 				}
 			} else if (relation == ir_relation_greater || relation == ir_relation_greater_equal) {
 				if (cmp_left == mux_true && cmp_right == mux_false) {
 					/* Mux(a >= b, a, b) => MAX */
-					return gen_binop(node, cmp_left, cmp_right, new_bd_ia32_xMax,
+					return gen_binop(node, cmp_left, cmp_right, new_bd_ia32_Maxs,
 			                 match_commutative | match_am | match_two_users);
 				} else if (cmp_left == mux_false && cmp_right == mux_true) {
 					/* Mux(a >= b, b, a) => MIN */
-					return gen_binop(node, cmp_left, cmp_right, new_bd_ia32_xMin,
+					return gen_binop(node, cmp_left, cmp_right, new_bd_ia32_Mins,
 			                 match_commutative | match_am | match_two_users);
 				}
 			}
@@ -4655,8 +4653,8 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	case pn_Div_M:
 		if (is_ia32_Div(new_pred) || is_ia32_IDiv(new_pred)) {
 			return be_new_Proj(new_pred, pn_ia32_Div_M);
-		} else if (is_ia32_xDiv(new_pred)) {
-			return be_new_Proj(new_pred, pn_ia32_xDiv_M);
+		} else if (is_ia32_Divs(new_pred)) {
+			return be_new_Proj(new_pred, pn_ia32_Divs_M);
 		} else if (is_ia32_fdiv(new_pred)) {
 			return be_new_Proj(new_pred, pn_ia32_fdiv_M);
 		} else {
@@ -4665,8 +4663,8 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	case pn_Div_res:
 		if (is_ia32_Div(new_pred) || is_ia32_IDiv(new_pred)) {
 			return be_new_Proj(new_pred, pn_ia32_Div_div_res);
-		} else if (is_ia32_xDiv(new_pred)) {
-			return be_new_Proj(new_pred, pn_ia32_xDiv_res);
+		} else if (is_ia32_Divs(new_pred)) {
+			return be_new_Proj(new_pred, pn_ia32_Divs_res);
 		} else if (is_ia32_fdiv(new_pred)) {
 			return be_new_Proj(new_pred, pn_ia32_fdiv_res);
 		} else {
@@ -5058,13 +5056,13 @@ static ir_node *gen_prefetch(ir_node *node)
 			new_node = new_bd_ia32_PrefetchNTA(dbgi, block, base, idx, mem);
 			break;
 		case 1:
-			new_node = new_bd_ia32_Prefetch2(dbgi, block, base, idx, mem);
+			new_node = new_bd_ia32_PrefetchT2(dbgi, block, base, idx, mem);
 			break;
 		case 2:
-			new_node = new_bd_ia32_Prefetch1(dbgi, block, base, idx, mem);
+			new_node = new_bd_ia32_PrefetchT1(dbgi, block, base, idx, mem);
 			break;
 		default:
-			new_node = new_bd_ia32_Prefetch0(dbgi, block, base, idx, mem);
+			new_node = new_bd_ia32_PrefetchT0(dbgi, block, base, idx, mem);
 			break;
 		}
 	} else {

@@ -1335,19 +1335,19 @@ Inport => {
 },
 
 # Intel style prefetching
-Prefetch0 => {
+PrefetchT0 => {
 	template => $prefetchop,
 	latency  => 0,
 	emit     => "prefetcht0 %AM",
 },
 
-Prefetch1 => {
+PrefetchT1 => {
 	template => $prefetchop,
 	latency  => 0,
 	emit     => "prefetcht1 %AM",
 },
 
-Prefetch2 => {
+PrefetchT2 => {
 	template => $prefetchop,
 	latency  => 0,
 	emit     => "prefetcht2 %AM",
@@ -1399,28 +1399,28 @@ xAllOnes => {
 },
 
 # integer shift left, dword
-xPslld => {
+Pslld => {
 	template => $xshiftop,
 	emit     => "pslld %S1, %D0",
 	latency  => 3,
 },
 
 # integer shift left, qword
-xPsllq => {
+Psllq => {
 	template => $xshiftop,
 	emit     => "psllq %S1, %D0",
 	latency  => 3,
 },
 
 # integer shift right, dword
-xPsrld => {
+Psrld => {
 	template => $xshiftop,
 	emit     => "psrld %S1, %D0",
 	latency  => 1,
 },
 
 # mov from integer to SSE register
-xMovd  => {
+Movd  => {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "gp" ],
 	out_reqs  => [ "xmm" ],
@@ -1429,55 +1429,55 @@ xMovd  => {
 	latency   => 1,
 },
 
-xAdd => {
+Adds => {
 	template => $xbinop_commutative,
 	emit     => "adds%FX %B",
 	latency  => 4,
 },
 
-xMul => {
+Muls => {
 	template => $xbinop_commutative,
 	emit     => "muls%FX %B",
 	latency  => 4,
 },
 
-xMax => {
+Maxs => {
 	template => $xbinop_commutative,
 	emit     => "maxs%FX %B",
 	latency  => 2,
 },
 
-xMin => {
+Mins => {
 	template => $xbinop_commutative,
 	emit     => "mins%FX %B",
 	latency  => 2,
 },
 
-xAnd => {
+Andp => {
 	template => $xbinop_commutative,
 	emit     => "andp%FX %B",
 	latency  => 3,
 },
 
-xOr => {
+Orp => {
 	template => $xbinop_commutative,
 	emit     => "orp%FX %B",
 	latency  => 3,
 },
 
-xXor => {
+Xorp => {
 	template => $xbinop_commutative,
 	emit     => "xorp%FX %B",
 	latency  => 3,
 },
 
-xAndNot => {
+Andnp => {
 	template => $xbinop,
 	emit     => "andnp%FX %B",
 	latency  => 3,
 },
 
-xSub => {
+Subs => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "mem", "xmm", "xmm" ],
@@ -1491,7 +1491,7 @@ xSub => {
 	mode      => "first"
 },
 
-xDiv => {
+Divs => {
 	template => $xbinop,
 	am       => "source,binary",
 	emit     => "divs%FX %B",
@@ -1499,7 +1499,7 @@ xDiv => {
 	mode     => "mode_T"
 },
 
-Ucomi => {
+Ucomis => {
 	irn_flags => [ "modify_flags", "rematerializable" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "mem", "xmm", "xmm" ],
