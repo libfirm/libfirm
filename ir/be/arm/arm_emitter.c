@@ -376,11 +376,11 @@ static void emit_arm_fConst(const ir_node *irn)
 /**
  * Emit a Compare with conditional branch.
  */
-static void emit_arm_B(const ir_node *irn)
+static void emit_arm_Bcc(const ir_node *irn)
 {
 	be_cond_branch_projs_t projs = be_get_cond_branch_projs(irn);
 
-	ir_node *const op1 = get_irn_n(irn, n_arm_B_flags);
+	ir_node *const op1 = get_irn_n(irn, n_arm_Bcc_flags);
 	assert(is_arm_Cmn(op1) || is_arm_Cmp(op1) || is_arm_Tst(op1));
 
 	arm_cmp_attr_t const *const cmp_attr = get_arm_cmp_attr_const(op1);
@@ -509,7 +509,7 @@ static void emit_be_MemPerm(const ir_node *node)
 	assert(ent_offset == memperm_offset);
 }
 
-static void emit_arm_Jmp(const ir_node *node)
+static void emit_arm_B(const ir_node *node)
 {
 	BE_EMIT_JMP(arm, node, "b", node) {}
 }
@@ -528,9 +528,9 @@ static void arm_register_emitters(void)
 	/* custom emitter */
 	be_set_emitter(op_arm_Address,   emit_arm_Address);
 	be_set_emitter(op_arm_B,         emit_arm_B);
+	be_set_emitter(op_arm_Bcc,       emit_arm_Bcc);
 	be_set_emitter(op_arm_fConst,    emit_arm_fConst);
 	be_set_emitter(op_arm_FrameAddr, emit_arm_FrameAddr);
-	be_set_emitter(op_arm_Jmp,       emit_arm_Jmp);
 	be_set_emitter(op_arm_SwitchJmp, emit_arm_SwitchJmp);
 	be_set_emitter(op_be_Copy,       emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,   emit_be_Copy);

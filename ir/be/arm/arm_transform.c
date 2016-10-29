@@ -136,8 +136,7 @@ static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
 		result = new_bd_arm_Mov_imm(dbgi, block, v.values[0], v.rors[0]);
 
 		for (unsigned cnt = 1; cnt < v.ops; ++cnt) {
-			result = new_bd_arm_Or_imm(dbgi, block, result,
-			                           v.values[cnt], v.rors[cnt]);
+			result = new_bd_arm_Orr_imm(dbgi, block, result, v.values[cnt], v.rors[cnt]);
 		}
 	}
 	return result;
@@ -241,7 +240,7 @@ static ir_node *gen_Conv(ir_node *node)
 				if (!mode_is_signed(src_mode)) {
 					panic("TODO");
 				} else {
-					return new_bd_arm_FltX(dbg, block, new_op, dst_mode);
+					return new_bd_arm_Flt(dbg, block, new_op, dst_mode);
 				}
 			}
 		} else {
@@ -799,10 +798,10 @@ static ir_node *gen_Or(ir_node *node)
 		return pkh;
 
 	static const arm_binop_factory_t or_factory = {
-		new_bd_arm_Or_reg,
-		new_bd_arm_Or_imm,
-		new_bd_arm_Or_reg_shift_reg,
-		new_bd_arm_Or_reg_shift_imm
+		new_bd_arm_Orr_reg,
+		new_bd_arm_Orr_imm,
+		new_bd_arm_Orr_reg_shift_reg,
+		new_bd_arm_Orr_reg_shift_imm
 	};
 	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, &or_factory);
 }
@@ -821,8 +820,7 @@ static ir_node *gen_arm_OrPl_t(ir_node *node)
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_block = be_transform_nodes_block(node);
-	ir_node  *res       = new_bd_arm_OrPl(dbgi, new_block, new_left, new_right,
-	                                      new_falseval, new_flags);
+	ir_node  *res       = new_bd_arm_OrrPl(dbgi, new_block, new_left, new_right, new_falseval, new_flags);
 	return res;
 }
 
@@ -1187,7 +1185,7 @@ static ir_node *gen_Jmp(ir_node *node)
 {
 	ir_node  *new_block = be_transform_nodes_block(node);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	return new_bd_arm_Jmp(dbgi, new_block);
+	return new_bd_arm_B(dbgi, new_block);
 }
 
 static ir_node *gen_Switch(ir_node *node)
@@ -1253,7 +1251,7 @@ static ir_node *gen_Cond(ir_node *node)
 	ir_node    *const selector  = get_Cond_selector(node);
 	ir_node    *const flag_node = be_transform_node(selector);
 	ir_relation const relation  = get_Cmp_relation(selector);
-	return new_bd_arm_B(dbgi, block, flag_node, relation);
+	return new_bd_arm_Bcc(dbgi, block, flag_node, relation);
 }
 
 enum fpa_imm_mode {

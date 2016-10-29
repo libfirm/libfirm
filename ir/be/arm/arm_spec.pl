@@ -314,12 +314,12 @@ And => {
 	emit     => 'and %D0, %S0, %O',
 },
 
-Or => {
+Orr => {
 	template => $binop_shifter_operand,
 	emit     => 'orr %D0, %S0, %O',
 },
 
-OrPl => {
+OrrPl => {
 	#irn_flags => [ "rematerializable" ],
 	emit      => 'orrpl %D0, %S2, %O',
 	attr_type => "arm_shifter_operand_t",
@@ -468,7 +468,7 @@ Tst => {
 	emit     => 'tst %S0, %O',
 },
 
-B => {
+Bcc => {
 	op_flags  => [ "cfopcode", "forking" ],
 	state     => "pinned",
 	in_reqs   => [ "flags" ],
@@ -479,7 +479,7 @@ B => {
 	init      => "\tset_arm_CondJmp_relation(res, relation);",
 },
 
-Jmp => {
+B => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
 	irn_flags => [ "simple_jump" ],
@@ -564,7 +564,7 @@ Mvf => {
 	attr      => "ir_mode *op_mode",
 },
 
-FltX => {
+Flt => {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "gp" ],
 	out_reqs  => [ "fpa" ],

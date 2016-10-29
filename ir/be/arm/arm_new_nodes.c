@@ -42,7 +42,7 @@ static bool has_load_store_attr(const ir_node *node)
 
 static bool has_shifter_operand(const ir_node *node)
 {
-	return is_arm_Add(node) || is_arm_And(node) || is_arm_Or(node)
+	return is_arm_Add(node) || is_arm_And(node) || is_arm_Orr(node)
 		|| is_arm_Eor(node) || is_arm_Bic(node) || is_arm_Sub(node)
 		|| is_arm_Rsb(node) || is_arm_Mov(node) || is_arm_Mvn(node)
 		|| is_arm_Cmn(node) || is_arm_Cmp(node) || is_arm_Tst(node)
@@ -57,7 +57,7 @@ static bool has_cmp_attr(const ir_node *node)
 static bool has_farith_attr(const ir_node *node)
 {
 	return is_arm_Adf(node) || is_arm_Muf(node) || is_arm_Suf(node)
-	    || is_arm_Dvf(node) || is_arm_Mvf(node) || is_arm_FltX(node);
+	    || is_arm_Dvf(node) || is_arm_Mvf(node) || is_arm_Flt(node);
 }
 
 void arm_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
@@ -215,13 +215,13 @@ const arm_farith_attr_t *get_arm_farith_attr_const(const ir_node *node)
 
 arm_CondJmp_attr_t *get_arm_CondJmp_attr(ir_node *node)
 {
-	assert(is_arm_B(node));
+	assert(is_arm_Bcc(node));
 	return (arm_CondJmp_attr_t*)get_irn_generic_attr(node);
 }
 
 const arm_CondJmp_attr_t *get_arm_CondJmp_attr_const(const ir_node *node)
 {
-	assert(is_arm_B(node));
+	assert(is_arm_Bcc(node));
 	return (const arm_CondJmp_attr_t*)get_irn_generic_attr_const(node);
 }
 
