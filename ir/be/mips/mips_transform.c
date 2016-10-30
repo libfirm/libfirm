@@ -71,6 +71,26 @@ static inline bool is_uimm16(long const val)
 	return 0 <= val && val < 65536;
 }
 
+static ir_node *gen_Add(ir_node *const node)
+{
+	ir_node *const l    = get_Add_left(node);
+	ir_node *const r    = get_Add_right(node);
+	ir_mode *const mode = get_irn_mode(node);
+	if (be_mode_needs_gp_reg(mode)) {
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = be_transform_nodes_block(node);
+		ir_node  *const new_l = be_transform_node(l);
+		if (is_Const(r)) {
+			long const val = get_Const_long(r);
+			if (is_simm16(val))
+				return new_bd_mips_addiu(dbgi, block, new_l, val);
+		}
+		ir_node *const new_r = be_transform_node(r);
+		return new_bd_mips_addu(dbgi, block, new_l, new_r);
+	}
+	panic("TODO");
+}
+
 static ir_node *gen_Const(ir_node *const node)
 {
 	ir_mode *const mode = get_irn_mode(node);
@@ -101,6 +121,21 @@ static ir_node *gen_Const(ir_node *const node)
 				res = new_bd_mips_ori(dbgi, block, res, lo);
 			return res;
 		}
+	}
+	panic("TODO");
+}
+
+static ir_node *gen_Minus(ir_node *const node)
+{
+	ir_node *const val  = get_Minus_op(node);
+	ir_mode *const mode = get_irn_mode(node);
+	if (be_mode_needs_gp_reg(mode)) {
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = be_transform_nodes_block(node);
+		ir_graph *const irg   = get_irn_irg(node);
+		ir_node  *const new_l = get_Start_zero(irg);
+		ir_node  *const new_r = be_transform_node(val);
+		return new_bd_mips_subu(dbgi, block, new_l, new_r);
 	}
 	panic("TODO");
 }
@@ -206,13 +241,31 @@ static ir_node *gen_Start(ir_node *const node)
 	return be_new_Start(irg, outs);
 }
 
+static ir_node *gen_Sub(ir_node *const node)
+{
+	ir_node *const l    = get_Sub_left(node);
+	ir_node *const r    = get_Sub_right(node);
+	ir_mode *const mode = get_irn_mode(node);
+	if (be_mode_needs_gp_reg(mode)) {
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = be_transform_nodes_block(node);
+		ir_node  *const new_l = be_transform_node(l);
+		ir_node  *const new_r = be_transform_node(r);
+		return new_bd_mips_subu(dbgi, block, new_l, new_r);
+	}
+	panic("TODO");
+}
+
 static void mips_register_transformers(void)
 {
 	be_start_transform_setup();
 
+	be_set_transform_function(op_Add,    gen_Add);
 	be_set_transform_function(op_Const,  gen_Const);
+	be_set_transform_function(op_Minus,  gen_Minus);
 	be_set_transform_function(op_Return, gen_Return);
 	be_set_transform_function(op_Start,  gen_Start);
+	be_set_transform_function(op_Sub,    gen_Sub);
 
 	be_set_transform_proj_function(op_Proj,  gen_Proj_Proj);
 	be_set_transform_proj_function(op_Start, gen_Proj_Start);
