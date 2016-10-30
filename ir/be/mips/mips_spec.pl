@@ -51,6 +51,15 @@ my $mode_gp = "mode_Iu"; # TODO
 		"\tattr->val = val;",
 );
 
+my $binOp = {
+	irn_flags => [ "rematerializable" ],
+	in_reqs   => [ "cls-gp", "cls-gp" ],
+	out_reqs  => [ "cls-gp" ],
+	ins       => [ "left", "right" ],
+	outs      => [ "res" ],
+	emit      => "{name}\t%D0, %S0, %S1",
+};
+
 my $immediateOp = {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "cls-gp" ],
@@ -63,6 +72,8 @@ my $immediateOp = {
 };
 
 %nodes = (
+
+addu => { template => $binOp },
 
 addiu => { template => $immediateOp },
 
@@ -83,5 +94,7 @@ lui => {
 },
 
 ori => { template => $immediateOp },
+
+subu => { template => $binOp },
 
 );
