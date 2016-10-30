@@ -135,6 +135,7 @@ my $binop_commutative = {
 	attr      => "x86_insn_size_t size",
 	am        => "source,binary",
 	mode      => "first",
+	emit      => "{name}%M %B",
 };
 
 my $binop_flags = {
@@ -151,6 +152,7 @@ my $binop_flags = {
 	attr      => "x86_insn_size_t size, bool ins_permuted",
 	init      => "attr->ins_permuted = ins_permuted;",
 	mode      => "first",
+	emit      => "{name}%M %B",
 };
 
 my $binop_mem = {
@@ -164,6 +166,7 @@ my $binop_mem = {
 	ins       => [ "base", "index", "mem", "val" ],
 	outs      => [ "unused", "flags", "M" ],
 	attr      => "x86_insn_size_t size",
+	emit      => "{name}%M %S3, %AM",
 };
 
 my $shiftop = {
@@ -177,6 +180,7 @@ my $shiftop = {
 	outs      => [ "res", "flags" ],
 	mode      => "first",
 	attr      => "x86_insn_size_t size",
+	emit      => "{name}%M %<,S1 %D0",
 };
 
 my $shiftop_mem = {
@@ -187,6 +191,7 @@ my $shiftop_mem = {
 	ins       => [ "base", "index", "mem", "count" ],
 	outs      => [ "unused", "flags", "M" ],
 	attr      => "x86_insn_size_t size",
+	emit      => "{name}%M %<,S3 %AM",
 };
 
 my $shiftop_double = {
@@ -203,6 +208,7 @@ my $shiftop_double = {
 	outs      => [ "res", "flags" ],
 	mode      => "first",
 	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
+	emit      => "{name}%M %<S2, %S1, %D0",
 };
 
 my $divop = {
@@ -215,6 +221,7 @@ my $divop = {
 	outs      => [ "div_res", "flags", "M", "mod_res", "X_regular", "X_except" ],
 	am        => "source,unary",
 	attr      => "x86_insn_size_t size",
+	emit      => "{name}%M %AS3",
 };
 
 my $mulop = {
@@ -228,6 +235,7 @@ my $mulop = {
 	outs      => [ "res_low", "flags", "M", "res_high" ],
 	am        => "source,binary",
 	attr      => "x86_insn_size_t size",
+	emit      => "{name}%M %AS4",
 };
 
 my $unop = {
@@ -238,6 +246,7 @@ my $unop = {
 	outs      => [ "res", "flags" ],
 	attr      => "x86_insn_size_t size",
 	mode      => "first",
+	emit      => "{name}%M %D0",
 };
 
 my $unop_no_flags = {
@@ -248,6 +257,7 @@ my $unop_no_flags = {
 	ins       => [ "val" ],
 	outs      => [ "res" ],
 	attr      => "x86_insn_size_t size",
+	emit      => "{name}%M %D0",
 };
 
 my $unop_from_mem = {
@@ -260,6 +270,7 @@ my $unop_from_mem = {
 	am        => "source,unary",
 	mode      => "first",
 	attr      => "x86_insn_size_t size",
+	emit      => "{name}%M %AS3, %D0",
 };
 
 my $unop_mem = {
@@ -270,6 +281,7 @@ my $unop_mem = {
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "unused", "flags", "M" ],
 	attr      => "x86_insn_size_t size",
+	emit      => "{name}%M %AM",
 };
 
 my $memop = {
@@ -288,6 +300,7 @@ my $prefetchop = {
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "M" ],
 	fixed     => "x86_insn_size_t const size = X86_SIZE_8;",
+	emit      => "{name} %AM",
 };
 
 my $fbinop = {
@@ -309,6 +322,7 @@ my $funop = {
 	out_reqs  => [ "fp" ],
 	ins       => [ "value" ],
 	fixed     => "x86_insn_size_t const size = X86_SIZE_80;",
+	emit      => "{name}",
 };
 
 my $fconstop = {
@@ -318,6 +332,7 @@ my $fconstop = {
 	outs      => [ "res" ],
 	fixed     => "x86_insn_size_t const size = X86_SIZE_80;\n"
 	            ."\t".$x87sim,
+	emit      => "{name}",
 };
 
 my $valueop = {
@@ -336,6 +351,7 @@ my $fpopop = {
 	attr        => "const arch_register_t *reg",
 	init        => "attr->x87.reg = reg;",
 	fixed       => "x86_insn_size_t const size = X86_SIZE_80;",
+	emit        => "{name} %F0",
 };
 
 my $xbinop = {
@@ -348,6 +364,7 @@ my $xbinop = {
 	am        => "source,binary",
 	mode      => "first",
 	attr      => "x86_insn_size_t size",
+	emit      => "{name}%FX %B",
 };
 
 my $xbinop_commutative = {
@@ -360,6 +377,7 @@ my $xbinop_commutative = {
 	am        => "source,binary",
 	mode      => "first",
 	attr      => "x86_insn_size_t size",
+	emit      => "{name}%FX %B",
 };
 
 my $xconv_i2f = {
@@ -369,6 +387,7 @@ my $xconv_i2f = {
 	ins      => [ "base", "index", "mem", "val" ],
 	attr     => "x86_insn_size_t size",
 	am       => "source,unary",
+	emit     => "{name} %AS3, %D0",
 };
 
 my $xshiftop = {
@@ -376,6 +395,7 @@ my $xshiftop = {
 	in_reqs   => [ "xmm", "xmm" ],
 	out_reqs  => [ "in_r0 !in_r1" ],
 	attr      => "x86_insn_size_t size",
+	emit      => "{name} %S1, %D0",
 };
 
 my $xvalueop = {
@@ -404,14 +424,16 @@ my $fpcwop = {
 	op_flags => [ "uses_memory" ],
 	state    => "pinned",
 	fixed    => "x86_insn_size_t const size = X86_SIZE_16;",
+	emit     => "{name} %AM",
 };
 
 my $emmsop = {
 	op_flags    => [ "keep" ],
 	out_reqs    => [ "none" ],
 	attrs_equal => "attrs_equal_false",
+	emit        => "{name}",
 	fixed       => "x86_insn_size_t const size = X86_SIZE_32;"
-	              ."\t$x87sim",
+	              ."\t".$x87sim,
 };
 
 %nodes = (
@@ -430,14 +452,13 @@ Immediate => {
 
 Add => {
 	template => $binop_commutative,
-	emit     => "add%M %B",
 	encode   => "ia32_enc_binop(node, 0)",
 	latency  => 1,
 },
 
 AddMem => {
 	template => $binop_mem,
-	emit     => "add%M %S3, %AM",
+	name     => "add",
 	encode   => "ia32_enc_binop_mem(node, 0)",
 	latency  => 1,
 },
@@ -471,7 +492,6 @@ l_Adc => {
 
 Mul => {
 	template => $mulop,
-	emit     => "mul%M %AS4",
 	encode   => "ia32_enc_unop(node, 0xF7, 4, n_ia32_Mul_right)",
 	latency  => 10,
 },
@@ -485,7 +505,6 @@ l_Mul => {
 
 IMul => {
 	template => $binop_commutative,
-	emit     => "imul%M %B",
 	encode   => "ia32_enc_0f_unop_reg(node, 0xAF, n_ia32_IMul_right)",
 	latency  => 5,
 },
@@ -504,7 +523,7 @@ IMulImm => {
 
 IMul1OP => {
 	template => $mulop,
-	emit     => "imul%M %AS4",
+	name     => "imul",
 	encode   => "ia32_enc_unop(node, 0xF7, 5, n_ia32_IMul1OP_right)",
 	latency  => 5,
 },
@@ -518,35 +537,32 @@ l_IMul => {
 
 And => {
 	template => $binop_commutative,
-	emit     => "and%M %B",
 	encode   => "ia32_enc_binop(node, 4)",
 	latency  => 1,
 },
 
 AndMem => {
 	template => $binop_mem,
-	emit     => "and%M %S3, %AM",
+	name     => "and",
 	encode   => "ia32_enc_binop_mem(node, 4)",
 	latency  => 1,
 },
 
 Or => {
 	template => $binop_commutative,
-	emit     => "or%M %B",
 	encode   => "ia32_enc_binop(node, 1)",
 	latency  => 1,
 },
 
 OrMem => {
 	template => $binop_mem,
-	emit     => "or%M %S3, %AM",
+	name     => "or",
 	encode   => "ia32_enc_binop_mem(node, 1)",
 	latency  => 1,
 },
 
 Xor => {
 	template => $binop_commutative,
-	emit     => "xor%M %B",
 	encode   => "ia32_enc_binop(node, 6)",
 	latency  => 1,
 },
@@ -564,7 +580,7 @@ Xor0 => {
 
 XorMem => {
 	template => $binop_mem,
-	emit     => "xor%M %S3, %AM",
+	name     => "xor",
 	encode   => "ia32_enc_binop_mem(node, 6)",
 	latency  => 1,
 },
@@ -594,7 +610,7 @@ Sub => {
 
 SubMem => {
 	template => $binop_mem,
-	emit     => "sub%M %S3, %AM",
+	name     => "sub",
 	encode   => "ia32_enc_binop_mem(node, 5)",
 	latency  => 1,
 },
@@ -640,110 +656,100 @@ l_Sbb => {
 
 IDiv => {
 	template => $divop,
-	emit     => "idiv%M %AS3",
 	encode   => "ia32_enc_unop(node, 0xF7, 7, n_ia32_IDiv_divisor)",
 	latency  => 25,
 },
 
 Div => {
 	template => $divop,
-	emit     => "div%M %AS3",
 	encode   => "ia32_enc_unop(node, 0xF7, 6, n_ia32_Div_divisor)",
 	latency  => 25,
 },
 
 Shl => {
 	template => $shiftop,
-	emit     => "shl%M %<,S1 %D0",
 	encode   => "ia32_enc_shiftop(node, 4)",
 	latency  => 1,
 },
 
 ShlMem => {
 	template => $shiftop_mem,
-	emit     => "shl%M %<,S3 %AM",
+	name     => "shl",
 	encode   => "ia32_enc_shiftop_mem(node, 4)",
 	latency  => 1,
 },
 
 ShlD => {
 	template => $shiftop_double,
-	emit     => "shld%M %<S2, %S1, %D0",
 	latency  => 6,
 },
 
 Shr => {
 	template => $shiftop,
-	emit     => "shr%M %<,S1 %D0",
 	encode   => "ia32_enc_shiftop(node, 5)",
 	latency  => 1,
 },
 
 ShrMem => {
 	template => $shiftop_mem,
-	emit     => "shr%M %<,S3 %AM",
+	name     => "shr",
 	encode   => "ia32_enc_shiftop_mem(node, 5)",
 	latency  => 1,
 },
 
 ShrD => {
 	template => $shiftop_double,
-	emit     => "shrd%M %<S2, %S1, %D0",
 	latency  => 6,
 },
 
 Sar => {
 	template => $shiftop,
-	emit     => "sar%M %<,S1 %D0",
 	encode   => "ia32_enc_shiftop(node, 7)",
 	latency  => 1,
 },
 
 SarMem => {
 	template => $shiftop_mem,
-	emit     => "sar%M %<,S3 %AM",
+	name     => "sar",
 	encode   => "ia32_enc_shiftop_mem(node, 7)",
 	latency  => 1,
 },
 
 Ror => {
 	template => $shiftop,
-	emit     => "ror%M %<,S1 %D0",
 	encode   => "ia32_enc_shiftop(node, 1)",
 	latency  => 1,
 },
 
 RorMem => {
 	template => $shiftop_mem,
-	emit     => "ror%M %<,S3 %AM",
+	name     => "ror",
 	encode   => "ia32_enc_shiftop_mem(node, 1)",
 	latency  => 1,
 },
 
 Rol => {
 	template => $shiftop,
-	emit     => "rol%M %<,S1 %D0",
 	encode   => "ia32_enc_shiftop(node, 0)",
 	latency  => 1,
 },
 
 RolMem => {
 	template => $shiftop_mem,
-	emit     => "rol%M %<,S3 %AM",
+	name     => "rol",
 	encode   => "ia32_enc_shiftop_mem(node, 0)",
 	latency  => 1,
 },
 
 Neg => {
 	template => $unop,
-	emit     => "neg%M %D0",
 	encode   => "ia32_enc_unop(node, 0xF7, 3, n_ia32_Neg_val)",
 	latency  => 1,
 },
 
 NegMem => {
 	template => $unop_mem,
-	emit     => "neg%M %AM",
+	name     => "neg",
 	encode   => "ia32_enc_unop_mem(node, 0xF6, 3)",
 	latency  => 1,
 },
@@ -767,26 +773,24 @@ l_Minus64 => {
 
 Inc => {
 	template => $unop,
-	emit     => "inc%M %D0",
 	latency  => 1,
 },
 
 IncMem => {
 	template => $unop_mem,
-	emit     => "inc%M %AM",
+	name     => "inc",
 	encode   => "ia32_enc_unop_mem(node, 0xFE, 0)",
 	latency  => 1,
 },
 
 Dec => {
 	template => $unop,
-	emit     => "dec%M %D0",
 	latency  => 1,
 },
 
 DecMem => {
 	template => $unop_mem,
-	emit     => "dec%M %AM",
+	name     => "dec",
 	encode   => "ia32_enc_unop_mem(node, 0xFE, 1)",
 	latency  => 1,
 },
@@ -797,7 +801,6 @@ Not => {
 		""     => { in_reqs => [ "gp" ] },
 		"8bit" => { in_reqs => [ "eax ebx ecx edx" ] },
 	},
-	emit     => "not%M %D0",
 	encode   => "ia32_enc_unop(node, 0xF7, 2, n_ia32_Not_val)",
 	latency  => 1,
 },
@@ -839,7 +842,6 @@ Stc => {
 
 Cmp => {
 	template => $binop_flags,
-	emit     => "cmp%M %B",
 	encode   => "ia32_enc_binop(node, 7)",
 	latency  => 1,
 },
@@ -858,7 +860,6 @@ XorHighLow => {
 
 Test => {
 	template => $binop_flags,
-	emit     => "test%M %B",
 	latency  => 1,
 },
 
@@ -1015,7 +1016,6 @@ FldCW => {
 	out_reqs => [ "fpcw" ],
 	ins      => [ "base", "index", "mem" ],
 	latency  => 5,
-	emit     => "fldcw %AM",
 },
 
 FnstCW => {
@@ -1024,7 +1024,6 @@ FnstCW => {
 	out_reqs => [ "mem" ],
 	ins      => [ "base", "index", "mem", "fpcw" ],
 	latency  => 5,
-	emit     => "fnstcw %AM",
 },
 
 FnstCWNOP => {
@@ -1221,14 +1220,12 @@ Bt => {
 
 Bsf => {
 	template => $unop_from_mem,
-	emit     => "bsf%M %AS3, %D0",
 	encode   => "ia32_enc_0f_unop_reg(node, 0xBC, n_ia32_Bsf_operand)",
 	latency  => 1,
 },
 
 Bsr => {
 	template => $unop_from_mem,
-	emit     => "bsr%M %AS3, %D0",
 	encode   => "ia32_enc_0f_unop_reg(node, 0xBD, n_ia32_Bsr_operand)",
 	latency  => 1,
 },
@@ -1236,7 +1233,6 @@ Bsr => {
 # SSE4.2 or SSE4a popcnt instruction
 Popcnt => {
 	template => $unop_from_mem,
-	emit     => "popcnt%M %AS3, %D0",
 	latency  => 1,
 },
 
@@ -1270,7 +1266,6 @@ Call => {
 
 Bswap => {
 	template => $unop_no_flags,
-	emit     => "bswap%M %D0",
 	latency  => 1,
 },
 
@@ -1338,38 +1333,32 @@ Inport => {
 PrefetchT0 => {
 	template => $prefetchop,
 	latency  => 0,
-	emit     => "prefetcht0 %AM",
 },
 
 PrefetchT1 => {
 	template => $prefetchop,
 	latency  => 0,
-	emit     => "prefetcht1 %AM",
 },
 
 PrefetchT2 => {
 	template => $prefetchop,
 	latency  => 0,
-	emit     => "prefetcht2 %AM",
 },
 
 PrefetchNTA => {
 	template => $prefetchop,
 	latency  => 0,
-	emit     => "prefetchnta %AM",
 },
 
 # 3DNow! prefetch instructions
 Prefetch => {
 	template => $prefetchop,
 	latency  => 0,
-	emit     => "prefetch %AM",
 },
 
 PrefetchW => {
 	template => $prefetchop,
 	latency  => 0,
-	emit     => "prefetchw %AM",
 },
 
 # produces a 0/+0.0
@@ -1401,21 +1390,18 @@ xAllOnes => {
 # integer shift left, dword
 Pslld => {
 	template => $xshiftop,
-	emit     => "pslld %S1, %D0",
 	latency  => 3,
 },
 
 # integer shift left, qword
 Psllq => {
 	template => $xshiftop,
-	emit     => "psllq %S1, %D0",
 	latency  => 3,
 },
 
 # integer shift right, dword
 Psrld => {
 	template => $xshiftop,
-	emit     => "psrld %S1, %D0",
 	latency  => 1,
 },
 
@@ -1431,70 +1417,54 @@ Movd  => {
 
 Adds => {
 	template => $xbinop_commutative,
-	emit     => "adds%FX %B",
 	latency  => 4,
 },
 
 Muls => {
 	template => $xbinop_commutative,
-	emit     => "muls%FX %B",
 	latency  => 4,
 },
 
 Maxs => {
 	template => $xbinop_commutative,
-	emit     => "maxs%FX %B",
 	latency  => 2,
 },
 
 Mins => {
 	template => $xbinop_commutative,
-	emit     => "mins%FX %B",
 	latency  => 2,
 },
 
 Andp => {
 	template => $xbinop_commutative,
-	emit     => "andp%FX %B",
 	latency  => 3,
 },
 
 Orp => {
 	template => $xbinop_commutative,
-	emit     => "orp%FX %B",
 	latency  => 3,
 },
 
 Xorp => {
 	template => $xbinop_commutative,
-	emit     => "xorp%FX %B",
 	latency  => 3,
 },
 
 Andnp => {
 	template => $xbinop,
-	emit     => "andnp%FX %B",
 	latency  => 3,
 },
 
 Subs => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem", "xmm", "xmm" ],
+	template  => $xbinop,
 	out_reqs  => [ "in_r3", "flags", "mem" ],
 	ins       => [ "base", "index", "mem", "minuend", "subtrahend" ],
-	outs      => [ "res", "flags", "M" ],
-	am        => "source,binary",
-	attr      => "x86_insn_size_t size",
-	emit      => "subs%FX %B",
 	latency   => 4,
-	mode      => "first"
 },
 
 Divs => {
 	template => $xbinop,
 	am       => "source,binary",
-	emit     => "divs%FX %B",
 	latency  => 16,
 	mode     => "mode_T"
 },
@@ -1540,13 +1510,11 @@ xStore => {
 
 CvtSI2SS => {
 	template => $xconv_i2f,
-	emit     => "cvtsi2ss %AS3, %D0",
 	latency  => 2,
 },
 
 CvtSI2SD => {
 	template => $xconv_i2f,
-	emit     => "cvtsi2sd %AS3, %D0",
 	latency  => 2,
 },
 
@@ -1682,14 +1650,12 @@ fdiv => {
 
 fabs => {
 	template => $funop,
-	emit     => "fabs",
 	encode   => "ia32_enc_fsimple(0xE1)",
 	latency  => 2,
 },
 
 fchs => {
 	template => $funop,
-	emit     => "fchs",
 	encode   => "ia32_enc_fsimple(0xE0)",
 	latency  => 2,
 },
@@ -1790,45 +1756,38 @@ fisttp => {
 
 fldz => {
 	template => $fconstop,
-	emit     => "fldz",
 	encode   => "ia32_enc_fsimple(0xEE)",
 	latency  => 4,
 },
 
 fld1 => {
 	template => $fconstop,
-	emit     => "fld1",
 	encode   => "ia32_enc_fsimple(0xE8)",
 	latency  => 4,
 },
 
 fldpi => {
 	template => $fconstop,
-	emit     => "fldpi",
 	latency  => 4,
 },
 
 fldln2 => {
 	template => $fconstop,
-	emit     => "fldln2",
 	latency  => 4,
 },
 
 fldlg2 => {
 	template => $fconstop,
-	emit     => "fldlg2",
 	latency  => 4,
 },
 
 fldl2t => {
 	template => $fconstop,
-	emit     => "fldll2t",
 	latency  => 4,
 },
 
 fldl2e => {
 	template => $fconstop,
-	emit     => "fldl2e",
 	latency  => 4,
 },
 
@@ -1940,27 +1899,24 @@ fdup => {
 
 fpop => {
 	template => $fpopop,
-	emit     => "fstp %F0",
+	name     => "fstp",
 	encode   => "ia32_enc_fop_reg(node, 0xDD, 0xD8)",
 	latency  => 1,
 },
 
 ffreep => {
 	template => $fpopop,
-	emit     => "ffreep %F0",
 	encode   => "ia32_enc_fop_reg(node, 0xDF, 0xC0)",
 	latency  => 1,
 },
 
 emms => {
 	template => $emmsop,
-	emit     => "emms",
 	latency  => 3,
 },
 
 femms => {
 	template => $emmsop,
-	emit     => "femms",
 	latency  => 3,
 },
 

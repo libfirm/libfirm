@@ -110,6 +110,7 @@ my $binop = {
 	outs      => [ "res", "flags", "M" ],
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "{name}%M %AM",
 };
 
 my $binop_commutative = {
@@ -120,6 +121,7 @@ my $binop_commutative = {
 	outs      => [ "res", "flags", "M" ],
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "{name}%M %AM",
 };
 
 my $sextop = {
@@ -127,6 +129,7 @@ my $sextop = {
 	out_reqs => [ "rdx" ],
 	ins      => [ "val" ],
 	init     => "arch_set_additional_pressure(res, &amd64_reg_classes[CLASS_amd64_gp], 1);",
+	emit     => "{name}",
 };
 
 my $divop = {
@@ -139,6 +142,7 @@ my $divop = {
 	fixed     => "x86_addr_t addr = { .base_input = 0, .variant = X86_ADDR_REG };\n"
 	            ."amd64_op_mode_t op_mode = AMD64_OP_REG;\n",
 	attr      => "x86_insn_size_t size",
+	emit      => "{name}%M %AM",
 };
 
 my $mulop = {
@@ -153,6 +157,7 @@ my $mulop = {
 	outs      => [ "res_low", "flags", "M", "res_high" ],
 	attr_type => "amd64_addr_attr_t",
 	attr      => "x86_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
+	emit      => "{name}%M %AM",
 };
 
 my $shiftop = {
@@ -162,6 +167,7 @@ my $shiftop = {
 	outs      => [ "res", "flags" ],
 	attr_type => "amd64_shift_attr_t",
 	attr      => "const amd64_shift_attr_t *attr_init",
+	emit      => "{name}%M %SO",
 };
 
 my $unop = {
@@ -174,6 +180,7 @@ my $unop = {
 	attr      => "x86_insn_size_t size",
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_REG;\n"
 	            ."x86_addr_t addr = { .base_input = 0, .variant = X86_ADDR_REG };",
+	emit      => "{name}%M %AM",
 };
 
 my $unop_out = {
@@ -183,6 +190,7 @@ my $unop_out = {
 	outs      => [ "res", "flags", "M" ],
 	attr_type => "amd64_addr_attr_t",
 	attr      => "x86_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
+	emit      => "{name}%M %AM, %D0",
 };
 
 my $binopx = {
@@ -193,6 +201,7 @@ my $binopx = {
 	outs      => [ "res", "none", "M" ],
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "{name} %AM",
 };
 
 my $binopx_commutative = {
@@ -203,6 +212,7 @@ my $binopx_commutative = {
 	outs      => [ "res", "none", "M" ],
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "{name}%MX %AM",
 };
 
 my $cvtop2x = {
@@ -212,6 +222,7 @@ my $cvtop2x = {
 	outs      => [ "res", "none", "M" ],
 	attr_type => "amd64_addr_attr_t",
 	attr      => "x86_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
+	emit      => "{name} %AM, %^D0",
 };
 
 my $cvtopx2i = {
@@ -221,6 +232,7 @@ my $cvtopx2i = {
 	outs      => [ "res", "none", "M" ],
 	attr_type => "amd64_addr_attr_t",
 	attr      => "x86_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr",
+	emit      => "{name} %AM, %D0",
 };
 
 my $movopx = {
@@ -230,6 +242,7 @@ my $movopx = {
 	out_reqs  => [ "xmm", "none", "mem" ],
 	attr_type => "amd64_addr_attr_t",
 	attr      => "amd64_op_mode_t op_mode, x86_addr_t addr",
+	emit      => "{name} %AM, %D0",
 };
 
 my $x87const = {
@@ -240,6 +253,7 @@ my $x87const = {
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_X87;\n"
 	            ."x86_insn_size_t size    = X86_SIZE_80;\n",
 	mode      => $mode_x87,
+	emit      => "{name}",
 };
 
 my $x87unop = {
@@ -249,6 +263,7 @@ my $x87unop = {
 	ins       => [ "value" ],
 	attr_type => "amd64_x87_attr_t",
 	mode      => $mode_x87,
+	emit      => "{name}",
 };
 
 my $x87binop = {
@@ -333,100 +348,55 @@ leave => {
 	emit      => "leave",
 },
 
-add => {
-	template => $binop_commutative,
-	emit     => "add%M %AM",
-},
+add => { template => $binop_commutative },
 
-and => {
-	template => $binop_commutative,
-	emit     => "and%M %AM",
-},
+and => { template => $binop_commutative },
 
 cltd => {
 	template => $sextop,
-	emit     => "cltd",
 	fixed    => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n"
 	           ."x86_insn_size_t size    = X86_SIZE_32;\n",
 },
 
 cqto => {
 	template => $sextop,
-	emit     => "cqto",
 	fixed    => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n"
 	           ."x86_insn_size_t size    = X86_SIZE_64;\n",
 },
 
-div => {
-	template => $divop,
-	emit     => "div%M %AM",
-},
+div => { template => $divop },
 
-idiv => {
-	template => $divop,
-	emit     => "idiv%M %AM",
-},
+idiv => { template => $divop },
 
-imul => {
-	template => $binop_commutative,
-	emit     => "imul%M %AM",
-},
+imul => { template => $binop_commutative },
 
 imul_1op => {
 	template => $mulop,
-	emit     => "imul%M %AM",
+	name     => "imul",
 },
 
-mul => {
-	template => $mulop,
-	emit     => "mul%M %AM",
-},
+mul => { template => $mulop },
 
-or => {
-	template => $binop_commutative,
-	emit     => "or%M %AM",
-},
+or => { template => $binop_commutative },
 
-shl => {
-	template => $shiftop,
-	emit     => "shl%M %SO",
-},
+shl => { template => $shiftop },
 
-shr => {
-	template => $shiftop,
-	emit     => "shr%M %SO",
-},
+shr => { template => $shiftop },
 
-sar => {
-	template => $shiftop,
-	emit     => "sar%M %SO",
-},
+sar => { template => $shiftop },
 
 sub => {
 	template  => $binop,
 	irn_flags => [ "modify_flags", "rematerializable" ],
-	emit      => "sub%M %AM",
 },
 
-sbb => {
-	template => $binop,
-	emit     => "sbb%M %AM",
-},
+sbb => { template => $binop },
 
-neg => {
-	template => $unop,
-	emit     => "neg%M %AM",
-},
+neg => { template => $unop },
 
-not => {
-	template => $unop,
-	emit     => "not%M %AM",
-},
+not => { template => $unop },
 
-xor => {
-	template => $binop_commutative,
-	emit     => "xor%M %AM",
-},
+xor => { template => $binop_commutative },
 
 xor_0 => {
 	op_flags  => [ "constlike" ],
@@ -587,22 +557,13 @@ ret => {
 	emit     => "ret",
 },
 
-bsf => {
-	template => $unop_out,
-	emit => "bsf%M %AM, %D0",
-},
+bsf => { template => $unop_out },
 
-bsr => {
-	template => $unop_out,
-	emit => "bsr%M %AM, %D0",
-},
+bsr => { template => $unop_out },
 
 # SSE
 
-adds => {
-	template => $binopx_commutative,
-	emit     => "adds%MX %AM",
-},
+adds => { template => $binopx_commutative },
 
 divs => {
 	template => $binopx,
@@ -615,10 +576,7 @@ movs_xmm => {
 	emit     => "movs%MX %AM, %D0",
 },
 
-muls => {
-	template => $binopx_commutative,
-	emit     => "muls%MX %AM",
-},
+muls => { template => $binopx_commutative },
 
 movs_store_xmm => {
 	op_flags  => [ "uses_memory" ],
@@ -657,10 +615,7 @@ xorp_0 => {
 	emit      => "xorp%MX %^D0, %^D0",
 },
 
-xorp => {
-	template => $binopx_commutative,
-	emit     => "xorp%MX %AM",
-},
+xorp => { template => $binopx_commutative },
 
 movd_xmm_gp => {
 	state     => "exc_pinned",
@@ -686,54 +641,35 @@ movd_gp_xmm => {
 
 # Conversion operations
 
-cvtss2sd => {
-	template => $cvtop2x,
-	emit     => "cvtss2sd %AM, %^D0",
-},
+cvtss2sd => { template => $cvtop2x },
 
 cvtsd2ss => {
 	template => $cvtop2x,
 	attr     => "amd64_op_mode_t op_mode, x86_addr_t addr",
 	fixed    => "x86_insn_size_t size = X86_SIZE_64;\n",
-	emit     => "cvtsd2ss %AM, %^D0",
 },
 
-cvttsd2si => {
-	template => $cvtopx2i,
-	emit     => "cvttsd2si %AM, %D0",
-},
+cvttsd2si => { template => $cvtopx2i },
 
-cvttss2si => {
-	template => $cvtopx2i,
-	emit     => "cvttss2si %AM, %D0",
-},
+cvttss2si => { template => $cvtopx2i },
 
-cvtsi2ss => {
-	template => $cvtop2x,
-	emit     => "cvtsi2ss %AM, %^D0",
-},
+cvtsi2ss => { template => $cvtop2x },
 
-cvtsi2sd => {
-	template => $cvtop2x,
-	emit     => "cvtsi2sd %AM, %^D0",
-},
+cvtsi2sd => { template => $cvtop2x },
 
 movd => {
 	template => $movopx,
 	fixed    => "x86_insn_size_t size = X86_SIZE_64;\n",
-	emit     => "movd %AM, %D0",
 },
 
 movdqa => {
 	template => $movopx,
 	fixed    => "x86_insn_size_t size = X86_SIZE_128;\n",
-	emit     => "movdqa %AM, %D0",
 },
 
 movdqu => {
 	template => $movopx,
 	fixed    => "x86_insn_size_t size = X86_SIZE_128;\n",
-	emit     => "movdqu %AM, %D0",
 },
 
 movdqu_store => {
@@ -771,30 +707,15 @@ l_haddpd => {
 	mode      => $mode_xmm,
 },
 
-punpckldq => {
-	template => $binopx,
-	emit     => "punpckldq %AM",
-},
+punpckldq => { template => $binopx },
 
-subpd => {
-	template => $binopx,
-	emit     => "subpd %AM",
-},
+subpd => { template => $binopx },
 
-haddpd => {
-	template => $binopx,
-	emit     => "haddpd %AM",
-},
+haddpd => { template => $binopx },
 
-fldz => {
-	template => $x87const,
-	emit     => "fldz",
-},
+fldz => { template => $x87const },
 
-fld1 => {
-	template => $x87const,
-	emit     => "fld1",
-},
+fld1 => { template => $x87const },
 
 fld => {
 	irn_flags => [ "rematerializable" ],
@@ -855,10 +776,7 @@ fsub => {
 	emit     => "fsub%FR%FP %AF",
 },
 
-fchs => {
-	template => $x87unop,
-	emit     => "fchs",
-},
+fchs => { template => $x87unop },
 
 fucomi => {
 	irn_flags => [ "rematerializable" ],

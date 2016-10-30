@@ -119,6 +119,7 @@ $mode_fp4     = "sparc_mode_Q";
 my $binop_operand = {
 	irn_flags    => [ "rematerializable" ],
 	out_reqs     => [ "gp" ],
+	emit         => "{name} %S0, %SI1, %D0",
 	constructors => {
 		imm => {
 			attr    => "ir_entity *immediate_entity, int32_t immediate_value",
@@ -137,6 +138,7 @@ my $binopcc_operand = {
 	irn_flags    => [ "rematerializable" ],
 	out_reqs     => [ "gp", "flags" ],
 	outs         => [ "res", "flags" ],
+	emit         => "{name} %S0, %SI1, %D0",
 	constructors => {
 		imm => {
 			attr    => "ir_entity *immediate_entity, int32_t immediate_value",
@@ -156,6 +158,7 @@ my $binopx_operand = {
 	# (it claims that spiller can't rematerialize flag stuff correctly)
 	#irn_flags    => [ "rematerializable" ],
 	out_reqs     => [ "gp" ],
+	emit         => "{name} %S0, %SI1, %D0",
 	constructors => {
 		imm => {
 			attr    => "ir_entity *immediate_entity, int32_t immediate_value",
@@ -173,6 +176,7 @@ my $binopx_operand = {
 my $binopcczero_operand = {
 	irn_flags    => [ "rematerializable" ],
 	out_reqs     => [ "flags" ],
+	emit         => "{name} %S0, %SI1, %%g0",
 	constructors => {
 		imm => {
 			attr    => "ir_entity *immediate_entity, int32_t immediate_value",
@@ -211,6 +215,7 @@ my $float_binop = {
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
 	ins          => [ "left", "right" ],
+	emit         => "{name}%FM %S0, %S1, %D0",
 	constructors => {
 		s => {
 			in_reqs  => [ "cls-fp", "cls-fp" ],
@@ -234,6 +239,8 @@ my $float_unop = {
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
 	ins          => [ "val" ],
+	# note that we only need the first register even for wide-values
+	emit         => "{name}s %S0, %D0",
 	constructors => {
 		s => {
 			in_reqs  => [ "cls-fp" ],
@@ -270,20 +277,11 @@ my $xop = {
 
 %nodes = (
 
-Add => {
-	template => $binop_operand,
-	emit     => "add %S0, %SI1, %D0",
-},
+Add => { template => $binop_operand },
 
-AddCC => {
-	template => $binopcc_operand,
-	emit     => "addcc %S0, %SI1, %D0",
-},
+AddCC => { template => $binopcc_operand },
 
-AddX => {
-	template => $binopx_operand,
-	emit     => "addx %S0, %SI1, %D0",
-},
+AddX => { template => $binopx_operand },
 
 AddCC_t => {
 	ins       => [ "left", "right" ],
@@ -298,20 +296,11 @@ AddX_t => {
 	dump_func => "NULL",
 },
 
-Sub => {
-	template => $binop_operand,
-	emit     => "sub %S0, %SI1, %D0",
-},
+Sub => { template => $binop_operand },
 
-SubCC => {
-	template => $binopcc_operand,
-	emit     => "subcc %S0, %SI1, %D0",
-},
+SubCC => { template => $binopcc_operand },
 
-SubX => {
-	template => $binopx_operand,
-	emit     => "subx %S0, %SI1, %D0",
-},
+SubX => { template => $binopx_operand },
 
 SubCC_t => {
 	ins       => [ "left", "right" ],
@@ -562,89 +551,61 @@ SwitchJmp => {
 	attr      => "const ir_switch_table *table, ir_entity *jump_table",
 },
 
-Sll => {
-	template => $binop_operand,
-	emit     => "sll %S0, %SI1, %D0",
-},
+Sll => { template => $binop_operand },
 
-Srl => {
-	template => $binop_operand,
-	emit     => "srl %S0, %SI1, %D0",
-},
+Srl => { template => $binop_operand },
 
-Sra => {
-	template => $binop_operand,
-	emit     => "sra %S0, %SI1, %D0",
-},
+Sra => { template => $binop_operand },
 
-And => {
-	template => $binop_operand,
-	emit     => "and %S0, %SI1, %D0",
-},
+And => { template => $binop_operand },
 
 AndCCZero => {
 	template => $binopcczero_operand,
-	emit     => "andcc %S0, %SI1, %%g0",
+	name     => "andcc",
 },
 
-AndN => {
-	template => $binop_operand,
-	emit     => "andn %S0, %SI1, %D0",
-},
+AndN => { template => $binop_operand },
 
 AndNCCZero => {
 	template => $binopcczero_operand,
-	emit     => "andncc %S0, %SI1, %%g0",
+	name     => "andncc",
 },
 
-Or => {
-	template => $binop_operand,
-	emit     => "or %S0, %SI1, %D0",
-},
+Or => { template => $binop_operand },
 
 OrCCZero => {
 	template => $binopcczero_operand,
-	emit     => "orcc %S0, %SI1, %%g0",
+	name     => "orcc",
 },
 
-OrN => {
-	template => $binop_operand,
-	emit     => "orn %S0, %SI1, %D0",
-},
+OrN => { template => $binop_operand },
 
 OrNCCZero => {
 	template => $binopcczero_operand,
-	emit     => "orncc %S0, %SI1, %%g0",
+	name     => "orncc",
 },
 
-Xor => {
-	template => $binop_operand,
-	emit     => "xor %S0, %SI1, %D0",
-},
+Xor => { template => $binop_operand },
 
 XorCCZero => {
 	template => $binopcczero_operand,
-	emit     => "xorcc %S0, %SI1, %%g0",
+	name     => "xorcc",
 },
 
-XNor => {
-	template => $binop_operand,
-	emit     => "xnor %S0, %SI1, %D0",
-},
+XNor => { template => $binop_operand },
 
 XNorCCZero => {
 	template => $binopcczero_operand,
-	emit     => "xnorcc %S0, %SI1, %%g0",
+	name     => "xnorcc",
 },
 
 SMul => {
 	template => $binop_operand,
-	emit     => "smul %S0, %SI1, %D0",
 },
 
 SMulCCZero => {
 	template => $binopcczero_operand,
-	emit     => "smulcc %S0, %SI1, %%g0",
+	name     => "smulcc",
 },
 
 SMulh => {
@@ -659,13 +620,9 @@ UMulh => {
 	            "mov %%y, %D0",
 },
 
-SDiv => {
-	template => $div_operand,
-},
+SDiv => { template => $div_operand },
 
-UDiv => {
-	template => $div_operand,
-},
+UDiv => { template => $div_operand },
 
 Stbar => {
 	op_flags => [ "uses_memory" ],
@@ -702,20 +659,11 @@ fcmp => {
 	},
 },
 
-fadd => {
-	template => $float_binop,
-	emit     => "fadd%FM %S0, %S1, %D0",
-},
+fadd => { template => $float_binop },
 
-fsub => {
-	template => $float_binop,
-	emit     => "fsub%FM %S0, %S1, %D0",
-},
+fsub => { template => $float_binop },
 
-fmul => {
-	template => $float_binop,
-	emit     => "fmul%FM %S0, %S1, %D0",
-},
+fmul => { template => $float_binop },
 
 fdiv => {
 	irn_flags    => [ "rematerializable" ],
@@ -731,17 +679,9 @@ fdiv => {
 	},
 },
 
-fneg => {
-	template => $float_unop,
-	# note that we only need the first register even for wide-values
-	emit     => "fnegs %S0, %D0",
-},
+fneg => { template => $float_unop },
 
-fabs => {
-	template => $float_unop,
-	# note that we only need the first register even for wide-values
-	emit     => "fabs %S0, %D0",
-},
+fabs => { template => $float_unop },
 
 fftof => {
 	irn_flags => [ "rematerializable" ],

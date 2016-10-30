@@ -72,6 +72,7 @@ my $unop_shifter_operand = {
 	irn_flags    => [ "rematerializable" ],
 	attr_type    => "arm_shifter_operand_t",
 	out_reqs     => [ "gp" ],
+	emit         => "{name} %D0, %O",
 	constructors => {
 		imm => {
 			attr    => "unsigned char immediate_value, unsigned char immediate_rot",
@@ -102,6 +103,7 @@ my $binop_shifter_operand = {
 	irn_flags    => [ "rematerializable" ],
 	attr_type    => "arm_shifter_operand_t",
 	out_reqs     => [ "gp" ],
+	emit         => "{name} %D0, %S0, %O",
 	constructors => {
 		imm => {
 			attr    => "unsigned char immediate_value, unsigned char immediate_rot",
@@ -134,6 +136,7 @@ my $binop_shifter_operand_setflags = {
 	attr_type    => "arm_shifter_operand_t",
 	out_reqs     => [ "gp", "flags" ],
 	outs         => [ "res", "flags" ],
+	emit         => "{name} %D0, %S0, %O",
 	constructors => {
 		imm => {
 			attr    => "unsigned char immediate_value, unsigned char immediate_rot",
@@ -165,6 +168,7 @@ my $binop_shifter_operand_flags = {
 	#irn_flags    => [ "rematerializable" ],
 	attr_type    => "arm_shifter_operand_t",
 	out_reqs     => [ "gp" ],
+	emit         => "{name} %D0, %S0, %O",
 	constructors => {
 		imm => {
 			attr    => "unsigned char immediate_value, unsigned char immediate_rot",
@@ -197,6 +201,7 @@ my $cmp_shifter_operand = {
 	emit         => 'cmp %S0, %O',
 	attr_type    => "arm_cmp_attr_t",
 	out_reqs     => [ "flags" ],
+	emit         => "{name} %S0, %O",
 	constructors => {
 		imm => {
 			attr    => "unsigned char immediate_value, unsigned char immediate_rot, bool ins_permuted, bool is_unsigned",
@@ -238,6 +243,7 @@ my $mullop = {
 	in_reqs   => [ "gp", "gp" ],
 	out_reqs  => [ "gp", "gp" ],
 	outs      => [ "low", "high" ],
+	emit      => "{name} %D0, %D1, %S0, %S1",
 };
 
 my $binopf = {
@@ -246,25 +252,17 @@ my $binopf = {
 	out_reqs  => [ "fpa" ],
 	attr_type => "arm_farith_attr_t",
 	attr      => "ir_mode *op_mode",
+	emit      => '{name}%MA %D0, %S0, %S1',
 };
 
 
 %nodes = (
 
-Add => {
-	template => $binop_shifter_operand,
-	emit     => 'add %D0, %S0, %O',
-},
+Add => { template => $binop_shifter_operand },
 
-AddS => {
-	template => $binop_shifter_operand_setflags,
-	emit     => 'adds %D0, %S0, %O',
-},
+AddS => { template => $binop_shifter_operand_setflags },
 
-AdC => {
-	template => $binop_shifter_operand_flags,
-	emit     => 'adc %D0, %S0, %O',
-},
+AdC => { template => $binop_shifter_operand_flags },
 
 Mul => {
 	irn_flags    => [ "rematerializable" ],
@@ -279,15 +277,9 @@ Mul => {
 	},
 },
 
-SMulL => {
-	template => $mullop,
-	emit     => 'smull %D0, %D1, %S0, %S1',
-},
+SMulL => { template => $mullop },
 
-UMulL => {
-	template => $mullop,
-	emit     => 'umull %D0, %D1, %S0, %S1',
-},
+UMulL => { template => $mullop },
 
 Mla => {
 	irn_flags => [ "rematerializable" ],
@@ -309,15 +301,9 @@ Mls => {
 	emit      => 'mls %D0, %S0, %S1, %S2',
 },
 
-And => {
-	template => $binop_shifter_operand,
-	emit     => 'and %D0, %S0, %O',
-},
+And => { template => $binop_shifter_operand },
 
-Orr => {
-	template => $binop_shifter_operand,
-	emit     => 'orr %D0, %S0, %O',
-},
+Orr => { template => $binop_shifter_operand },
 
 OrrPl => {
 	#irn_flags => [ "rematerializable" ],
@@ -329,66 +315,32 @@ OrrPl => {
 	init      => "init_arm_shifter_operand(res, 3, 0, ARM_SHF_REG, 0);",
 },
 
-Eor => {
-	template => $binop_shifter_operand,
-	emit     => 'eor %D0, %S0, %O',
-},
+Eor => { template => $binop_shifter_operand },
 
-Bic => {
-	template => $binop_shifter_operand,
-	emit     => 'bic %D0, %S0, %O',
-},
+Bic => { template => $binop_shifter_operand },
 
-Sub => {
-	template => $binop_shifter_operand,
-	emit     => 'sub %D0, %S0, %O',
-},
+Sub => { template => $binop_shifter_operand },
 
-SubS => {
-	template => $binop_shifter_operand_setflags,
-	emit     => 'subs %D0, %S0, %O',
-},
+SubS => { template => $binop_shifter_operand_setflags },
 
-SbC => {
-	template => $binop_shifter_operand_flags,
-	emit     => 'sbc %D0, %S0, %O',
-},
+SbC => { template => $binop_shifter_operand_flags },
 
-RsC => {
-	template => $binop_shifter_operand_flags,
-	emit     => 'rsc %D0, %S0, %O',
-},
+RsC => { template => $binop_shifter_operand_flags },
 
-Rsb => {
-	template => $binop_shifter_operand,
-	emit     => 'rsb %D0, %S0, %O',
-},
+Rsb => { template => $binop_shifter_operand },
 
-RsbS => {
-	template => $binop_shifter_operand_setflags,
-	emit     => 'rsbs %D0, %S0, %O',
-},
+RsbS => { template => $binop_shifter_operand_setflags },
 
 Mov => {
 	template => $unop_shifter_operand,
-	emit     => 'mov %D0, %O',
 	ins      => [ "Rm", "Rs" ],
 },
 
-Mvn => {
-	template => $unop_shifter_operand,
-	emit     => 'mvn %D0, %O',
-},
+Mvn => { template => $unop_shifter_operand },
 
-Pkhbt => {
-	template => $binop_shifter_operand,
-	emit     => 'pkhbt %D0, %S0, %O',
-},
+Pkhbt => { template => $binop_shifter_operand },
 
-Pkhtb => {
-	template => $binop_shifter_operand,
-	emit     => 'pkhtb %D0, %S0, %O',
-},
+Pkhtb => { template => $binop_shifter_operand },
 
 Clz => {
 	irn_flags => [ "rematerializable" ],
@@ -453,20 +405,11 @@ Address => {
 	attr_type => "arm_Address_attr_t",
 },
 
-Cmn => {
-	template => $cmp_shifter_operand,
-	emit     => 'cmn %S0, %O',
-},
+Cmn => { template => $cmp_shifter_operand },
 
-Cmp => {
-	template => $cmp_shifter_operand,
-	emit     => 'cmp %S0, %O',
-},
+Cmp => { template => $cmp_shifter_operand },
 
-Tst => {
-	template => $cmp_shifter_operand,
-	emit     => 'tst %S0, %O',
-},
+Tst => { template => $cmp_shifter_operand },
 
 Bcc => {
 	op_flags  => [ "cfopcode", "forking" ],
@@ -531,26 +474,16 @@ Str => {
 },
 
 
-Adf => {
-	template => $binopf,
-	emit     => 'adf%MA %D0, %S0, %S1',
-},
+Adf => { template => $binopf },
 
-Muf => {
-	template => $binopf,
-	emit     => 'muf%MA %D0, %S0, %S1',
-},
+Muf => { template => $binopf },
 
-Suf => {
-	template => $binopf,
-	emit     => 'suf%MA %D0, %S0, %S1',
-},
+Suf => { template => $binopf },
 
 Dvf => {
 	template  => $binopf,
 	irn_flags => [],
 	out_reqs  => [ "fpa", "mem" ],
-	emit      => 'dvf%MA %D0, %S0, %S1',
 	outs      => [ "res", "M" ],
 	mode      => "first",
 },

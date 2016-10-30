@@ -74,6 +74,7 @@ my $binop = {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "gp", "gp" ],
 	out_reqs  => [ "gp" ],
+	emit      => '%D0 = {name} %S0, %S1',
 };
 
 my $constop = {
@@ -85,67 +86,39 @@ my $constop = {
 my $fbinop = {
 	in_reqs   => [ "fp", "fp" ],
 	out_reqs  => [ "fp" ],
+	emit      => '%D0 = {name} %S0, %S1',
 };
 
 my $unop = {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "gp" ],
 	out_reqs  => [ "gp" ],
+	emit      => '%D0 = {name} %S0',
 };
 
 %nodes = (
 
 # Integer nodes
 
-Add => {
-	template => $binop,
-	emit     => '%D0 = add %S0, %S1',
-},
+Add => { template => $binop },
 
-Mul => {
-	template => $binop,
-	emit     => '%D0 = mul %S0, %S1',
-},
+Mul => { template => $binop },
 
-And => {
-	template => $binop,
-	emit     => '%D0 = and %S0, %S1',
-},
+And => { template => $binop },
 
-Or => {
-	template => $binop,
-	emit     => '%D0 = or %S0, %S1',
-},
+Or => { template => $binop },
 
-Xor => {
-	template => $binop,
-	emit     => '%D0 = xor %S0, %S1',
-},
+Xor => { template => $binop },
 
-Sub => {
-	template => $binop,
-	emit     => '%D0 = sub %S0, %S1',
-},
+Sub => { template => $binop },
 
-Shl => {
-	template => $binop,
-	emit     => '%D0 = shl %S0, %S1',
-},
+Shl => { template => $binop },
 
-Shr => {
-	template => $binop,
-	emit     => '%D0 = shr %S0, %S1',
-},
+Shr => { template => $binop },
 
-Minus => {
-	template => $unop,
-	emit     => '%D0 = neg %S0',
-},
+Minus => { template => $unop },
 
-Not => {
-	template => $unop,
-	emit     => '%D0 = not %S0',
-},
+Not => { template => $unop },
 
 Const => {
 	template => $constop,
@@ -201,24 +174,16 @@ Store => {
 fAdd => {
 	template  => $fbinop,
 	irn_flags => [ "rematerializable" ],
-	emit      => '%D0 = fadd %S0, %S1',
 },
 
-fMul => {
-	template => $fbinop,
-	emit     => '%D0 = fmul %S0, %S1',
-},
+fMul => { template => $fbinop },
 
 fSub => {
 	template  => $fbinop,
 	irn_flags => [ "rematerializable" ],
-	emit      => '%D0 = fsub %S0, %S1',
 },
 
-fDiv => {
-	template => $fbinop,
-	emit     => '%D0 = fdiv %S0, %S1',
-},
+fDiv => { template => $fbinop },
 
 fMinus => {
 	irn_flags => [ "rematerializable" ],
