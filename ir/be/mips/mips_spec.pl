@@ -84,6 +84,13 @@ and => { template => $binOp },
 
 andi => { template => $immediateOp },
 
+b => {
+	state     => "pinned",
+	irn_flags => [ "simple_jump" ],
+	op_flags  => [ "cfopcode" ],
+	out_reqs  => [ "exec" ],
+},
+
 bcc => {
 	state        => "pinned",
 	op_flags     => [ "cfopcode", "forking" ],

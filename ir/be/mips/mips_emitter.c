@@ -88,6 +88,13 @@ static void emit_be_Copy(ir_node const *const node)
 	}
 }
 
+static void emit_mips_b(ir_node const *const node)
+{
+	BE_EMIT_JMP(mips, node, "b", node) {
+		mips_emitf(NULL, "nop");
+	}
+}
+
 static void emit_mips_bcc(ir_node const *const node)
 {
 	mips_cond_t            const cond  = get_mips_cond_attr_const(node)->cond;
@@ -109,6 +116,7 @@ static void mips_register_emitters(void)
 	mips_register_spec_emitters();
 
 	be_set_emitter(op_be_Copy,  emit_be_Copy);
+	be_set_emitter(op_mips_b,   emit_mips_b);
 	be_set_emitter(op_mips_bcc, emit_mips_bcc);
 }
 
