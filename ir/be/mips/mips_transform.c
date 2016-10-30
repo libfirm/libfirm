@@ -284,6 +284,13 @@ static ir_node *gen_Eor(ir_node *const node)
 	return gen_logic_op(node, &new_bd_mips_xor, &new_bd_mips_xori);
 }
 
+static ir_node *gen_Jmp(ir_node *const node)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	return new_bd_mips_b(dbgi, block);
+}
+
 static ir_node *gen_Minus(ir_node *const node)
 {
 	ir_node *const val  = get_Minus_op(node);
@@ -320,6 +327,20 @@ static ir_node *gen_Not(ir_node *const node)
 static ir_node *gen_Or(ir_node *const node)
 {
 	return gen_logic_op(node, &new_bd_mips_or, &new_bd_mips_ori);
+}
+
+static ir_node *gen_Phi(ir_node *const node)
+{
+	arch_register_req_t const *req;
+	ir_mode            *const  mode = get_irn_mode(node);
+	if (be_mode_needs_gp_reg(mode)) {
+		req = &mips_class_reg_req_gp;
+	} else if (mode == mode_M) {
+		req = arch_memory_req;
+	} else {
+		panic("unhandled mode");
+	}
+	return be_transform_phi(node, req);
 }
 
 static ir_node *gen_Proj_Proj_Start(ir_node *const node)
@@ -487,9 +508,11 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Cond,   gen_Cond);
 	be_set_transform_function(op_Const,  gen_Const);
 	be_set_transform_function(op_Eor,    gen_Eor);
+	be_set_transform_function(op_Jmp,    gen_Jmp);
 	be_set_transform_function(op_Minus,  gen_Minus);
 	be_set_transform_function(op_Not,    gen_Not);
 	be_set_transform_function(op_Or,     gen_Or);
+	be_set_transform_function(op_Phi,    gen_Phi);
 	be_set_transform_function(op_Return, gen_Return);
 	be_set_transform_function(op_Shl,    gen_Shl);
 	be_set_transform_function(op_Shr,    gen_Shr);
