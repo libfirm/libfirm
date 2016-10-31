@@ -632,8 +632,7 @@ static void emit_amd64_jmp(const ir_node *node)
 static void emit_jumptable_target(ir_entity const *const table,
                                   ir_node const *const proj_x)
 {
-	ir_node const *const block = be_emit_get_cfop_target(proj_x);
-	be_gas_emit_block_name(block);
+	be_emit_cfop_target(proj_x);
 	if (be_options.pic_style != BE_PIC_NONE) {
 		be_emit_char('-');
 		be_gas_emit_entity(table);

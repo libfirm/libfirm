@@ -13,6 +13,7 @@
 #include "bedwarf.h"
 #include "beemitter.h"
 #include "be_t.h"
+#include "begnuas.h"
 #include "benode.h"
 #include "dbginfo.h"
 #include "debug.h"
@@ -84,4 +85,10 @@ be_cond_branch_projs_t be_get_cond_branch_projs(ir_node const *const node)
 	}
 	assert(projs.f && projs.t);
 	return projs;
+}
+
+void be_emit_cfop_target(ir_node const *const jmp)
+{
+	ir_node *const target = be_emit_get_cfop_target(jmp);
+	be_gas_emit_block_name(target);
 }

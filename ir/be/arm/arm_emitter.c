@@ -226,15 +226,6 @@ static void emit_constant_name(const ent_or_tv_t *entry)
 	be_emit_irprintf("%sC%u", be_gas_get_private_prefix(), entry->label);
 }
 
-/**
- * Emit the target label for a control flow node.
- */
-static void arm_emit_cfop_target(const ir_node *irn)
-{
-	ir_node *block = be_emit_get_cfop_target(irn);
-	be_gas_emit_block_name(block);
-}
-
 void arm_emitf(const ir_node *node, const char *format, ...)
 {
 	BE_EMITF(node, format, ap, false) {
@@ -439,7 +430,7 @@ static void emit_jumptable_target(ir_entity const *const table,
                                   ir_node const *const proj_x)
 {
 	(void)table;
-	arm_emit_cfop_target(proj_x);
+	be_emit_cfop_target(proj_x);
 }
 
 static void emit_arm_SwitchJmp(const ir_node *irn)

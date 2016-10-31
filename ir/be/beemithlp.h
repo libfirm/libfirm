@@ -78,6 +78,11 @@ typedef struct be_cond_branch_projs_t {
 
 be_cond_branch_projs_t be_get_cond_branch_projs(ir_node const *node);
 
+/**
+ * Emit the target label for a control flow node.
+ */
+void be_emit_cfop_target(ir_node const *jmp);
+
 #define BE_EMITF(node, fmt, ap, in_delay_slot) \
 	va_list ap; \
 	va_start(ap, fmt); \
@@ -99,7 +104,7 @@ be_cond_branch_projs_t be_get_cond_branch_projs(ir_node const *node);
 			be_emit_char('%'); \
 		} else if (*fmt == 'L') { \
 			++fmt; \
-			be_gas_emit_block_name(be_emit_get_cfop_target(va_arg(ap, ir_node const*))); \
+			be_emit_cfop_target(va_arg(ap, ir_node const*)); \
 		} else
 
 #endif

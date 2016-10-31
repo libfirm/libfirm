@@ -267,15 +267,6 @@ static void ia32_emit_xmm_mode_suffix(ir_node const *const node)
 	be_emit_char(get_xmm_mode_suffix(attr->size));
 }
 
-/**
- * Emits the target label for a control flow node.
- */
-static void ia32_emit_cfop_target(const ir_node *node)
-{
-	ir_node *block = be_emit_get_cfop_target(node);
-	be_gas_emit_block_name(block);
-}
-
 void x86_emit_condition_code(x86_condition_code_t cc)
 {
 	switch (cc) {
@@ -772,8 +763,7 @@ void ia32_emit_jumptable_target(ir_entity const *const table,
                                 ir_node const *const proj_x)
 {
 	(void)table;
-	ir_node const *const block = be_emit_get_cfop_target(proj_x);
-	be_gas_emit_block_name(block);
+	be_emit_cfop_target(proj_x);
 	switch (be_options.pic_style) {
 	case BE_PIC_NONE:
 		break;
@@ -1268,7 +1258,7 @@ static void ia32_assign_exc_label(ir_node *node)
 	be_emit_char(':');
 	be_emit_pad_comment();
 	be_emit_cstring("/* exception to Block ");
-	ia32_emit_cfop_target(node);
+	be_emit_cfop_target(node);
 	be_emit_cstring(" */\n");
 	be_emit_write_line();
 }

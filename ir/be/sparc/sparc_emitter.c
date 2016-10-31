@@ -180,15 +180,6 @@ static void emit_fp_suffix(const ir_mode *mode)
 }
 
 /**
- * Returns the target label for a control flow node.
- */
-static void sparc_emit_cfop_target(const ir_node *node)
-{
-	ir_node *block = be_emit_get_cfop_target(node);
-	be_gas_emit_block_name(block);
-}
-
-/**
  * returns true if a sparc_call calls a register and not an immediate
  */
 static bool is_sparc_reg_call(const ir_node *node)
@@ -1173,7 +1164,7 @@ static void emit_jumptable_target(ir_entity const *const table,
                                   ir_node const *const proj_x)
 {
 	(void)table;
-	sparc_emit_cfop_target(proj_x);
+	be_emit_cfop_target(proj_x);
 }
 
 static void emit_sparc_IJmp(ir_node const *const node)
