@@ -194,13 +194,6 @@ static int get_sparc_Call_dest_addr_pos(const ir_node *node)
 	return get_irn_arity(node)-1;
 }
 
-static bool ba_is_fallthrough(const ir_node *node)
-{
-	ir_node *const block  = get_nodes_block(node);
-	ir_node *const target = be_emit_get_cfop_target(node);
-	return be_emit_get_prev_block(target) == block;
-}
-
 static bool is_no_instruction(const ir_node *node)
 {
 	/* copies are nops if src_reg == dest_reg */
@@ -214,7 +207,7 @@ static bool is_no_instruction(const ir_node *node)
 	if (be_is_IncSP(node) && be_get_IncSP_offset(node) == 0)
 		return true;
 	/* Ba is not emitted if it is a simple fallthrough */
-	if (is_sparc_Ba(node) && ba_is_fallthrough(node))
+	if (is_sparc_Ba(node) && be_is_fallthrough(node))
 		return true;
 
 	return be_is_Keep(node) || be_is_Start(node) || is_Phi(node);
@@ -223,7 +216,7 @@ static bool is_no_instruction(const ir_node *node)
 static bool has_delay_slot(const ir_node *node)
 {
 	if (is_sparc_Ba(node)) {
-		return !ba_is_fallthrough(node);
+		return !be_is_fallthrough(node);
 	}
 
 	return arch_get_irn_flags(node) & sparc_arch_irn_flag_has_delay_slot;
@@ -401,10 +394,7 @@ static void optimize_fallthrough(ir_node *node)
 {
 	be_cond_branch_projs_t const projs = be_get_cond_branch_projs(node);
 
-	ir_node const *const block       = get_nodes_block(node);
-	ir_node const *const true_target = be_emit_get_cfop_target(projs.t);
-
-	if (be_emit_get_prev_block(true_target) == block) {
+	if (be_is_fallthrough(projs.t)) {
 		/* exchange both proj destinations so the second one can be omitted */
 		set_Proj_num(projs.t, pn_sparc_Bicc_false);
 		set_Proj_num(projs.f, pn_sparc_Bicc_true);

@@ -83,6 +83,8 @@ be_cond_branch_projs_t be_get_cond_branch_projs(ir_node const *node);
  */
 void be_emit_cfop_target(ir_node const *jmp);
 
+bool be_is_fallthrough(ir_node const *jmp);
+
 #define BE_EMITF(node, fmt, ap, in_delay_slot) \
 	va_list ap; \
 	va_start(ap, fmt); \
@@ -108,7 +110,7 @@ void be_emit_cfop_target(ir_node const *jmp);
 		} else
 
 #define BE_EMIT_JMP(arch, node, name, jmp) \
-	if (be_emit_get_prev_block(be_emit_get_cfop_target(jmp)) == get_nodes_block(node)) { \
+	if (be_is_fallthrough(jmp)) { \
 		if (be_options.verbose_asm) \
 			arch##_emitf(node, "/* fallthrough to %L */", jmp); \
 	} else if (arch##_emitf(node, name " %L", jmp), 0) {} else

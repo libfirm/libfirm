@@ -92,3 +92,10 @@ void be_emit_cfop_target(ir_node const *const jmp)
 	ir_node *const target = be_emit_get_cfop_target(jmp);
 	be_gas_emit_block_name(target);
 }
+
+bool be_is_fallthrough(ir_node const *const jmp)
+{
+	ir_node *const block  = get_nodes_block(jmp);
+	ir_node *const target = be_emit_get_cfop_target(jmp);
+	return be_emit_get_prev_block(target) == block;
+}

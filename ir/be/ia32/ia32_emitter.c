@@ -664,11 +664,6 @@ static void ia32_emit_exc_label(const ir_node *node)
 	be_emit_irprintf("%lu", get_ia32_exc_label_id(node));
 }
 
-static bool fallthrough_possible(const ir_node *block, const ir_node *target)
-{
-	return be_emit_get_prev_block(target) == block;
-}
-
 /**
  * Emits the jump sequence for a conditional jump (cmp + jmp_true + jmp_false)
  */
@@ -678,23 +673,22 @@ static void emit_ia32_Jcc(const ir_node *node)
 
 	be_cond_branch_projs_t projs = be_get_cond_branch_projs(node);
 
-	ir_node const *target_true = be_emit_get_cfop_target(projs.t);
-	ir_node const *block       = get_nodes_block(node);
-	if (fallthrough_possible(block, target_true)) {
+	if (be_is_fallthrough(projs.t)) {
 		/* exchange both proj's so the second one can be omitted */
 		ir_node *const t = projs.t;
 		projs.t = projs.f;
 		projs.f = t;
 		cc      = x86_negate_condition_code(cc);
 	}
-	const ir_node *target_false = be_emit_get_cfop_target(projs.f);
-	bool           fallthrough  = fallthrough_possible(block, target_false);
+	bool const fallthrough = be_is_fallthrough(projs.f);
 	/* if we can't have a fallthrough anyway, put the more likely case first */
 	if (!fallthrough) {
 		/* We would need execfreq for the concrete edge, but don't have it
 		 * available here, so we use the block execfreq :-( */
-		double freq_true  = get_block_execfreq(target_true);
-		double freq_false = get_block_execfreq(target_false);
+		ir_node const *const target_true  = be_emit_get_cfop_target(projs.t);
+		double         const freq_true    = get_block_execfreq(target_true);
+		ir_node const *const target_false = be_emit_get_cfop_target(projs.f);
+		double         const freq_false   = get_block_execfreq(target_false);
 		if (freq_false > freq_true) {
 			ir_node *const t = projs.t;
 			projs.t = projs.f;
@@ -1367,7 +1361,7 @@ static void ia32_emit_block_header(ir_node *block)
 			bool has_fallthrough = false;
 			for (int i = get_Block_n_cfgpreds(block); i-- > 0; ) {
 				ir_node *pred_block = get_Block_cfgpred_block(block, i);
-				if (fallthrough_possible(pred_block, block)) {
+				if (be_emit_get_prev_block(block) == pred_block) {
 					has_fallthrough = true;
 					break;
 				}

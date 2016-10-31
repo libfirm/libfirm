@@ -917,19 +917,10 @@ static void enc_jmp(ir_node const *const cfop)
 	enc_jmp_destination(cfop);
 }
 
-static bool fallthrough_possible(const ir_node *block, const ir_node *target)
-{
-	return be_emit_get_prev_block(target) == block;
-}
-
 static void enc_jump(const ir_node *node)
 {
-	ir_node *block  = get_nodes_block(node);
-	ir_node *target = be_emit_get_cfop_target(node);
-	if (fallthrough_possible(block, target))
-		return;
-
-	enc_jmp(node);
+	if (!be_is_fallthrough(node))
+		enc_jmp(node);
 }
 
 static void enc_jcc(x86_condition_code_t pnc, ir_node const *const cfop)
@@ -953,9 +944,7 @@ static void enc_ia32_jcc(const ir_node *node)
 
 	be_cond_branch_projs_t projs = be_get_cond_branch_projs(node);
 
-	ir_node const *target_true  = be_emit_get_cfop_target(projs.t);
-	ir_node const *block        = get_nodes_block(node);
-	if (fallthrough_possible(block, target_true)) {
+	if (be_is_fallthrough(projs.t)) {
 		/* exchange both proj's so the second one can be omitted */
 		ir_node *const t = projs.t;
 		projs.t = projs.f;
@@ -963,14 +952,15 @@ static void enc_ia32_jcc(const ir_node *node)
 		cc      = x86_negate_condition_code(cc);
 	}
 
-	ir_node const *target_false = be_emit_get_cfop_target(projs.f);
-	bool const     fallthrough  = fallthrough_possible(block, target_false);
+	bool const fallthrough = be_is_fallthrough(projs.f);
 	/* if we can't have a fallthrough anyway, put the more likely case first */
 	if (!fallthrough) {
 		/* We would need execfreq for the concrete edge, but don't have it
 		 * available here, so we use the block execfreq :-( */
-		double freq_true  = get_block_execfreq(target_true);
-		double freq_false = get_block_execfreq(target_false);
+		ir_node const *const target_true  = be_emit_get_cfop_target(projs.t);
+		double         const freq_true    = get_block_execfreq(target_true);
+		ir_node const *const target_false = be_emit_get_cfop_target(projs.f);
+		double         const freq_false   = get_block_execfreq(target_false);
 		if (freq_false > freq_true) {
 			ir_node *const t = projs.t;
 			projs.t = projs.f;

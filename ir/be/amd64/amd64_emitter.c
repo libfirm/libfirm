@@ -666,9 +666,7 @@ static void emit_amd64_jcc(const ir_node *irn)
 
 	be_cond_branch_projs_t projs = be_get_cond_branch_projs(irn);
 
-	ir_node const *const block       = get_nodes_block(irn);
-	ir_node const *const true_target = be_emit_get_cfop_target(projs.t);
-	if (be_emit_get_prev_block(true_target) == block) {
+	if (be_is_fallthrough(projs.t)) {
 		/* exchange both proj's so the second one can be omitted */
 		ir_node *const t = projs.t;
 		projs.t = projs.f;

@@ -392,9 +392,7 @@ static void emit_arm_B(const ir_node *irn)
 	assert(relation != ir_relation_false);
 	assert(relation != ir_relation_true);
 
-	ir_node const *const block       = get_nodes_block(irn);
-	ir_node const *const true_target = be_emit_get_cfop_target(projs.t);
-	if (be_emit_get_prev_block(true_target) == block) {
+	if (be_is_fallthrough(projs.t)) {
 		/* exchange both proj's so the second one can be omitted */
 		ir_node *const t = projs.t;
 		projs.t  = projs.f;
