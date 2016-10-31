@@ -1340,6 +1340,16 @@ bool ia32_should_align_block(ir_node const *const block)
 	return jmp_freq > ia32_cg_config.label_alignment_factor;
 }
 
+static bool has_fallthrough(ir_node const *const block)
+{
+	for (int i = get_Block_n_cfgpreds(block); i-- > 0; ) {
+		ir_node *pred_block = get_Block_cfgpred_block(block, i);
+		if (be_emit_get_prev_block(block) == pred_block)
+			return true;
+	}
+	return false;
+}
+
 /**
  * Emit the block header for a block.
  *
@@ -1353,23 +1363,8 @@ static void ia32_emit_block_header(ir_node *block)
 		 * a) if should be aligned due to its execution frequency
 		 * b) there is no fall-through here
 		 */
-		if (ia32_should_align_block(block)) {
+		if (ia32_should_align_block(block) || !has_fallthrough(block))
 			ia32_emit_align_label();
-		} else {
-			/* if the predecessor block has no fall-through,
-			   we can always align the label. */
-			bool has_fallthrough = false;
-			for (int i = get_Block_n_cfgpreds(block); i-- > 0; ) {
-				ir_node *pred_block = get_Block_cfgpred_block(block, i);
-				if (be_emit_get_prev_block(block) == pred_block) {
-					has_fallthrough = true;
-					break;
-				}
-			}
-
-			if (!has_fallthrough)
-				ia32_emit_align_label();
-		}
 	}
 
 	const bool need_label = block_needs_label(block);
