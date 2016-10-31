@@ -493,10 +493,6 @@ emit_I:
 				}
 				break;
 
-			case 'L':
-				ia32_emit_cfop_target(node);
-				break;
-
 			case 'M': {
 				ia32_attr_t const *const attr = get_ia32_attr_const(node);
 				if (mod & EMIT_32BIT_REG) {
@@ -721,19 +717,19 @@ static void emit_ia32_Jcc(const ir_node *node)
 		/* Some floating point comparisons require a test of the parity flag,
 		 * which indicates that the result is unordered */
 		if (cc & x86_cc_negated) {
-			ia32_emitf(projs.t, "jp %L");
+			ia32_emitf(node, "jp %L", projs.t);
 		} else {
 			/* we need a local label if the false proj is a fallthrough
 			 * as the falseblock might have no label emitted then */
 			if (fallthrough) {
 				need_parity_label = true;
-				ia32_emitf(projs.f, "jp 1f");
+				ia32_emitf(node, "jp 1f", projs.f);
 			} else {
-				ia32_emitf(projs.f, "jp %L");
+				ia32_emitf(node, "jp %L", projs.f);
 			}
 		}
 	}
-	ia32_emitf(projs.t, "j%PX %L", (int)cc);
+	ia32_emitf(node, "j%PX %L", (int)cc, projs.t);
 	if (need_parity_label) {
 		be_emit_cstring("1:\n");
 		be_emit_write_line();
@@ -741,9 +737,9 @@ static void emit_ia32_Jcc(const ir_node *node)
 
 	/* the second Proj might be a fallthrough */
 	if (!fallthrough) {
-		ia32_emitf(projs.f, "jmp %L");
+		ia32_emitf(node, "jmp %L", projs.f);
 	} else if (be_options.verbose_asm) {
-		ia32_emitf(projs.f, "/* fallthrough to %L */");
+		ia32_emitf(node, "/* fallthrough to %L */", projs.f);
 	}
 }
 
@@ -814,9 +810,9 @@ static void emit_ia32_Jmp(const ir_node *node)
 	ir_node *block  = get_nodes_block(node);
 	ir_node *target = be_emit_get_cfop_target(node);
 	if (!fallthrough_possible(block, target)) {
-		ia32_emitf(node, "jmp %L");
+		ia32_emitf(node, "jmp %L", node);
 	} else if (be_options.verbose_asm) {
-		ia32_emitf(node, "/* fallthrough to %L */");
+		ia32_emitf(node, "/* fallthrough to %L */", node);
 	}
 }
 

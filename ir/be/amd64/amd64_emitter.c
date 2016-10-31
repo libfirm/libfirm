@@ -421,12 +421,6 @@ end_of_mods:
 				break;
 			}
 
-			case 'L': {
-				ir_node *const block = be_emit_get_cfop_target(node);
-				be_gas_emit_block_name(block);
-				break;
-			}
-
 			case 'P': {
 				x86_condition_code_t cc;
 				if (*fmt == 'X') {
@@ -629,9 +623,9 @@ static void emit_amd64_jmp(const ir_node *node)
 	ir_node const *const block  = get_nodes_block(node);
 	ir_node const *const target = be_emit_get_cfop_target(node);
 	if (be_emit_get_prev_block(target) != block) {
-		amd64_emitf(node, "jmp %L");
+		amd64_emitf(node, "jmp %L", node);
 	} else if (be_options.verbose_asm) {
-		amd64_emitf(node, "/* fallthrough to %L */");
+		amd64_emitf(node, "/* fallthrough to %L */", node);
 	}
 }
 
@@ -693,20 +687,20 @@ static void emit_amd64_jcc(const ir_node *irn)
 		/* Some floating point comparisons require a test of the parity flag,
 		 * which indicates that the result is unordered */
 		if (cc & x86_cc_negated) {
-			amd64_emitf(projs.t, "jp %L");
+			amd64_emitf(irn, "jp %L", projs.t);
 		} else {
-			amd64_emitf(projs.f, "jp %L");
+			amd64_emitf(irn, "jp %L", projs.f);
 		}
 	}
 
 	/* emit the true proj */
-	amd64_emitf(projs.t, "j%PX %L", (int)cc);
+	amd64_emitf(irn, "j%PX %L", (int)cc, projs.t);
 
 	ir_node const *const false_target = be_emit_get_cfop_target(projs.f);
 	if (be_emit_get_prev_block(false_target) != block) {
-		amd64_emitf(projs.f, "jmp %L");
+		amd64_emitf(irn, "jmp %L", projs.f);
 	} else if (be_options.verbose_asm) {
-		amd64_emitf(projs.f, "/* fallthrough to %L */");
+		amd64_emitf(irn, "/* fallthrough to %L */", projs.f);
 	}
 }
 

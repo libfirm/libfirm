@@ -52,15 +52,6 @@ static void TEMPLATE_emit_dest_register(const ir_node *node, int pos)
 	emit_register(reg);
 }
 
-/**
- * Returns the target label for a control flow node.
- */
-static void TEMPLATE_emit_cfop_target(const ir_node *node)
-{
-	ir_node *block = be_emit_get_cfop_target(node);
-	be_gas_emit_block_name(block);
-}
-
 void TEMPLATE_emitf(const ir_node *node, const char *format, ...)
 {
 	BE_EMITF(node, format, ap, false) {
@@ -109,11 +100,6 @@ void TEMPLATE_emitf(const ir_node *node, const char *format, ...)
 			break;
 		}
 
-		case 'L': {
-			TEMPLATE_emit_cfop_target(node);
-			break;
-		}
-
 		default:
 unknown:
 			panic("unknown format conversion");
@@ -126,7 +112,7 @@ unknown:
  */
 static void emit_TEMPLATE_Jmp(const ir_node *node)
 {
-	TEMPLATE_emitf(node, "jmp %L");
+	TEMPLATE_emitf(node, "jmp %L", node);
 }
 
 static void emit_be_IncSP(const ir_node *node)

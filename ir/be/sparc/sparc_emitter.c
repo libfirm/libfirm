@@ -560,12 +560,6 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 			sparc_emit_high_immediate(node);
 			break;
 
-		case 'L': {
-			ir_node *n = va_arg(ap, ir_node*);
-			sparc_emit_cfop_target(n);
-			break;
-		}
-
 		case 'M':
 			switch (*fmt++) {
 			case 'L': sparc_emit_load_mode(node);  break;

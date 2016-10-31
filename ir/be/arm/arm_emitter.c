@@ -321,12 +321,6 @@ void arm_emitf(const ir_node *node, const char *format, ...)
 			break;
 		}
 
-		case 't': {
-			const ir_node *n = va_arg(ap, const ir_node*);
-			arm_emit_cfop_target(n);
-			break;
-		}
-
 		default:
 unknown:
 			panic("unknown format conversion");
@@ -431,13 +425,13 @@ static void emit_arm_B(const ir_node *irn)
 	}
 
 	/* emit the true proj */
-	arm_emitf(irn, "b%s %t", suffix, projs.t);
+	arm_emitf(irn, "b%s %L", suffix, projs.t);
 
 	ir_node const *const false_target = be_emit_get_cfop_target(projs.f);
 	if (be_emit_get_prev_block(false_target) != block) {
-		arm_emitf(irn, "b %t", projs.f);
+		arm_emitf(irn, "b %L", projs.f);
 	} else if (be_options.verbose_asm) {
-		arm_emitf(irn, "/* fallthrough to %t */", projs.f);
+		arm_emitf(irn, "/* fallthrough to %L */", projs.f);
 	}
 }
 
@@ -537,9 +531,9 @@ static void emit_arm_Jmp(const ir_node *node)
 	ir_node const *const block  = get_nodes_block(node);
 	ir_node const *const target = be_emit_get_cfop_target(node);
 	if (be_emit_get_prev_block(target) != block) {
-		arm_emitf(node, "b %t", node);
+		arm_emitf(node, "b %L", node);
 	} else if (be_options.verbose_asm) {
-		arm_emitf(node, "/* fallthrough to %t */", node);
+		arm_emitf(node, "/* fallthrough to %L */", node);
 	}
 }
 
