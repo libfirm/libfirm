@@ -78,4 +78,25 @@ typedef struct be_cond_branch_projs_t {
 
 be_cond_branch_projs_t be_get_cond_branch_projs(ir_node const *node);
 
+#define BE_EMITF(node, fmt, ap, in_delay_slot) \
+	va_list ap; \
+	va_start(ap, fmt); \
+	be_emit_char('\t'); \
+	if (in_delay_slot) \
+		be_emit_char(' '); \
+	for (size_t node##__n;;) \
+		if (node##__n = strcspn(fmt, "\n%"), be_emit_string_len(fmt, node##__n), fmt += node##__n, *fmt == '\0') { \
+			be_emit_finish_line_gas(node); \
+			va_end(ap); \
+			break; \
+		} else if (*fmt == '\n') { \
+			++fmt; \
+			be_emit_char('\n'); \
+			be_emit_write_line(); \
+			be_emit_char('\t'); \
+		} else if (*++fmt == '%') { \
+			++fmt; \
+			be_emit_char('%'); \
+		} else
+
 #endif
