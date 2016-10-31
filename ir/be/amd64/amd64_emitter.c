@@ -620,13 +620,7 @@ static void emit_amd64_asm(const ir_node *node)
  */
 static void emit_amd64_jmp(const ir_node *node)
 {
-	ir_node const *const block  = get_nodes_block(node);
-	ir_node const *const target = be_emit_get_cfop_target(node);
-	if (be_emit_get_prev_block(target) != block) {
-		amd64_emitf(node, "jmp %L", node);
-	} else if (be_options.verbose_asm) {
-		amd64_emitf(node, "/* fallthrough to %L */", node);
-	}
+	BE_EMIT_JMP(amd64, node, "jmp", node) {}
 }
 
 static void emit_jumptable_target(ir_entity const *const table,
@@ -695,12 +689,7 @@ static void emit_amd64_jcc(const ir_node *irn)
 	/* emit the true proj */
 	amd64_emitf(irn, "j%PX %L", (int)cc, projs.t);
 
-	ir_node const *const false_target = be_emit_get_cfop_target(projs.f);
-	if (be_emit_get_prev_block(false_target) != block) {
-		amd64_emitf(irn, "jmp %L", projs.f);
-	} else if (be_options.verbose_asm) {
-		amd64_emitf(irn, "/* fallthrough to %L */", projs.f);
-	}
+	BE_EMIT_JMP(amd64, irn, "jmp", projs.f) {}
 }
 
 static void emit_amd64_mov_gp(const ir_node *node)

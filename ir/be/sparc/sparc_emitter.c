@@ -1112,16 +1112,11 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 	sparc_emitf(node, "%s%A %L", get_cc(relation), projs.t);
 	fill_delay_slot(node);
 
-	const ir_node *block       = get_nodes_block(node);
-	const ir_node *proj_target = be_emit_get_cfop_target(projs.f);
-	if (be_emit_get_prev_block(proj_target) != block) {
-		sparc_emitf(node, "ba %L", projs.f);
+	BE_EMIT_JMP(sparc, node, "ba", projs.f) {
 		/* TODO: fill this slot as well */
 		emitting_delay_slot = true;
 		sparc_emitf(NULL, "nop");
 		emitting_delay_slot = false;
-	} else if (be_options.verbose_asm) {
-		sparc_emitf(node, "/* fallthrough to %L */", projs.f);
 	}
 }
 
@@ -1152,11 +1147,8 @@ static void emit_sparc_fbfcc(const ir_node *node)
 
 static void emit_sparc_Ba(const ir_node *node)
 {
-	if (!ba_is_fallthrough(node)) {
-		sparc_emitf(node, "ba %L", node);
+	BE_EMIT_JMP(sparc, node, "ba", node) {
 		fill_delay_slot(node);
-	} else if (be_options.verbose_asm) {
-		sparc_emitf(node, "/* fallthrough to %L */", node);
 	}
 }
 

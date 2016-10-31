@@ -107,4 +107,10 @@ void be_emit_cfop_target(ir_node const *jmp);
 			be_emit_cfop_target(va_arg(ap, ir_node const*)); \
 		} else
 
+#define BE_EMIT_JMP(arch, node, name, jmp) \
+	if (be_emit_get_prev_block(be_emit_get_cfop_target(jmp)) == get_nodes_block(node)) { \
+		if (be_options.verbose_asm) \
+			arch##_emitf(node, "/* fallthrough to %L */", jmp); \
+	} else if (arch##_emitf(node, name " %L", jmp), 0) {} else
+
 #endif

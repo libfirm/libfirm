@@ -418,12 +418,7 @@ static void emit_arm_B(const ir_node *irn)
 	/* emit the true proj */
 	arm_emitf(irn, "b%s %L", suffix, projs.t);
 
-	ir_node const *const false_target = be_emit_get_cfop_target(projs.f);
-	if (be_emit_get_prev_block(false_target) != block) {
-		arm_emitf(irn, "b %L", projs.f);
-	} else if (be_options.verbose_asm) {
-		arm_emitf(irn, "/* fallthrough to %L */", projs.f);
-	}
+	BE_EMIT_JMP(arm, irn, "b", projs.f) {}
 }
 
 static void emit_jumptable_target(ir_entity const *const table,
@@ -518,14 +513,7 @@ static void emit_be_MemPerm(const ir_node *node)
 
 static void emit_arm_Jmp(const ir_node *node)
 {
-	/* for now, the code works for scheduled and non-schedules blocks */
-	ir_node const *const block  = get_nodes_block(node);
-	ir_node const *const target = be_emit_get_cfop_target(node);
-	if (be_emit_get_prev_block(target) != block) {
-		arm_emitf(node, "b %L", node);
-	} else if (be_options.verbose_asm) {
-		arm_emitf(node, "/* fallthrough to %L */", node);
-	}
+	BE_EMIT_JMP(arm, node, "b", node) {}
 }
 
 /**
