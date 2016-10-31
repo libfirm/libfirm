@@ -431,6 +431,16 @@ static ir_node *gen_x87_Const(dbg_info *const dbgi, ir_node *const block, ir_tar
 	}
 }
 
+static ir_node *make_const(dbg_info *const dbgi, ir_node *const block, uint64_t const val)
+{
+	x86_insn_size_t const imode = val > UINT32_MAX ? X86_SIZE_64 : X86_SIZE_32;
+	amd64_imm64_t const imm = {
+		.kind   = X86_IMM_VALUE,
+		.offset = val,
+	};
+	return new_bd_amd64_mov_imm(dbgi, block, imode, &imm);
+}
+
 static ir_node *gen_Const(ir_node *const node)
 {
 	ir_node  *block = be_transform_nodes_block(node);
@@ -447,13 +457,8 @@ static ir_node *gen_Const(ir_node *const node)
 		return create_float_const(dbgi, block, tv);
 	}
 
-	uint64_t val = get_tarval_uint64(tv);
-	x86_insn_size_t imode = val > UINT32_MAX ? X86_SIZE_64 : X86_SIZE_32;
-	amd64_imm64_t const imm = {
-		.kind   = X86_IMM_VALUE,
-		.offset = val,
-	};
-	return new_bd_amd64_mov_imm(dbgi, block, imode, &imm);
+	uint64_t const val = get_tarval_uint64(tv);
+	return make_const(dbgi, block, val);
 }
 
 static ir_node *gen_Address(ir_node *const node)
@@ -1834,11 +1839,7 @@ no_call_mem:;
 
 	/* vararg calls need the number of SSE registers used */
 	if (is_method_variadic(type)) {
-		amd64_imm64_t const imm = {
-			.kind   = X86_IMM_VALUE,
-			.offset = cconv->n_xmm_regs,
-		};
-		ir_node *nxmm = new_bd_amd64_mov_imm(dbgi, new_block, X86_SIZE_32, &imm);
+		ir_node *const nxmm = make_const(dbgi, new_block, cconv->n_xmm_regs);
 		in_req[in_arity] = amd64_registers[REG_RAX].single_req;
 		in[in_arity] = nxmm;
 		++in_arity;
