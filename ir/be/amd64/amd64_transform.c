@@ -1186,8 +1186,7 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
 		}
 		constructor = new_bd_amd64_idiv;
 	} else {
-		ir_node *const xor0 = new_bd_amd64_xor_0(dbgi, new_block, X86_SIZE_32);
-		upper_value = be_new_Proj(xor0, pn_amd64_xor_0_res);
+		upper_value = make_const(dbgi, new_block, 0);
 		constructor = new_bd_amd64_div;
 	}
 
@@ -2700,8 +2699,7 @@ static ir_node *gen_Unknown(ir_node *const node)
 	if (mode_is_float(get_irn_mode(node))) {
 		return new_bd_amd64_xorp_0(NULL, block, X86_SIZE_64);
 	} else {
-		ir_node *res = new_bd_amd64_xor_0(NULL, block, X86_SIZE_32);
-		return be_new_Proj(res, pn_amd64_xor_0_res);
+		return make_const(NULL, block, 0);
 	}
 }
 
