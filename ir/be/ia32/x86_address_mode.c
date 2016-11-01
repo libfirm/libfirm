@@ -354,36 +354,13 @@ bool x86_is_non_address_mode_node(ir_node const *node)
 }
 
 /**
- * Check if a given value is last used (i.e. die after) the block of some
- * other node.
- */
-static bool value_last_used_here(be_lv_t *lv, ir_node *here, ir_node *value)
-{
-	ir_node *block = get_nodes_block(here);
-
-	/* If the value is live end it is for sure it does not die here */
-	if (be_is_live_end(lv, block, value))
-		return false;
-
-	/* if multiple nodes in this block use the value, then we cannot decide
-	 * whether the value will die here (because there is no schedule yet).
-	 * Assume it does not die in this case. */
-	foreach_out_edge(value, edge) {
-		ir_node *user = get_edge_src_irn(edge);
-		if (user != here && get_nodes_block(user) == block) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-/**
  * Walker: mark those nodes that cannot be part of an address mode because
  * their value must be accessed through a register
  */
 static void mark_non_address_nodes(ir_node *node, void *env)
 {
+	(void)env;
+
 	if (is_Load(node)) {
 		/* Nothing to do. Especially, do not mark the pointer, because we want to
 		 * turn it into AM. */
@@ -404,40 +381,9 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 	case iro_Shl:
 	case iro_Add: {
 		/* only 1 user: AM folding is always beneficial */
-		if (get_irn_n_edges(node) <= 1)
-			break;
-
-		/* For adds and shls with multiple users we use this heuristic:
-		 * we do not fold them into address mode if their operands do not live
-		 * out of the block, because in this case we will reduce register
-		 * pressure. Otherwise, we fold them aggressively in the hope that
-		 * the node itself does not exist anymore and we were able to save the
-		 * register for the result */
-		ir_node *left  = get_binop_left(node);
-		ir_node *right = get_binop_right(node);
-
-		/* if any of the operands is an immediate then this will not
-		 * increase register pressure */
-		x86_address_t addr;
-		memset(&addr, 0, sizeof(addr));
-		if (eat_immediate(&addr, left, false)
-		 || eat_immediate(&addr, right, false))
-			return;
-
-		/* Fold AM if any of the two operands does not die here. This duplicates
-		 * an addition and has the same register pressure for the case that only
-		 * one operand dies, but is faster (on Pentium 4).
-		 * && instead of || only folds AM if both operands do not die here */
-		be_lv_t *lv = (be_lv_t*)env;
-		if (!value_last_used_here(lv, node, left)
-		 || !value_last_used_here(lv, node, right)) {
-			return;
+		if (get_irn_n_edges(node) > 1) {
+			x86_mark_non_am(node);
 		}
-
-		/* At least one of left and right are not used by anyone else, so it is
-		 * beneficial for the register pressure (if both are unused otherwise,
-		 * else neutral) and ALU use to not fold AM. */
-		x86_mark_non_am(node);
 		break;
 	}
 
