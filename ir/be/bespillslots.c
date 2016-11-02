@@ -215,8 +215,8 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node, spillweb_t *web)
 }
 
 void be_load_needs_frame_entity(be_fec_env_t *const env, ir_node *const node,
-								unsigned const slot_size,
-								unsigned const slot_po2align)
+                                unsigned const slot_size,
+                                unsigned const slot_po2align)
 {
 	ir_node *const mem   = get_memory_edge(node);
 	spill_t *const spill = collect_spill(env, mem, NULL);

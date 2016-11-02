@@ -4976,7 +4976,7 @@ static ir_node *create_frame_load(dbg_info *const dbgi, ir_node *const block,
 }
 
 static ir_node *climb_frame(dbg_info *const dbgi, ir_node *const block,
-							unsigned const levels)
+                            unsigned const levels)
 {
 	ir_graph *irg = get_irn_irg(block);
 	ir_node  *ptr = get_irg_frame(irg);
