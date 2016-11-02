@@ -4086,7 +4086,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	ir_graph                 *const irg   = get_irn_irg(node);
 	unsigned                  const pn    = get_Proj_num(node);
 	reg_or_stackslot_t const *const param = &current_cconv->parameters[pn];
-	/* stack paramter should have been lowered to loads already */
+	/* stack parameter should have been lowered to loads already */
 	assert(param->reg != NULL);
 	/* argument transmitted in register */
 	return be_get_Start_proj(irg, param->reg);

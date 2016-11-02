@@ -90,7 +90,7 @@ typedef enum x86_immediate_kind_t {
 	X86_IMM_FRAMEENT,    /**< offset to entity on stackframe */
 	/** The offset field specifies an offset relative to the SP value at
 	 * the beginning of the function. The offset will be adjusted to the
-	 * actualy stack pointer offset later. */
+	 * actual stack pointer offset later. */
 	X86_IMM_FRAMEOFFSET,
 	X86_IMM_GOTPCREL,    /**< global offset table entry PC relative (elf64) */
 	X86_IMM_GOTOFF,      /**< address relative to global offset table */
