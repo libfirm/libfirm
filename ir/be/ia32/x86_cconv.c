@@ -13,6 +13,7 @@
 #include "betranshlp.h"
 #include "bevarargs.h"
 #include "iredges_t.h"
+#include "ircons.h"
 #include "irgmod.h"
 #include "irnode_t.h"
 #include <stdlib.h>
@@ -45,8 +46,10 @@ void x86_create_parameter_loads(ir_graph *irg, const x86_cconv_t *cconv)
 		ir_type  *const type   = get_entity_type(entity);
 		ir_mode  *const mode   = get_type_mode(type);
 		dbg_info *const dbgi   = get_irn_dbg_info(proj);
-		ir_node  *const member = new_rd_Member(dbgi, start_block, frame, entity);
-		ir_node  *const load   = new_rd_Load(dbgi, start_block, nomem, member, mode, type, cons_none);
+		unsigned        offset = param->offset + 4;
+		ir_node  *const c      = new_r_Const_long(irg, mode_Is, offset);
+		ir_node  *const add    = new_rd_Add(dbgi, start_block, frame, c);
+		ir_node  *const load   = new_rd_Load(dbgi, start_block, nomem, add, mode, type, cons_none);
 		ir_node  *const res    = new_r_Proj(load, mode, pn_Load_res);
 		exchange(proj, res);
 	}

@@ -809,6 +809,11 @@ static void set_address(ir_node *node, const x86_address_t *addr)
 		attr->addr.segment = X86_SEGMENT_GS;
 	if (addr->imm.kind == X86_IMM_FRAMEENT)
 		set_ia32_frame_use(node, IA32_FRAME_USE_AUTO);
+	if (addr->variant == X86_ADDR_BASE && addr->imm.kind == X86_IMM_VALUE) {
+		arch_register_t const *const reg = current_cconv->omit_fp ? &ia32_registers[REG_ESP] : &ia32_registers[REG_EBP];
+		if (addr->base == be_get_Start_proj(get_irn_irg(node), reg))
+			attr->addr.immediate.kind = X86_IMM_FRAMEOFFSET;
+	}
 }
 
 /**
