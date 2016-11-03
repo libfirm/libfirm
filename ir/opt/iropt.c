@@ -7321,7 +7321,7 @@ handle_tv:;
 
 		ir_mode *val_mode = get_irn_mode(val);
 		if (offset == 0
-		    && get_mode_arithmetic(val_mode) == get_mode_arithmetic(val_mode)
+		    && get_mode_arithmetic(val_mode) == get_mode_arithmetic(mode)
 		    && get_mode_size_bits(val_mode) == get_mode_size_bits(mode)) {
 			ir_node *start_block = get_irg_start_block(irg);
 			ir_node *res         = duplicate_subgraph(dbgi, val, start_block);
