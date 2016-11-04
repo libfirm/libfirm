@@ -1705,10 +1705,10 @@ static ir_node *transform_AM_mem(ir_node *const block,
 			ins[n++] = be_transform_node(pred);
 		}
 
-		if (n==1 && ins[0] == am_mem) {
-			return am_mem;
+		if (n == 1 && ins[0] == am_mem) {
 			/* creating a new Sync and relying on CSE may fail,
 			 * if am_mem is a ProjM, which does not yet verify. */
+			return am_mem;
 		}
 
 		ins[n++] = am_mem;
