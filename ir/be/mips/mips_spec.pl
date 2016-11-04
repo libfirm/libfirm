@@ -80,6 +80,10 @@ addu => { template => $binOp },
 
 addiu => { template => $immediateOp },
 
+and => { template => $binOp },
+
+andi => { template => $immediateOp },
+
 bcc => {
 	state        => "pinned",
 	op_flags     => [ "cfopcode", "forking" ],
@@ -99,6 +103,8 @@ lui => {
 	ins       => [],
 	emit      => "lui\t%D0, %I",
 },
+
+or => { template => $binOp },
 
 ori => { template => $immediateOp },
 
@@ -128,5 +134,9 @@ srl => { template => $immediateOp },
 srlv => { template => $binOp },
 
 subu => { template => $binOp },
+
+xor => { template => $binOp },
+
+xori => { template => $immediateOp },
 
 );
