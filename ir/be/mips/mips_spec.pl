@@ -104,6 +104,8 @@ lui => {
 	emit      => "lui\t%D0, %I",
 },
 
+nor => { template => $binOp },
+
 or => { template => $binOp },
 
 ori => { template => $immediateOp },
