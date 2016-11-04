@@ -65,28 +65,33 @@ void mips_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 				break;
 			}
 
+			case iro_mips_andi:
+			case iro_mips_lui:
+			case iro_mips_ori:
+			case iro_mips_xori: {
+				mips_immediate_attr_t const *const imm = get_mips_immediate_attr_const(n);
+				fprintf(F, " 0x%04" PRIX32, (uint32_t)imm->val);
+				break;
+			}
+
 			case iro_mips_bcc: {
 				mips_cond_attr_t const *const cond = get_mips_cond_attr_const(n);
 				fprintf(F, " %s", mips_get_cond_name(cond->cond));
 				break;
 			}
 
-			case iro_mips_lui:
-			case iro_mips_ori: {
-				mips_immediate_attr_t const *const imm = get_mips_immediate_attr_const(n);
-				fprintf(F, " 0x%04" PRIX32, (uint32_t)imm->val);
-				break;
-			}
-
 			case iro_mips_addu:
+			case iro_mips_and:
 			case iro_mips_jr:
 			case iro_mips_last:
+			case iro_mips_or:
 			case iro_mips_sllv:
 			case iro_mips_slt:
 			case iro_mips_sltu:
 			case iro_mips_srav:
 			case iro_mips_srlv:
 			case iro_mips_subu:
+			case iro_mips_xor:
 				break;
 			}
 			break;

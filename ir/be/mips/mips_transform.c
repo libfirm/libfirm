@@ -101,6 +101,30 @@ static ir_node *gen_Add(ir_node *const node)
 	panic("TODO");
 }
 
+typedef ir_node *cons_binop(dbg_info*, ir_node*, ir_node*, ir_node*);
+typedef ir_node *cons_binop_imm(dbg_info*, ir_node*, ir_node*, int32_t);
+
+static ir_node *gen_logic_op(ir_node *const node, cons_binop *const cons, cons_binop_imm *const cons_imm)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	ir_node  *const l     = get_binop_left(node);
+	ir_node  *const new_l = be_transform_node(l);
+	ir_node  *const r     = get_binop_right(node);
+	if (is_Const(r)) {
+		long const val = get_Const_long(r);
+		if (is_uimm16(val))
+			return cons_imm(dbgi, block, new_l, val);
+	}
+	ir_node *const new_r = be_transform_node(r);
+	return cons(dbgi, block, new_l, new_r);
+}
+
+static ir_node *gen_And(ir_node *const node)
+{
+	return gen_logic_op(node, &new_bd_mips_and, &new_bd_mips_andi);
+}
+
 static ir_node *gen_Cmp(ir_node *const node)
 {
 	ir_node       *l    = get_Cmp_left(node);
@@ -259,6 +283,11 @@ static ir_node *gen_Const(ir_node *const node)
 	panic("TODO");
 }
 
+static ir_node *gen_Eor(ir_node *const node)
+{
+	return gen_logic_op(node, &new_bd_mips_xor, &new_bd_mips_xori);
+}
+
 static ir_node *gen_Minus(ir_node *const node)
 {
 	ir_node *const val  = get_Minus_op(node);
@@ -272,6 +301,11 @@ static ir_node *gen_Minus(ir_node *const node)
 		return new_bd_mips_subu(dbgi, block, new_l, new_r);
 	}
 	panic("TODO");
+}
+
+static ir_node *gen_Or(ir_node *const node)
+{
+	return gen_logic_op(node, &new_bd_mips_or, &new_bd_mips_ori);
 }
 
 static ir_node *gen_Proj_Proj_Start(ir_node *const node)
@@ -359,9 +393,6 @@ static ir_node *gen_Return(ir_node *const node)
 	be_stack_record_chain(&stack_env, jr, n_mips_jr_stack, NULL);
 	return jr;
 }
-
-typedef ir_node *cons_binop(dbg_info*, ir_node*, ir_node*, ir_node*);
-typedef ir_node *cons_binop_imm(dbg_info*, ir_node*, ir_node*, int32_t);
 
 static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_binop_imm *const cons_imm)
 {
@@ -452,10 +483,13 @@ static void mips_register_transformers(void)
 	be_start_transform_setup();
 
 	be_set_transform_function(op_Add,    gen_Add);
+	be_set_transform_function(op_And,    gen_And);
 	be_set_transform_function(op_Cmp,    gen_Cmp);
 	be_set_transform_function(op_Cond,   gen_Cond);
 	be_set_transform_function(op_Const,  gen_Const);
+	be_set_transform_function(op_Eor,    gen_Eor);
 	be_set_transform_function(op_Minus,  gen_Minus);
+	be_set_transform_function(op_Or,     gen_Or);
 	be_set_transform_function(op_Return, gen_Return);
 	be_set_transform_function(op_Shl,    gen_Shl);
 	be_set_transform_function(op_Shr,    gen_Shr);
