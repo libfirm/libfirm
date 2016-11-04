@@ -148,22 +148,29 @@ static ir_node *gen_Cond(ir_node *const node)
 		ir_node *const l    = get_Cmp_left(sel);
 		ir_mode *const mode = get_irn_mode(l);
 		if (be_mode_needs_gp_reg(mode) && get_mode_size_bits(mode) == MIPS_MACHINE_SIZE) {
-			ir_relation const rel = get_Cmp_relation(sel);
-			ir_node    *const r   = get_Cmp_right(sel);
-			if (mode_is_signed(mode) && is_irn_null(r)) {
-				switch (rel) {
-					mips_cond_t cc;
-				case ir_relation_greater:       cc = mips_cc_gtz; goto bccrelz;
-				case ir_relation_greater_equal: cc = mips_cc_gez; goto bccrelz;
-				case ir_relation_less:          cc = mips_cc_ltz; goto bccrelz;
-				case ir_relation_less_equal:    cc = mips_cc_lez; goto bccrelz;
+			ir_relation    rel = get_Cmp_relation(sel);
+			ir_node *const r   = get_Cmp_right(sel);
+			if (is_irn_null(r)) {
+				if (mode_is_signed(mode)) {
+					switch (rel) {
+						mips_cond_t cc;
+					case ir_relation_greater:       cc = mips_cc_gtz; goto bccrelz;
+					case ir_relation_greater_equal: cc = mips_cc_gez; goto bccrelz;
+					case ir_relation_less:          cc = mips_cc_ltz; goto bccrelz;
+					case ir_relation_less_equal:    cc = mips_cc_lez; goto bccrelz;
 bccrelz:;
-					dbg_info *const dbgi  = get_irn_dbg_info(node);
-					ir_node  *const block = be_transform_nodes_block(node);
-					ir_node  *const new_l = be_transform_node(l);
-					return new_bd_mips_bcc_z(dbgi, block, new_l, cc);
+						dbg_info *const dbgi  = get_irn_dbg_info(node);
+						ir_node  *const block = be_transform_nodes_block(node);
+						ir_node  *const new_l = be_transform_node(l);
+						return new_bd_mips_bcc_z(dbgi, block, new_l, cc);
 
-				default: goto normal;
+					default: goto normal;
+					}
+				} else {
+					/* Handle 'x >u 0' as cheaper 'x != 0'. */
+					if (rel == ir_relation_greater)
+						rel = ir_relation_less_greater;
+					goto normal;
 				}
 			} else {
 normal:
