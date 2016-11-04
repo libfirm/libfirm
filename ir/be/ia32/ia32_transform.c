@@ -154,12 +154,6 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, dbg_info *dbgi, ir_node *bloc
 static ir_node *nomem;
 static ir_node *noreg_GP;
 
-/** Return non-zero is a node represents the 1 constant. */
-static bool is_Const_1(ir_node *node)
-{
-	return is_Const(node) && is_Const_one(node);
-}
-
 /** Return non-zero is a node represents the -1 constant. */
 static bool is_Const_Minus_1(ir_node *node)
 {
@@ -1399,7 +1393,7 @@ static ir_node *match_64bit_shift(ir_node *node)
 		/* lower_dw produces the following for ShlD:
 		 * Or(Shr(Shr(high,1),Not(c)),Shl(low,c)) */
 		if (is_Shr(shr_left) && is_Not(shr_right)
-			&& is_Const_1(get_Shr_right(shr_left))
+			&& is_irn_one(get_Shr_right(shr_left))
 		    && get_Not_op(shr_right) == shl_right) {
 			ir_node *val_h = get_Shr_left(shr_left);
 			return gen_64bit_shifts(node, shl_left, val_h, shl_right, new_bd_ia32_ShlD);
@@ -1407,7 +1401,7 @@ static ir_node *match_64bit_shift(ir_node *node)
 		/* lower_dw produces the following for ShrD:
 		 * Or(Shl(Shl(high,1),Not(c)), Shr(low,c)) */
 		if (is_Shl(shl_left) && is_Not(shl_right)
-		    && is_Const_1(get_Shl_right(shl_left))
+		    && is_irn_one(get_Shl_right(shl_left))
 		    && get_Not_op(shl_right) == shr_right) {
 			ir_node *val_h = get_Shl_left(shl_left);
 			return gen_64bit_shifts(node, shr_left, val_h, shr_right, new_bd_ia32_ShrD);
@@ -1569,7 +1563,7 @@ static ir_node *gen_Mulh(ir_node *node)
 
 static bool is_Shl_1(ir_node *const node)
 {
-	return is_Shl(node) && is_Const_1(get_Shl_left(node));
+	return is_Shl(node) && is_irn_one(get_Shl_left(node));
 }
 
 /**
@@ -1828,7 +1822,7 @@ static ir_node *gen_Shl(ir_node *node)
 
 	/* special case Shl x,1 => Lea x,x because Lea has fewer register
 	 * constraints */
-	if (is_Const_1(right)) {
+	if (is_irn_one(right)) {
 		dbg_info *dbgi      = get_irn_dbg_info(node);
 		ir_node  *new_block = be_transform_nodes_block(node);
 		ir_node  *new_left  = be_transform_node(left);
@@ -2350,9 +2344,9 @@ static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem)
 	bool           negated;
 	ir_node *const mux_true  = get_Mux_true(node);
 	ir_node *const mux_false = get_Mux_false(node);
-	if (is_Const_1(mux_true) && is_irn_null(mux_false)) {
+	if (is_irn_one(mux_true) && is_irn_null(mux_false)) {
 		negated = false;
-	} else if (is_irn_null(mux_true) && is_Const_1(mux_false)) {
+	} else if (is_irn_null(mux_true) && is_irn_one(mux_false)) {
 		negated = true;
 	} else {
 		return NULL;
@@ -2423,7 +2417,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 		ir_node *op1 = get_Add_left(val);
 		ir_node *op2 = get_Add_right(val);
 		if (ia32_cg_config.use_incdec) {
-			if (is_Const_1(op2)) {
+			if (is_irn_one(op2)) {
 				new_node = dest_am_unop(val, op1, mem, ptr, size,
 				                        new_bd_ia32_IncMem);
 				break;

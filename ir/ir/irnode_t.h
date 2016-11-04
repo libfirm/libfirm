@@ -762,6 +762,12 @@ static inline bool is_irn_null(ir_node const *const irn)
 	return is_Const(irn) && is_Const_null(irn);
 }
 
+/** Return whether a node is the 1 constant. */
+static inline bool is_irn_one(ir_node const *const irn)
+{
+	return is_Const(irn) && is_Const_one(irn);
+}
+
 #define foreach_irn_in(irn, idx, pred) \
 	for (bool pred##__b = true; pred##__b;) \
 		for (ir_node const *const pred##__irn = (irn); pred##__b; pred##__b = false) \

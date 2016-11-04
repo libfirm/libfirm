@@ -3756,7 +3756,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 	}
 	if (is_Shl(a)) {
 		ir_node *const shl_l = get_Shl_left(a);
-		if (is_Const(shl_l) && is_Const_one(shl_l)) {
+		if (is_irn_one(shl_l)) {
 			/* (1 << x) * b -> b << x */
 			dbg_info *const dbgi  = get_irn_dbg_info(n);
 			ir_node  *const block = get_nodes_block(n);
@@ -3766,7 +3766,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 		}
 	} else if (is_Shl(b)) {
 		ir_node *const shl_l = get_Shl_left(b);
-		if (is_Const(shl_l) && is_Const_one(shl_l)) {
+		if (is_irn_one(shl_l)) {
 			/* a * (1 << x) -> a << x */
 			dbg_info *const dbgi  = get_irn_dbg_info(n);
 			ir_node  *const block = get_nodes_block(n);
@@ -4906,8 +4906,7 @@ static bool is_single_bit(const ir_node *node)
 		ir_mode *mode   = get_irn_mode(node);
 		int      modulo = get_mode_modulo_shift(mode);
 		/* this works if we shift a 1 and we have modulo shift */
-		if (is_Const(shl_l) && is_Const_one(shl_l)
-		    && 0 < modulo && modulo <= (int)get_mode_size_bits(mode)) {
+		if (is_irn_one(shl_l) && 0 < modulo && modulo <= (int)get_mode_size_bits(mode)) {
 			return true;
 		}
 	} else if (is_Const(node)) {

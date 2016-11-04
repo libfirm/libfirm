@@ -242,7 +242,7 @@ int i_mapper_pow(ir_node *call)
 	dbg_info *dbg;
 	ir_node  *mem;
 
-	if (is_Const(left) && is_Const_one(left)) {
+	if (is_irn_one(left)) {
 		/* pow (1.0, x) = 1.0 */
 		irn = left;
 	} else if (is_Const(right)) {
@@ -347,7 +347,7 @@ static int i_mapper_one_to_zero(ir_node *call)
 {
 	ir_node *val  = get_Call_param(call, 0);
 
-	if (is_Const(val) && is_Const_one(val)) {
+	if (is_irn_one(val)) {
 		/* acos(1.0) = 0.0 */
 		ir_graph *irg = get_irn_irg(val);
 		ir_mode *mode = get_irn_mode(val);
