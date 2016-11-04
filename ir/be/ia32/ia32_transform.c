@@ -1749,7 +1749,11 @@ static ir_node *create_Div(ir_node *const node, ir_node *const op1, ir_node *con
 	ir_node       *const mem_pin_skip = skip_Pin(mem);
 	ir_node       *const old_block    = get_nodes_block(node);
 	bool           const is_signed    = mode_is_signed(mode);
-	match_flags_t  const flags        = match_am | (is_signed ? match_sign_ext : match_zero_ext);
+
+	/* Prevent AM in case of Pin(Sync(...)) since the Pin applies to all
+	 * memory partitions (aka Sync operands), and not only the consumed one.
+	 * Thus, we would lose dependencies when folding AM. */
+	match_flags_t const flags = (is_Pin(mem) && is_Sync(mem_pin_skip) ? match_none : match_am) | (is_signed ? match_sign_ext : match_zero_ext);
 	match_arguments(&am, old_block, op1, op2, mem_pin_skip, flags);
 
 	/* Beware: We don't need a Sync, if the memory predecessor of the Div node
