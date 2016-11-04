@@ -303,6 +303,24 @@ static ir_node *gen_Minus(ir_node *const node)
 	panic("TODO");
 }
 
+static ir_node *gen_Not(ir_node *const node)
+{
+	dbg_info *const dbgi    = get_irn_dbg_info(node);
+	ir_node  *const block   = be_transform_nodes_block(node);
+	ir_node  *const old_val = get_Not_op(node);
+	if (is_Or(old_val)) {
+		/* ~(l | r) -> nor(l, r) */
+		ir_node *const old_l = get_Or_left(old_val);
+		ir_node *const l     = be_transform_node(old_l);
+		ir_node *const old_r = get_Or_right(old_val);
+		ir_node *const r     = be_transform_node(old_r);
+		return new_bd_mips_nor(dbgi, block, l, r);
+	}
+	/* ~v -> nor(v, v) */
+	ir_node *const val = be_transform_node(old_val);
+	return new_bd_mips_nor(dbgi, block, val, val);
+}
+
 static ir_node *gen_Or(ir_node *const node)
 {
 	return gen_logic_op(node, &new_bd_mips_or, &new_bd_mips_ori);
@@ -489,6 +507,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Const,  gen_Const);
 	be_set_transform_function(op_Eor,    gen_Eor);
 	be_set_transform_function(op_Minus,  gen_Minus);
+	be_set_transform_function(op_Not,    gen_Not);
 	be_set_transform_function(op_Or,     gen_Or);
 	be_set_transform_function(op_Return, gen_Return);
 	be_set_transform_function(op_Shl,    gen_Shl);
