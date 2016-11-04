@@ -1292,7 +1292,7 @@ static ir_node *gen_Cmp(ir_node *node)
 	 * the bitopcc variant.
 	 * Currently we only do this when we're the only user of the node...
 	 */
-	if (bits == 32 && is_Const(op2) && is_Const_null(op2) && get_irn_n_edges(op1) == 1) {
+	if (bits == 32 && is_irn_null(op2) && get_irn_n_edges(op1) == 1) {
 		if (is_And(op1)) {
 			ir_node *new_node = gen_helper_bitop(op1,
 			                        new_bd_sparc_AndCCZero_reg,

@@ -1073,7 +1073,7 @@ static bool is_equality_cmp(const ir_node *node)
 		return true;
 
 	/* Unsigned x > 0 behaves like !=. */
-	if (is_Const(right) && is_Const_null(right) && !mode_is_signed(mode))
+	if (is_irn_null(right) && !mode_is_signed(mode))
 		return relation == ir_relation_greater;
 
 	return false;

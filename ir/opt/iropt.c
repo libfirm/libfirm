@@ -805,7 +805,7 @@ static ir_tarval *computed_value_Cmp(const ir_node *cmp)
 
 	/* we have some special rules for == 0 and != 0 */
 	ir_relation const rel_eq = get_complementary_relations(ir_relation_equal, relation, possible);
-	if (rel_eq != ir_relation_false && is_Const(right) && is_Const_null(right) && value_not_null(left, NULL))
+	if (rel_eq != ir_relation_false && is_irn_null(right) && value_not_null(left, NULL))
 		return rel_eq != ir_relation_equal ? tarval_b_true : tarval_b_false;
 
 	return computed_value_Cmp_Confirm(left, right, relation);
@@ -1673,7 +1673,7 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 		 * Note: normalization puts the constant on the right side,
 		 * so we check only one case.
 		 */
-		if (is_Const(f) && is_Const_null(f) && is_relation_less_greater &&
+		if (is_irn_null(f) && is_relation_less_greater &&
 		    get_mode_arithmetic(get_irn_mode(cmp_l)) == irma_twos_complement &&
 		    (is_Eor(t) || is_Sub(t))) {
 			ir_node *t_l = get_binop_left(t);
@@ -2174,7 +2174,7 @@ static bool is_cmp_unequal(const ir_node *node)
  */
 static bool is_cmp_equality_zero(const ir_node *left, const ir_node *right, ir_relation relation)
 {
-	if (!is_Const(right) || !is_Const_null(right))
+	if (!is_irn_null(right))
 		return false;
 
 	ir_relation possible = ir_get_possible_cmp_relations(left, right);
@@ -3025,7 +3025,7 @@ static ir_node *transform_node_Add(ir_node *n)
 	if (mode_is_reference(mode)) {
 		const ir_mode *lmode = get_irn_mode(a);
 
-		if (is_Const(b) && is_Const_null(b) && mode_is_int(lmode)) {
+		if (is_irn_null(b) && mode_is_int(lmode)) {
 			/* an Add(a, NULL) is a hidden Conv */
 			dbg_info *dbg = get_irn_dbg_info(n);
 			return new_rd_Conv(dbg, get_nodes_block(n), a, mode);
@@ -3258,7 +3258,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 	if (mode_is_int(mode)) {
 		const ir_mode *lmode = get_irn_mode(a);
 
-		if (is_Const(b) && is_Const_null(b) && mode_is_reference(lmode)) {
+		if (is_irn_null(b) && mode_is_reference(lmode)) {
 			/* a Sub(a, NULL) is a hidden Conv */
 			dbg_info *dbg = get_irn_dbg_info(n);
 			n = new_rd_Conv(dbg, get_nodes_block(n), a, mode);
@@ -3381,7 +3381,7 @@ static ir_node *transform_node_Sub(ir_node *n)
 	}
 
 	/* Beware of Sub(P, P) which cannot be optimized into a simple Minus ... */
-	if (mode_is_num(mode) && mode == get_irn_mode(a) && is_Const(a) && is_Const_null(a)) {
+	if (mode_is_num(mode) && mode == get_irn_mode(a) && is_irn_null(a)) {
 		n = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), b);
 		DBG_OPT_ALGSIM0(oldn, n);
 		return n;
@@ -5189,7 +5189,7 @@ cmp_x_eq_0:
 		}
 	}
 
-	if (is_Proj(left) && is_Const(right) && is_Const_null(right) && rel_eq != ir_relation_false) {
+	if (is_Proj(left) && is_irn_null(right) && rel_eq != ir_relation_false) {
 		ir_node *op = get_Proj_pred(left);
 
 		if (is_Mod(op) && get_Proj_num(left) == pn_Mod_res) {
@@ -5269,7 +5269,7 @@ cmp_x_eq_0:
 			goto restart;
 		}
 
-		if (is_Const(right) && is_Const_null(right)) {
+		if (is_irn_null(right)) {
 			/* instead of flipping the bit before the bit-test operation negate
 			 * pnc */
 			ir_node *and0 = get_And_left(left);
@@ -6481,7 +6481,7 @@ int ir_mux_is_abs(const ir_node *sel, const ir_node *mux_false,
 
 	/* must be x cmp 0 */
 	ir_node *cmp_right = get_Cmp_right(sel);
-	if (!is_Const(cmp_right) || !is_Const_null(cmp_right))
+	if (!is_irn_null(cmp_right))
 		return 0;
 
 	ir_node *cmp_left = get_Cmp_left(sel);
@@ -6539,7 +6539,7 @@ static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation,
 				}
 			}
 		}
-		if (is_Const(right) && is_Const_null(right) && is_And(left)) {
+		if (is_irn_null(right) && is_And(left)) {
 			ir_node *and_right = get_And_right(left);
 			if (is_Const(and_right)) {
 				ir_tarval *tv = get_Const_tarval(and_right);
@@ -6612,14 +6612,14 @@ bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
 		}
 
 		ir_mode *cmp_mode = get_irn_mode(cmp_l);
-		if (is_Const(f) && is_Const_null(f) &&
+		if (is_irn_null(f) &&
 		    get_mode_arithmetic(mode) == irma_twos_complement &&
 		    get_mode_arithmetic(cmp_mode) == irma_twos_complement) {
 			if (is_Const(t)) {
 				if (is_Const_one(t)) {
 					if (ir_is_optimizable_mux_set(sel, relation, mode))
 						return true;
-				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r)) {
+				} else if (is_Const_all_one(t) && is_irn_null(cmp_r)) {
 					ir_relation possible = ir_get_possible_cmp_relations(cmp_l, cmp_r);
 					if (get_complementary_relations(ir_relation_less, relation, possible) != ir_relation_false) {
 						/* Mux(a >= 0, 0, 0xFFFFFFFF) => ~a >>s 31 */
@@ -6716,7 +6716,7 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 			}
 		}
 
-		if (is_Const(right) && is_Const_null(right) && is_And(left)) {
+		if (is_irn_null(right) && is_And(left)) {
 			ir_node *and_right = get_And_right(left);
 			if (is_Const(and_right)) {
 				ir_tarval *tv = get_Const_tarval(and_right);
@@ -6860,7 +6860,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 		}
 
 		ir_mode *cmp_mode = get_irn_mode(cmp_l);
-		if (is_Const(f) && is_Const_null(f) &&
+		if (is_irn_null(f) &&
 		    get_mode_arithmetic(mode) == irma_twos_complement &&
 		    get_mode_arithmetic(cmp_mode) == irma_twos_complement) {
 			if (is_Const(t)) {
@@ -6868,7 +6868,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 					n = transform_Mux_set(n, relation);
 					if (n != oldn)
 						return n;
-				} else if (is_Const_all_one(t) && is_Const(cmp_r) && is_Const_null(cmp_r) && mode_is_signed(cmp_mode)) {
+				} else if (is_Const_all_one(t) && is_irn_null(cmp_r) && mode_is_signed(cmp_mode)) {
 					ir_relation const possible = ir_get_possible_cmp_relations(cmp_l, cmp_r);
 					ir_relation const rel_lt   = get_complementary_relations(ir_relation_less, relation, possible);
 					if (rel_lt != ir_relation_false) {
@@ -6921,7 +6921,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 
 		ir_relation const possible = ir_get_possible_cmp_relations(cmp_l, cmp_r);
 		ir_relation const rel_eq   = get_complementary_relations(ir_relation_equal, relation, possible);
-		if (rel_eq != ir_relation_false && is_Const(cmp_r) && is_Const_null(cmp_r) && is_And(cmp_l) && f == cmp_r) {
+		if (rel_eq != ir_relation_false && is_irn_null(cmp_r) && is_And(cmp_l) && f == cmp_r) {
 			ir_node *and_l = get_And_left(cmp_l);
 			ir_node *and_r = get_And_right(cmp_l);
 

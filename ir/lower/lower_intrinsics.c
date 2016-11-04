@@ -300,7 +300,7 @@ int i_mapper_exp(ir_node *call)
 {
 	ir_node *val  = get_Call_param(call, 0);
 
-	if (is_Const(val) && is_Const_null(val)) {
+	if (is_irn_null(val)) {
 		/* exp(0.0) = 1.0 */
 		ir_graph *irg  = get_irn_irg(val);
 		ir_mode *mode  = get_irn_mode(val);
@@ -330,7 +330,7 @@ static int i_mapper_zero_to_zero(ir_node *call)
 {
 	ir_node *val  = get_Call_param(call, 0);
 
-	if (is_Const(val) && is_Const_null(val)) {
+	if (is_irn_null(val)) {
 		/* f(0.0) = 0.0 */
 		ir_node *mem = get_Call_mem(call);
 		DBG_OPT_ALGSIM0(call, val);
@@ -392,7 +392,7 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call)
 		changed = 1;
 	}
 
-	if (is_Const(val) && is_Const_null(val)) {
+	if (is_irn_null(val)) {
 		/* f(0.0) = 1.0 */
 		ir_graph *irg  = get_irn_irg(val);
 		ir_mode *mode  = get_irn_mode(val);
@@ -823,7 +823,7 @@ int i_mapper_strncmp(ir_node *call)
 	ir_node *len   = get_Call_param(call, 2);
 	ir_node *irn;
 
-	if (left == right || (is_Const(len) && is_Const_null(len))) {
+	if (left == right || is_irn_null(len)) {
 		/* a strncmp(s, s, len) ==> 0 OR
 		   a strncmp(a, b, 0) ==> 0 */
 		ir_graph  *irg     = get_irn_irg(call);
@@ -865,7 +865,7 @@ int i_mapper_memcpy(ir_node *call)
 	ir_node *src = get_Call_param(call, 1);
 	ir_node *len = get_Call_param(call, 2);
 
-	if (dst == src || (is_Const(len) && is_Const_null(len))) {
+	if (dst == src || is_irn_null(len)) {
 		/* a memcpy(d, d, len) ==> d OR
 		   a memcpy(d, s, 0) ==> d */
 		ir_node *mem = get_Call_mem(call);
@@ -883,7 +883,7 @@ int i_mapper_memmove(ir_node *call)
 	ir_node *src = get_Call_param(call, 1);
 	ir_node *len = get_Call_param(call, 2);
 
-	if (dst == src || (is_Const(len) && is_Const_null(len))) {
+	if (dst == src || is_irn_null(len)) {
 		/* a memmove(d, d, len) ==> d OR
 		   a memmove(d, s, 0) ==> d */
 		ir_node *mem = get_Call_mem(call);
@@ -899,7 +899,7 @@ int i_mapper_memset(ir_node *call)
 {
 	ir_node *len = get_Call_param(call, 2);
 
-	if (is_Const(len) && is_Const_null(len)) {
+	if (is_irn_null(len)) {
 		/* a memset(d, C, 0) ==> d */
 		ir_node *mem = get_Call_mem(call);
 		ir_node *dst = get_Call_param(call, 0);
@@ -918,7 +918,7 @@ int i_mapper_memcmp(ir_node *call)
 	ir_node *len   = get_Call_param(call, 2);
 	ir_node *irn;
 
-	if (left == right || (is_Const(len) && is_Const_null(len))) {
+	if (left == right || is_irn_null(len)) {
 		/* a memcmp(s, s, len) ==> 0 OR
 		   a memcmp(a, b, 0) ==> 0 */
 		ir_graph  *irg     = get_irn_irg(call);

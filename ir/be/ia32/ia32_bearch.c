@@ -1262,13 +1262,13 @@ static bool mux_is_doz(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 	ir_node    *cmp_right = get_Cmp_right(sel);
 
 	/* "move" zero constant to false input */
-	if (is_Const(mux_true) && is_Const_null(mux_true)) {
+	if (is_irn_null(mux_true)) {
 		ir_node *tmp = mux_false;
 		mux_false = mux_true;
 		mux_true  = tmp;
 		relation  = get_negated_relation(relation);
 	}
-	if (!is_Const(mux_false) || !is_Const_null(mux_false))
+	if (!is_irn_null(mux_false))
 		return false;
 	if (!is_Sub(mux_true))
 		return false;

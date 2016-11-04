@@ -52,8 +52,7 @@ static bool find_cond_pair(ir_node *const l, ir_node *const r, cond_pair *const 
 		ir_relation const pnc_l = get_Cmp_relation(l);
 		ir_relation const pnc_r = get_Cmp_relation(r);
 
-		if (is_Const(lor) && is_Const_null(lor) &&
-			is_Const(ror) && is_Const_null(ror) &&
+		if (is_irn_null(lor) && is_irn_null(ror) &&
 			pnc_l == pnc_r &&
 			(pnc_l == ir_relation_less_greater || pnc_l == ir_relation_equal)) {
 			/* l == (lol !=|== NULL) && r == (rol !=|== NULL) */

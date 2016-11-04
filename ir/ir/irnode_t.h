@@ -756,6 +756,12 @@ static inline ir_node const *get_block_const(ir_node const *const irn)
 	return is_Block(irn) ? irn : get_nodes_block(irn);
 }
 
+/** Return whether a node is the 0 constant. */
+static inline bool is_irn_null(ir_node const *const irn)
+{
+	return is_Const(irn) && is_Const_null(irn);
+}
+
 #define foreach_irn_in(irn, idx, pred) \
 	for (bool pred##__b = true; pred##__b;) \
 		for (ir_node const *const pred##__irn = (irn); pred##__b; pred##__b = false) \

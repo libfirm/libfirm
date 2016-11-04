@@ -154,12 +154,6 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, dbg_info *dbgi, ir_node *bloc
 static ir_node *nomem;
 static ir_node *noreg_GP;
 
-/** Return non-zero is a node represents the 0 constant. */
-static bool is_Const_0(ir_node *node)
-{
-	return is_Const(node) && is_Const_null(node);
-}
-
 /** Return non-zero is a node represents the 1 constant. */
 static bool is_Const_1(ir_node *node)
 {
@@ -2146,7 +2140,7 @@ static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
 			ra = tmp;
 		}
 		if (is_Shl(la)) {
-			if (is_Shl_1(la) && is_Const_0(r)) {
+			if (is_Shl_1(la) && is_irn_null(r)) {
 				/* (1 << n) & ra) */
 				ir_node *n     = get_Shl_right(la);
 				ir_node *flags = gen_bt(cmp, ra, n);
@@ -2178,7 +2172,7 @@ static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
 	if (!(relation & ir_relation_equal) && relation & ir_relation_less_greater)
 		relation |= get_negated_relation(ir_get_possible_cmp_relations(l, r)) & ir_relation_less_greater;
 
-	bool const overflow_possible = !is_Const_0(r);
+	bool const overflow_possible = !is_irn_null(r);
 
 	/* just do a normal transformation of the Cmp */
 	*cc_out = ir_relation_to_x86_condition_code(relation, mode,
@@ -2356,9 +2350,9 @@ static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem)
 	bool           negated;
 	ir_node *const mux_true  = get_Mux_true(node);
 	ir_node *const mux_false = get_Mux_false(node);
-	if (is_Const_1(mux_true) && is_Const_0(mux_false)) {
+	if (is_Const_1(mux_true) && is_irn_null(mux_false)) {
 		negated = false;
-	} else if (is_Const_0(mux_true) && is_Const_1(mux_false)) {
+	} else if (is_irn_null(mux_true) && is_Const_1(mux_false)) {
 		negated = true;
 	} else {
 		return NULL;
@@ -2870,7 +2864,7 @@ static ir_node *create_Fucom(ir_node *node)
 		                              new_right, 0);
 		set_ia32_commutative(new_node);
 	} else {
-		if (is_Const_0(right)) {
+		if (is_irn_null(right)) {
 			new_node = new_bd_ia32_FtstFnstsw(dbgi, new_block, new_left, 0);
 		} else {
 			ir_node *new_right = be_transform_node(right);
@@ -3002,7 +2996,7 @@ static ir_node *gen_Cmp(ir_node *node)
 	ir_node           *new_block = be_transform_node(block);
 	ir_node           *right     = get_Cmp_right(node);
 	ir_node           *new_node;
-	if (is_Const_0(right)          &&
+	if (is_irn_null(right)         &&
 	    is_And(left)               &&
 	    get_irn_n_edges(left) == 1) {
 		/* Test(and_left, and_right) */
@@ -3503,13 +3497,13 @@ static ir_node *gen_Mux(ir_node *node)
 			ir_node    *val_true  = mux_true;
 			ir_node    *val_false = mux_false;
 
-			if (is_Const_0(val_true)) {
+			if (is_irn_null(val_true)) {
 				ir_node *tmp = val_false;
 				val_false = val_true;
 				val_true  = tmp;
 				relation  = get_negated_relation(relation);
 			}
-			if (is_Const_0(val_false) && is_Sub(val_true)) {
+			if (is_irn_null(val_false) && is_Sub(val_true)) {
 				if ((relation & ~ir_relation_equal) == ir_relation_greater
 					&& get_Sub_left(val_true) == cmp_left
 					&& get_Sub_right(val_true) == cmp_right) {

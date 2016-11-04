@@ -431,7 +431,7 @@ static bool is_non_null_Confirm(const ir_node *ptr)
 		if (get_Confirm_relation(ptr) == ir_relation_less_greater) {
 			ir_node *bound = get_Confirm_bound(ptr);
 
-			if (is_Const(bound) && is_Const_null(bound))
+			if (is_irn_null(bound))
 				return true;
 		}
 		ptr = get_Confirm_value(ptr);
