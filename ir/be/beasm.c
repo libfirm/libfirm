@@ -99,13 +99,13 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 
 		default:
 			if (is_digit(*i)) {
-				if (is_output)
-					panic("can only specify same constraint on input");
-
 				int p;
-				sscanf(i, "%d%n", &same_as, &p);
-				if (same_as >= 0)
+				if (sscanf(i, "%d%n", &same_as, &p) == 0) {
+					be_errorf(NULL, "error while reading matching constraint in \"%s\"", constraint_text);
+					i += 1;
+				} else {
 					i += p;
+				}
 			} else {
 				be_asm_constraint_t new_constraint;
 				memset(&new_constraint, 0, sizeof(new_constraint));
@@ -118,14 +118,14 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 				arch_register_class_t const *const new_cls = new_constraint.cls;
 				if (new_cls) {
 					if (cls && cls != new_cls)
-						panic("multiple register classes not supported");
+						be_warningf(NULL, "multiple register classes not supported in \"%s\"", constraint_text);
 					cls = new_cls;
 				}
 
 				char const new_imm = new_constraint.immediate_type;
 				if (new_imm != '\0') {
 					if (immediate_type != '\0' && immediate_type != new_imm)
-						panic("multiple immediate types not supported");
+						be_warningf(NULL, "multiple immediate types not supported in \"%s\"", constraint_text);
 					immediate_type = new_imm;
 				}
 			}
@@ -134,10 +134,19 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 	}
 
 	if (same_as >= 0) {
-		if (cls)
-			panic("same as and register constraint not supported");
-		if (immediate_type != '\0')
-			panic("same as and immediate constraint not supported");
+		if (is_output) {
+			be_warningf(NULL, "output constraint \"%s\" has matching constraint; ignoring it", constraint_text);
+			same_as = -1;
+		} else {
+			if (cls) {
+				be_warningf(NULL, "matching and register constraint not supported in constraint \"%s\"; ignoring register constraint", constraint_text);
+				cls = NULL;
+			}
+			if (immediate_type != '\0') {
+				be_warningf(NULL, "matching and immediate constraint not supported in constraint \"%s\"; ignoring immediate constraint", constraint_text);
+				immediate_type = '\0';
+			}
+		}
 	}
 
 	if (!cls && same_as < 0 && !memory_possible)
