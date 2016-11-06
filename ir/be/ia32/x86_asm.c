@@ -12,22 +12,14 @@
 #include "x86_asm.h"
 
 #include <assert.h>
-#include <inttypes.h>
 
 #include "array.h"
+#include "be_t.h"
 #include "bearch.h"
 #include "beasm.h"
-#include "beemitter.h"
-#include "bediagnostic.h"
-#include "begnuas.h"
-#include "beirg.h"
-#include "benode.h"
 #include "betranshlp.h"
 #include "gen_ia32_regalloc_if.h"
-#include "ia32_new_nodes.h"
-#include "irprintf.h"
 #include "panic.h"
-#include "util.h"
 
 arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *const additional_clobber_names, char const *const clobber)
 {
@@ -46,40 +38,39 @@ static void x86_parse_constraint_letter(void const *const env, be_asm_constraint
 	x86_asm_constraint_list_t const *const constraints = (x86_asm_constraint_list_t const*)env;
 
 	unsigned char const u = (unsigned char)l;
-	if (u >= ARRAY_SIZE(*constraints))
-		panic("Unknown asm constraint '%c'", l);
+	if (u < ARRAY_SIZE(*constraints)) {
+		x86_asm_constraint_t const *const constraint = &(*constraints)[u];
+		switch (constraint->kind) {
+		case MATCH_REG:
+			c->cls = constraint->cls;
+			if (constraint->limited == 0)
+				c->all_registers_allowed = true;
+			else
+				c->allowed_registers = constraint->limited;
+			return;
 
-	x86_asm_constraint_t const *const constraint = &(*constraints)[u];
-	switch (constraint->kind) {
-	case MATCH_REG:
-		c->cls = constraint->cls;
-		if (constraint->limited == 0)
+		case MATCH_MEM:
+			/* memory constraint no need to do anything in backend about it
+			 * (dependencies are already respected by the memory edge of the
+			 *  node) */
+			c->memory_possible = true;
+			return;
+
+		case MATCH_IMM:
+			c->cls            = constraint->cls;
+			c->immediate_type = l;
+			return;
+
+		case MATCH_ANY:
+			c->cls                   = constraint->cls;
+			c->immediate_type        = l;
+			c->memory_possible       = true;
 			c->all_registers_allowed = true;
-		else
-			c->allowed_registers = constraint->limited;
-		return;
+			return;
 
-	case MATCH_MEM:
-		/* memory constraint no need to do anything in backend about it
-		 * (dependencies are already respected by the memory edge of the
-		 *  node) */
-		c->memory_possible = true;
-		return;
-
-	case MATCH_IMM:
-		c->cls            = constraint->cls;
-		c->immediate_type = l;
-		return;
-
-	case MATCH_ANY:
-		c->cls                   = constraint->cls;
-		c->immediate_type        = l;
-		c->memory_possible       = true;
-		c->all_registers_allowed = true;
-		return;
-
-	case MATCH_INVALID:
-		break;
+		case MATCH_INVALID:
+			break;
+		}
 	}
 	panic("Unknown asm constraint '%c'", l);
 }
