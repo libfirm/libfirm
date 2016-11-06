@@ -218,9 +218,6 @@ fine:
 		    || be_asm_constraint_flags[c] == ASM_CONSTRAINT_FLAG_NO_SUPPORT);
 		be_asm_constraint_flags[c] = flags;
 	}
-	/* we also support any number for two-address code constraints */
-	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER,
-	                          "0123456789");
 }
 
 char const *x86_get_constraint_name(x86_asm_operand_kind_t const kind)
