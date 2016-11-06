@@ -254,7 +254,7 @@ bool be_can_move_down(ir_heights_t *heights, const ir_node *node,
 		}
 
 		/* schedpoint must not overwrite our entity... TODO: we lack a good
-		 * API to query all entities involved with an isntruction, this is
+		 * API to query all entities involved with an instruction, this is
 		 * kinda preliminary but enough for the sparc backend. */
 		if (entity != NULL) {
 			const ir_entity *const schedpoint_entity

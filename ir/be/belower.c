@@ -408,7 +408,7 @@ static bool push_through_perm(ir_node *const perm, arch_register_class_t const *
 				projs[pn] = NULL;
 				--new_size;
 			} else {
-				/* Translate the nodes's inputs through the Perm. */
+				/* Translate the node's inputs through the Perm. */
 				foreach_irn_in(node, i, node_in) {
 					if (node_in == in)
 						set_irn_n(node, i, proj);
