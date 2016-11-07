@@ -59,4 +59,9 @@ static inline ir_node *ia32_create_Immediate(ir_graph *const irg,
 	return ia32_create_Immediate_full(irg, &imm);
 }
 
+ir_heights_t *heights;
+ir_node *nomem;
+ir_node *noreg_GP;
+x86_cconv_t *current_cconv;
+
 #endif
