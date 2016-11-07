@@ -54,9 +54,9 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-static x86_cconv_t          *current_cconv;
+x86_cconv_t          *current_cconv;
 static be_stack_env_t        stack_env;
-static ir_heights_t         *heights;
+ir_heights_t         *heights;
 static x86_immediate_kind_t  lconst_imm_kind;
 static x86_addr_variant_t    lconst_variant;
 static ir_node              *initial_va_list;
@@ -151,8 +151,8 @@ static ir_node *create_immediate_or_transform(ir_node *node,
 static ir_node *create_I2I_Conv(ir_mode *src_mode, dbg_info *dbgi, ir_node *block, ir_node *op);
 
 /* its enough to have those once */
-static ir_node *nomem;
-static ir_node *noreg_GP;
+ir_node *nomem;
+ir_node *noreg_GP;
 
 /** Return non-zero is a node represents the 0 constant. */
 static bool is_Const_0(ir_node *node)
