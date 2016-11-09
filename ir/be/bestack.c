@@ -206,8 +206,7 @@ void be_sort_frame_entities(ir_type *const frame, bool spillslots_first)
 {
 	unsigned const n_members = get_compound_n_members(frame);
 	assert(is_compound_type(frame));
-	qsort(frame->attr.compound.members, n_members,
-		  sizeof(frame->attr.compound.members[0]),
+	QSORT(frame->attr.compound.members, n_members,
 		  spillslots_first ? cmp_slots_first : cmp_slots_last);
 }
 
