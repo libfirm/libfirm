@@ -5616,6 +5616,27 @@ static void ia32_pretransform_node(ir_graph *irg)
 	noreg_GP = ia32_new_NoReg_gp(irg);
 }
 
+static void insn_count_walker(ir_node *irn, void *data)
+{
+	unsigned long *cnt = (unsigned long*)data;
+
+	switch (get_irn_opcode(irn)) {
+	case iro_Proj:
+	case iro_Block:
+	case iro_NoMem:
+		break;
+	default:
+		(*cnt)++;
+	}
+}
+
+static unsigned count_relevant_nodes(ir_graph *irg)
+{
+	unsigned cnt;
+	irg_walk_graph(irg, insn_count_walker, NULL, &cnt);
+	return cnt;
+}
+
 /* do the transformation */
 void ia32_transform_graph(ir_graph *irg)
 {
@@ -5668,6 +5689,8 @@ void ia32_transform_graph(ir_graph *irg)
 			         | IR_GRAPH_PROPERTY_CONSISTENT_OUTS
 	                         | IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+
+	fprintf(stderr, "count-total %d\n", count_relevant_nodes(irg));
 
 	be_transform_graph(irg, ia32_pretransform_node);
 
