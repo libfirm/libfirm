@@ -33,23 +33,19 @@ static bool is_new_clone(const ir_entity *clone)
 
 static void update_irg_args(ir_graph *irg, const cloning_vector_t cv)
 {
-	/* Call algorithm that computes the out edges */
 	assure_irg_outs(irg);
 
-	ir_node *irg_args = get_irg_args(irg);
-	foreach_irn_out (irg_args, i, arg) {
-		size_t pos               = get_Proj_num(arg);
+	foreach_irn_out (get_irg_args(irg), i, param) {
+		const size_t pos         = get_Proj_num(param);
 		ir_node *const const_arg = cv_get(cv, pos);
 
 		if (const_arg) {
 			assert(get_irn_arity(const_arg) == 0);
-			ir_node *const block           = get_nodes_block(arg);
 			ir_node *const const_arg_clone = irn_copy_into_irg(const_arg, irg);
-			exchange(arg, const_arg_clone);
-			set_nodes_block(const_arg_clone, block);
+			exchange(param, const_arg_clone);
+			set_nodes_block(const_arg_clone, get_nodes_block(param));
 		} else {
-			size_t new_pos = cv_get_new_idx(cv, pos);
-			set_Proj_num(arg, new_pos);
+			set_Proj_num(param, cv_get_new_idx(cv, pos));
 		}
 	}
 }
@@ -69,59 +65,41 @@ static void update_frame(ir_type *const frame, const cloning_vector_t cv)
 	}
 }
 
-/**
- * Create a new graph for the clone of the method,
- * that we want to clone.
- *
- * @param ent The entity of the method that must be cloned.
- * @param q   Our quadruplet.
- */
 static ir_graph *get_clone_irg(ir_graph *irg, const cloning_vector_t cv)
 {
 	ir_graph *const clone_irg = create_irg_copy(irg);
 	update_frame(get_irg_frame_type(clone_irg), cv);
-
 	update_irg_args(clone_irg, cv);
 
-	/* The "cloned" graph must be matured. */
+	// TODO Does this sufficiently optimize the cloned irg?
 	irg_finalize_cons(clone_irg);
 
 	return clone_irg;
 }
 
-/**
- * The function create a new entity type
- * for our clone and set it to clone entity.
- *
- * @param q   Contains information for the method to clone.
- * @param ent The entity of the clone.
- **/
 static ir_type *get_clone_type(const ir_type *mtp, const cloning_vector_t cv)
 {
-	size_t const n_params     = get_method_n_params(mtp);
-	size_t const n_new_params = n_params - cv_get_size(cv);
-	size_t const n_ress       = get_method_n_ress(mtp);
-	bool const is_variadic    = is_method_variadic(mtp);
-	unsigned const cc_mask    = get_method_calling_convention(mtp);
+	size_t const n_params       = get_method_n_params(mtp);
+	size_t const n_clone_params = n_params - cv_get_size(cv);
+	size_t const n_ress         = get_method_n_ress(mtp);
+	bool const is_variadic      = is_method_variadic(mtp);
+	unsigned const cc_mask      = get_method_calling_convention(mtp);
 	mtp_additional_properties const property_mask =
 	    get_method_additional_properties(mtp);
 
-	/* Create the new type for our clone. */
-	ir_type *const new_mtp = new_type_method(n_new_params, n_ress, is_variadic,
-	                                         cc_mask, property_mask);
+	ir_type *const clone_mtp = new_type_method(
+	    n_clone_params, n_ress, is_variadic, cc_mask, property_mask);
 
-	/* We must set the type of the methods parameters.*/
+	// Copy the types of all remaining parameters
 	for (size_t i = 0, j = 0; i < n_params; ++i) {
 		if (cv_get(cv, i)) continue;
-		ir_type *const tp = get_method_param_type(mtp, i);
-		set_method_param_type(new_mtp, j++, tp);
+		set_method_param_type(clone_mtp, j++, get_method_param_type(mtp, i));
 	}
-	/* Copy the methods result types. */
+	// Copy all result types
 	for (size_t i = 0; i < n_ress; ++i) {
-		ir_type *const tp = get_method_res_type(mtp, i);
-		set_method_res_type(new_mtp, i, tp);
+		set_method_res_type(clone_mtp, i, get_method_res_type(mtp, i));
 	}
-	return new_mtp;
+	return clone_mtp;
 }
 
 static ir_entity *create_proc_clone(const ir_entity *src,
@@ -134,6 +112,7 @@ static ir_entity *create_proc_clone(const ir_entity *src,
 	ir_entity *const new_entity = clone_entity(src, clone_ident, owner);
 
 	// A cloned entity is always local
+	// TODO also when using LTO?
 	set_entity_visibility(new_entity, ir_visibility_local);
 
 	// Create the prototype for the clone
@@ -187,20 +166,11 @@ static ir_entity *get_or_create_proc_clone(const ir_entity *src,
 	return clone;
 }
 
-/**
- * Update the given `call` so that it calls `clone` with the arguments
- * determined by `used_args`
- *
- * @param call         The call node that should be updated
- * @param clone        The new call target
- * @param used_args    Indices of the arguments of the old call that should
- * be used in the updated call
- */
 static void update_call(ir_node *call, ir_entity *clone,
                         const cloning_vector_t cv)
 {
-	// Actually we would only need to update the ptr and the arguments, but
-	// there is no public interface to do that, so we create a new call
+	// Actually we would only have to update the ptr and the arguments, but
+	// there is no public interface to do that, so we rather create a new call.
 	const bitset_t *const used_args = cv_get_undef(cv, &obst);
 	size_t const n_args             = bitset_popcount(used_args);
 	ir_node **const in              = ALLOCAN(ir_node *, n_args);
@@ -218,7 +188,8 @@ static void update_call(ir_node *call, ir_entity *clone,
 
 	exchange(call, clone_call);
 
-	// TODO do anything to remove possibly unused nodes?
+	// TODO What happens to nodes that were used as arguments but are no longer
+	// used anywhere now? Don't we have to clean them up somehow?
 }
 
 typedef struct order_t {
@@ -227,7 +198,7 @@ typedef struct order_t {
 } order_t;
 
 
-static void build_topo_order(ir_graph *g, void *env)
+static void build_reverse_postorder(ir_graph *g, void *env)
 {
 	assert(g != NULL);
 
@@ -253,7 +224,7 @@ void proc_cloning(float threshold)
 	// Create reverse postorder of the call graph
 	size_t n_irgs = get_irp_n_irgs();
 	order_t order = {NEW_ARR_DZ(ir_graph *, &obst, n_irgs), n_irgs};
-	callgraph_walk(NULL, build_topo_order, &order);
+	callgraph_walk(NULL, build_reverse_postorder, &order);
 	assert(order.last == 0);
 
 	// Initialize clone map
@@ -272,7 +243,7 @@ void proc_cloning(float threshold)
 		DB((dbg, LEVEL_3, "Analyzing calls to %s\n", get_entity_name(ent)));
 
 		// call_sites_get_n_calls_to has to be called every time, since we
-		// might update the calls below when we have a direct recursion
+		// add new calls below when optimizing a direct recursion.
 		for (size_t i = 0; i < call_sites_get_n_calls_to(&call_sites, irg); i++) {
 			ir_node *const call = call_sites_get_call_to(&call_sites, irg, i);
 
@@ -287,7 +258,6 @@ void proc_cloning(float threshold)
 
 			// Even if we invalidate the call_sites here, we do not have to
 			// update them, since we don't come back to already handled calls.
-			// At least not as long as we do not deal with recursion.
 			update_call(call, clone, cv);
 
 			if (is_new_clone(clone)) {

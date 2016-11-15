@@ -286,17 +286,7 @@ FIRM_API void remove_phi_cycles(ir_graph *irg);
 /** A default threshold. */
 #define DEFAULT_CLONE_THRESHOLD 20
 
-/**
- * Performs procedure cloning. Evaluate a heuristic weight for every
- * Call(..., Const, ...). If the weight is bigger than threshold,
- * clone the entity and fix the calls.
- *
- * @param threshold   the threshold for cloning
- *
- * The threshold is an estimation of how many instructions are saved
- * when executing a cloned method. If threshold is 0.0, every possible
- * call is cloned.
- */
+// TODO document, fix signature
 FIRM_API void proc_cloning(float threshold);
 
 /**

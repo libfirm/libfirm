@@ -30,11 +30,19 @@ cloning_vector_t cv_new(const ir_node *call, const bitset_t *callee_vips,
 
 	bitset_foreach (callee_vips, i) {
 		ir_node *const arg = get_Call_param(call, i);
-		cv[i]              = is_irn_constlike(arg) ? arg : NULL;
+
+		// TODO This excludes sums of address and offset from CVs
+		// To support them, we need following additional functionality:
+		//   - constant checking for subgraphs
+		//   - equality checking for constant subgraphs
+		//   - hashing for constant subgraphs
+		//   - copying of subgraph arguments to the clone graph
+		cv[i] = is_irn_constlike(arg) ? arg : NULL;
 	}
 	return cv;
 }
 
+// TODO Could be calculated on creation
 size_t cv_get_size(const cloning_vector_t cv)
 {
 	assert(cv != NULL);
