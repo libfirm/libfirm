@@ -959,8 +959,8 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		new_op2     = get_noreg(irg, mode);
 		am->op_type = ia32_AddrModeS;
 	} else if (commutative && (new_op2 == NULL || use_am_and_immediates) &&
-		       use_am &&
-		       ia32_use_source_address_mode(block, op1, op2, other_op, flags)) {
+	           use_am &&
+	           ia32_use_source_address_mode(block, op1, op2, other_op, flags)) {
 		build_address(am, op1, x86_create_am_normal);
 
 		ir_graph *const irg   = get_irn_irg(block);
