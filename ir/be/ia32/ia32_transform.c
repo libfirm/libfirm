@@ -1759,9 +1759,10 @@ static ir_node *create_Div(ir_node *const node, ir_node *const op1, ir_node *con
 	/* Beware: We don't need a Sync, if the memory predecessor of the Div node
 	 * is the memory of the consumed address. We can have only the second op as
 	 * address in Div nodes, so check only op2. */
-	ir_node       *const block   = be_transform_node(old_block);
-	x86_address_t *const addr    = &am.addr;
-	ir_node       *const new_mem = transform_AM_mem(block, op2, mem_pin_skip, addr->mem);
+	ir_node       *const op2_skip = be_skip_sameconv(op2);
+	ir_node       *const block    = be_transform_node(old_block);
+	x86_address_t *const addr     = &am.addr;
+	ir_node       *const new_mem  = transform_AM_mem(block, op2_skip, mem_pin_skip, addr->mem);
 
 	dbg_info *const dbgi = get_irn_dbg_info(node);
 	ir_node        *ext;
