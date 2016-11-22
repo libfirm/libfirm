@@ -7,9 +7,10 @@
 -include config.mak
 
 # Some build configuration defaults
-top_srcdir   ?= .
-top_builddir ?= build
-variant      ?= debug
+top_srcdir     ?= .
+top_builddir   ?= build
+variant        ?= debug
+WITH_LIBFIRM_A ?= 1
 
 srcdir       ?= $(top_srcdir)
 builddir     ?= $(top_builddir)/$(variant)
@@ -64,7 +65,10 @@ libfirm_DEPS        = $(libfirm_OBJECTS:%.o=%.d)
 libfirm_BUILDDIRS   = $(sort $(dir $(libfirm_OBJECTS))) $(addprefix $(gendir)/, $(libfirm_GEN_DIRS))
 
 .PHONY: firm
-firm: $(libfirm_dll) $(libfirm_a)
+firm: $(libfirm_dll)
+ifneq ($(WITH_LIBFIRM_A),)
+firm: $(libfirm_a)
+endif
 
 # backends
 backends = amd64 arm ia32 sparc TEMPLATE
