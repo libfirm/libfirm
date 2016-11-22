@@ -3658,6 +3658,19 @@ static ir_node *can_negate_cheaply(dbg_info *const dbgi, ir_node *const node)
 	return NULL;
 }
 
+static bool is_zero_or_all_one(ir_node const *const n)
+{
+	if (is_Shrs(n)) {
+		ir_node *const r = get_Shrs_right(n);
+		if (is_Const(r)) {
+			long const v = get_Const_long(r);
+			if (v == (long)get_mode_size_bits(get_irn_mode(n)) - 1)
+				return true;
+		}
+	}
+	return false;
+}
+
 static ir_node *transform_node_shl_shr(ir_node *n);
 
 static ir_node *transform_node_Mul(ir_node *n)
@@ -3731,6 +3744,14 @@ static ir_node *transform_node_Mul(ir_node *n)
 			ir_node  *block = get_nodes_block(n);
 			ir_node  *minus = new_rd_Minus(dbgi, block, bit);
 			return new_rd_And(dbgi, block, other, minus);
+		}
+
+		if (is_zero_or_all_one(a) || is_zero_or_all_one(b)) {
+			/* a * b [-1 <= b <= 0] -> -(a & b) */
+			dbg_info *const dbgi  = get_irn_dbg_info(n);
+			ir_node  *const block = get_nodes_block(n);
+			ir_node  *const and   = new_rd_And(dbgi, block, a, b);
+			return new_rd_Minus(dbgi, block, and);
 		}
 	}
 
