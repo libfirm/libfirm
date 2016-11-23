@@ -98,8 +98,7 @@ bool be_is_fallthrough(ir_node const *jmp);
 			break; \
 		} else if (*fmt == '\n') { \
 			++fmt; \
-			be_emit_char('\n'); \
-			be_emit_write_line(); \
+			be_emit_finish_line_gas(node); \
 			be_emit_char('\t'); \
 		} else if (*++fmt == '%') { \
 			++fmt; \
