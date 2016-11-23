@@ -47,11 +47,8 @@ foreach my $op (sort(keys(%nodes))) {
 			$obst_func .= "{\n";
 			my $name = $n->{name} // lc($op);
 			$emit =~ s/{name}/$name/g;
-			foreach my $template (split(/\n/, $emit)) {
-				if ($template ne '') {
-					$obst_func .= "\t${arch}_emitf(node, \"$template\");\n";
-				}
-			}
+			$emit =~ s/\n/\\n/g;
+			$obst_func .= "\t${arch}_emitf(node, \"$emit\");\n";
 			$obst_func .= "}\n\n";
 		}
 		$obst_register .= "\tbe_set_emitter(op_${arch}_$op, $emit_func);\n";
