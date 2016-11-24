@@ -17,6 +17,7 @@ set(SOURCES
 	ir/adt/bipartite.c
 	ir/adt/bitset.c
 	ir/adt/cpset.c
+	ir/adt/deq.c
 	ir/adt/gaussjordan.c
 	ir/adt/gaussseidel.c
 	ir/adt/hungarian.c
