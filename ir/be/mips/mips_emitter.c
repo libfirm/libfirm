@@ -22,10 +22,20 @@
 #include "panic.h"
 #include "util.h"
 
-static void emit_immediate(ir_node const *const node)
+static void emit_immediate(char const *const prefix, ir_node const *const node)
 {
 	mips_immediate_attr_t const *const imm = get_mips_immediate_attr_const(node);
-	be_emit_irprintf("%" PRId32, imm->val);
+	if (imm->ent) {
+		if (prefix)
+			be_emit_irprintf("%s(", prefix);
+		be_gas_emit_entity(imm->ent);
+		if (imm->val != 0)
+			be_emit_irprintf("%+" PRId32, imm->val);
+		if (prefix)
+			be_emit_char(')');
+	} else {
+		be_emit_irprintf("%" PRId32, imm->val);
+	}
 }
 
 static void emit_register(arch_register_t const *const reg)
@@ -52,7 +62,8 @@ void mips_emitf(ir_node const *const node, char const *fmt, ...)
 			break;
 		}
 
-		case 'I': emit_immediate(node); break;
+		case 'H': emit_immediate("%hi", node); break;
+		case 'I': emit_immediate("%lo", node); break;
 
 		case 'R':
 			emit_register(va_arg(ap, arch_register_t const*));

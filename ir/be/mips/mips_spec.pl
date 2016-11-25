@@ -51,6 +51,7 @@ my $mode_gp = "mode_Iu"; # TODO
 		"\tattr->cond = cond;",
 	mips_immediate_attr_t =>
 		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
+		"\tattr->ent = ent;\n".
 		"\tattr->val = val;",
 );
 
@@ -70,7 +71,7 @@ my $immediateOp = {
 	ins       => [ "left" ],
 	outs      => [ "res" ],
 	attr_type => "mips_immediate_attr_t",
-	attr      => "int32_t const val",
+	attr      => "ir_entity *const ent, int32_t const val",
 	emit      => "{name}\t%D0, %S0, %I",
 };
 
@@ -117,7 +118,7 @@ lui => {
 	template  => $immediateOp,
 	in_reqs   => [],
 	ins       => [],
-	emit      => "lui\t%D0, %I",
+	emit      => "lui\t%D0, %H",
 },
 
 nor => { template => $binOp },
