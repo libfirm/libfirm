@@ -80,9 +80,12 @@ void mips_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 			case iro_mips_lh:
 			case iro_mips_lhu:
 			case iro_mips_lw:
+			case iro_mips_sb:
+			case iro_mips_sh:
 			case iro_mips_sll:
 			case iro_mips_sra:
 			case iro_mips_srl:
+			case iro_mips_sw:
 				dump_immediate(F, "%lo", n);
 				break;
 
