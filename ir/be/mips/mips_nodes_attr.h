@@ -36,6 +36,7 @@ typedef struct mips_cond_attr_t {
 
 typedef struct mips_immediate_attr_t {
 	mips_attr_t attr;
+	ir_entity  *ent;
 	int32_t     val;
 } mips_immediate_attr_t;
 

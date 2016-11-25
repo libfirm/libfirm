@@ -77,8 +77,25 @@ static inline bool is_uimm16(long const val)
 	return 0 <= val && val < 65536;
 }
 
+static ir_node *make_address(ir_node const *const node, ir_entity *const ent, int32_t const val)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	ir_node  *const lui   = new_bd_mips_lui(dbgi, block, ent, val);
+	return new_bd_mips_addiu(dbgi, block, lui, ent, val);
+}
+
 static ir_node *gen_Add(ir_node *const node)
 {
+	ir_tarval *tv;
+	ir_entity *ent;
+	unsigned   reloc_kind;
+	if (be_match_immediate(node, &tv, &ent, &reloc_kind)) {
+		assert(reloc_kind == 0);
+		int32_t const val = get_tarval_long(tv);
+		return make_address(node, ent, val);
+	}
+
 	ir_node *const l    = get_Add_left(node);
 	ir_node *const r    = get_Add_right(node);
 	ir_mode *const mode = get_irn_mode(node);
@@ -89,7 +106,7 @@ static ir_node *gen_Add(ir_node *const node)
 		if (is_Const(r)) {
 			long const val = get_Const_long(r);
 			if (is_simm16(val))
-				return new_bd_mips_addiu(dbgi, block, new_l, val);
+				return new_bd_mips_addiu(dbgi, block, new_l, NULL, val);
 		}
 		ir_node *const new_r = be_transform_node(r);
 		return new_bd_mips_addu(dbgi, block, new_l, new_r);
@@ -97,8 +114,14 @@ static ir_node *gen_Add(ir_node *const node)
 	panic("TODO");
 }
 
+static ir_node *gen_Address(ir_node *const node)
+{
+	ir_entity *const ent = get_Address_entity(node);
+	return make_address(node, ent, 0);
+}
+
 typedef ir_node *cons_binop(dbg_info*, ir_node*, ir_node*, ir_node*);
-typedef ir_node *cons_binop_imm(dbg_info*, ir_node*, ir_node*, int32_t);
+typedef ir_node *cons_binop_imm(dbg_info*, ir_node*, ir_node*, ir_entity*, int32_t);
 
 static ir_node *gen_logic_op(ir_node *const node, cons_binop *const cons, cons_binop_imm *const cons_imm)
 {
@@ -110,7 +133,7 @@ static ir_node *gen_logic_op(ir_node *const node, cons_binop *const cons, cons_b
 	if (is_Const(r)) {
 		long const val = get_Const_long(r);
 		if (is_uimm16(val))
-			return cons_imm(dbgi, block, new_l, val);
+			return cons_imm(dbgi, block, new_l, NULL, val);
 	}
 	ir_node *const new_r = be_transform_node(r);
 	return cons(dbgi, block, new_l, new_r);
@@ -258,21 +281,21 @@ static ir_node *gen_Const(ir_node *const node)
 			ir_node  *const block = be_transform_nodes_block(node);
 			ir_graph *const irg   = get_irn_irg(node);
 			ir_node  *const zero  = get_Start_zero(irg);
-			return new_bd_mips_addiu(dbgi, block, zero, val);
+			return new_bd_mips_addiu(dbgi, block, zero, NULL, val);
 		} else {
 			ir_node        *res;
 			dbg_info *const dbgi  = get_irn_dbg_info(node);
 			ir_node  *const block = be_transform_nodes_block(node);
 			int32_t   const hi    = (uint32_t)val >> 16;
 			if (hi != 0) {
-				res = new_bd_mips_lui(dbgi, block, hi);
+				res = new_bd_mips_lui(dbgi, block, NULL, hi);
 			} else {
 				ir_graph *const irg = get_irn_irg(node);
 				res = get_Start_zero(irg);
 			}
 			int32_t const lo = val & 0xFFFF;
 			if (lo != 0)
-				res = new_bd_mips_ori(dbgi, block, res, lo);
+				res = new_bd_mips_ori(dbgi, block, res, NULL, lo);
 			return res;
 		}
 	}
@@ -431,7 +454,7 @@ static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_b
 	if (is_Const(r)) {
 		long const val = get_Const_long(r);
 		if (is_uimm5(val))
-			return cons_imm(dbgi, block, new_l, val);
+			return cons_imm(dbgi, block, new_l, NULL, val);
 	}
 	ir_node *const new_r = be_transform_node(r);
 	return cons(dbgi, block, new_l, new_r);
@@ -502,23 +525,24 @@ static void mips_register_transformers(void)
 {
 	be_start_transform_setup();
 
-	be_set_transform_function(op_Add,    gen_Add);
-	be_set_transform_function(op_And,    gen_And);
-	be_set_transform_function(op_Cmp,    gen_Cmp);
-	be_set_transform_function(op_Cond,   gen_Cond);
-	be_set_transform_function(op_Const,  gen_Const);
-	be_set_transform_function(op_Eor,    gen_Eor);
-	be_set_transform_function(op_Jmp,    gen_Jmp);
-	be_set_transform_function(op_Minus,  gen_Minus);
-	be_set_transform_function(op_Not,    gen_Not);
-	be_set_transform_function(op_Or,     gen_Or);
-	be_set_transform_function(op_Phi,    gen_Phi);
-	be_set_transform_function(op_Return, gen_Return);
-	be_set_transform_function(op_Shl,    gen_Shl);
-	be_set_transform_function(op_Shr,    gen_Shr);
-	be_set_transform_function(op_Shrs,   gen_Shrs);
-	be_set_transform_function(op_Start,  gen_Start);
-	be_set_transform_function(op_Sub,    gen_Sub);
+	be_set_transform_function(op_Add,     gen_Add);
+	be_set_transform_function(op_Address, gen_Address);
+	be_set_transform_function(op_And,     gen_And);
+	be_set_transform_function(op_Cmp,     gen_Cmp);
+	be_set_transform_function(op_Cond,    gen_Cond);
+	be_set_transform_function(op_Const,   gen_Const);
+	be_set_transform_function(op_Eor,     gen_Eor);
+	be_set_transform_function(op_Jmp,     gen_Jmp);
+	be_set_transform_function(op_Minus,   gen_Minus);
+	be_set_transform_function(op_Not,     gen_Not);
+	be_set_transform_function(op_Or,      gen_Or);
+	be_set_transform_function(op_Phi,     gen_Phi);
+	be_set_transform_function(op_Return,  gen_Return);
+	be_set_transform_function(op_Shl,     gen_Shl);
+	be_set_transform_function(op_Shr,     gen_Shr);
+	be_set_transform_function(op_Shrs,    gen_Shrs);
+	be_set_transform_function(op_Start,   gen_Start);
+	be_set_transform_function(op_Sub,     gen_Sub);
 
 	be_set_transform_proj_function(op_Proj,  gen_Proj_Proj);
 	be_set_transform_proj_function(op_Start, gen_Proj_Start);
