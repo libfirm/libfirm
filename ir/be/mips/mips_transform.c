@@ -442,6 +442,20 @@ static ir_node *gen_Proj_Start(ir_node *const node)
 	panic("unexpected Proj");
 }
 
+static ir_node *gen_Proj_Store(ir_node *const node)
+{
+	ir_node *const pred  = get_Proj_pred(node);
+	ir_node *const store = be_transform_node(pred);
+	unsigned const pn    = get_Proj_num(node);
+	switch ((pn_Store)pn) {
+	case pn_Store_M: return store;
+	case pn_Store_X_regular:
+	case pn_Store_X_except:
+		break;
+	}
+	panic("TODO");
+}
+
 static ir_node *gen_Return(ir_node *const node)
 {
 	unsigned       p     = n_mips_jr_first_result;
@@ -566,6 +580,35 @@ static ir_node *gen_Start(ir_node *const node)
 	return be_new_Start(irg, outs);
 }
 
+typedef ir_node *cons_storeop(dbg_info*, ir_node*, ir_node*, ir_node*, ir_node*, ir_entity*, int32_t);
+
+static ir_node *gen_Store(ir_node *const node)
+{
+	ir_node       *old_val = get_Store_value(node);
+	ir_mode *const mode    = get_irn_mode(old_val);
+	if (be_mode_needs_gp_reg(mode)) {
+		cons_storeop  *cons;
+		unsigned const size = get_mode_size_bits(mode);
+		if (size == 8) {
+			cons = &new_bd_mips_sb;
+		} else if (size == 16) {
+			cons = &new_bd_mips_sh;
+		} else if (size == 32) {
+			cons = &new_bd_mips_sw;
+		} else {
+			panic("invalid store");
+		}
+		old_val = be_skip_downconv(old_val, false);
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = be_transform_nodes_block(node);
+		ir_node  *const mem   = be_transform_node(get_Store_mem(node));
+		ir_node  *const val   = be_transform_node(old_val);
+		ir_node  *const ptr   = be_transform_node(get_Store_ptr(node));
+		return cons(dbgi, block, mem, ptr, val, NULL, 0);
+	}
+	panic("TODO");
+}
+
 static ir_node *gen_Sub(ir_node *const node)
 {
 	ir_node *const l    = get_Sub_left(node);
@@ -603,12 +646,14 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Shr,     gen_Shr);
 	be_set_transform_function(op_Shrs,    gen_Shrs);
 	be_set_transform_function(op_Start,   gen_Start);
+	be_set_transform_function(op_Store,   gen_Store);
 	be_set_transform_function(op_Sub,     gen_Sub);
 
 	be_set_transform_proj_function(op_Cond,  be_duplicate_node);
 	be_set_transform_proj_function(op_Load,  gen_Proj_Load);
 	be_set_transform_proj_function(op_Proj,  gen_Proj_Proj);
 	be_set_transform_proj_function(op_Start, gen_Proj_Start);
+	be_set_transform_proj_function(op_Store, gen_Proj_Store);
 }
 
 static void mips_set_allocatable_regs(ir_graph *const irg)

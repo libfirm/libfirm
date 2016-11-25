@@ -87,6 +87,18 @@ my $loadOp = {
 	emit      => "{name}\t%D1, %A",
 };
 
+my $storeOp = {
+	op_flags  => [ "uses_memory" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "mem", "cls-gp", "cls-gp" ],
+	out_reqs  => [ "mem" ],
+	ins       => [ "mem", "base", "value" ],
+	outs      => [ "M" ],
+	attr_type => "mips_immediate_attr_t",
+	attr      => "ir_entity *const ent, int32_t const val",
+	emit      => "{name}\t%S2, %A",
+};
+
 %nodes = (
 
 addu => { template => $binOp },
@@ -149,6 +161,10 @@ or => { template => $binOp },
 
 ori => { template => $immediateOp },
 
+sb => { template => $storeOp },
+
+sh => { template => $storeOp },
+
 sll => { template => $immediateOp },
 
 sllv => { template => $binOp },
@@ -166,6 +182,8 @@ srl => { template => $immediateOp },
 srlv => { template => $binOp },
 
 subu => { template => $binOp },
+
+sw => { template => $storeOp },
 
 xor => { template => $binOp },
 
