@@ -318,6 +318,32 @@ static ir_node *gen_Jmp(ir_node *const node)
 	return new_bd_mips_b(dbgi, block);
 }
 
+typedef ir_node *cons_loadop(dbg_info*, ir_node*, ir_node*, ir_node*, ir_entity*, int32_t);
+
+static ir_node *gen_Load(ir_node *const node)
+{
+	ir_mode *const mode = get_Load_mode(node);
+	if (be_mode_needs_gp_reg(mode)) {
+		cons_loadop   *cons;
+		unsigned const size = get_mode_size_bits(mode);
+		if (size == 8) {
+			cons = mode_is_signed(mode) ? &new_bd_mips_lb : &new_bd_mips_lbu;
+		} else if (size == 16) {
+			cons = mode_is_signed(mode) ? &new_bd_mips_lh : &new_bd_mips_lhu;
+		} else if (size == 32) {
+			cons = new_bd_mips_lw;
+		} else {
+			panic("invalid load");
+		}
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = be_transform_nodes_block(node);
+		ir_node  *const mem   = be_transform_node(get_Load_mem(node));
+		ir_node  *const ptr   = be_transform_node(get_Load_ptr(node));
+		return cons(dbgi, block, mem, ptr, NULL, 0);
+	}
+	panic("TODO");
+}
+
 static ir_node *gen_Minus(ir_node *const node)
 {
 	ir_node *const val  = get_Minus_op(node);
@@ -368,6 +394,21 @@ static ir_node *gen_Phi(ir_node *const node)
 		panic("unhandled mode");
 	}
 	return be_transform_phi(node, req);
+}
+
+static ir_node *gen_Proj_Load(ir_node *const node)
+{
+	ir_node *const pred = get_Proj_pred(node);
+	ir_node *const load = be_transform_node(pred);
+	unsigned const pn   = get_Proj_num(node);
+	switch ((pn_Load)pn) {
+	case pn_Load_M:   return be_new_Proj(load, pn_mips_lw_M);
+	case pn_Load_res: return be_new_Proj(load, pn_mips_lw_res);
+	case pn_Load_X_regular:
+	case pn_Load_X_except:
+		break;
+	}
+	panic("TODO");
 }
 
 static ir_node *gen_Proj_Proj_Start(ir_node *const node)
@@ -552,6 +593,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Const,   gen_Const);
 	be_set_transform_function(op_Eor,     gen_Eor);
 	be_set_transform_function(op_Jmp,     gen_Jmp);
+	be_set_transform_function(op_Load,    gen_Load);
 	be_set_transform_function(op_Minus,   gen_Minus);
 	be_set_transform_function(op_Not,     gen_Not);
 	be_set_transform_function(op_Or,      gen_Or);
@@ -564,6 +606,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Sub,     gen_Sub);
 
 	be_set_transform_proj_function(op_Cond,  be_duplicate_node);
+	be_set_transform_proj_function(op_Load,  gen_Proj_Load);
 	be_set_transform_proj_function(op_Proj,  gen_Proj_Proj);
 	be_set_transform_proj_function(op_Start, gen_Proj_Start);
 }

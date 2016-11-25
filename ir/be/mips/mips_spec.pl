@@ -75,6 +75,18 @@ my $immediateOp = {
 	emit      => "{name}\t%D0, %S0, %I",
 };
 
+my $loadOp = {
+	op_flags  => [ "uses_memory" ],
+	state     => "exc_pinned",
+	in_reqs   => [ "mem", "cls-gp" ],
+	out_reqs  => [ "mem", "cls-gp" ],
+	ins       => [ "mem", "base" ],
+	outs      => [ "M", "res" ],
+	attr_type => "mips_immediate_attr_t",
+	attr      => "ir_entity *const ent, int32_t const val",
+	emit      => "{name}\t%D1, %A",
+};
+
 %nodes = (
 
 addu => { template => $binOp },
@@ -114,12 +126,22 @@ jr => {
 	emit     => "jr\t%S2\nnop",
 },
 
+lb => { template => $loadOp },
+
+lbu => { template => $loadOp },
+
+lh => { template => $loadOp },
+
+lhu => { template => $loadOp },
+
 lui => {
 	template  => $immediateOp,
 	in_reqs   => [],
 	ins       => [],
 	emit      => "lui\t%D0, %H",
 },
+
+lw => { template => $loadOp },
 
 nor => { template => $binOp },
 

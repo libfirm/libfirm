@@ -75,6 +75,11 @@ void mips_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 			fprintf(F, "%s", get_irn_opname(n));
 			switch ((mips_opcodes)get_mips_irn_opcode(n)) {
 			case iro_mips_addiu:
+			case iro_mips_lb:
+			case iro_mips_lbu:
+			case iro_mips_lh:
+			case iro_mips_lhu:
+			case iro_mips_lw:
 			case iro_mips_sll:
 			case iro_mips_sra:
 			case iro_mips_srl:

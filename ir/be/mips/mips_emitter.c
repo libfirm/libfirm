@@ -48,6 +48,13 @@ void mips_emitf(ir_node const *const node, char const *fmt, ...)
 {
 	BE_EMITF(node, fmt, ap, false) {
 		switch (*fmt++) {
+		case 'A':
+			emit_immediate("%lo", node);
+			be_emit_char('(');
+			emit_register(arch_get_irn_register_in(node, 1));
+			be_emit_char(')');
+			break;
+
 		case 'C': {
 			mips_cond_t const cond = (mips_cond_t)va_arg(ap, int);
 			be_emit_string(mips_get_cond_name(cond));
