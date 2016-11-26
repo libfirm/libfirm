@@ -146,6 +146,12 @@ lui => {
 
 lw => { template => $loadOp },
 
+mult_lo => {
+	template => $binOp,
+	emit     => "mult\t%S0, %S1\n".
+	            "mflo\t%D0",
+},
+
 nor => { template => $binOp },
 
 or => { template => $binOp },
