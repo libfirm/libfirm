@@ -64,6 +64,15 @@ my $binOp = {
 	emit      => "{name}\t%D0, %S0, %S1",
 };
 
+my $divOp = {
+	in_reqs   => [ "cls-gp", "cls-gp" ],
+	out_reqs  => [ "cls-gp" ],
+	ins       => [ "left", "right" ],
+	outs      => [ "res" ],
+	emit      => "{name}\t%S0, %S1\n".
+	             "mflo\t%D0",
+};
+
 my $immediateOp = {
 	irn_flags => [ "rematerializable" ],
 	in_reqs   => [ "cls-gp" ],
@@ -127,6 +136,16 @@ bcc => {
 	outs         => [ "false", "true" ],
 	attr_type    => "mips_cond_attr_t",
 	attr         => "mips_cond_t const cond",
+},
+
+div_lo => {
+	template => $divOp,
+	name     => "div",
+},
+
+divu_lo => {
+	template => $divOp,
+	name     => "divu",
 },
 
 jr => {
