@@ -374,6 +374,23 @@ static ir_node *gen_Mod(ir_node *const node)
 	panic("TODO");
 }
 
+static ir_node *gen_Mulh(ir_node *const node)
+{
+	ir_mode *const mode = get_irn_mode(node);
+	if (be_mode_needs_gp_reg(mode) && get_mode_size_bits(mode) == MIPS_MACHINE_SIZE) {
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = be_transform_nodes_block(node);
+		ir_node  *const l     = be_transform_node(get_Mulh_left(node));
+		ir_node  *const r     = be_transform_node(get_Mulh_right(node));
+		if (mode_is_signed(mode)) {
+			return new_bd_mips_mult_hi(dbgi, block, l, r);
+		} else {
+			return new_bd_mips_multu_hi(dbgi, block, l, r);
+		}
+	}
+	panic("TODO");
+}
+
 static ir_node *gen_Mul(ir_node *const node)
 {
 	ir_mode *const mode = get_irn_mode(node);
@@ -694,6 +711,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Eor,     gen_Eor);
 	be_set_transform_function(op_Jmp,     gen_Jmp);
 	be_set_transform_function(op_Load,    gen_Load);
+	be_set_transform_function(op_Mulh,    gen_Mulh);
 	be_set_transform_function(op_Mul,     gen_Mul);
 	be_set_transform_function(op_Minus,   gen_Minus);
 	be_set_transform_function(op_Mod,     gen_Mod);
