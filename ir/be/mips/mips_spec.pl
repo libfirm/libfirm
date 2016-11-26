@@ -193,10 +193,22 @@ divu_hi => {
 	name     => "divu",
 },
 
+mult_hi => {
+	template => $binOp,
+	emit     => "mult\t%S0, %S1\n".
+	            "mfhi\t%D0",
+},
+
 mult_lo => {
 	template => $binOp,
 	emit     => "mult\t%S0, %S1\n".
 	            "mflo\t%D0",
+},
+
+multu_hi => {
+	template => $binOp,
+	emit     => "multu\t%S0, %S1\n".
+	            "mfhi\t%D0",
 },
 
 nor => { template => $binOp },
