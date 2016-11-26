@@ -361,6 +361,23 @@ static ir_node *gen_Load(ir_node *const node)
 	panic("TODO");
 }
 
+static ir_node *gen_Mod(ir_node *const node)
+{
+	ir_mode *const mode = get_Mod_resmode(node);
+	if (be_mode_needs_gp_reg(mode) && get_mode_size_bits(mode) == MIPS_MACHINE_SIZE) {
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = be_transform_nodes_block(node);
+		ir_node  *const l     = be_transform_node(get_Mod_left(node));
+		ir_node  *const r     = be_transform_node(get_Mod_right(node));
+		if (mode_is_signed(mode)) {
+			return new_bd_mips_div_hi(dbgi, block, l, r);
+		} else {
+			return new_bd_mips_divu_hi(dbgi, block, l, r);
+		}
+	}
+	panic("TODO");
+}
+
 static ir_node *gen_Mul(ir_node *const node)
 {
 	ir_mode *const mode = get_irn_mode(node);
@@ -450,6 +467,20 @@ static ir_node *gen_Proj_Load(ir_node *const node)
 	case pn_Load_res: return be_new_Proj(load, pn_mips_lw_res);
 	case pn_Load_X_regular:
 	case pn_Load_X_except:
+		break;
+	}
+	panic("TODO");
+}
+
+static ir_node *gen_Proj_Mod(ir_node *const node)
+{
+	ir_node *const pred = get_Proj_pred(node);
+	unsigned const pn   = get_Proj_num(node);
+	switch ((pn_Mod)pn) {
+	case pn_Mod_M:   return get_Mod_mem(pred);
+	case pn_Mod_res: return be_transform_node(pred);
+	case pn_Mod_X_regular:
+	case pn_Mod_X_except:
 		break;
 	}
 	panic("TODO");
@@ -684,6 +715,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Load,    gen_Load);
 	be_set_transform_function(op_Mul,     gen_Mul);
 	be_set_transform_function(op_Minus,   gen_Minus);
+	be_set_transform_function(op_Mod,     gen_Mod);
 	be_set_transform_function(op_Not,     gen_Not);
 	be_set_transform_function(op_Or,      gen_Or);
 	be_set_transform_function(op_Phi,     gen_Phi);
@@ -698,6 +730,7 @@ static void mips_register_transformers(void)
 	be_set_transform_proj_function(op_Cond,  be_duplicate_node);
 	be_set_transform_proj_function(op_Div,   gen_Proj_Div);
 	be_set_transform_proj_function(op_Load,  gen_Proj_Load);
+	be_set_transform_proj_function(op_Mod,   gen_Proj_Mod);
 	be_set_transform_proj_function(op_Proj,  gen_Proj_Proj);
 	be_set_transform_proj_function(op_Start, gen_Proj_Start);
 	be_set_transform_proj_function(op_Store, gen_Proj_Store);
