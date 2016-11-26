@@ -96,6 +96,15 @@ my $loadOp = {
 	emit      => "{name}\t%D1, %A",
 };
 
+my $modOp = {
+	in_reqs   => [ "cls-gp", "cls-gp" ],
+	out_reqs  => [ "cls-gp" ],
+	ins       => [ "left", "right" ],
+	outs      => [ "res" ],
+	emit      => "{name}\t%S0, %S1\n".
+	             "mfhi\t%D0",
+};
+
 my $storeOp = {
 	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
@@ -164,6 +173,16 @@ lui => {
 },
 
 lw => { template => $loadOp },
+
+div_hi => {
+	template => $modOp,
+	name     => "div",
+},
+
+divu_hi => {
+	template => $modOp,
+	name     => "divu",
+},
 
 mult_lo => {
 	template => $binOp,
