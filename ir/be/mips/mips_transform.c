@@ -344,6 +344,19 @@ static ir_node *gen_Load(ir_node *const node)
 	panic("TODO");
 }
 
+static ir_node *gen_Mul(ir_node *const node)
+{
+	ir_mode *const mode = get_irn_mode(node);
+	if (be_mode_needs_gp_reg(mode)) {
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = be_transform_nodes_block(node);
+		ir_node  *const l     = be_transform_node(get_Mul_left(node));
+		ir_node  *const r     = be_transform_node(get_Mul_right(node));
+		return new_bd_mips_mult_lo(dbgi, block, l, r);
+	}
+	panic("TODO");
+}
+
 static ir_node *gen_Minus(ir_node *const node)
 {
 	ir_node *const val  = get_Minus_op(node);
@@ -637,6 +650,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Eor,     gen_Eor);
 	be_set_transform_function(op_Jmp,     gen_Jmp);
 	be_set_transform_function(op_Load,    gen_Load);
+	be_set_transform_function(op_Mul,     gen_Mul);
 	be_set_transform_function(op_Minus,   gen_Minus);
 	be_set_transform_function(op_Not,     gen_Not);
 	be_set_transform_function(op_Or,      gen_Or);
