@@ -2693,13 +2693,14 @@ static ir_node *gen_Load(ir_node *const node)
 
 static ir_node *gen_Unknown(ir_node *const node)
 {
-	/* for now, there should be more efficient ways to do this */
 	ir_node *const block = be_transform_nodes_block(node);
-
-	if (mode_is_float(get_irn_mode(node))) {
-		return new_bd_amd64_xorp_0(NULL, block, X86_SIZE_64);
+	ir_mode *const mode  = get_irn_mode(node);
+	if (mode_is_float(mode)) {
+		return be_new_Unknown(block, &amd64_class_reg_req_xmm);
+	} else if (be_mode_needs_gp_reg(mode)) {
+		return be_new_Unknown(block, &amd64_class_reg_req_gp);
 	} else {
-		return make_const(NULL, block, 0);
+		panic("unexpected Unknown mode");
 	}
 }
 

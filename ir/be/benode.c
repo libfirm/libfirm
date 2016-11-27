@@ -66,6 +66,7 @@ ir_op *op_be_MemPerm;
 ir_op *op_be_Perm;
 ir_op *op_be_Relocation;
 ir_op *op_be_Start;
+ir_op *op_be_Unknown;
 
 #define be_op_tag FOURCC('B', 'E', '\0', '\0')
 
@@ -521,6 +522,16 @@ ir_node *be_get_Start_proj(ir_graph *const irg, arch_register_t const *const reg
 	panic("tried querying undefined register '%s' at Start", reg->name);
 }
 
+ir_node *be_new_Unknown(ir_node *const block, arch_register_req_t const *const req)
+{
+	ir_graph *const irg  = get_irn_irg(block);
+	ir_mode  *const mode = req->cls->mode;
+	ir_node  *const node = new_ir_node(NULL, irg, block, op_be_Unknown, mode, 0, NULL);
+	init_node_attr(node, 1, arch_irn_flag_rematerializable);
+	arch_set_irn_register_req_out(node, 0, req);
+	return optimize_node(node);
+}
+
 ir_node *be_new_Proj(ir_node *const pred, unsigned const pos)
 {
 	arch_register_req_t const *const req = arch_get_irn_register_req_out(pred, pos);
@@ -636,6 +647,7 @@ void be_init_op(void)
 	op_be_Perm       = new_be_op(o+beo_Perm,       "be_Perm",       op_pin_state_pinned,     irop_flag_none,                            oparity_variable, 0);
 	op_be_Relocation = new_be_op(o+beo_Relocation, "be_Relocation", op_pin_state_floats,     irop_flag_constlike|irop_flag_start_block, oparity_any,      sizeof(be_relocation_attr_t));
 	op_be_Start      = new_be_op(o+beo_Start,      "be_Start",      op_pin_state_pinned,     irop_flag_start_block,                     oparity_variable, 0);
+	op_be_Unknown    = new_be_op(o+beo_Unknown,    "be_Unknown",    op_pin_state_floats,     irop_flag_constlike,                       oparity_any,      0);
 
 	set_op_attrs_equal(op_be_Asm,        be_asm_attr_equal);
 	set_op_attrs_equal(op_be_Copy,       attrs_equal_be_node);
@@ -645,6 +657,7 @@ void be_init_op(void)
 	set_op_attrs_equal(op_be_MemPerm,    attrs_equal_be_node);
 	set_op_attrs_equal(op_be_Perm,       attrs_equal_be_node);
 	set_op_attrs_equal(op_be_Relocation, be_relocation_attrs_equal);
+	set_op_attrs_equal(op_be_Unknown,    attrs_equal_be_node);
 }
 
 void be_finish_op(void)

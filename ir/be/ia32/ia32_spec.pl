@@ -971,12 +971,6 @@ Const => {
 	latency   => 1,
 },
 
-Unknown => {
-	template => $valueop,
-	latency  => 0,
-	emit     => "",
-},
-
 GetEIP => {
 	template  => $valueop,
 	# not rematerializable, value depends on location in code
@@ -1366,12 +1360,6 @@ xZero => {
 	template => $xvalueop,
 	emit     => "xorp%FX %D0, %D0",
 	latency  => 3,
-},
-
-xUnknown => {
-	template => $xvalueop,
-	emit     => "",
-	latency  => 0,
 },
 
 xPzero => {

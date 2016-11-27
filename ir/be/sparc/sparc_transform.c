@@ -1486,17 +1486,15 @@ static ir_node *gen_Conv(ir_node *node)
 
 static ir_node *gen_Unknown(ir_node *node)
 {
-	/* just produce a 0 */
-	ir_mode *mode = get_irn_mode(node);
+	ir_node *const block = be_transform_nodes_block(node);
+	ir_mode *const mode  = get_irn_mode(node);
 	if (mode_is_float(mode)) {
-		ir_node *block = be_transform_nodes_block(node);
-		return gen_float_const(NULL, block, get_mode_null(mode));
+		return be_new_Unknown(block, &sparc_class_reg_req_fp);
 	} else if (be_mode_needs_gp_reg(mode)) {
-		ir_graph *irg = get_irn_irg(node);
-		return get_g0(irg);
+		return be_new_Unknown(block, &sparc_class_reg_req_gp);
+	} else {
+		panic("unexpected Unknown mode");
 	}
-
-	panic("unexpected Unknown mode");
 }
 
 /**

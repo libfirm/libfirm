@@ -1653,20 +1653,15 @@ static ir_node *gen_Proj_Proj(ir_node *node)
 
 static ir_node *gen_Unknown(ir_node *node)
 {
-	ir_node  *new_block = be_transform_nodes_block(node);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-
-	/* just produce a 0 */
-	ir_mode *mode = get_irn_mode(node);
+	ir_node *const block = be_transform_nodes_block(node);
+	ir_mode *const mode  = get_irn_mode(node);
 	if (mode_is_float(mode)) {
-		ir_tarval *tv     = get_mode_null(mode);
-		ir_node   *fconst = new_bd_arm_fConst(dbgi, new_block, tv);
-		return fconst;
+		return be_new_Unknown(block, &arm_class_reg_req_fpa);
 	} else if (get_mode_arithmetic(mode) == irma_twos_complement) {
-		return create_const_graph_value(dbgi, new_block, 0);
+		return be_new_Unknown(block, &arm_class_reg_req_gp);
+	} else {
+		panic("unexpected Unknown mode");
 	}
-
-	panic("unexpected Unknown mode");
 }
 
 static void create_stacklayout(ir_graph *irg, calling_convention_t const *cconv)

@@ -30,7 +30,8 @@ typedef enum be_opcode {
 	beo_Perm,
 	beo_Relocation,
 	beo_Start,
-	beo_last  = beo_Start
+	beo_Unknown,
+	beo_last  = beo_Unknown
 } be_opcode;
 
 typedef struct be_asm_attr_t {
@@ -53,6 +54,7 @@ extern ir_op *op_be_MemPerm;
 extern ir_op *op_be_Perm;
 extern ir_op *op_be_Relocation;
 extern ir_op *op_be_Start;
+extern ir_op *op_be_Unknown;
 
 /**
  * Determines if irn is a be_node.
@@ -213,6 +215,8 @@ ir_node *be_get_Start_mem(ir_graph *irg);
  */
 ir_node *be_get_Start_proj(ir_graph *irg, arch_register_t const *reg);
 
+ir_node *be_new_Unknown(ir_node *block, arch_register_req_t const *req);
+
 /**
  * Create a new Proj node.  Its mode is determined from the out requirement
  * @p pos of @p pred.
@@ -236,6 +240,7 @@ static inline bool be_is_Keep      (const ir_node *irn) { return get_irn_op(irn)
 static inline bool be_is_IncSP     (const ir_node *irn) { return get_irn_op(irn) == op_be_IncSP     ; }
 static inline bool be_is_Relocation(const ir_node *irn) { return get_irn_op(irn) == op_be_Relocation; }
 static inline bool be_is_Start     (const ir_node *irn) { return get_irn_op(irn) == op_be_Start     ; }
+static inline bool be_is_Unknown   (const ir_node *irn) { return get_irn_op(irn) == op_be_Unknown   ; }
 
 static inline be_asm_attr_t const *get_be_asm_attr_const(ir_node const *const asmn)
 {

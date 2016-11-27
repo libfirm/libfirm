@@ -23,12 +23,21 @@
 #include "irop_t.h"
 #include "util.h"
 
+static void be_emit_unknown(ir_node const *const node)
+{
+	if (be_options.verbose_asm) {
+		be_emit_string("\t/* unknown */");
+		be_emit_finish_line_gas(node);
+	}
+}
+
 void be_init_emitters(void)
 {
 	ir_clear_opcodes_generic_func();
-	be_set_emitter(op_Phi,      be_emit_nothing);
-	be_set_emitter(op_be_Keep,  be_emit_nothing);
-	be_set_emitter(op_be_Start, be_emit_nothing);
+	be_set_emitter(op_Phi,        be_emit_nothing);
+	be_set_emitter(op_be_Keep,    be_emit_nothing);
+	be_set_emitter(op_be_Start,   be_emit_nothing);
+	be_set_emitter(op_be_Unknown, be_emit_unknown);
 }
 
 void be_emit_nothing(ir_node const *const node)

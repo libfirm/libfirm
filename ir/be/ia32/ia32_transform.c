@@ -540,25 +540,20 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t const kct)
 
 static ir_node *gen_Unknown(ir_node *node)
 {
-	ir_mode  *mode  = get_irn_mode(node);
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_graph *irg   = get_irn_irg(node);
-	ir_node  *block = get_irg_start_block(irg);
-	ir_node  *res   = NULL;
-
+	ir_node *const block = be_transform_nodes_block(node);
+	ir_mode *const mode  = get_irn_mode(node);
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
-			res = new_bd_ia32_xUnknown(dbgi, block, X86_SIZE_128);
+			return be_new_Unknown(block, &ia32_class_reg_req_xmm);
 		} else {
-			res = new_bd_ia32_fldz(dbgi, block);
+			/* Must occupy a slot on the x87 register stack. */
+			return new_bd_ia32_fldz(NULL, block);
 		}
 	} else if (be_mode_needs_gp_reg(mode)) {
-		res = new_bd_ia32_Unknown(dbgi, block);
+		return be_new_Unknown(block, &ia32_class_reg_req_gp);
 	} else {
 		panic("unsupported Unknown-Mode");
 	}
-
-	return res;
 }
 
 static bool prevents_AM_one(ir_node *const other, ir_node *const am_candidate)
