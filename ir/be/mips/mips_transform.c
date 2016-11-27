@@ -144,6 +144,33 @@ static ir_node *gen_And(ir_node *const node)
 	return gen_logic_op(node, &new_bd_mips_and, &new_bd_mips_andi);
 }
 
+static ir_node *gen_Builtin(ir_node *const node)
+{
+	ir_builtin_kind const kind = get_Builtin_kind(node);
+	switch (kind) {
+	case ir_bk_bswap:
+	case ir_bk_clz:
+	case ir_bk_compare_swap:
+	case ir_bk_ctz:
+	case ir_bk_debugbreak:
+	case ir_bk_ffs:
+	case ir_bk_frame_address:
+	case ir_bk_inport:
+	case ir_bk_may_alias:
+	case ir_bk_outport:
+	case ir_bk_parity:
+	case ir_bk_popcount:
+	case ir_bk_prefetch:
+	case ir_bk_return_address:
+	case ir_bk_saturating_increment:
+	case ir_bk_trap:
+	case ir_bk_va_arg:
+	case ir_bk_va_start:
+		panic("TODO");
+	}
+	panic("unexpected Builtin");
+}
+
 static ir_node *gen_Cmp(ir_node *const node)
 {
 	ir_node       *l    = get_Cmp_left(node);
@@ -456,6 +483,36 @@ static ir_node *gen_Phi(ir_node *const node)
 	return be_transform_phi(node, req);
 }
 
+static ir_node *gen_Proj_Builtin(ir_node *const node)
+{
+	ir_node         *const pred     = get_Proj_pred(node);
+	ir_node         *const new_pred = be_transform_node(pred);
+	(void)new_pred;
+	ir_builtin_kind  const kind     = get_Builtin_kind(pred);
+	switch (kind) {
+	case ir_bk_bswap:
+	case ir_bk_clz:
+	case ir_bk_compare_swap:
+	case ir_bk_ctz:
+	case ir_bk_debugbreak:
+	case ir_bk_ffs:
+	case ir_bk_frame_address:
+	case ir_bk_inport:
+	case ir_bk_may_alias:
+	case ir_bk_outport:
+	case ir_bk_parity:
+	case ir_bk_popcount:
+	case ir_bk_prefetch:
+	case ir_bk_return_address:
+	case ir_bk_saturating_increment:
+	case ir_bk_trap:
+	case ir_bk_va_arg:
+	case ir_bk_va_start:
+		panic("TODO");
+	}
+	panic("unexpected Builtin");
+}
+
 static ir_node *gen_Proj_Div(ir_node *const node)
 {
 	ir_node *const pred = get_Proj_pred(node);
@@ -704,6 +761,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Add,     gen_Add);
 	be_set_transform_function(op_Address, gen_Address);
 	be_set_transform_function(op_And,     gen_And);
+	be_set_transform_function(op_Builtin, gen_Builtin);
 	be_set_transform_function(op_Cmp,     gen_Cmp);
 	be_set_transform_function(op_Cond,    gen_Cond);
 	be_set_transform_function(op_Const,   gen_Const);
@@ -726,12 +784,13 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Store,   gen_Store);
 	be_set_transform_function(op_Sub,     gen_Sub);
 
-	be_set_transform_proj_function(op_Div,   gen_Proj_Div);
-	be_set_transform_proj_function(op_Load,  gen_Proj_Load);
-	be_set_transform_proj_function(op_Mod,   gen_Proj_Mod);
-	be_set_transform_proj_function(op_Proj,  gen_Proj_Proj);
-	be_set_transform_proj_function(op_Start, gen_Proj_Start);
-	be_set_transform_proj_function(op_Store, gen_Proj_Store);
+	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);
+	be_set_transform_proj_function(op_Div,     gen_Proj_Div);
+	be_set_transform_proj_function(op_Load,    gen_Proj_Load);
+	be_set_transform_proj_function(op_Mod,     gen_Proj_Mod);
+	be_set_transform_proj_function(op_Proj,    gen_Proj_Proj);
+	be_set_transform_proj_function(op_Start,   gen_Proj_Start);
+	be_set_transform_proj_function(op_Store,   gen_Proj_Store);
 }
 
 static void mips_set_allocatable_regs(ir_graph *const irg)
