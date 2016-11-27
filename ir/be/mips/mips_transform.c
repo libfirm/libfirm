@@ -312,6 +312,31 @@ bcceqz:;
 	panic("TODO");
 }
 
+static ir_node *gen_Conv(ir_node *const node)
+{
+	ir_node *const op      = get_Conv_op(node);
+	ir_mode *const op_mode = get_irn_mode(op);
+	ir_mode *const mode    = get_irn_mode(node);
+	if (be_mode_needs_gp_reg(op_mode) && be_mode_needs_gp_reg(mode)) {
+		ir_node *const new_op  = be_transform_node(op);
+		unsigned const op_size = get_mode_size_bits(op_mode);
+		if (op_size >= get_mode_size_bits(mode))
+			return new_op;
+		assert(op_size <= 16);
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = be_transform_nodes_block(node);
+		if (mode_is_signed(op_mode)) {
+			int32_t  const val = MIPS_MACHINE_SIZE - op_size;
+			ir_node *const sll = new_bd_mips_sll(dbgi, block, new_op, NULL, val);
+			ir_node *const sra = new_bd_mips_sra(dbgi, block, sll,    NULL, val);
+			return sra;
+		} else {
+			return new_bd_mips_andi(dbgi, block, new_op, NULL, (1U << op_size) - 1);
+		}
+	}
+	panic("TODO");
+}
+
 static ir_node *gen_Const(ir_node *const node)
 {
 	ir_mode *const mode = get_irn_mode(node);
@@ -817,6 +842,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Builtin, gen_Builtin);
 	be_set_transform_function(op_Cmp,     gen_Cmp);
 	be_set_transform_function(op_Cond,    gen_Cond);
+	be_set_transform_function(op_Conv,    gen_Conv);
 	be_set_transform_function(op_Const,   gen_Const);
 	be_set_transform_function(op_Div,     gen_Div);
 	be_set_transform_function(op_Eor,     gen_Eor);
