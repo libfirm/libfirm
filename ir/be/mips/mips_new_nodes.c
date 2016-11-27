@@ -115,6 +115,7 @@ void mips_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 			case iro_mips_div_lo:
 			case iro_mips_divu_hi:
 			case iro_mips_divu_lo:
+			case iro_mips_ijmp:
 			case iro_mips_last:
 			case iro_mips_mult_hi:
 			case iro_mips_mult_lo:

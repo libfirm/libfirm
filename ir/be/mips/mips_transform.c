@@ -364,6 +364,14 @@ static ir_node *gen_Eor(ir_node *const node)
 	return gen_logic_op(node, &new_bd_mips_xor, &new_bd_mips_xori);
 }
 
+static ir_node *gen_IJmp(ir_node *const node)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	ir_node  *const tgt   = be_transform_node(get_IJmp_target(node));
+	return new_bd_mips_ijmp(dbgi, block, tgt);
+}
+
 static ir_node *gen_Jmp(ir_node *const node)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
@@ -782,6 +790,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Const,   gen_Const);
 	be_set_transform_function(op_Div,     gen_Div);
 	be_set_transform_function(op_Eor,     gen_Eor);
+	be_set_transform_function(op_IJmp,    gen_IJmp);
 	be_set_transform_function(op_Jmp,     gen_Jmp);
 	be_set_transform_function(op_Load,    gen_Load);
 	be_set_transform_function(op_Mulh,    gen_Mulh);

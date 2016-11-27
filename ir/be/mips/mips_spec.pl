@@ -157,6 +157,15 @@ divu_lo => {
 	name     => "divu",
 },
 
+ijmp => {
+	state    => "pinned",
+	op_flags => [ "cfopcode", "unknown_jump" ],
+	in_reqs  => [ "cls-gp" ],
+	out_reqs => [ "exec" ],
+	emit     => "jr\t%S0\n".
+	            "nop",
+},
+
 lb => { template => $loadOp },
 
 lbu => { template => $loadOp },
