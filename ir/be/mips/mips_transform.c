@@ -796,6 +796,17 @@ static ir_node *gen_Sub(ir_node *const node)
 	panic("TODO");
 }
 
+static ir_node *gen_Unknown(ir_node *const node)
+{
+	ir_node *const block = be_transform_nodes_block(node);
+	ir_mode *const mode  = get_irn_mode(node);
+	if (be_mode_needs_gp_reg(mode)) {
+		return be_new_Unknown(block, &mips_class_reg_req_gp);
+	} else {
+		panic("TODO");
+	}
+}
+
 static void mips_register_transformers(void)
 {
 	be_start_transform_setup();
@@ -826,6 +837,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Start,   gen_Start);
 	be_set_transform_function(op_Store,   gen_Store);
 	be_set_transform_function(op_Sub,     gen_Sub);
+	be_set_transform_function(op_Unknown, gen_Unknown);
 
 	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);
 	be_set_transform_proj_function(op_Cond,    be_duplicate_node);
