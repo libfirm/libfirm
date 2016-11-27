@@ -144,10 +144,24 @@ static ir_node *gen_And(ir_node *const node)
 	return gen_logic_op(node, &new_bd_mips_and, &new_bd_mips_andi);
 }
 
+static ir_node *gen_saturating_incremnt(ir_node *const node)
+{
+  dbg_info *const dbgi    = get_irn_dbg_info(node);
+  ir_node  *const block   = be_transform_nodes_block(node);
+  ir_node  *const operand = be_transform_node(get_Builtin_param(node, 0));
+  assert(get_mode_size_bits(get_irn_mode(operand)) == 32);
+
+  ir_node *const sltiu = new_bd_mips_sltiu(dbgi, block, operand, NULL, -1);
+  ir_node *const addu  = new_bd_mips_addu( dbgi, block, operand, sltiu);
+  return addu;
+}
+
 static ir_node *gen_Builtin(ir_node *const node)
 {
 	ir_builtin_kind const kind = get_Builtin_kind(node);
 	switch (kind) {
+	case ir_bk_saturating_increment: return gen_saturating_incremnt(node);
+
 	case ir_bk_bswap:
 	case ir_bk_clz:
 	case ir_bk_compare_swap:
@@ -162,7 +176,6 @@ static ir_node *gen_Builtin(ir_node *const node)
 	case ir_bk_popcount:
 	case ir_bk_prefetch:
 	case ir_bk_return_address:
-	case ir_bk_saturating_increment:
 	case ir_bk_trap:
 	case ir_bk_va_arg:
 	case ir_bk_va_start:
@@ -487,9 +500,12 @@ static ir_node *gen_Proj_Builtin(ir_node *const node)
 {
 	ir_node         *const pred     = get_Proj_pred(node);
 	ir_node         *const new_pred = be_transform_node(pred);
-	(void)new_pred;
 	ir_builtin_kind  const kind     = get_Builtin_kind(pred);
 	switch (kind) {
+	case ir_bk_saturating_increment:
+		assert(get_Proj_num(node) == pn_Builtin_max + 1);
+		return new_pred;
+
 	case ir_bk_bswap:
 	case ir_bk_clz:
 	case ir_bk_compare_swap:
@@ -504,7 +520,6 @@ static ir_node *gen_Proj_Builtin(ir_node *const node)
 	case ir_bk_popcount:
 	case ir_bk_prefetch:
 	case ir_bk_return_address:
-	case ir_bk_saturating_increment:
 	case ir_bk_trap:
 	case ir_bk_va_arg:
 	case ir_bk_va_start:

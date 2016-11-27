@@ -227,6 +227,8 @@ sllv => { template => $binOp },
 
 slt => { template => $binOp },
 
+sltiu => { template => $immediateOp },
+
 sltu => { template => $binOp },
 
 sra => { template => $immediateOp },
