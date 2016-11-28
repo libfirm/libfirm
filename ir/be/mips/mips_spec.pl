@@ -53,6 +53,9 @@ my $mode_gp = "mode_Iu"; # TODO
 		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
 		"\tattr->ent = ent;\n".
 		"\tattr->val = val;",
+	mips_switch_attr_t =>
+		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
+		"\tbe_switch_attr_init(res, &attr->swtch, table, table_entity);\n",
 );
 
 my $binOp = {
@@ -251,6 +254,15 @@ srlv => { template => $binOp },
 subu => { template => $binOp },
 
 sw => { template => $storeOp },
+
+switch => {
+	op_flags  => [ "cfopcode", "forking" ],
+	state     => "pinned",
+	in_reqs   => [ "cls-gp" ],
+	out_reqs  => "...",
+	attr_type => "mips_switch_attr_t",
+	attr      => "const ir_switch_table *table, ir_entity *table_entity",
+},
 
 xor => { template => $binOp },
 

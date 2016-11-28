@@ -7,6 +7,7 @@
 
 #include <inttypes.h>
 
+#include "bearch.h"
 #include "gen_mips_new_nodes.h"
 #include "ircons_t.h"
 
@@ -44,6 +45,15 @@ int mips_immediate_attrs_equal(ir_node const *const a, ir_node const *const b)
 		mips_attrs_equal_(&a_attr->attr, &b_attr->attr) &&
 		a_attr->ent == b_attr->ent &&
 		a_attr->val == b_attr->val;
+}
+
+int mips_switch_attrs_equal(ir_node const *const a, ir_node const *const b)
+{
+	mips_switch_attr_t const *const a_attr = get_mips_switch_attr_const(a);
+	mips_switch_attr_t const *const b_attr = get_mips_switch_attr_const(b);
+	return
+		mips_attrs_equal_(&a_attr->attr, &b_attr->attr) &&
+		be_switch_attrs_equal(&a_attr->swtch, &b_attr->swtch);
 }
 
 static void dump_immediate(FILE *const F, char const *const prefix, ir_node const *const n)
@@ -129,6 +139,7 @@ void mips_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 			case iro_mips_srav:
 			case iro_mips_srlv:
 			case iro_mips_subu:
+			case iro_mips_switch:
 			case iro_mips_xor:
 				break;
 			}
