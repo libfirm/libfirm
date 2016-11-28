@@ -1528,9 +1528,7 @@ static void emit_global_decls(be_main_env_t const *const main_env)
 	}
 }
 
-void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
-                        ir_entity const *const entity, ir_mode *entry_mode,
-                        emit_target_func emit_target)
+void be_emit_jump_table(ir_node const *const node, be_switch_attr_t const *const swtch, ir_mode *const entry_mode, emit_target_func const emit_target)
 {
 	/* go over all proj's and collect their jump targets */
 	unsigned        n_outs  = arch_get_irn_n_outs(node);
@@ -1540,6 +1538,8 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 		unsigned pn   = get_Proj_num(proj);
 		targets[pn]   = proj;
 	}
+
+	ir_switch_table const *const table = swtch->table;
 
 	/* go over table to determine max value (note that we normalized the
 	 * ranges so that the minimum is 0) */
@@ -1589,7 +1589,8 @@ void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
 	}
 
 	/* emit table */
-	unsigned const pointer_size = get_mode_size_bytes(entry_mode);
+	unsigned         const pointer_size = get_mode_size_bytes(entry_mode);
+	ir_entity const *const entity       = swtch->table_entity;
 	if (entity) {
 		if (!is_macho())
 			be_gas_emit_switch_section(GAS_SECTION_RODATA);

@@ -1001,8 +1001,7 @@ static void enc_switchjmp(const ir_node *node)
 	enc_mod_am(0x05, node);
 
 	ia32_switch_attr_t const *const attr = get_ia32_switch_attr_const(node);
-	be_emit_jump_table(node, attr->table, attr->table_entity, mode_P,
-	                   ia32_emit_jumptable_target);
+	be_emit_jump_table(node, &attr->swtch, mode_P, ia32_emit_jumptable_target);
 }
 
 static void enc_return(const ir_node *node)

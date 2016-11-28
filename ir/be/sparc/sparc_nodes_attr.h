@@ -14,6 +14,7 @@
 #include <stdint.h>
 
 #include "be_types.h"
+#include "benode.h"
 #include "firm_types.h"
 #include "irnode_t.h"
 
@@ -88,9 +89,8 @@ struct sparc_jmp_cond_attr_t {
  */
 typedef struct sparc_switch_jmp_attr_t sparc_switch_jmp_attr_t;
 struct sparc_switch_jmp_attr_t {
-	sparc_attr_t           base;
-	const ir_switch_table *table;
-	ir_entity             *table_entity;
+	sparc_attr_t     base;
+	be_switch_attr_t swtch;
 };
 
 typedef enum operand_kind_t {

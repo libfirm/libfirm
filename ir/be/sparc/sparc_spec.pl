@@ -103,7 +103,7 @@ $mode_fp4     = "sparc_mode_Q";
 	sparc_load_store_attr_t => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
 	sparc_jmp_cond_attr_t   => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
 	sparc_switch_jmp_attr_t => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
-	                           "\tinit_sparc_switch_jmp_attributes(res, table, jump_table);\n",
+	                           "\tbe_switch_attr_init(res, &attr->swtch, table, jump_table);\n",
 	sparc_fp_attr_t         => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
 	                           "\tinit_sparc_fp_attributes(res, fp_mode);\n",
 	sparc_fp_conv_attr_t    => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".

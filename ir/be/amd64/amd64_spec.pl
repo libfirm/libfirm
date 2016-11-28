@@ -77,7 +77,7 @@ $mode_x87   = "x86_mode_E";
 	amd64_switch_jmp_attr_t =>
 		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode, size);\n"
 		."\tattr->base.addr = *addr;\n"
-		."\tinit_amd64_switch_attributes(res, table, table_entity);",
+		."\tbe_switch_attr_init(res, &attr->swtch, table, table_entity);",
 	amd64_cc_attr_t =>
 		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_CC, size);\n"
 		."\tinit_amd64_cc_attributes(res, cc);",

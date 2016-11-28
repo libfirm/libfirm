@@ -316,16 +316,6 @@ void init_arm_farith_attributes(ir_node *res, ir_mode *mode)
 	attr->mode = mode;
 }
 
-void init_arm_SwitchJmp_attributes(ir_node *res, const ir_switch_table *table)
-{
-	arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr(res);
-	attr->table = table;
-
-	be_foreach_out(res, o) {
-		arch_set_irn_register_req_out(res, o, arch_exec_req);
-	}
-}
-
 int arm_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	(void)a;
@@ -353,7 +343,7 @@ int arm_SwitchJmp_attrs_equal(const ir_node *a, const ir_node *b)
 {
 	const arm_SwitchJmp_attr_t *attr_a = get_arm_SwitchJmp_attr_const(a);
 	const arm_SwitchJmp_attr_t *attr_b = get_arm_SwitchJmp_attr_const(b);
-	return arm_attrs_equal(a, b) && attr_a->table == attr_b->table;
+	return arm_attrs_equal(a, b) && be_switch_attrs_equal(&attr_a->swtch, &attr_b->swtch);
 }
 
 int arm_fConst_attrs_equal(const ir_node *a, const ir_node *b)

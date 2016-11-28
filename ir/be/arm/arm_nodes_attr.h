@@ -11,6 +11,7 @@
 #ifndef FIRM_BE_ARM_ARM_NODES_ATTR_H
 #define FIRM_BE_ARM_ARM_NODES_ATTR_H
 
+#include "benode.h"
 #include "firm_types.h"
 #include "irnode_t.h"
 
@@ -97,8 +98,8 @@ typedef struct arm_CondJmp_attr_t {
 
 /** Attributes for a SwitchJmp */
 typedef struct arm_SwitchJmp_attr_t {
-	arm_attr_t             base;
-	const ir_switch_table *table;
+	arm_attr_t       base;
+	be_switch_attr_t swtch;
 } arm_SwitchJmp_attr_t;
 
 /** CopyB attributes */

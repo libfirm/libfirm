@@ -134,18 +134,6 @@ void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
 	attr->size    = size;
 }
 
-void init_amd64_switch_attributes(ir_node *node, const ir_switch_table *table,
-                                  ir_entity *table_entity)
-{
-	amd64_switch_jmp_attr_t *attr = get_amd64_switch_jmp_attr(node);
-	attr->table        = table;
-	attr->table_entity = table_entity;
-
-	be_foreach_out(node, o) {
-		arch_set_irn_register_req_out(node, o, arch_exec_req);
-	}
-}
-
 void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc)
 {
 	amd64_cc_attr_t *attr = get_amd64_cc_attr(node);
@@ -223,7 +211,7 @@ int amd64_switch_jmp_attrs_equal(const ir_node *const a, const ir_node *const b)
 		= get_amd64_switch_jmp_attr_const(a);
 	const amd64_switch_jmp_attr_t *const attr_b
 		= get_amd64_switch_jmp_attr_const(b);
-	return amd64_attrs_equal(a, b) && attr_a->table == attr_b->table;
+	return amd64_attrs_equal(a, b) && be_switch_attrs_equal(&attr_a->swtch, &attr_b->swtch);
 }
 
 int amd64_call_addr_attrs_equal(const ir_node *const a, const ir_node *const b)

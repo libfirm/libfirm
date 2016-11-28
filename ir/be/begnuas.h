@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include "be_types.h"
 #include "bedwarf.h"
+#include "benode.h"
 
 typedef enum {
 	GAS_SECTION_TEXT,            /**< text section - program code */
@@ -125,9 +126,7 @@ typedef void (*emit_target_func)(ir_entity const *table, ir_node const *proj_x);
 /**
  * Emits a jump table for switch operations
  */
-void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
-                        ir_entity const *entity, ir_mode *entry_mode,
-                        emit_target_func get_cfop_target);
+void be_emit_jump_table(ir_node const *node, be_switch_attr_t const *swtch, ir_mode *entry_mode, emit_target_func emit_target);
 
 bool be_gas_produces_dwarf_line_info(void);
 

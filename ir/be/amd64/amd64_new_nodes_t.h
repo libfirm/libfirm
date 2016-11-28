@@ -19,9 +19,6 @@ void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
                            int n_res, amd64_op_mode_t op_mode,
                            x86_insn_size_t size);
 
-void init_amd64_switch_attributes(ir_node *node, const ir_switch_table *table,
-                                  ir_entity *table_entity);
-
 void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc);
 
 void init_amd64_movimm_attributes(ir_node *node, const amd64_imm64_t *imm);

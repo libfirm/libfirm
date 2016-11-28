@@ -610,12 +610,7 @@ void init_ia32_switch_attributes(ir_node *node,
 #ifndef NDEBUG
 	attr->attr.attr_type |= IA32_ATTR_ia32_switch_attr_t;
 #endif
-	attr->table        = table;
-	attr->table_entity = table_entity;
-
-	be_foreach_out(node, o) {
-		arch_set_irn_register_req_out(node, o, arch_exec_req);
-	}
+	be_switch_attr_init(node, &attr->swtch, table, table_entity);
 }
 
 void init_ia32_return_attributes(ir_node *node, uint16_t pop)
@@ -702,8 +697,7 @@ int ia32_switch_attrs_equal(const ir_node *a, const ir_node *b)
 	const ia32_switch_attr_t *attr_a = get_ia32_switch_attr_const(a);
 	const ia32_switch_attr_t *attr_b = get_ia32_switch_attr_const(b);
 	return ia32_attrs_equal_(&attr_a->attr, &attr_b->attr)
-	    && attr_a->table == attr_b->table
-	    && attr_a->table_entity == attr_b->table_entity;
+	    && be_switch_attrs_equal(&attr_a->swtch, &attr_b->swtch);
 }
 
 int ia32_return_attrs_equal(const ir_node *a, const ir_node *b)

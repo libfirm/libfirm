@@ -24,9 +24,6 @@ void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 void init_sparc_fp_attributes(ir_node *res, ir_mode *fp_mode);
 void init_sparc_fp_conv_attributes(ir_node *res, ir_mode *src_mode,
                                    ir_mode *dest_mode);
-void init_sparc_switch_jmp_attributes(ir_node *node,
-                                      const ir_switch_table *table,
-                                      ir_entity *table_entity);
 void init_sparc_call_attributes(ir_node *node, ir_type *call_type);
 
 int sparc_attrs_equal(const ir_node *a, const ir_node *b);

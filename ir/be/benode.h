@@ -39,6 +39,11 @@ typedef struct be_asm_attr_t {
 	void       *operands;
 } be_asm_attr_t;
 
+typedef struct be_switch_attr_t {
+	ir_switch_table const *table;
+	ir_entity       const *table_entity;
+} be_switch_attr_t;
+
 extern ir_op *op_be_Asm;
 extern ir_op *op_be_Copy;
 extern ir_op *op_be_CopyKeep;
@@ -242,5 +247,12 @@ static inline be_asm_attr_t const *get_be_asm_attr_const(ir_node const *const as
  * Copies the backend specific attributes from old node to new node.
  */
 void be_copy_attr(ir_graph *irg, ir_node const *old_node, ir_node *new_node);
+
+void be_switch_attr_init(ir_node *node, be_switch_attr_t *attr, ir_switch_table const *table, ir_entity const *table_entity);
+
+static inline int be_switch_attrs_equal(be_switch_attr_t const *const a, be_switch_attr_t const *const b)
+{
+	return a->table == b->table && a->table_entity == b->table_entity;
+}
 
 #endif

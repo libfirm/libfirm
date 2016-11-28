@@ -16,6 +16,7 @@
 #include "../ia32/x86_node.h"
 #include "../ia32/x86_x87.h"
 #include "../ia32/x86_address_mode.h"
+#include "benode.h"
 #include "compiler.h"
 #include "irnode_t.h"
 
@@ -82,9 +83,8 @@ typedef struct amd64_cc_attr_t {
 } amd64_cc_attr_t;
 
 typedef struct amd64_switch_jmp_attr_t {
-	amd64_addr_attr_t      base;
-	const ir_switch_table *table;
-	ir_entity             *table_entity;
+	amd64_addr_attr_t base;
+	be_switch_attr_t  swtch;
 } amd64_switch_jmp_attr_t;
 
 typedef struct amd64_call_addr_attr_t {

@@ -237,19 +237,6 @@ void init_sparc_fp_conv_attributes(ir_node *res, ir_mode *src_mode,
 	attr->dest_mode = dest_mode;
 }
 
-void init_sparc_switch_jmp_attributes(ir_node *node,
-                                      const ir_switch_table *table,
-                                      ir_entity *table_entity)
-{
-	sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr(node);
-	attr->table        = table;
-	attr->table_entity = table_entity;
-
-	be_foreach_out(node, o) {
-		arch_set_irn_register_req_out(node, o, arch_exec_req);
-	}
-}
-
 void init_sparc_call_attributes(ir_node *node, ir_type *call_type)
 {
 	sparc_call_attr_t *attr = get_sparc_call_attr(node);
@@ -310,6 +297,5 @@ int sparc_switch_jmp_attrs_equal(const ir_node *a, const ir_node *b)
 	const sparc_switch_jmp_attr_t *attr_a = get_sparc_switch_jmp_attr_const(a);
 	const sparc_switch_jmp_attr_t *attr_b = get_sparc_switch_jmp_attr_const(b);
 	return sparc_attrs_equal(a, b)
-	    && attr_a->table == attr_b->table
-	    && attr_a->table_entity == attr_b->table_entity;
+	    && be_switch_attrs_equal(&attr_a->swtch, &attr_b->swtch);
 }

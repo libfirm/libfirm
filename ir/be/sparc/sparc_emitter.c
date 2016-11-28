@@ -1162,8 +1162,7 @@ static void emit_sparc_SwitchJmp(const ir_node *node)
 	sparc_emitf(node, "jmp %S0");
 	fill_delay_slot(node);
 
-	be_emit_jump_table(node, attr->table, attr->table_entity, mode_P,
-	                   emit_jumptable_target);
+	be_emit_jump_table(node, &attr->swtch, mode_P, emit_jumptable_target);
 }
 
 static void emit_fmov(const ir_node *node, const arch_register_t *src_reg,

@@ -28,7 +28,6 @@ void init_arm_shifter_operand(ir_node *res, unsigned shifter_op_input,
 void init_arm_cmp_attr(ir_node *res, bool ins_permuted, bool is_unsigned);
 void init_arm_Address_attributes(ir_node *res, ir_entity *entity, int offset);
 void init_arm_farith_attributes(ir_node *res, ir_mode *mode);
-void init_arm_SwitchJmp_attributes(ir_node *res, const ir_switch_table *table);
 
 int arm_Address_attrs_equal(const ir_node *a, const ir_node *b);
 int arm_CondJmp_attrs_equal(const ir_node *a, const ir_node *b);

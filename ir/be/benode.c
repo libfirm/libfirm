@@ -597,6 +597,15 @@ void be_copy_attr(ir_graph *const irg, ir_node const *const old_node, ir_node *c
 	}
 }
 
+void be_switch_attr_init(ir_node *const node, be_switch_attr_t *const attr, ir_switch_table const *const table, ir_entity const *const table_entity)
+{
+	attr->table        = table;
+	attr->table_entity = table_entity;
+	be_foreach_out(node, o) {
+		arch_set_irn_register_req_out(node, o, arch_exec_req);
+	}
+}
+
 bool is_be_node(const ir_node *irn)
 {
 	return get_op_tag(get_irn_op(irn)) == be_op_tag;

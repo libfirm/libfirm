@@ -11,6 +11,7 @@
 #ifndef FIRM_BE_IA32_IA32_NODES_ATTR_H
 #define FIRM_BE_IA32_IA32_NODES_ATTR_H
 
+#include "benode.h"
 #include "firm_types.h"
 #include "irnode_t.h"
 #include "x86_asm.h"
@@ -139,9 +140,8 @@ struct ia32_condcode_attr_t {
  */
 typedef struct ia32_switch_attr_t ia32_switch_attr_t;
 struct ia32_switch_attr_t {
-	ia32_attr_t            attr;        /**< generic attribute */
-	const ir_switch_table *table;
-	const ir_entity       *table_entity;
+	ia32_attr_t      attr;  /**< generic attribute */
+	be_switch_attr_t swtch;
 };
 
 /**
