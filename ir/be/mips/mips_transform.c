@@ -10,6 +10,7 @@
 #include "betranshlp.h"
 #include "gen_mips_new_nodes.h"
 #include "gen_mips_regalloc_if.h"
+#include "irprog_t.h"
 #include "mips_bearch_t.h"
 #include "mips_cconv.h"
 #include "nodes.h"
@@ -802,6 +803,28 @@ static ir_node *gen_Sub(ir_node *const node)
 	panic("TODO");
 }
 
+static ir_node *gen_Switch(ir_node *const node)
+{
+	ir_graph              *const irg   = get_irn_irg(node);
+	ir_switch_table const *const table = ir_switch_table_duplicate(irg, get_Switch_table(node));
+
+	ir_type   *const utype  = get_unknown_type();
+	ident     *const id     = id_unique("TBL");
+	ir_entity *const entity = new_global_entity(irp->dummy_owner, id, utype, ir_visibility_private, IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
+
+	dbg_info  *const dbgi   = get_irn_dbg_info(node);
+	ir_node   *const block  = be_transform_nodes_block(node);
+	ir_node   *const nomem  = get_irg_no_mem(irg);
+	ir_node   *const sel    = be_transform_node(get_Switch_selector(node));
+	ir_node   *const sll    = new_bd_mips_sll(dbgi, block, sel, NULL, 2);
+	ir_node   *const lui    = new_bd_mips_lui(dbgi, block, entity, 0);
+	ir_node   *const add    = new_bd_mips_addu(dbgi, block, sll, lui);
+	ir_node   *const load   = new_bd_mips_lw(dbgi, block, nomem, add, entity, 0);
+	ir_node   *const res    = be_new_Proj(load, pn_mips_lw_res);
+	unsigned   const n_outs = get_Switch_n_outs(node);
+	return new_bd_mips_switch(dbgi, block, res, n_outs, table, entity);
+}
+
 static ir_node *gen_Unknown(ir_node *const node)
 {
 	ir_node *const block = be_transform_nodes_block(node);
@@ -844,6 +867,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Start,   gen_Start);
 	be_set_transform_function(op_Store,   gen_Store);
 	be_set_transform_function(op_Sub,     gen_Sub);
+	be_set_transform_function(op_Switch,  gen_Switch);
 	be_set_transform_function(op_Unknown, gen_Unknown);
 
 	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);

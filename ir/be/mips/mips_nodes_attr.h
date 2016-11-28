@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 
+#include "benode.h"
 #include "irnode_t.h"
 
 typedef struct mips_attr_t {
@@ -40,6 +41,11 @@ typedef struct mips_immediate_attr_t {
 	int32_t     val;
 } mips_immediate_attr_t;
 
+typedef struct mips_switch_attr_t {
+	mips_attr_t      attr;
+	be_switch_attr_t swtch;
+} mips_switch_attr_t;
+
 static inline mips_attr_t const *get_mips_attr_const(ir_node const *const node)
 {
 	return (mips_attr_t const*)get_irn_generic_attr_const(node);
@@ -53,6 +59,11 @@ static inline mips_cond_attr_t const *get_mips_cond_attr_const(ir_node const *co
 static inline mips_immediate_attr_t const *get_mips_immediate_attr_const(ir_node const *const node)
 {
 	return (mips_immediate_attr_t const*)get_irn_generic_attr_const(node);
+}
+
+static inline mips_switch_attr_t const *get_mips_switch_attr_const(ir_node const *const node)
+{
+	return (mips_switch_attr_t const*)get_irn_generic_attr_const(node);
 }
 
 char const *mips_get_cond_name(mips_cond_t cond);

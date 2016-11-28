@@ -142,15 +142,30 @@ static void emit_mips_bcc(ir_node const *const node)
 	}
 }
 
+static void emit_jumptable_target(ir_entity const *const table, ir_node const *const proj_x)
+{
+  (void)table;
+  be_emit_cfop_target(proj_x);
+}
+
+static void emit_mips_switch(ir_node const *const node)
+{
+  mips_emitf(node, "jr\t%S0\nnop");
+
+  mips_switch_attr_t const *const attr = get_mips_switch_attr_const(node);
+  be_emit_jump_table(node, &attr->swtch, mode_P, emit_jumptable_target);
+}
+
 static void mips_register_emitters(void)
 {
 	be_init_emitters();
 	mips_register_spec_emitters();
 
-	be_set_emitter(op_be_Copy,  emit_be_Copy);
-	be_set_emitter(op_be_Perm,  emit_be_Perm);
-	be_set_emitter(op_mips_b,   emit_mips_b);
-	be_set_emitter(op_mips_bcc, emit_mips_bcc);
+	be_set_emitter(op_be_Copy,     emit_be_Copy);
+	be_set_emitter(op_be_Perm,     emit_be_Perm);
+	be_set_emitter(op_mips_b,      emit_mips_b);
+	be_set_emitter(op_mips_bcc,    emit_mips_bcc);
+	be_set_emitter(op_mips_switch, emit_mips_switch);
 }
 
 static void mips_gen_block(ir_node *const block)
