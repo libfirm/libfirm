@@ -414,6 +414,8 @@ set(BUILD_SHARED_LIBS Off CACHE BOOL "whether to build shared libraries")
 add_library(firm ${SOURCES})
 if(UNIX)
 	target_link_libraries(firm LINK_PUBLIC m)
+elseif(WIN32)
+	target_link_libraries(firm LINK_PUBLIC gnurx winmm)
 endif()
 
 enable_testing()
