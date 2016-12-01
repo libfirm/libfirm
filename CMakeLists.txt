@@ -46,6 +46,7 @@ set(SOURCES
 	ir/ana/irmemory.c
 	ir/ana/irouts.c
 	ir/ana/vrp.c
+	ir/be/be2addr.c
 	ir/be/bearch.c
 	ir/be/beasm.c
 	ir/be/beblocksched.c
@@ -59,6 +60,7 @@ set(SOURCES
 	ir/be/bediagnostic.c
 	ir/be/bedump.c
 	ir/be/bedwarf.c
+	ir/be/beemithlp.c
 	ir/be/beemitter.c
 	ir/be/beflags.c
 	ir/be/begnuas.c
@@ -353,6 +355,7 @@ add_backend(amd64
 	ir/be/amd64/amd64_emitter.c
 	ir/be/amd64/amd64_finish.c
 	ir/be/amd64/amd64_new_nodes.c
+	ir/be/amd64/amd64_optimize.c
 	ir/be/amd64/amd64_pic.c
 	ir/be/amd64/amd64_transform.c
 	ir/be/amd64/amd64_varargs.c
