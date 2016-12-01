@@ -236,6 +236,21 @@ include_directories(
 	ir/tv
 )
 
+set(TESTS
+	unittests/deq
+	unittests/globalmap
+	unittests/nan_payload
+	unittests/rbitset
+	unittests/sc_val_from_bits
+	unittests/snprintf
+	unittests/strcalc
+	unittests/tarval_calc
+	unittests/tarval_float
+	unittests/tarval_floatops
+	unittests/tarval_from_to
+	unittests/tarval_is_long
+)
+
 # Codegenerators
 set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/gen")
 set(GEN_IR_DIR "${PROJECT_SOURCE_DIR}/scripts")
@@ -400,6 +415,21 @@ add_library(firm ${SOURCES})
 if(UNIX)
 	target_link_libraries(firm LINK_PUBLIC m)
 endif()
+
+enable_testing()
+add_custom_target(
+		check
+		${CMAKE_CTEST_COMMAND} -C $<CONFIG>
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+foreach(test ${TESTS})
+	# Replace `/` with a `.` so cmake accepts the target name
+	string(REPLACE "/" "." test-id ${test})
+	add_executable(${test-id} ${test}.c)
+	target_link_libraries(${test-id} LINK_PRIVATE firm)
+	add_test(test-${test-id} ${test-id})
+	add_dependencies(check ${test-id})
+endforeach(test)
 
 # Create install target
 set(INSTALL_HEADERS
