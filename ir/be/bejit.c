@@ -13,7 +13,6 @@
 
 #include <assert.h>
 #include <limits.h>
-#include <sys/mman.h>
 
 #include "array.h"
 #include "beemitter.h"

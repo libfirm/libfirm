@@ -27,7 +27,6 @@
  *   pnc_Ne  => P || NE
  */
 #include <inttypes.h>
-#include <dlfcn.h>
 
 #include "be_t.h"
 #include "beasm.h"
