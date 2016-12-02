@@ -32,7 +32,6 @@
  * %m   ir_mode*                fpa mode postfix
  * %s   const char*             string
  * %u   unsigned int            unsigned int
- * %d   signed int              signed int
  * %X   signed int              signed int (hexadecimal)
  */
 void arm_emitf(const ir_node *node, const char *format, ...);

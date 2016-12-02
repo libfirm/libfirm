@@ -39,13 +39,12 @@
  * %Sx  <node>                  source register x
  * %s   char const*             string
  * %u   unsigned int            unsigned int
- * %d   signed int              signed int
  *
  * x starts at 0
  * # modifier for %ASx, %D, %R, and %S uses ls mode of node to alter register width
  * # modifier for %M for extend suffix
  * * modifier does not prefix immediates with $, but AM with *
- * l modifier for %lu and %ld
+ * l modifier for %lu
  * > modifier to output high 8bit register (ah, bh)
  * < modifier to output low 8bit register (al, bl)
  * , modifier output comma after operand, leave out operand if it is 1
