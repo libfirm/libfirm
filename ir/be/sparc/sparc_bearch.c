@@ -334,10 +334,15 @@ static void sparc_setup_cg_config(void)
 	switch ((sparc_cpu_t)cpu) {
 	case cpu_v8plus:
 		sparc_cg_config.use_cas = true;
+		sparc_cg_config.cas_asi = 0x80;
 		has_fpu = false;
 		break;
 	case cpu_leon:
 		sparc_cg_config.use_cas = true;
+		/* According to Gaisler's GRIP documentation, section 77.2.7,
+		 * the LEON requires the ASI 0x0A for CAS usage in user mode.
+		 */
+		sparc_cg_config.cas_asi = 0x0A;
 		has_fpu = true;
 		break;
 	case cpu_hypersparc:

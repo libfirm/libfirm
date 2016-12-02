@@ -25,8 +25,9 @@ typedef struct sparc_irg_data_t {
 } sparc_irg_data_t;
 
 typedef struct sparc_codegen_config_t {
-	bool use_fpu;
-	bool use_cas;
+	bool     use_fpu;
+	bool     use_cas;
+	unsigned cas_asi : 8;
 } sparc_codegen_config_t;
 extern sparc_codegen_config_t sparc_cg_config;
 

@@ -772,8 +772,9 @@ static void emit_sparc_Cas(const ir_node *node)
 		= arch_get_irn_register_in(node, n_sparc_Cas_ptr);
 	const arch_register_t *reg_old
 		= arch_get_irn_register_in(node, n_sparc_Cas_old);
+	uint32_t cas_asi  = sparc_cg_config.cas_asi;
 	uint32_t encoding = 3u<<30 | (reg_new->encoding<<25) | (0x3C << 19)
-	       | (reg_ptr->encoding<<14) | (0x80<<5) | (reg_old->encoding);
+	       | (reg_ptr->encoding<<14) | (cas_asi<<5) | (reg_old->encoding);
 	sparc_emitf(node, ".long 0x%X  /* cas [%S0], %S1, %S2", encoding);
 #endif
 }
