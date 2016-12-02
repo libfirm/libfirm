@@ -23,7 +23,6 @@
  * %O   <node>                  offset
  * %R   arch_register_t const*  register
  * %Sx  <node>                  source register x
- * %d   signed int              signed int
  * %s   char const*             string
  * %u   unsigned int            unsigned int
  *

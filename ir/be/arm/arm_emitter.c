@@ -294,12 +294,6 @@ void arm_emitf(const ir_node *node, const char *format, ...)
 			break;
 		}
 
-		case 'd': {
-			int num = va_arg(ap, int);
-			be_emit_irprintf("%d", num);
-			break;
-		}
-
 		case 's': {
 			const char *string = va_arg(ap, const char *);
 			be_emit_string(string);

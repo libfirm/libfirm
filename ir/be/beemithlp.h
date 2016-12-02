@@ -106,6 +106,10 @@ bool be_is_fallthrough(ir_node const *jmp);
 		} else if (*fmt == 'L') { \
 			++fmt; \
 			be_emit_cfop_target(va_arg(ap, ir_node const*)); \
+		} else if (*fmt == 'd') { \
+			++fmt; \
+			int const num = va_arg(ap, int); \
+			be_emit_irprintf("%d", num); \
 		} else
 
 #define BE_EMIT_JMP(arch, node, name, jmp) \
