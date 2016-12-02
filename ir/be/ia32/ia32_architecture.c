@@ -760,7 +760,7 @@ static void x86_cpuid(cpuid_registers *regs, unsigned level)
 #endif
 }
 
-static bool x86_toogle_cpuid(void)
+static bool x86_toggle_cpuid(void)
 {
 	unsigned eflags_before = 0;
 	unsigned eflags_after = 0;
@@ -807,7 +807,7 @@ static void autodetect_arch(void)
 	cpu_arch_features auto_arch = cpu_generic;
 
 	/* We use the cpuid instruction to detect the CPU features */
-	if (x86_toogle_cpuid()) {
+	if (x86_toggle_cpuid()) {
 
 		/* get vendor ID */
 		cpuid_registers regs;
