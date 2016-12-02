@@ -728,10 +728,10 @@ static cpu_arch_features auto_detect_AMD(x86_cpu_info_t const *info)
 
 typedef union {
 	struct {
-        unsigned eax;
-        unsigned ebx;
-        unsigned ecx;
-        unsigned edx;
+		unsigned eax;
+		unsigned ebx;
+		unsigned ecx;
+		unsigned edx;
 	} r;
 	int bulk[4];
 } cpuid_registers;
