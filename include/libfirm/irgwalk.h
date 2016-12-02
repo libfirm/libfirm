@@ -101,6 +101,20 @@ FIRM_API void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre,
                                        irg_walk_func *post, void *env);
 
 /**
+ * Walks over all reachable nodes in the graph, ensuring that nodes inside
+ * a basic block are visited in topological order. Nodes in different blocks
+ * might get visited in an interleaved order.
+ *
+ * @param irg     the irg graph
+ * @param walker  walker function
+ * @param env     environment, passed to walker
+ *
+ * Does not use the link field.
+ */
+FIRM_API void irg_walk_topological(ir_graph *irg, irg_walk_func *walker,
+                                   void *env);
+
+/**
  * Executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
  *
  * @param pre   walker function, executed before the predecessor of a node are visited

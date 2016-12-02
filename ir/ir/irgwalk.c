@@ -245,6 +245,38 @@ void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre,
 	irg_walk_in_or_dep(get_irg_end(irg), pre, post, env);
 }
 
+static void walk_topo_helper(ir_node *irn, irg_walk_func *walker, void *env)
+{
+	if (irn_visited(irn))
+		return;
+
+	/* only break loops at phi/block nodes */
+	const bool is_loop_breaker = is_Phi(irn) || is_Block(irn);
+	if (is_loop_breaker)
+		mark_irn_visited(irn);
+
+	if (!is_Block(irn)) {
+		ir_node *const block = get_nodes_block(irn);
+		walk_topo_helper(block, walker, env);
+	}
+
+	for (int i = 0; i < get_irn_arity(irn); ++i) {
+		ir_node *const pred = get_irn_n(irn, i);
+		walk_topo_helper(pred, walker, env);
+	}
+
+	if (is_loop_breaker || !irn_visited(irn))
+		walker(irn, env);
+
+	mark_irn_visited(irn);
+}
+
+void irg_walk_topological(ir_graph *irg, irg_walk_func *walker, void *env)
+{
+	inc_irg_visited(irg);
+	walk_topo_helper(get_irg_end(irg), walker, env);
+}
+
 /** Walks back from n until it finds a real cf op. */
 static ir_node *get_cf_op(ir_node *n)
 {
