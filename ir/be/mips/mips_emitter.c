@@ -77,6 +77,7 @@ void mips_emitf(ir_node const *const node, char const *fmt, ...)
 
 		case 'H': emit_immediate("%hi", node); break;
 		case 'I': emit_immediate("%lo", node); break;
+		case 'J': emit_immediate(NULL,  node); break;
 
 		case 'R':
 			emit_register(va_arg(ap, arch_register_t const*));

@@ -369,6 +369,91 @@ static ir_node *gen_Builtin(ir_node *const node)
 	panic("unexpected Builtin");
 }
 
+static ir_node *gen_Call(ir_node *const node)
+{
+	ir_graph *const irg = get_irn_irg(node);
+
+	unsigned                          p        = n_mips_jal_first_argument;
+	unsigned                    const n_params = get_Call_n_params(node);
+	unsigned                    const n_ins    = p + 1 + n_params;
+	arch_register_req_t const **const reqs     = be_allocate_in_reqs(irg, n_ins);
+	ir_node                          *ins[n_ins];
+
+	ir_entity     *callee;
+	ir_node *const ptr = get_Call_ptr(node);
+	if (is_Address(ptr)) {
+		callee = get_Address_entity(ptr);
+	} else {
+		callee  = NULL;
+		ins[p]  = be_transform_node(ptr);
+		reqs[p] = &mips_class_reg_req_gp;
+		++p;
+	}
+
+	unsigned const n_mem_param = n_params > 4 ? n_params - 4 : 0;
+	ir_node       *mems[1 + n_mem_param];
+	unsigned       m = 0;
+
+	ir_node *const mem = get_Call_mem(node);
+	mems[m++] = be_transform_node(mem);
+
+	int      const frame_size = (MIPS_MACHINE_SIZE / 8) * (4 + n_mem_param);
+	ir_node *const block      = be_transform_nodes_block(node);
+	ir_node *const sp         = get_Start_sp(irg);
+	ir_node *const call_frame = be_new_IncSP(&mips_registers[REG_SP], block, sp, frame_size, 0);
+
+	ins[n_mips_jal_stack]  = call_frame;
+	reqs[n_mips_jal_stack] = &mips_single_reg_req_gp_sp;
+
+	mips_calling_convention_t cconv;
+	ir_type            *const fun_type = get_Call_type(node);
+	mips_determine_calling_convention(&cconv, fun_type);
+
+	dbg_info *const dbgi = get_irn_dbg_info(node);
+	for (size_t i = 0; i != n_params; ++i) {
+		mips_reg_or_slot_t const *const param = &cconv.parameters[i];
+		ir_node                  *const arg   = get_Call_param(node, i);
+
+		ir_mode *const arg_mode = get_irn_mode(arg);
+		unsigned const size     = get_mode_size_bits(arg_mode);
+		if (size != 32)
+			panic("unsupported parameter size");
+
+		ir_node *const val = be_transform_node(arg);
+		if (param->reg) {
+			ins[p]  = val;
+			reqs[p] = param->reg->single_req;
+			++p;
+		} else {
+			ir_node *const nomem = get_irg_no_mem(irg);
+			mems[m++] = new_bd_mips_sw(dbgi, block, nomem, call_frame, val, NULL, param->offset);
+		}
+	}
+
+	mips_free_calling_convention(&cconv);
+
+	ins[n_mips_jal_mem]  = be_make_Sync(block, m, mems);
+	reqs[n_mips_jal_mem] = arch_memory_req;
+
+	unsigned const n_res = pn_mips_jal_first_result + ARRAY_SIZE(caller_saves);
+
+	ir_node *const jal = callee ?
+		new_bd_mips_jal( dbgi, block, p, ins, reqs, n_res, callee, 0) :
+		new_bd_mips_jalr(dbgi, block, p, ins, reqs, n_res);
+
+	arch_set_irn_register_req_out(jal, pn_mips_jal_M, arch_memory_req);
+	arch_copy_irn_out_info(jal, pn_mips_jal_stack, sp);
+	for (size_t i = 0; i != ARRAY_SIZE(caller_saves); ++i) {
+		arch_set_irn_register_req_out(jal, pn_mips_jal_first_result + i, mips_registers[caller_saves[i]].single_req);
+	}
+
+	ir_node *const jal_stack = be_new_Proj(jal, pn_mips_jal_stack);
+	ir_node *const new_stack = be_new_IncSP(&mips_registers[REG_SP], block, jal_stack, -frame_size, 0);
+	be_stack_record_chain(&stack_env, call_frame, n_be_IncSP_pred, new_stack);
+
+	return jal;
+}
+
 static ir_node *gen_Cmp(ir_node *const node)
 {
 	ir_node       *l    = get_Cmp_left(node);
@@ -757,6 +842,22 @@ static ir_node *gen_Proj_Builtin(ir_node *const node)
 	panic("unexpected Builtin");
 }
 
+static ir_node *gen_Proj_Call(ir_node *const node)
+{
+	ir_node *const pred = get_Proj_pred(node);
+	ir_node *const call = be_transform_node(pred);
+	unsigned const pn   = get_Proj_num(node);
+	switch ((pn_Call)pn) {
+	case pn_Call_M:
+		return be_new_Proj(call, pn_mips_jal_M);
+	case pn_Call_T_result:
+	case pn_Call_X_regular:
+	case pn_Call_X_except:
+		break;
+	}
+	panic("unexpected Proj-Call");
+}
+
 static ir_node *gen_Proj_Div(ir_node *const node)
 {
 	ir_node *const pred = get_Proj_pred(node);
@@ -800,6 +901,27 @@ static ir_node *gen_Proj_Mod(ir_node *const node)
 	panic("TODO");
 }
 
+static ir_node *gen_Proj_Proj_Call(ir_node *const node)
+{
+	ir_node *const pred = get_Proj_pred(node);
+	assert(get_Proj_num(pred) == pn_Call_T_result);
+
+	ir_node *const ocall    = get_Proj_pred(pred);
+	ir_type *const fun_type = get_Call_type(ocall);
+
+	mips_calling_convention_t cconv;
+	mips_determine_calling_convention(&cconv, fun_type);
+
+	ir_node               *const call = be_transform_node(ocall);
+	unsigned               const num  = get_Proj_num(node);
+	arch_register_t const *const reg  = cconv.results[num].reg;
+	unsigned               const pos  = be_get_out_for_reg(call, reg);
+
+	mips_free_calling_convention(&cconv);
+
+	return be_new_Proj(call, pos);
+}
+
 static ir_node *gen_Proj_Proj_Start(ir_node *const node)
 {
 	assert(get_Proj_num(get_Proj_pred(node)) == pn_Start_T_args);
@@ -824,6 +946,7 @@ static ir_node *gen_Proj_Proj(ir_node *const node)
 	ir_node *const pred      = get_Proj_pred(node);
 	ir_node *const pred_pred = get_Proj_pred(pred);
 	switch (get_irn_opcode(pred_pred)) {
+	case iro_Call:  return gen_Proj_Proj_Call(node);
 	case iro_Start: return gen_Proj_Proj_Start(node);
 	default:        panic("unexpected Proj-Proj");
 	}
@@ -1045,6 +1168,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Address, gen_Address);
 	be_set_transform_function(op_And,     gen_And);
 	be_set_transform_function(op_Builtin, gen_Builtin);
+	be_set_transform_function(op_Call,    gen_Call);
 	be_set_transform_function(op_Cmp,     gen_Cmp);
 	be_set_transform_function(op_Cond,    gen_Cond);
 	be_set_transform_function(op_Conv,    gen_Conv);
@@ -1073,6 +1197,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Unknown, gen_Unknown);
 
 	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);
+	be_set_transform_proj_function(op_Call,    gen_Proj_Call);
 	be_set_transform_proj_function(op_Div,     gen_Proj_Div);
 	be_set_transform_proj_function(op_Load,    gen_Proj_Load);
 	be_set_transform_proj_function(op_Mod,     gen_Proj_Mod);

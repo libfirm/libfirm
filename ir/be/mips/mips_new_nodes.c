@@ -114,6 +114,10 @@ void mips_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 				break;
 			}
 
+			case iro_mips_jal:
+				dump_immediate(F, NULL, n);
+				break;
+
 			case iro_mips_lui:
 				dump_immediate(F, "%hi", n);
 				break;
@@ -126,6 +130,7 @@ void mips_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 			case iro_mips_divu_hi:
 			case iro_mips_divu_lo:
 			case iro_mips_ijmp:
+			case iro_mips_jalr:
 			case iro_mips_last:
 			case iro_mips_mult_hi:
 			case iro_mips_mult_lo:
