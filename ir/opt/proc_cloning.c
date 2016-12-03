@@ -269,21 +269,21 @@ void proc_cloning(float threshold)
 			bitset_clear(vips, bitset_size(vips) - 1);
 		}
 
-		DB((dbg, LEVEL_2, "Analyzing calls to %s\n", get_entity_name(ent)));
+		DB((dbg, LEVEL_3, "Analyzing calls to %s\n", get_entity_name(ent)));
 
 		// call_sites_get_n_calls_to has to be called every time, since we
 		// might update the calls below when we have a direct recursion
 		for (size_t i = 0; i < call_sites_get_n_calls_to(&call_sites, irg); i++) {
 			ir_node *const call = call_sites_get_call_to(&call_sites, irg, i);
 
-			DB((dbg, LEVEL_2, "Analyzing call %p from %s\n", call,
+			DB((dbg, LEVEL_3, "Analyzing call %p from %s\n", call,
 			    get_entity_name(get_irg_entity(get_irn_irg(call)))));
 
 			cloning_vector_t cv = cv_new(call, vips, &obst);
 			if (cv_get_size(cv) == 0) continue;
 
 			ir_entity *const clone = get_or_create_proc_clone(ent, cv);
-			DB((dbg, LEVEL_1, "Created clone %s\n", get_entity_name(clone)));
+			DB((dbg, LEVEL_2, "Created clone %s\n", get_entity_name(clone)));
 
 			// Even if we invalidate the call_sites here, we do not have to
 			// update them, since we don't come back to already handled calls.
@@ -297,6 +297,9 @@ void proc_cloning(float threshold)
 			}
 		}
 	}
+	DB((dbg, LEVEL_1, "Created %zu clones from a program with %zu procedures\n",
+	    get_irp_n_irgs() - n_irgs, n_irgs));
+
 	// Invalidate call graph & co
 	free_irp_callee_info();
 	free_callgraph();
