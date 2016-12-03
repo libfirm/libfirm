@@ -106,6 +106,12 @@ static void emit_be_Copy(ir_node const *const node)
 	}
 }
 
+static void emit_be_IncSP(ir_node const *const node)
+{
+	int const offs = -be_get_IncSP_offset(node);
+	mips_emitf(node, "addiu\t%D0, %S0, %d", offs);
+}
+
 static void emit_be_Perm(ir_node const *const node)
 {
 	arch_register_t const *const out = arch_get_irn_register_out(node, 0);
@@ -162,6 +168,7 @@ static void mips_register_emitters(void)
 	mips_register_spec_emitters();
 
 	be_set_emitter(op_be_Copy,     emit_be_Copy);
+	be_set_emitter(op_be_IncSP,    emit_be_IncSP);
 	be_set_emitter(op_be_Perm,     emit_be_Perm);
 	be_set_emitter(op_mips_b,      emit_mips_b);
 	be_set_emitter(op_mips_bcc,    emit_mips_bcc);

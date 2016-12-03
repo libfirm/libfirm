@@ -4,11 +4,15 @@
  */
 
 #include "be_t.h"
+#include "beirg.h"
 #include "bemodule.h"
 #include "bera.h"
+#include "besched.h"
+#include "bestack.h"
 #include "gen_mips_new_nodes.h"
 #include "gen_mips_regalloc_if.h"
 #include "irarch_t.h"
+#include "iredges.h"
 #include "irprog_t.h"
 #include "lower_dw.h"
 #include "mips_emitter.h"
@@ -80,17 +84,100 @@ static regalloc_if_t const mips_regalloc_if = {
 	.new_reload  = NULL, // TODO
 };
 
+static ir_node *mips_new_IncSP(ir_node *const block, ir_node *const sp, int const offset, unsigned const align)
+{
+	return be_new_IncSP(&mips_registers[REG_SP], block, sp, offset, align);
+}
+
+static void mips_introduce_prologue(ir_graph *const irg, unsigned const size)
+{
+	ir_node *const start    = get_irg_start(irg);
+	ir_node *const block    = get_nodes_block(start);
+	ir_node *const start_sp = be_get_Start_proj(irg, &mips_registers[REG_SP]);
+	ir_node *const inc_sp   = mips_new_IncSP(block, start_sp, size, 0);
+	sched_add_after(start, inc_sp);
+	edges_reroute_except(start_sp, inc_sp, inc_sp);
+}
+
+static void mips_introduce_epilogue(ir_node *const ret, unsigned const size)
+{
+	ir_node *const block  = get_nodes_block(ret);
+	ir_node *const ret_sp = get_irn_n(ret, n_mips_jr_stack);
+	ir_node *const inc_sp = mips_new_IncSP(block, ret_sp, -(int)size, 0);
+	sched_add_before(ret, inc_sp);
+	set_irn_n(ret, n_mips_jr_stack, inc_sp);
+}
+
+static void mips_introduce_prologue_epilogue(ir_graph *const irg)
+{
+	ir_type *const frame = get_irg_frame_type(irg);
+	unsigned const size  = get_type_size(frame);
+	if (size == 0)
+		return;
+
+	foreach_irn_in(get_irg_end_block(irg), i, ret) {
+		assert(is_mips_jr(ret));
+		mips_introduce_epilogue(ret, size);
+	}
+
+	mips_introduce_prologue(irg, size);
+}
+
+static void mips_sp_sim(ir_node *const node, stack_pointer_state_t *const state)
+{
+	if (is_mips_irn(node)) {
+		switch ((mips_opcodes)get_mips_irn_opcode(node)) {
+		case iro_mips_addiu:
+		case iro_mips_lb:
+		case iro_mips_lbu:
+		case iro_mips_lh:
+		case iro_mips_lhu:
+		case iro_mips_lw:
+		case iro_mips_sb:
+		case iro_mips_sh:
+		case iro_mips_sw: {
+			mips_immediate_attr_t *const imm = get_mips_immediate_attr(node);
+			ir_entity             *const ent = imm->ent;
+			if (ent && is_frame_type(get_entity_owner(ent))) {
+				imm->ent  = NULL;
+				imm->val += state->offset + get_entity_offset(ent);
+			}
+			break;
+		}
+
+		default:
+			break;
+		}
+	}
+}
+
 static void mips_generate_code(FILE *const output, char const *const cup_name)
 {
 	be_begin(output, cup_name);
 
+	unsigned *const sp_is_non_ssa = rbitset_alloca(N_MIPS_REGISTERS);
+	rbitset_set(sp_is_non_ssa, REG_SP);
+
 	foreach_irp_irg(i, irg) {
 		if (!be_step_first(irg))
 			continue;
-		// TODO be_birg_from_irg(irg)->non_ssa_regs = sp_is_non_ssa;
+
+		be_irg_t *const birg = be_birg_from_irg(irg);
+		birg->non_ssa_regs = sp_is_non_ssa;
+
 		mips_select_instructions(irg);
 		be_step_schedule(irg);
 		be_step_regalloc(irg, &mips_regalloc_if);
+
+		ir_type *const frame = get_irg_frame_type(irg);
+		be_sort_frame_entities(frame, true);
+		be_layout_frame_type(frame, 0, 0);
+
+		mips_introduce_prologue_epilogue(irg);
+		be_fix_stack_nodes(irg, &mips_registers[REG_SP]);
+		birg->non_ssa_regs = NULL;
+		be_sim_stack_pointer(irg, 0, 3, &mips_sp_sim);
+
 		mips_emit_function(irg);
 		be_step_last(irg);
 	}

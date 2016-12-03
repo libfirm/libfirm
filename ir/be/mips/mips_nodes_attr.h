@@ -56,6 +56,11 @@ static inline mips_cond_attr_t const *get_mips_cond_attr_const(ir_node const *co
 	return (mips_cond_attr_t const*)get_irn_generic_attr_const(node);
 }
 
+static inline mips_immediate_attr_t *get_mips_immediate_attr(ir_node *const node)
+{
+	return (mips_immediate_attr_t*)get_irn_generic_attr_const(node);
+}
+
 static inline mips_immediate_attr_t const *get_mips_immediate_attr_const(ir_node const *const node)
 {
 	return (mips_immediate_attr_t const*)get_irn_generic_attr_const(node);
