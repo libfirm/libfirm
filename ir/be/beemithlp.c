@@ -10,6 +10,7 @@
  */
 #include "beemithlp.h"
 
+#include "bearch.h"
 #include "bedwarf.h"
 #include "beemitter.h"
 #include "be_t.h"
@@ -26,7 +27,8 @@
 static void be_emit_unknown(ir_node const *const node)
 {
 	if (be_options.verbose_asm) {
-		be_emit_string("\t/* unknown */");
+		arch_register_t const *const reg = arch_get_irn_register_out(node, 0);
+		be_emit_irprintf("\t/* unknown in %s */", reg->name);
 		be_emit_finish_line_gas(node);
 	}
 }
