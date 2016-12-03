@@ -82,6 +82,24 @@ static inline bool is_uimm16(long const val)
 	return 0 <= val && val < 65536;
 }
 
+typedef struct mips_addr {
+	ir_node   *base;
+	ir_entity *ent;
+	int32_t    val;
+} mips_addr;
+
+static mips_addr make_addr(ir_node *addr)
+{
+	ir_entity *ent = 0;
+	if (is_Member(addr)) {
+		ent  = get_Member_entity(addr);
+		addr = get_Member_ptr(addr);
+		assert(is_Proj(addr) && get_Proj_num(addr) == pn_Start_P_frame_base && is_Start(get_Proj_pred(addr)));
+	}
+	ir_node *const base = be_transform_node(addr);
+	return (mips_addr){ base, ent, 0 };
+}
+
 static ir_node *make_address(ir_node const *const node, ir_entity *const ent, int32_t const val)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
@@ -429,8 +447,8 @@ static ir_node *gen_Load(ir_node *const node)
 		dbg_info *const dbgi  = get_irn_dbg_info(node);
 		ir_node  *const block = be_transform_nodes_block(node);
 		ir_node  *const mem   = be_transform_node(get_Load_mem(node));
-		ir_node  *const ptr   = be_transform_node(get_Load_ptr(node));
-		return cons(dbgi, block, mem, ptr, NULL, 0);
+		mips_addr const addr  = make_addr(get_Load_ptr(node));
+		return cons(dbgi, block, mem, addr.base, addr.ent, addr.val);
 	}
 	panic("TODO");
 }
@@ -812,8 +830,8 @@ static ir_node *gen_Store(ir_node *const node)
 		ir_node  *const block = be_transform_nodes_block(node);
 		ir_node  *const mem   = be_transform_node(get_Store_mem(node));
 		ir_node  *const val   = be_transform_node(old_val);
-		ir_node  *const ptr   = be_transform_node(get_Store_ptr(node));
-		return cons(dbgi, block, mem, ptr, val, NULL, 0);
+		mips_addr const addr  = make_addr(get_Store_ptr(node));
+		return cons(dbgi, block, mem, addr.base, val, addr.ent, addr.val);
 	}
 	panic("TODO");
 }
