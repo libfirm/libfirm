@@ -67,6 +67,14 @@ my $binOp = {
 	emit      => "{name}\t%D0, %S0, %S1",
 };
 
+my $callOp = {
+  state     => "exc_pinned",
+  in_reqs   => "...",
+  out_reqs  => "...",
+  ins       => [ "mem", "stack", "first_argument" ],
+  outs      => [ "M",   "stack", "first_result" ],
+};
+
 my $divOp = {
 	in_reqs   => [ "cls-gp", "cls-gp" ],
 	out_reqs  => [ "cls-gp" ],
@@ -166,6 +174,20 @@ ijmp => {
 	in_reqs  => [ "cls-gp" ],
 	out_reqs => [ "exec" ],
 	emit     => "jr\t%S0\n".
+	            "nop",
+},
+
+jal => {
+	template  => $callOp,
+	attr_type => "mips_immediate_attr_t",
+	attr      => "ir_entity *const ent, int32_t const val",
+	emit      => "jal\t%J\n".
+	             "nop",
+},
+
+jalr => {
+	template => $callOp,
+	emit     => "jalr\t%S2\n".
 	            "nop",
 },
 
