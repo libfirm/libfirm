@@ -452,6 +452,17 @@ static ir_node *gen_Mod(ir_node *const node)
 	panic("TODO");
 }
 
+static ir_node *gen_Member(ir_node *const node)
+{
+	ir_node *const ptr = get_Member_ptr(node);
+	assert(is_Proj(ptr) && get_Proj_num(ptr) == pn_Start_P_frame_base && is_Start(get_Proj_pred(ptr)));
+	dbg_info  *const dbgi  = get_irn_dbg_info(node);
+	ir_node   *const block = be_transform_nodes_block(node);
+	ir_node   *const frame = be_transform_node(ptr);
+	ir_entity *const ent   = get_Member_entity(node);
+	return new_bd_mips_addiu(dbgi, block, frame, ent, 0);
+}
+
 static ir_node *gen_Mulh(ir_node *const node)
 {
 	ir_mode *const mode = get_irn_mode(node);
@@ -872,6 +883,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_IJmp,    gen_IJmp);
 	be_set_transform_function(op_Jmp,     gen_Jmp);
 	be_set_transform_function(op_Load,    gen_Load);
+	be_set_transform_function(op_Member,  gen_Member);
 	be_set_transform_function(op_Mulh,    gen_Mulh);
 	be_set_transform_function(op_Mul,     gen_Mul);
 	be_set_transform_function(op_Minus,   gen_Minus);
