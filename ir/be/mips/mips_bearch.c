@@ -8,13 +8,17 @@
 #include "bemodule.h"
 #include "bera.h"
 #include "besched.h"
+#include "bespillslots.h"
 #include "bestack.h"
+#include "betranshlp.h"
 #include "gen_mips_new_nodes.h"
 #include "gen_mips_regalloc_if.h"
 #include "irarch_t.h"
 #include "iredges.h"
+#include "irgwalk.h"
 #include "irprog_t.h"
 #include "lower_dw.h"
+#include "mips_bearch_t.h"
 #include "mips_emitter.h"
 #include "mips_transform.h"
 
@@ -77,12 +81,76 @@ static void mips_select_instructions(ir_graph *const irg)
 	be_dump(DUMP_BE, irg, "place");
 }
 
+static ir_node *mips_new_spill(ir_node *const value, ir_node *const after)
+{
+	ir_mode *const mode = get_irn_mode(value);
+	if (be_mode_needs_gp_reg(mode)) {
+		ir_node  *const block = get_block(after);
+		ir_graph *const irg   = get_irn_irg(after);
+		ir_node  *const nomem = get_irg_no_mem(irg);
+		ir_node  *const frame = get_irg_frame(irg);
+		ir_node  *const store = new_bd_mips_sw(NULL, block, nomem, frame, value, NULL, 0);
+		sched_add_after(after, store);
+		return store;
+	}
+	panic("TODO");
+}
+
+static ir_node *mips_new_reload(ir_node *const value, ir_node *const spill, ir_node *const before)
+{
+	ir_mode *const mode = get_irn_mode(value);
+	if (be_mode_needs_gp_reg(mode)) {
+		ir_node  *const block = get_block(before);
+		ir_graph *const irg   = get_irn_irg(before);
+		ir_node  *const frame = get_irg_frame(irg);
+		ir_node  *const load  = new_bd_mips_lw(NULL, block, spill, frame, NULL, 0);
+		sched_add_before(before, load);
+		return be_new_Proj(load, pn_mips_lw_res);
+	}
+	panic("TODO");
+}
+
 static regalloc_if_t const mips_regalloc_if = {
 	.spill_cost  = 7,
 	.reload_cost = 5,
-	.new_spill   = NULL, // TODO
-	.new_reload  = NULL, // TODO
+	.new_spill   = mips_new_spill,
+	.new_reload  = mips_new_reload,
 };
+
+static void mips_collect_frame_entity_nodes(ir_node *const node, void *const data)
+{
+	be_fec_env_t *const env = (be_fec_env_t*)data;
+
+	if (is_mips_lw(node)) {
+		ir_node  *const base  = get_irn_n(node, n_mips_lw_base);
+		ir_graph *const irg   = get_irn_irg(node);
+		ir_node  *const frame = get_irg_frame(irg);
+		if (base == frame) {
+			mips_immediate_attr_t const *const attr = get_mips_immediate_attr_const(node);
+			if (!attr->ent) {
+				unsigned const size     = MIPS_MACHINE_SIZE / 8; // TODO
+				unsigned const po2align = log2_floor(size);
+				be_load_needs_frame_entity(env, node, size, po2align);
+			}
+		}
+	}
+}
+
+static void mips_set_frame_entity(ir_node *const node, ir_entity *const entity, unsigned const size, unsigned const po2align)
+{
+	(void)size, (void)po2align;
+
+	mips_immediate_attr_t *const imm = get_mips_immediate_attr(node);
+	imm->ent = entity;
+}
+
+static void mips_assign_spill_slots(ir_graph *const irg)
+{
+	be_fec_env_t *const fec_env = be_new_frame_entity_coalescer(irg);
+	irg_walk_graph(irg, NULL, mips_collect_frame_entity_nodes, fec_env);
+	be_assign_entities(fec_env, mips_set_frame_entity, true);
+	be_free_frame_entity_coalescer(fec_env);
+}
 
 static ir_node *mips_new_IncSP(ir_node *const block, ir_node *const sp, int const offset, unsigned const align)
 {
@@ -168,6 +236,8 @@ static void mips_generate_code(FILE *const output, char const *const cup_name)
 		mips_select_instructions(irg);
 		be_step_schedule(irg);
 		be_step_regalloc(irg, &mips_regalloc_if);
+
+		mips_assign_spill_slots(irg);
 
 		ir_type *const frame = get_irg_frame_type(irg);
 		be_sort_frame_entities(frame, true);
