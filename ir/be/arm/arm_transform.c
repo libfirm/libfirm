@@ -1861,7 +1861,7 @@ static ir_node *gen_Call(ir_node *node)
 		/* TODO: finish load matcher here */
 		shiftop_input    = in_arity;
 		in[in_arity]     = be_transform_node(callee);
-		in_req[in_arity] = arm_reg_classes[CLASS_arm_gp].class_req;
+		in_req[in_arity] = &arm_class_reg_req_gp;
 		++in_arity;
 	}
 	assert(sync_arity <= n_params);
@@ -1928,7 +1928,7 @@ static ir_node *gen_Phi(ir_node *node)
 		/* we shouldn't have any 64bit stuff around anymore */
 		assert(get_mode_size_bits(mode) <= 32);
 		/* all integer operations are on 32bit registers now */
-		req  = arm_reg_classes[CLASS_arm_gp].class_req;
+		req = &arm_class_reg_req_gp;
 	} else {
 		req = arch_memory_req;
 	}

@@ -1791,7 +1791,7 @@ static ir_node *gen_Call(ir_node *node)
 		entity = get_Address_entity(callee);
 	} else {
 		in[in_arity]     = be_transform_node(callee);
-		in_req[in_arity] = sparc_reg_classes[CLASS_sparc_gp].class_req;
+		in_req[in_arity] = &sparc_class_reg_req_gp;
 		++in_arity;
 	}
 	assert(in_arity <= (int)max_inputs);
@@ -1936,7 +1936,7 @@ static ir_node *gen_Phi(ir_node *node)
 		/* we shouldn't have any 64bit stuff around anymore */
 		assert(get_mode_size_bits(mode) <= 32);
 		/* all integer operations are on 32bit registers now */
-		req  = sparc_reg_classes[CLASS_sparc_gp].class_req;
+		req  = &sparc_class_reg_req_gp;
 	} else if (mode_is_float(mode)) {
 		req  = get_float_req(mode);
 	} else {

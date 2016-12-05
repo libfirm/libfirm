@@ -4169,12 +4169,12 @@ static ir_node *gen_Phi(ir_node *node)
 		/* we shouldn't have any 64bit stuff around anymore */
 		assert(get_mode_size_bits(mode) <= 32);
 		/* all integer operations are on 32bit registers now */
-		req  = ia32_reg_classes[CLASS_ia32_gp].class_req;
+		req = &ia32_class_reg_req_gp;
 	} else if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
-			req  = ia32_reg_classes[CLASS_ia32_xmm].class_req;
+			req = &ia32_class_reg_req_xmm;
 		} else {
-			req  = ia32_reg_classes[CLASS_ia32_fp].class_req;
+			req = &ia32_class_reg_req_fp;
 		}
 	} else {
 		req = arch_memory_req;
@@ -4738,7 +4738,7 @@ static bool callee_is_plt(ir_node *callee)
 
 static ir_node *gen_Call(ir_node *node)
 {
-	arch_register_req_t const *const req_gp = ia32_reg_classes[CLASS_ia32_gp].class_req;
+	arch_register_req_t const *const req_gp = &ia32_class_reg_req_gp;
 	arch_register_t     const *const sp     = &ia32_registers[REG_ESP];
 	arch_register_t     const *const fpcw   = &ia32_registers[REG_FPCW];
 

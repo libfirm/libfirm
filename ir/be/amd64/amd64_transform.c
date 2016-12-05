@@ -2097,11 +2097,11 @@ static ir_node *gen_Phi(ir_node *const node)
 	const arch_register_req_t *req;
 	if (mode_needs_gp_reg(mode)) {
 		/* all integer operations are on 64bit registers now */
-		req = amd64_reg_classes[CLASS_amd64_gp].class_req;
+		req = &amd64_class_reg_req_gp;
 	} else if (mode_is_float(mode)) {
 		req = mode == x86_mode_E
-		    ? amd64_reg_classes[CLASS_amd64_x87].class_req
-		    : amd64_reg_classes[CLASS_amd64_xmm].class_req;
+		    ? &amd64_class_reg_req_x87
+		    : &amd64_class_reg_req_xmm;
 	} else {
 		req = arch_memory_req;
 	}
