@@ -84,7 +84,7 @@ static ir_node **call_map_get_calls(const pmap *map, const ir_graph *key)
 static size_t call_map_size(const pmap *map, const ir_graph *key)
 {
 	ir_node *const *const call_sites = call_map_get_calls(map, key);
-	return call_sites == NULL ? 0 : ARR_LEN(call_sites);
+	return ARR_LEN_SAFE(call_sites);
 }
 
 // Expected O(1)
