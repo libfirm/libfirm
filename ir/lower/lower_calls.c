@@ -347,6 +347,17 @@ typedef struct wlk_env {
 	ir_node             **param_members;
 } wlk_env;
 
+
+static void grow_amd64_classes(struct obstack *obst, amd64_class classes[static 2])
+{
+	obstack_grow(obst, classes, sizeof(amd64_class[2]));
+}
+
+static void grow_amd64_no_class(struct obstack *obst)
+{
+	grow_amd64_classes(obst, (amd64_class[2]){class_no_class, class_no_class});
+}
+
 /**
  * Creates a new lowered type for a method type with compound
  * arguments. The new type is associated to the old one and returned.
@@ -396,13 +407,20 @@ static ir_type *lower_mtp(ir_type *mtp, wlk_env *env)
 		.sse_params = 0,
 		.integer_params = 0,
 	};
-	amd64_class (*amd64_classes)[2] = NULL;
-	if (flags & LF_AMD64_ABI_STRUCTS) {
-		/* OALLOCNZ chokes on this type. */
-		unsigned l = sizeof(amd64_class[2]) * n_params;
-		amd64_classes = (amd64_class (*)[2]) obstack_alloc(env->obst, l);
-		memset(amd64_classes, 0, l);
-	}
+
+	/*
+	 * (AMD64 ABI only)
+	 * We build an array on the obstack to store the register
+	 * classes for compound arguments indexed by their argument
+	 * index in the lowered mtp. If a compound argument is passed
+	 * in a pair of registers, there will only be an entry for the
+	 * smaller argument index, because the lowered Member nodes
+	 * will refer to this index.
+	 *
+	 * For scalar arguments and the second halves of compounds,
+	 * the entry is {class_no_class, class_no_class}.
+	 */
+	struct obstack *obst = env->obst;
 
 	/* add a hidden parameter in front for every compound result */
 	for (size_t i = 0; i < n_ress; ++i) {
@@ -425,8 +443,10 @@ static ir_type *lower_mtp(ir_type *mtp, wlk_env *env)
 				params[nn_params++] = ptr_tp;
 				if (env->flags & LF_RETURN_HIDDEN)
 					results[nn_ress++] = ptr_tp;
-				if (env->flags & LF_AMD64_ABI_STRUCTS)
+				if (env->flags & LF_AMD64_ABI_STRUCTS) {
 					notify_amd64_scalar_parameter(&s, ptr_tp);
+					grow_amd64_no_class(obst);
+				}
 			}
 		} else {
 			/* scalar result */
@@ -439,24 +459,31 @@ static ir_type *lower_mtp(ir_type *mtp, wlk_env *env)
 		if (!(env->flags & LF_DONT_LOWER_ARGUMENTS)
 		    && is_aggregate_type(param_type)) {
 			if (flags & LF_AMD64_ABI_STRUCTS) {
-				amd64_class *classes = amd64_classes[i];
+				amd64_class classes[2];
 				classify_for_amd64(&s, param_type, classes);
 				if (classes[0] != class_memory) {
 					params[nn_params++] = get_amd64_class_type(classes[0]);
-					if (classes[1] != class_no_class)
+					grow_amd64_classes(obst, classes);
+					if (classes[1] != class_no_class) {
 						params[nn_params++] = get_amd64_class_type(classes[1]);
+						grow_amd64_no_class(obst);
+					}
 				} else {
 					ir_type *ptr_type = new_type_pointer(param_type);
 					params[nn_params++] = ptr_type;
 					notify_amd64_scalar_parameter(&s, ptr_type);
+					grow_amd64_classes(obst,
+					                   (amd64_class[2]) {class_memory, class_no_class});
 				}
 			} else {
 				params[nn_params++] = new_type_pointer(param_type);
 			}
 		} else {
 			params[nn_params++] = param_type;
-			if (env->flags & LF_AMD64_ABI_STRUCTS)
+			if (env->flags & LF_AMD64_ABI_STRUCTS) {
 				notify_amd64_scalar_parameter(&s, param_type);
+				grow_amd64_no_class(obst);
+			}
 		}
 	}
 	assert(nn_ress <= n_ress*2);
@@ -482,7 +509,10 @@ static ir_type *lower_mtp(ir_type *mtp, wlk_env *env)
 	for (size_t i = 0; i < nn_ress; ++i)
 		set_method_res_type(lowered, i, results[i]);
 
-	set_type_link(lowered, amd64_classes);
+	if (flags & LF_AMD64_ABI_STRUCTS) {
+		amd64_class (*amd64_classes)[2] = obstack_finish(obst);
+		set_type_link(lowered, amd64_classes);
+	}
 
 	pmap_insert(lowered_mtps, mtp, lowered);
 
@@ -1024,10 +1054,11 @@ static void fix_call_compound_params(const cl_entry *entry, const ir_type *highe
 		if (env->flags & LF_AMD64_ABI_STRUCTS) {
 			ir_node *block = get_nodes_block(call);
 			ir_type *lower_arg_type = get_method_param_type(lower, INPUT_TO_PARAM(l));
+			amd64_class second_half = classes[INPUT_TO_PARAM(l)][1];
 
 			new_in[l++] = get_compound_slice(block, arg, 0,
 			                                 arg_type, lower_arg_type, &mem);
-			if (classes[h][1] != class_no_class) {
+			if (second_half != class_no_class) {
 				lower_arg_type = get_method_param_type(lower, INPUT_TO_PARAM(l));
 				new_in[l++] = get_compound_slice(block, arg, 8,
 				                                 arg_type, lower_arg_type, &mem);
