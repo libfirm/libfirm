@@ -1065,7 +1065,8 @@ static void fix_call_compound_params(const cl_entry *entry, const ir_type *highe
 			continue;
 		}
 
-		if (env->flags & LF_AMD64_ABI_STRUCTS) {
+		if (env->flags & LF_AMD64_ABI_STRUCTS &&
+		    classes[INPUT_TO_PARAM(i)][0] != class_memory) {
 			ir_node *block = get_nodes_block(call);
 			ir_type *lower_arg_type = get_method_param_type(lower, INPUT_TO_PARAM(i));
 			amd64_class second_half = classes[INPUT_TO_PARAM(i)][1];
