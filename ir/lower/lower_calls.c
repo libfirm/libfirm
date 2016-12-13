@@ -12,6 +12,7 @@
 
 #include "array.h"
 #include "be.h"
+#include "debug.h"
 #include "panic.h"
 #include "firm_types.h"
 #include "heights.h"
@@ -994,13 +995,24 @@ static void fix_call_compound_params(const cl_entry *entry, const ir_type *highe
 	size_t        n_params       = get_method_n_params(higher);
 	ir_type      *lower          = get_Call_type(call);
 	size_t        n_params_lower = get_method_n_params(lower);
-	ir_node     **new_in         = ALLOCANZ(ir_node*, n_params_lower);
+	size_t        n_compound_ret = entry->n_compound_ret;
+	ir_node     **new_in         = ALLOCANZ(ir_node*, n_params_lower + 2);
 	amd64_class (*classes)[2]    = (amd64_class(*)[2]) get_type_link(lower);
 
-	/* h counts higher type parameters, l counts lower type parameters */
-	size_t l = 0;
+	static const size_t fixed_call_args = n_Call_max + 1;
+	new_in[n_Call_mem] = get_Call_mem(call);
+	new_in[n_Call_ptr] = get_Call_ptr(call);
+
+	/* h counts higher type parameters, l counts Call input
+	 * numbers (i.e. lower type parameters + memory and ptr) */
+	size_t l = fixed_call_args;
+
+#define INPUT_TO_PARAM(x) ((x) - fixed_call_args + n_compound_ret)
+#define PARAM_TO_INPUT(x) ((x) + fixed_call_args - n_compound_ret)
+
+	DEBUG_ONLY(size_t max_input = PARAM_TO_INPUT(n_params_lower));
 	for (size_t h = 0; h < n_params; ++h) {
-		assert(l < n_params_lower);
+		assert(l < max_input);
 
 		ir_type *arg_type = get_method_param_type(higher, h);
 		ir_node *arg = get_Call_param(call, h);
@@ -1011,12 +1023,12 @@ static void fix_call_compound_params(const cl_entry *entry, const ir_type *highe
 
 		if (env->flags & LF_AMD64_ABI_STRUCTS) {
 			ir_node *block = get_nodes_block(call);
-			ir_type *lower_arg_type = get_method_param_type(lower, l);
+			ir_type *lower_arg_type = get_method_param_type(lower, INPUT_TO_PARAM(l));
 
 			new_in[l++] = get_compound_slice(block, arg, 0,
 			                                 arg_type, lower_arg_type, &mem);
 			if (classes[h][1] != class_no_class) {
-				lower_arg_type = get_method_param_type(lower, l);
+				lower_arg_type = get_method_param_type(lower, INPUT_TO_PARAM(l));
 				new_in[l++] = get_compound_slice(block, arg, 8,
 				                                 arg_type, lower_arg_type, &mem);
 			}
@@ -1031,9 +1043,12 @@ static void fix_call_compound_params(const cl_entry *entry, const ir_type *highe
 		}
 	}
 
-	assert(l == n_params_lower);
+	assert(l == max_input);
 	set_irn_in(call, l, new_in);
 	set_Call_mem(call, mem);
+
+#undef PARAM_TO_INPUT
+#undef INPUT_TO_PARAM
 }
 
 static void fix_calls(wlk_env *env)
