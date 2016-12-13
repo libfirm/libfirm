@@ -1351,8 +1351,13 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg, 
 		size_t     num    = get_entity_parameter_number(entity);
 		ir_node   *ptr    = NULL;
 
+		if (!is_aggregate_type(get_entity_type(entity))) {
+			continue;
+		}
+
 		if (env->flags & LF_AMD64_ABI_STRUCTS &&
 		    arg_classes[num][0] != class_memory) {
+			assert(arg_classes[num][0] != class_no_class);
 			ir_type *tp = get_entity_type(entity);
 			ptr = build_compound_from_arguments(member, &walk_env, num, tp, arg_classes[num]);
 		} else {
