@@ -5811,32 +5811,7 @@ static ir_node *transform_node_Phi(ir_node *phi)
 		}
 	}
 
-	/* Move Pin nodes down through Phi nodes. */
-	if (mode == mode_M) {
-		bool      has_pin = false;
-		ir_node **in      = ALLOCAN(ir_node*, n);
-
-		foreach_irn_in(phi, i, pred) {
-			if (is_Pin(pred)) {
-				in[i]   = get_Pin_op(pred);
-				has_pin = true;
-			} else if (is_Bad(pred)) {
-				in[i] = pred;
-			} else {
-				return phi;
-			}
-		}
-
-		if (!has_pin)
-			return phi;
-
-		/* Move the Pin nodes "behind" the Phi. */
-		ir_node *new_phi = get_Phi_loop(phi) ? new_r_Phi_loop(block, n, in)
-		                                     : new_r_Phi(block, n, in, mode_M);
-		if (get_Phi_loop(phi))
-			remove_keep_alive(phi);
-		return new_r_Pin(block, new_phi);
-	} else if (mode_is_reference(mode)) {
+	if (mode_is_reference(mode)) {
 		/* Move Confirms down through Phi nodes. */
 		ir_node *pred = get_irn_n(phi, 0);
 		if (!is_Confirm(pred))
