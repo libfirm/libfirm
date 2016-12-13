@@ -118,19 +118,24 @@ typedef struct {
 	unsigned sse_params;
 } amd64_abi_state;
 
-static ir_type *get_amd64_class_type(amd64_class c)
+static ir_mode *get_amd64_class_mode(amd64_class c)
 {
 	switch (c) {
 	case class_integer:
-		return get_type_for_mode(mode_Lu);
+		return mode_Lu;
 	case class_sse:
-		return get_type_for_mode(mode_D);
+		return mode_D;
 	case class_no_class:
 	case class_x87:
 	case class_memory:
 		break;
 	}
 	panic("Invalid amd64_class");
+}
+
+static ir_type *get_amd64_class_type(amd64_class c)
+{
+	return get_type_for_mode(get_amd64_class_mode(c));
 }
 
 static bool try_free_register(unsigned *r, unsigned max)
@@ -457,6 +462,7 @@ struct cl_entry {
  */
 typedef struct wlk_env {
 	unsigned             *arg_map ;        /**< Map from old to new argument indices. */
+	amd64_class         (*arg_classes)[2]; /**< AMD64 classification of arguments. */
 	struct obstack       obst;             /**< An obstack to allocate the data on. */
 	cl_entry             *cl_list;         /**< The call list. */
 	compound_call_lowering_flags flags;
@@ -947,28 +953,72 @@ static ir_entity *create_compound_arg_entity(ir_graph *irg, ir_type *type)
 	return entity;
 }
 
-static void fix_call_compound_params(const cl_entry *entry, const ir_type *ctp, wlk_env *env)
+static ir_node *get_compound_slice(ir_node *block, ir_node *ptr, int offset,
+                                   ir_type *compound_type, ir_type *lower_param_type,
+                                   ir_node **mem)
 {
-	ir_node  *call     = entry->call;
-	dbg_info *dbgi     = get_irn_dbg_info(call);
-	ir_node  *mem      = get_Call_mem(call);
-	ir_graph *irg      = get_irn_irg(call);
-	ir_node  *frame    = get_irg_frame(irg);
-	size_t    n_params = get_method_n_params(ctp);
+	ir_graph *irg = get_irn_irg(block);
+	dbg_info *dbgi = get_irn_dbg_info(ptr);
+	ir_mode *mode = get_type_mode(lower_param_type);
 
-	for (size_t i = 0; i < n_params; ++i) {
-		ir_type *type = get_method_param_type(ctp, i);
+	if (offset != 0) {
+		ir_node *off = new_rd_Const_long(dbgi, irg, mode_Lu, offset);
+		ptr = new_rd_Add(dbgi, block, ptr, off);
+	}
+
+	ir_node *load = new_rd_Load(dbgi, block, *mem, ptr, mode, compound_type, cons_none);
+	*mem = new_rd_Proj(dbgi, load, mode_M, pn_Load_M);
+	return new_rd_Proj(dbgi, load, mode, pn_Load_res);
+}
+
+static void fix_call_compound_params(const cl_entry *entry, const ir_type *higher, wlk_env *env)
+{
+	ir_node   *call           = entry->call;
+	dbg_info  *dbgi           = get_irn_dbg_info(call);
+	ir_node   *mem            = get_Call_mem(call);
+	ir_graph  *irg            = get_irn_irg(call);
+	ir_node   *frame          = get_irg_frame(irg);
+	size_t     n_params       = get_method_n_params(higher);
+	ir_type   *lower          = get_Call_type(call);
+	size_t     n_params_lower = get_method_n_params(lower);
+	ir_node  **new_in         = ALLOCANZ(ir_node*, n_params_lower);
+
+	/* h counts higher type parameters, l counts lower type parameters */
+	size_t l = 0;
+	for (size_t h = 0; h < n_params; ++h) {
+		assert(l < n_params_lower);
+
+		ir_type *type = get_method_param_type(higher, h);
 		if (!is_aggregate_type(type) || (env->flags & LF_DONT_LOWER_ARGUMENTS))
 			continue;
 
-		ir_node   *arg         = get_Call_param(call, i);
-		ir_entity *arg_entity  = create_compound_arg_entity(irg, type);
-		ir_node   *block       = get_nodes_block(call);
-		ir_node   *sel         = new_rd_Member(dbgi, block, frame, arg_entity);
-		bool       is_volatile = is_partly_volatile(arg);
-		mem = new_rd_CopyB(dbgi, block, mem, sel, arg, type, is_volatile ? cons_volatile : cons_none);
-		set_Call_param(call, i, sel);
+		ir_node *arg = get_Call_param(call, h);
+		ir_type *arg_type = get_method_param_type(higher, h);
+
+		if (env->flags & LF_AMD64_ABI_STRUCTS) {
+			ir_node *block = get_nodes_block(call);
+			ir_type *lower_arg_type = get_method_param_type(lower, l);
+
+			new_in[l++] = get_compound_slice(block, arg, 0,
+			                                 arg_type, lower_arg_type, &mem);
+			if (env->arg_classes[h][1] != class_no_class) {
+				lower_arg_type = get_method_param_type(lower, l);
+				new_in[l++] = get_compound_slice(block, arg, 8,
+				                                 arg_type, lower_arg_type, &mem);
+			}
+		} else {
+			ir_entity *arg_entity  = create_compound_arg_entity(irg, type);
+			ir_node   *block       = get_nodes_block(call);
+			ir_node   *sel         = new_rd_Member(dbgi, block, frame, arg_entity);
+			bool       is_volatile = is_partly_volatile(arg);
+			mem = new_rd_CopyB(dbgi, block, mem, sel, arg, type,
+			                   is_volatile ? cons_volatile : cons_none);
+			new_in[l++] = sel;
+		}
 	}
+
+	assert(l == n_params_lower);
+	set_irn_in(call, l, new_in);
 	set_Call_mem(call, mem);
 }
 
@@ -1092,6 +1142,56 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 	env->changed = true;
 }
 
+static ir_node *build_compound_from_arguments(ir_node *irn, wlk_env *env, unsigned pn, ir_type *tp)
+{
+	ir_graph *irg        = get_irn_irg(irn);
+	ir_node  *block      = get_nodes_block(irn);
+	ir_node  *frame      = get_irg_frame(irg);
+	ir_type  *frame_type = get_irg_frame_type(irg);
+	ir_node  *args       = get_irg_args(irg);
+	dbg_info *dbgi       = get_irn_dbg_info(irn);
+
+	ident     *id       = new_id_fmt("__compound_param_%d", pn);
+	ir_entity *compound = new_entity(frame_type, id, tp);
+
+	ir_node *initial = get_irg_initial_mem(irg);
+	ir_node *mem   = initial;
+	ir_node *first = NULL;
+
+	for (unsigned i = 0; i < 2; i++) {
+		amd64_class cls = env->arg_classes[pn][i];
+
+		if (cls == class_no_class)
+			break;
+
+		ir_type *lower_arg_type = get_method_param_type(env->lowered_mtp, pn + i);
+		ir_mode *arg_mode = get_type_mode(lower_arg_type);
+
+		ir_node *new_arg = new_rd_Proj(dbgi, args, arg_mode, pn + i);
+		ir_node *ptr = new_rd_Member(dbgi, block, frame, compound);
+
+		if (i != 0) {
+			long offset = 8 * i;
+			ir_node *off = new_rd_Const_long(dbgi, irg, mode_Lu, offset);
+			ptr = new_rd_Add(dbgi, block, ptr, off);
+		}
+
+		ir_node *store = new_rd_Store(dbgi, block, mem, ptr, new_arg,
+		                              tp, cons_none);
+		mem = new_rd_Proj(dbgi, store, mode_M, pn_Store_M);
+		if (first == NULL) {
+			first = store;
+		}
+	}
+
+	if (first != NULL) {
+		edges_reroute_except(initial, mem, first);
+		set_irg_initial_mem(irg, initial);
+	}
+
+	return new_rd_Member(dbgi, block, frame, compound);
+}
+
 /**
  * Transform a graph. If it has compound parameter returns,
  * remove them and use the hidden parameter instead.
@@ -1106,8 +1206,15 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 	size_t     n_params       = get_method_n_params(mtp);
 	size_t     n_param_com    = 0;
 
-	unsigned *arg_map = ALLOCANZ(unsigned, n_params);
-	unsigned  arg     = 0;
+	unsigned *arg_map             = ALLOCANZ(unsigned, n_params);
+	unsigned  arg                 = 0;
+	amd64_class (*arg_classes)[2] = NULL;
+	if (env->flags & LF_AMD64_ABI_STRUCTS) {
+		/* ALLOCANZ fails for this strange type */
+		arg_classes = alloca(sizeof(amd64_class[2]) * n_params);
+		memset(arg_classes, 0, sizeof(amd64_class[2]) * n_params);
+	}
+
 	/* calculate the number of compound returns */
 	size_t n_ret_com = 0;
 	for (size_t i = 0; i < n_ress; ++i) {
@@ -1134,12 +1241,10 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 		if (is_aggregate_type(type))
 			++n_param_com;
 
-		/* Note: We must call the function for every argument
-		 * to correctly advance the ABI state. */
-		if (LF_AMD64_ABI_STRUCTS &&
-		    needs_two_amd64_registers(&s, type)) {
-			ir_printf("Type %+F needs two registers\n", type);
-			arg++;
+		if (env->flags & LF_AMD64_ABI_STRUCTS) {
+			classify_for_amd64(&s, type, arg_classes[i]);
+			if (arg_classes[i][1] != class_no_class)
+				arg++;
 		}
 	}
 
@@ -1157,6 +1262,7 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 	wlk_env walk_env = {
 		.arg_map        = arg_map,
 		.flags          = env->flags,
+		.arg_classes    = arg_classes,
 		.env            = env,
 		.mtp            = mtp,
 		.lowered_mtp    = lowered_mtp,
@@ -1183,12 +1289,22 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 
 	/* fix parameter sels */
 	ir_node *args = get_irg_args(irg);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 	for (size_t i = 0, n = ARR_LEN(walk_env.param_members); i < n; ++i) {
 		ir_node   *member = walk_env.param_members[i];
 		ir_entity *entity = get_Member_entity(member);
 		size_t     num    = get_entity_parameter_number(entity);
-		ir_node   *ptr    = new_r_Proj(args, mode_P, num);
+		ir_node   *ptr    = NULL;
+
+		if (env->flags & LF_AMD64_ABI_STRUCTS &&
+		    arg_classes[num][0] != class_memory) {
+			ir_type *tp = get_entity_type(entity);
+			ptr = build_compound_from_arguments(member, &walk_env, num, tp);
+		} else {
+			ptr = new_r_Proj(args, mode_P, num);
+		}
 		exchange(member, ptr);
+
 	}
 	DEL_ARR_F(walk_env.param_members);
 
