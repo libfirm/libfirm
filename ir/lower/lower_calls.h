@@ -23,7 +23,7 @@ typedef enum compound_call_lowering_flags {
 	                                       (some backends can handle them themselves) */
 	/** Return and pass small structs in registers according to
 	 * the AMD64 ABI */
-	LF_AMD64_ABI_STRUCTS    = 1 << 2 | LF_RETURN_HIDDEN,
+	LF_AMD64_ABI_STRUCTS    = 1 << 2,
 } compound_call_lowering_flags;
 ENUM_BITSET(compound_call_lowering_flags)
 
