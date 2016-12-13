@@ -118,19 +118,19 @@ typedef struct {
 	unsigned sse_params;
 } amd64_abi_state;
 
-static const char *class_name(amd64_class c)
+static ir_type *get_amd64_class_type(amd64_class c)
 {
-#define NAME(x) case x: return #x
-	switch(c) {
-		NAME(class_no_class);
-		NAME(class_integer);
-		NAME(class_sse);
-		NAME(class_x87);
-		NAME(class_memory);
+	switch (c) {
+	case class_integer:
+		return get_type_for_mode(mode_Lu);
+	case class_sse:
+		return get_type_for_mode(mode_D);
+	case class_no_class:
+	case class_x87:
+	case class_memory:
+		break;
 	}
-#undef NAME
-
-	panic("Unknown amd64_class to print");
+	panic("Invalid amd64_class");
 }
 
 static bool try_free_register(unsigned *r, unsigned max)
@@ -287,23 +287,20 @@ use_class_memory:
 	return;
 }
 
-static void panic_if_amd64_register_type(compound_call_lowering_flags flags, ir_type *tp)
+static void notify_amd64_scalar_parameter(amd64_abi_state *s, ir_type *param_type)
 {
-	if (flags & LF_AMD64_ABI_STRUCTS) {
-		/* TODO: Must keep ABI state! */
-		amd64_abi_state s = {
-			.sse_params = 0,
-			.integer_params = 0,
-		};
-		amd64_class classes[2];
-		classify_for_amd64(&s, tp, classes);
-
-		ir_printf("Classification for %+F: %s %s\n", tp, class_name(classes[0]), class_name(classes[1]));
-
-		/* if (classes[0] == class_integer || classes[0] == class_sse) { */
-			/* panic("Small struct return values and parameters not supported"); */
-		/* } */
+	ir_mode *mode_long_double = get_type_mode(be_get_backend_param()->type_long_double);
+	ir_mode *mode = get_type_mode(param_type);
+	if (mode == NULL) {
+		mode = mode_P;
 	}
+
+	if (mode_is_int(mode) || mode_is_reference(mode)) {
+		try_free_register(&s->integer_params, max_integer_params);
+	} else if (mode_is_float(mode) && mode != mode_long_double) {
+		try_free_register(&s->sse_params, max_sse_params);
+	}
+	/* Otherwise, the argument is passed in memory. Nothing to do. */
 }
 
 /**
@@ -326,7 +323,6 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 	for (size_t i = 0; i < n_ress; ++i) {
 		ir_type *res_tp = get_method_res_type(mtp, i);
 		if (is_aggregate_type(res_tp)) {
-			panic_if_amd64_register_type(env->flags, res_tp);
 			must_be_lowered = true;
 			break;
 		}
@@ -335,7 +331,6 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 		for (size_t i = 0; i < n_params; ++i) {
 			ir_type *param_type = get_method_param_type(mtp, i);
 			if (is_aggregate_type(param_type)) {
-				panic_if_amd64_register_type(env->flags, param_type);
 				must_be_lowered = true;
 				break;
 			}
@@ -344,16 +339,22 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 	if (!must_be_lowered)
 		return mtp;
 
-	ir_type **params    = ALLOCANZ(ir_type*, n_params + n_ress);
+	ir_type **params    = ALLOCANZ(ir_type*, n_params * 2 + n_ress);
 	ir_type **results   = ALLOCANZ(ir_type*, n_ress * 2);
 	size_t    nn_params = 0;
 	size_t    nn_ress   = 0;
+	amd64_abi_state s = {
+		.sse_params = 0,
+		.integer_params = 0,
+	};
 
 	/* add a hidden parameter in front for every compound result */
 	for (size_t i = 0; i < n_ress; ++i) {
 		ir_type *const res_tp = get_method_res_type(mtp, i);
 
 		if (is_aggregate_type(res_tp)) {
+			// TODO Returning small structs according to AMD64 ABI.
+
 			aggregate_spec_t const *const ret_spec = env->aggregate_ret(res_tp);
 			unsigned                const n_values = ret_spec->n_values;
 			if (n_values > 0) {
@@ -368,6 +369,8 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 				params[nn_params++] = ptr_tp;
 				if (env->flags & LF_RETURN_HIDDEN)
 					results[nn_ress++] = ptr_tp;
+				if (env->flags & LF_AMD64_ABI_STRUCTS)
+					notify_amd64_scalar_parameter(&s, ptr_tp);
 			}
 		} else {
 			/* scalar result */
@@ -379,13 +382,29 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 		ir_type *param_type = get_method_param_type(mtp, i);
 		if (!(env->flags & LF_DONT_LOWER_ARGUMENTS)
 		    && is_aggregate_type(param_type)) {
-		    /* turn parameter into a pointer type */
-		    param_type = new_type_pointer(param_type);
+			if (env->flags & LF_AMD64_ABI_STRUCTS) {
+				amd64_class classes[2];
+				classify_for_amd64(&s, param_type, classes);
+				if (classes[0] != class_memory) {
+					params[nn_params++] = get_amd64_class_type(classes[0]);
+					if (classes[1] != class_no_class)
+						params[nn_params++] = get_amd64_class_type(classes[1]);
+				} else {
+					ir_type *ptr_type = new_type_pointer(param_type);
+					params[nn_params++] = ptr_type;
+					notify_amd64_scalar_parameter(&s, ptr_type);
+				}
+			} else {
+				params[nn_params++] = new_type_pointer(param_type);
+			}
+		} else {
+			params[nn_params++] = param_type;
+			if (env->flags & LF_AMD64_ABI_STRUCTS)
+				notify_amd64_scalar_parameter(&s, param_type);
 		}
-		params[nn_params++] = param_type;
 	}
 	assert(nn_ress <= n_ress*2);
-	assert(nn_params <= n_params + n_ress);
+	assert(nn_params <= n_params*2 + n_ress);
 
 	unsigned cconv = get_method_calling_convention(mtp);
 	if (nn_params > n_params)
