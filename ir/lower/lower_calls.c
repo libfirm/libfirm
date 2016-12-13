@@ -1318,7 +1318,8 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg, 
 	}
 
 
-	if (arg_map[n_params - 1] != n_params - 1)
+	if (arg_map[n_params - 1] != n_params - 1 ||
+	    (env->flags & LF_AMD64_ABI_STRUCTS))
 		fix_parameter_entities(irg, arg_map);
 
 	/* much easier if we have only one return */
