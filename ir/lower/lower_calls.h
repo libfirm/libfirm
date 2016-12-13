@@ -21,6 +21,9 @@ typedef enum compound_call_lowering_flags {
 	LF_RETURN_HIDDEN        = 1 << 0, /**< return the hidden address instead of void */
 	LF_DONT_LOWER_ARGUMENTS = 1 << 1, /**< don't lower compound call arguments
 	                                       (some backends can handle them themselves) */
+	/** Return and pass small structs in registers according to
+	 * the AMD64 ABI */
+	LF_AMD64_ABI_STRUCTS    = 1 << 2,
 } compound_call_lowering_flags;
 ENUM_BITSET(compound_call_lowering_flags)
 

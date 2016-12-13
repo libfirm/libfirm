@@ -100,6 +100,288 @@ static void remove_compound_param_entities(ir_graph *irg)
 	}
 }
 
+static const int max_integer_params = 6;
+static const int max_sse_params = 8;
+
+typedef enum {
+	class_no_class,
+	class_integer,
+	class_sse,
+	class_x87,
+	class_memory,
+} amd64_class;
+
+typedef struct {
+	unsigned integer_params;
+	unsigned sse_params;
+} amd64_abi_state;
+
+static bool try_free_register(unsigned *r, unsigned max)
+{
+	if (*r < max) {
+		(*r)++;
+		return true;
+	} else {
+		return false;
+	}
+}
+
+static bool has_unaligned_fields(ir_type *tp)
+{
+	if (is_compound_type(tp)) {
+		unsigned n = get_compound_n_members(tp);
+		for (unsigned i = 0; i < n; i++) {
+			ir_entity *member = get_compound_member(tp, i);
+			ir_type *member_tp = get_entity_type(member);
+			if (get_entity_aligned(member) == align_non_aligned ||
+			    has_unaligned_fields(member_tp)) {
+				return true;
+			}
+		}
+		return false;
+	} else if (is_Array_type(tp)) {
+		return has_unaligned_fields(get_array_element_type(tp));
+	} else {
+		return false;
+	}
+}
+
+static amd64_class classify_compound_for_amd64(amd64_abi_state *s, ir_type *tp);
+
+static bool all_members_sse(amd64_abi_state *s, ir_type *tp, unsigned min_offset, unsigned max_offset)
+{
+	unsigned n = get_compound_n_members(tp);
+	for (unsigned i = 0; i < n; i++) {
+		ir_entity *member = get_compound_member(tp, i);
+		unsigned offset = get_entity_offset(member);
+
+		if (min_offset <= offset && offset < max_offset) {
+			ir_type *member_type = get_entity_type(member);
+			amd64_class member_class = classify_compound_for_amd64(s, member_type);
+			if (member_class != class_sse) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+static amd64_class get_eightbyte_class(amd64_abi_state *s, ir_type *tp, unsigned offset)
+{
+	bool      use_sse = all_members_sse(s, tp, offset, offset + 8);
+	unsigned *r;
+	unsigned  max;
+	if (use_sse) {
+		r = &s->sse_params;
+		max = max_sse_params;
+	} else {
+		r = &s->integer_params;
+		max = max_integer_params;
+	}
+	if (try_free_register(r, max)) {
+		return use_sse ? class_sse : class_integer;
+	} else {
+		return class_memory;
+	}
+
+}
+
+/*
+ * Note that we leave out the cases that the AMD64 backend cannot
+ * handle anyway (long double, vector types).
+ *
+ * Also, if a compound type is stored in two different register
+ * classes, we only return one of them, which is enough for the
+ * purposes of this module.
+ */
+static amd64_class classify_compound_for_amd64(amd64_abi_state *s, ir_type *tp)
+{
+	switch(get_type_opcode(tp)) {
+	case tpo_class:
+		/* Classes are not quite like structs. We need to
+		 * check whether the class "has either a non-trivial
+		 * copy constructor or a non-trivial destructor" (ABI
+		 * sect. 3.2.3). */
+		panic("classes not supported");
+
+	case tpo_struct: {
+		/* Rules for structs:
+		 * - No unaligned fields
+		 * - smaller than two eightbytes
+		 * - Enough free registers
+		 */
+		if (has_unaligned_fields(tp)) {
+			return class_memory;
+		}
+
+		unsigned        size  = get_type_size(tp);
+		amd64_abi_state reset = *s;
+		if (size <= 8) {
+			amd64_class c = get_eightbyte_class(s, tp, 0);
+			if (c == class_memory) {
+				*s = reset;
+			}
+			return c;
+		} else if (size <= 16) {
+			amd64_class c1 = get_eightbyte_class(s, tp, 0);
+			amd64_class c2 = get_eightbyte_class(s, tp, 8);
+			if (c1 == class_memory || c2 == class_memory) {
+				*s = reset;
+				return class_memory;
+			} else {
+				/* Arbitrary choice */
+				return c1;
+			}
+		} else {
+			*s = reset;
+			return class_memory;
+		}
+	}
+
+	case tpo_union: {
+		/* Rules for unions:
+		 * - No unaligned fields
+		 * - All members have register class
+		 * - Enough free registers for the largest member (in each register class)
+		 */
+		if (has_unaligned_fields(tp)) {
+			return class_memory;
+		}
+
+		unsigned        n         = get_compound_n_members(tp);
+		amd64_abi_state max_state = *s;
+		bool            is_sse    = true;
+
+		for (unsigned i = 0; i < n; i++) {
+			ir_entity       *member      = get_compound_member(tp, i);
+			ir_type         *member_type = get_entity_type(member);
+			amd64_abi_state  reset       = *s;
+			amd64_class      class       = classify_compound_for_amd64(s, member_type);
+
+			if (class == class_memory) {
+				*s = reset;
+				return class_memory;
+			}
+			if (class != class_sse) {
+				is_sse = false;
+			}
+
+			max_state.integer_params = MAX(max_state.integer_params, s->integer_params);
+			max_state.sse_params     = MAX(max_state.sse_params,     s->sse_params);
+			/* Reset registers for the next member */
+			*s = reset;
+		}
+		*s = max_state;
+
+		return is_sse ? class_sse : class_integer;
+	}
+
+	case tpo_array: {
+		/* Rules for arrays:
+		 * - No unaligned fields
+		 * - smaller than 2 eightbytes
+		 * - Element type has register class
+		 * - Enough free registers
+		 */
+		if (has_unaligned_fields(tp)) {
+			return class_memory;
+		}
+
+		ir_type  *elem_type = get_array_element_type(tp);
+		unsigned  elem_size = get_type_size(elem_type);
+		unsigned  arr_size  = get_array_size_int(tp);
+		unsigned  n_bytes   = elem_size * arr_size;
+
+		if (n_bytes > 16) {
+			return class_memory;
+		}
+
+		amd64_abi_state  reset  = *s;
+		unsigned         n_regs = (n_bytes + 7) / 8;
+		bool             is_sse = classify_compound_for_amd64(s, elem_type) == class_sse;
+		unsigned        *r;
+		unsigned         max;
+
+		/* Reset registers because we are going to count them ourselves */
+		*s = reset;
+
+		if (is_sse) {
+			r   = &s->sse_params;
+			max = max_sse_params;
+		} else {
+			r   = &s->integer_params;
+			max = max_integer_params;
+		}
+
+		for (unsigned i = 0; i < n_regs; i++) {
+			if (!try_free_register(r, max)) {
+				*s = reset;
+				return class_memory;
+			}
+		}
+
+		return is_sse ? class_sse : class_integer;
+	}
+
+	case tpo_primitive:
+		if (get_mode_sort(get_type_mode(tp)) & irms_float_number) {
+			return class_sse;
+		}
+		/* Fallthrough */
+	case tpo_pointer:
+		return class_integer;
+
+	case tpo_code:
+	case tpo_method:
+	case tpo_segment:
+	case tpo_uninitialized:
+	case tpo_unknown:
+		break;
+	}
+	panic("invalid type");
+}
+
+static amd64_class classify_for_amd64(amd64_abi_state *s, ir_type *tp)
+{
+	switch(get_type_opcode(tp)) {
+	case tpo_class:
+		/* Classes are not quite like structs. We need to
+		 * check whether the class "has either a non-trivial
+		 * copy constructor or a non-trivial destructor" (ABI
+		 * sect. 3.2.3). */
+		panic("classes not supported");
+
+	case tpo_struct:
+	case tpo_union:
+	case tpo_array:
+		return classify_compound_for_amd64(s, tp);
+
+	case tpo_primitive:
+		if (get_mode_sort(get_type_mode(tp)) & irms_float_number) {
+			if (try_free_register(&s->sse_params, max_sse_params)) {
+				return class_sse;
+			} else {
+				return class_memory;
+			}
+		}
+		/* Fallthrough */
+	case tpo_pointer:
+		if (try_free_register(&s->integer_params, max_integer_params)) {
+			return class_integer;
+		} else {
+			return class_memory;
+		}
+
+	case tpo_code:
+	case tpo_method:
+	case tpo_segment:
+	case tpo_uninitialized:
+	case tpo_unknown:
+		break;
+	}
+	panic("invalid type");
+}
+
 /**
  * Creates a new lowered type for a method type with compound
  * arguments. The new type is associated to the old one and returned.
