@@ -287,6 +287,13 @@ use_class_memory:
 	return;
 }
 
+static bool needs_two_amd64_registers(amd64_abi_state *s, ir_type *tp)
+{
+	amd64_class c[2];
+	classify_for_amd64(s, tp, c);
+	return c[1] != class_no_class;
+}
+
 static void notify_amd64_scalar_parameter(amd64_abi_state *s, ir_type *param_type)
 {
 	ir_mode *mode_long_double = get_type_mode(be_get_backend_param()->type_long_double);
@@ -1093,17 +1100,16 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
  */
 static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 {
-	ir_entity *ent         = get_irg_entity(irg);
-	ir_type   *mtp         = get_entity_type(ent);
-	size_t     n_ress      = get_method_n_ress(mtp);
-	size_t     n_params    = get_method_n_params(mtp);
-	size_t     n_param_com = 0;
+	ir_entity *ent            = get_irg_entity(irg);
+	ir_type   *mtp            = get_entity_type(ent);
+	size_t     n_ress         = get_method_n_ress(mtp);
+	size_t     n_params       = get_method_n_params(mtp);
+	size_t     n_param_com    = 0;
 
+	unsigned *arg_map = ALLOCANZ(unsigned, n_params);
+	unsigned  arg     = 0;
 	/* calculate the number of compound returns */
-	size_t    n_ret_com = 0;
-	unsigned *arg_map   = ALLOCANZ(unsigned, n_params);
-	unsigned  arg       = 0;
-
+	size_t n_ret_com = 0;
 	for (size_t i = 0; i < n_ress; ++i) {
 		ir_type *type = get_method_res_type(mtp, i);
 		if (is_aggregate_type(type)) {
@@ -1116,12 +1122,27 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 				++arg;
 		}
 	}
+
+	amd64_abi_state s = {
+		.integer_params = arg,
+		.sse_params     = 0,
+	};
+
 	for (size_t i = 0; i < n_params; ++i) {
 		arg_map[i] = arg++;
 		ir_type *type = get_method_param_type(mtp, i);
 		if (is_aggregate_type(type))
 			++n_param_com;
+
+		/* Note: We must call the function for every argument
+		 * to correctly advance the ABI state. */
+		if (LF_AMD64_ABI_STRUCTS &&
+		    needs_two_amd64_registers(&s, type)) {
+			ir_printf("Type %+F needs two registers\n", type);
+			arg++;
+		}
 	}
+
 
 	if (arg_map[n_params - 1] != n_params - 1)
 		fix_parameter_entities(irg, arg_map);
