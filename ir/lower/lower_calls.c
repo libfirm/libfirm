@@ -334,8 +334,7 @@ struct cl_entry {
  */
 typedef struct wlk_env {
 	unsigned             *arg_map ;        /**< Map from old to new argument indices. */
-	amd64_class         (*arg_classes)[2]; /**< AMD64 classification of arguments. */
-	struct obstack       obst;             /**< An obstack to allocate the data on. */
+	struct obstack       *obst;            /**< An obstack to allocate the data on. */
 	cl_entry             *cl_list;         /**< The call list. */
 	compound_call_lowering_flags flags;
 	lowering_env_t const *env;
@@ -400,7 +399,7 @@ static ir_type *lower_mtp(ir_type *mtp, wlk_env *env)
 	if (flags & LF_AMD64_ABI_STRUCTS) {
 		/* OALLOCNZ chokes on this type. */
 		unsigned l = sizeof(amd64_class[2]) * n_params;
-		amd64_classes = (amd64_class (*)[2]) obstack_alloc(&env->obst, l);
+		amd64_classes = (amd64_class (*)[2]) obstack_alloc(env->obst, l);
 		memset(amd64_classes, 0, l);
 	}
 
@@ -501,7 +500,7 @@ static cl_entry *get_call_entry(ir_node *call, wlk_env *env)
 {
 	cl_entry *res = (cl_entry*)get_irn_link(call);
 	if (res == NULL) {
-		res = OALLOCZ(&env->obst, cl_entry);
+		res = OALLOCZ(env->obst, cl_entry);
 		res->next = env->cl_list;
 		res->call = call;
 		set_irn_link(call, res);
@@ -1212,7 +1211,7 @@ static ir_node *build_compound_from_arguments(ir_node *irn, wlk_env *env, unsign
  * If it calls methods with compound parameter returns, add hidden
  * parameters.
  */
-static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
+static void transform_irg(lowering_env_t const *const env, ir_graph *const irg, struct obstack *obst)
 {
 	ir_entity *ent            = get_irg_entity(irg);
 	ir_type   *mtp            = get_entity_type(ent);
@@ -1265,18 +1264,15 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 	if (n_ret_com != 0)
 		assure_irg_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN);
 
-	//ir_type *lowered_mtp = lower_mtp(env, mtp);
-	//set_entity_type(ent, lowered_mtp);
-
 	wlk_env walk_env = {
 		.arg_map        = arg_map,
 		.flags          = env->flags,
+		.obst           = obst,
 		.env            = env,
 		.mtp            = mtp,
 		.param_members  = NEW_ARR_F(ir_node*, 0),
 		.only_local_mem = true,
 	};
-	obstack_init(&walk_env.obst);
 
 	ir_type *lowered_mtp = lower_mtp(mtp, &walk_env);
 	set_entity_type(ent, lowered_mtp);
@@ -1330,9 +1326,8 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 
 	if (walk_env.heights != NULL)
 		heights_free(walk_env.heights);
-	obstack_free(&walk_env.obst, NULL);
-	confirm_irg_properties(irg, walk_env.changed
-		? IR_GRAPH_PROPERTIES_CONTROL_FLOW : IR_GRAPH_PROPERTIES_ALL);
+	confirm_irg_properties(irg, walk_env.changed ? IR_GRAPH_PROPERTIES_CONTROL_FLOW
+	                                             : IR_GRAPH_PROPERTIES_ALL);
 }
 
 static void lower_method_types(ir_type *const type, ir_entity *const entity,
@@ -1360,6 +1355,8 @@ void lower_calls_with_compounds(compound_call_lowering_flags flags,
 {
 	pointer_types = pmap_create();
 	lowered_mtps = pmap_create();
+	struct obstack obst;
+	obstack_init(&obst);
 
 	lowering_env_t env = {
 		.flags         = flags,
@@ -1373,12 +1370,13 @@ void lower_calls_with_compounds(compound_call_lowering_flags flags,
 
 	/* first step: Transform all graphs */
 	foreach_irp_irg(i, irg) {
-		transform_irg(&env, irg);
+		transform_irg(&env, irg, &obst);
 	}
 
 	/* second step: Lower all method types of visible entities */
-	type_walk(NULL, lower_method_types, &env);
+	type_walk(NULL, lower_method_types, &walk_env);
 
 	pmap_destroy(lowered_mtps);
 	pmap_destroy(pointer_types);
+	obstack_free(&obst, NULL);
 }
