@@ -5,8 +5,8 @@
 int f(bool b, size_t count, ...);
 int f(bool b, size_t count, ...)
 {
-	// Make bool important
-	if (!b) return 0;
+	// Make b and count important
+	if (!b || !count) return 0;
 
 	va_list ap;
 	va_start(ap, count);
@@ -20,5 +20,5 @@ int f(bool b, size_t count, ...)
 
 int main(void)
 {
-	return f(true, 2, 0, 1) + f(true, 3, 0, 1, 2) + f(true, 4, 0, 1, 2, 3);
+	return f(true, 0) + f(true, 1, 0) + f(true, 1, 0) + f(true, 2, 0, 1);
 }

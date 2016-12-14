@@ -10,7 +10,7 @@ int main(int argc, const char **argv)
 	assert_long_equal(2, get_irp_n_irgs());
 	proc_cloning(42);
 
-	assert_long_equal(3, get_irp_n_irgs());
+	assert_long_equal(5, get_irp_n_irgs());
 	assert(irg_get_by_name("main"));
 	assert(irg_get_by_name("f"));
 

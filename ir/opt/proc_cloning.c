@@ -236,12 +236,6 @@ void proc_cloning(float threshold)
 		ir_entity *const ent = get_irg_entity(irg);
 		bitset_t *vips       = pmap_get(bitset_t, vip_map, irg);
 
-		if (is_method_variadic(get_entity_type(ent))) {
-			// We cannot remove the last fixed parameter of procedures with
-			// variadic arguments since it is used to access the var args.
-			bitset_clear(vips, bitset_size(vips) - 1);
-		}
-
 		DB((dbg, LEVEL_3, "Analyzing calls to %s\n", get_entity_name(ent)));
 
 		// call_sites_get_n_calls_to has to be called every time, since we
