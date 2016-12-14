@@ -59,7 +59,9 @@ static void update_frame(ir_type *const frame, const cloning_vector_t cv)
 
 		size_t const pos = get_entity_parameter_number(ent);
 		if (cv_get(cv, pos)) {
-			panic("specializing parameter with entity not handled yet");
+			panic("Cloning on parameter with entity not handled yet, but "
+			      "parameter '%F' at position %u has entity '%F'.",
+			      cv_get(cv, pos), pos, ent);
 		} else {
 			set_entity_parameter_number(ent, cv_get_new_idx(cv, pos));
 		}
