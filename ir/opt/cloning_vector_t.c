@@ -19,6 +19,18 @@ static bool constlike_equal(const ir_node *a, const ir_node *b)
 	return a->op->ops.attrs_equal(a, b);
 }
 
+static bool is_cloneable(const ir_node *call, size_t idx)
+{
+	ir_entity const *const callee = get_Call_callee(call);
+	ir_type *const frame = get_irg_frame_type(get_entity_linktime_irg(callee));
+	for (size_t i = 0, n = get_compound_n_members(frame); i < n; ++i) {
+		ir_entity *const ent = get_compound_member(frame, i);
+		if (!is_parameter_entity(ent)) continue;
+		if (get_entity_parameter_number(ent) == idx) return false;
+	}
+	return true;
+}
+
 cloning_vector_t cv_new(const ir_node *call, const bitset_t *callee_vips,
                         struct obstack *obst)
 {
@@ -33,6 +45,10 @@ cloning_vector_t cv_new(const ir_node *call, const bitset_t *callee_vips,
 
 	bitset_foreach (callee_vips, i) {
 		ir_node *const arg = get_Call_param(call, i);
+
+		// Exclude all args that use parameter entities
+		// TODO review if we a) really need to do this, b) can do this easier
+		if (!is_cloneable(call, i)) continue;
 
 		// TODO This excludes sums of address and offset from CVs
 		// To support them, we need following additional functionality:
