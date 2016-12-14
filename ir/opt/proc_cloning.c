@@ -3,6 +3,7 @@
 #include "important_args.h"
 #include "ircons.h"
 #include "irgmod.h"
+#include "irgopt.h"
 #include "irnode_t.h"
 #include "iroptimize.h"
 #include "irouts_t.h"
@@ -71,7 +72,7 @@ static ir_graph *get_clone_irg(ir_graph *irg, const cloning_vector_t cv)
 	update_frame(get_irg_frame_type(clone_irg), cv);
 	update_irg_args(clone_irg, cv);
 
-	// TODO Does this sufficiently optimize the cloned irg?
+	// TODO is this necessary?
 	irg_finalize_cons(clone_irg);
 
 	return clone_irg;
@@ -122,9 +123,14 @@ static ir_entity *create_proc_clone(const ir_entity *src,
 	// Create the ir_graph for the clone
 	ir_graph *const irg = get_clone_irg(get_entity_linktime_irg(src), cv);
 
-	// Insert clone into the program
+	// Link clone graph and entity
 	set_irg_entity(irg, new_entity);
 	set_entity_irg(new_entity, irg);
+
+	// Optimize the clone
+	optimize_graph_df(irg);
+
+	// Insert clone into the program
 	add_irp_irg(irg);
 
 	// Mark the clone as freshly generated
