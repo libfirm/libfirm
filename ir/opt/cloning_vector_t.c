@@ -25,8 +25,11 @@ cloning_vector_t cv_new(const ir_node *call, const bitset_t *callee_vips,
 	assert(call != NULL);
 	assert(callee_vips != NULL);
 
-	size_t const n_params = get_Call_n_params(call);
-	cloning_vector_t cv   = NEW_ARR_DZ(ir_node *, obst, n_params);
+	// We never clone on variadic arguments. So to simplifiy things further down
+	// the road, the CV's size matches the number of non-variadic arguments.
+	ir_type const *const callee_type = get_entity_type(get_Call_callee(call));
+	size_t const n_params            = get_method_n_params(callee_type);
+	cloning_vector_t cv              = NEW_ARR_DZ(ir_node *, obst, n_params);
 
 	bitset_foreach (callee_vips, i) {
 		ir_node *const arg = get_Call_param(call, i);
@@ -57,15 +60,15 @@ size_t cv_get_size(const cloning_vector_t cv)
 ir_node *cv_get(const cloning_vector_t cv, size_t pos)
 {
 	assert(cv != NULL);
-	assert(pos < ARR_LEN(cv));
-	return cv[pos];
+	return pos < ARR_LEN(cv) ? cv[pos] : NULL;
 }
 
 bool cv_equal(const cloning_vector_t a, const cloning_vector_t b)
 {
 	if (a == b) return true;
 
-	// TODO Review for var_args
+	// Matching CVs must have the same length because they never include
+	// variadic arguments
 	if (ARR_LEN_SAFE(a) != ARR_LEN_SAFE(b)) return false;
 
 	ARR_FOREACH (a, i, ir_node *, node_a) {
@@ -99,16 +102,4 @@ size_t cv_get_new_idx(const cloning_vector_t cv, size_t idx)
 
 	assert(new_idx <= idx);
 	return new_idx;
-}
-
-bitset_t *cv_get_undef(cloning_vector_t cv, struct obstack *obst)
-{
-	assert(cv != NULL);
-
-	bitset_t *undef = bitset_obstack_alloc(obst, ARR_LEN(cv));
-	bitset_set_all(undef);
-	cv_foreach (cv, i, val)
-		bitset_clear(undef, i);
-
-	return undef;
 }

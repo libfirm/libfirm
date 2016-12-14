@@ -20,5 +20,5 @@ int f(bool b, size_t count, ...)
 
 int main(void)
 {
-	return f(true, 3, 0, 1, 2);
+	return f(true, 2, 0, 1) + f(true, 3, 0, 1, 2) + f(true, 4, 0, 1, 2, 3);
 }

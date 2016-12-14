@@ -171,20 +171,22 @@ static void update_call(ir_node *call, ir_entity *clone,
 {
 	// Actually we would only have to update the ptr and the arguments, but
 	// there is no public interface to do that, so we rather create a new call.
-	const bitset_t *const used_args = cv_get_undef(cv, &obst);
-	size_t const n_args             = bitset_popcount(used_args);
-	ir_node **const in              = ALLOCAN(ir_node *, n_args);
 
-	size_t new_idx = 0;
-	bitset_foreach (used_args, i) {
-		in[new_idx++] = get_Call_param(call, i);
+	size_t const n_args       = get_Call_n_params(call);
+	size_t const n_clone_args = n_args - cv_get_size(cv);
+	ir_node **const in        = ALLOCAN(ir_node *, n_args);
+
+	for (size_t i = 0, j = 0; i < n_args; ++i) {
+		if (cv_get(cv, i)) continue;
+		in[j++] = get_Call_param(call, i);
 	}
 
-	ir_node *const block      = get_nodes_block(call);
-	ir_node *const mem        = get_Call_mem(call);
-	ir_node *const ptr        = new_r_Address(get_irn_irg(call), clone);
-	ir_type *const type       = get_clone_type(get_Call_type(call), cv);
-	ir_node *const clone_call = new_r_Call(block, mem, ptr, n_args, in, type);
+	ir_node *const block = get_nodes_block(call);
+	ir_node *const mem   = get_Call_mem(call);
+	ir_node *const ptr   = new_r_Address(get_irn_irg(call), clone);
+	ir_type *const type  = get_clone_type(get_Call_type(call), cv);
+	ir_node *const clone_call =
+	    new_r_Call(block, mem, ptr, n_clone_args, in, type);
 
 	exchange(call, clone_call);
 

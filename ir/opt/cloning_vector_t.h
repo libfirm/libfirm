@@ -63,14 +63,4 @@ unsigned cv_hash(const cloning_vector_t cv);
  */
 size_t cv_get_new_idx(const cloning_vector_t cv, size_t idx);
 
-/**
- * Create a bitset using given obstack, that is high on every entry NOT present
- * in this CV.
- *
- * @param  cv   The instance to operate on.
- * @param  obst The obstack used to obtain all necessary memory
- * @return      A bitset that is unset for every i where cv_get(cv, i) == NULL
- */
-bitset_t *cv_get_undef(cloning_vector_t cv, struct obstack *obst);
-
 #endif
