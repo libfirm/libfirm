@@ -3,6 +3,7 @@
 #include "important_args.h"
 #include "ircons.h"
 #include "irgmod.h"
+#include "irgwalk.h"
 #include "irgopt.h"
 #include "irnode_t.h"
 #include "iroptimize.h"
@@ -19,17 +20,12 @@ struct obstack obst;
 
 static void clone_set_new(ir_entity *clone)
 {
-	set_entity_link(clone, (void *)true);
-}
-
-static void clone_unset_new(ir_entity *clone)
-{
-	set_entity_link(clone, (void *)false);
+	set_entity_link(clone, NULL);
 }
 
 static bool is_new_clone(const ir_entity *clone)
 {
-	return (bool)get_entity_link(clone);
+	return get_entity_link(clone) == NULL;
 }
 
 static void update_irg_args(ir_graph *irg, const cloning_vector_t cv)
@@ -216,6 +212,19 @@ static void build_reverse_postorder(ir_graph *g, void *env)
 	order->irgs[--order->last] = g;
 }
 
+static void irg_size(ir_node *n, void *env)
+{
+	(void)n;
+	(*(size_t *)env)++;
+}
+
+static size_t get_irg_size(ir_graph *irg)
+{
+	size_t size = 0;
+	irg_walk_graph(irg, irg_size, NULL, &size);
+	return size;
+}
+
 void proc_cloning(float threshold)
 {
 	(void)threshold;
@@ -243,6 +252,7 @@ void proc_cloning(float threshold)
 	ARR_FOREACH_ITEM (order.irgs, ir_graph *, irg) {
 		ir_entity *const ent = get_irg_entity(irg);
 		bitset_t *vips       = pmap_get(bitset_t, vip_map, irg);
+		set_entity_link(ent, NULL);
 
 		DB((dbg, LEVEL_3, "Analyzing calls to %s\n", get_entity_name(ent)));
 
@@ -260,15 +270,26 @@ void proc_cloning(float threshold)
 			ir_entity *const clone = get_or_create_proc_clone(ent, cv);
 			DB((dbg, LEVEL_2, "Created clone %s\n", get_entity_name(clone)));
 
+			if (is_new_clone(clone)) {
+				ir_graph *const clone_irg  = get_entity_linktime_irg(clone);
+				ir_graph *const caller_irg = get_irn_irg(call);
+				ir_entity *const caller    = get_irg_entity(caller_irg);
+
+				// This is a heuristic for recognizing recursion unrolling
+				// In a nutshell: stop cloning in a recursive cycle, as soon as
+				// the clone size is no longer decreasing
+				if (get_entity_link(caller) == ent &&
+				    get_irg_size(clone_irg) >= get_irg_size(caller_irg)) {
+					continue;
+				}
+
+				call_sites_register_irg_calls(&call_sites, clone_irg);
+				set_entity_link(clone, ent);
+			}
+
 			// Even if we invalidate the call_sites here, we do not have to
 			// update them, since we don't come back to already handled calls.
 			update_call(call, clone, cv);
-
-			if (is_new_clone(clone)) {
-				ir_graph *const clone_irg = get_entity_linktime_irg(clone);
-				call_sites_register_irg_calls(&call_sites, clone_irg);
-				clone_unset_new(clone);
-			}
 		}
 	}
 	DB((dbg, LEVEL_1, "Created %zu clones from a program with %zu procedures\n",
