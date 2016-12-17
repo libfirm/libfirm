@@ -218,6 +218,8 @@ static void irg_size(ir_node *n, void *env)
 	(*(size_t *)env)++;
 }
 
+// TODO This is rather prototypal. One might want to cache the results.
+// Other than that, sth. like this would probably belong in a utility module.
 static size_t get_irg_size(ir_graph *irg)
 {
 	size_t size = 0;
@@ -268,7 +270,6 @@ void proc_cloning(float threshold)
 			if (cv_get_size(cv) == 0) continue;
 
 			ir_entity *const clone = get_or_create_proc_clone(ent, cv);
-			DB((dbg, LEVEL_2, "Created clone %s\n", get_entity_name(clone)));
 
 			if (is_new_clone(clone)) {
 				ir_graph *const clone_irg  = get_entity_linktime_irg(clone);
@@ -280,8 +281,13 @@ void proc_cloning(float threshold)
 				// the clone size is no longer decreasing
 				if (get_entity_link(caller) == ent &&
 				    get_irg_size(clone_irg) >= get_irg_size(caller_irg)) {
+					DB((dbg, LEVEL_2, "Discarding clone %s of size %zu to stop "
+					                  "stagnating recursion unrolling\n",
+					    get_entity_name(clone), get_irg_size(clone_irg)));
 					continue;
 				}
+				DB((dbg, LEVEL_2, "Created clone %s of size %zu\n",
+				    get_entity_name(clone), get_irg_size(clone_irg)));
 
 				call_sites_register_irg_calls(&call_sites, clone_irg);
 				set_entity_link(clone, ent);
