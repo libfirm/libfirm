@@ -1887,7 +1887,13 @@ static ir_node *gen_Shrs(ir_node *node)
 						assert(val == 16);
 						src_mode = mode_Hs;
 					}
-					return create_I2I_Conv(src_mode, dbgi, block, shl_left);
+					ir_node *const res = create_I2I_Conv(src_mode, dbgi, block, shl_left);
+					/* The Shl might have further users.  If its left operand was folded
+					 * into the movsx, then these users must use the movsx and its Projs.
+					 * The latter is needed to avoid duplicate Projs. */
+					if (!be_is_transformed(shl_left))
+						be_set_transformed_node(shl_left, res);
+					return res;
 				}
 			}
 		}
