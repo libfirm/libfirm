@@ -200,6 +200,14 @@ ir_node *be_duplicate_node(ir_node *const node)
 	return new_node;
 }
 
+ir_node *be_gen_Proj_default(ir_node *const node)
+{
+  ir_node *const pred     = get_Proj_pred(node);
+  ir_node *const new_pred = be_transform_node(pred);
+  unsigned const pn       = get_Proj_num(node);
+  return be_new_Proj(new_pred, pn);
+}
+
 ir_node *be_transform_node(ir_node *node)
 {
 	ir_node *new_node;

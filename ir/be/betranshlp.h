@@ -46,6 +46,8 @@ ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req);
  */
 ir_node *be_duplicate_node(ir_node *node);
 
+ir_node *be_gen_Proj_default(ir_node *node);
+
 /** clear transform functions and sets some virtual nodes like
  * Start, Sync, Pin to the duplication transformer */
 void be_start_transform_setup(void);
