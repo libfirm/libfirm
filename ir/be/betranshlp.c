@@ -475,7 +475,9 @@ void be_start_transform_setup(void)
 	be_set_transform_function(op_Proj,  transform_proj);
 	be_set_transform_function(op_Sync,  be_duplicate_node);
 
-	be_set_transform_proj_function(op_ASM, transform_Proj_ASM);
+	be_set_transform_proj_function(op_ASM,    transform_Proj_ASM);
+	be_set_transform_proj_function(op_Cond,   be_gen_Proj_default);
+	be_set_transform_proj_function(op_Switch, be_gen_Proj_default);
 
 	be_set_upper_bits_clean_function(op_And,   and_upper_bits_clean);
 	be_set_upper_bits_clean_function(op_Const, const_upper_bits_clean);

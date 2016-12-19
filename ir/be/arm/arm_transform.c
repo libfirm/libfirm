@@ -1984,13 +1984,11 @@ static void arm_register_transformers(void)
 	be_set_transform_proj_function(op_arm_UMulL_t, gen_Proj_arm_UMulL_t);
 	be_set_transform_proj_function(op_Builtin,     gen_Proj_Builtin);
 	be_set_transform_proj_function(op_Call,        gen_Proj_Call);
-	be_set_transform_proj_function(op_Cond,        be_duplicate_node);
 	be_set_transform_proj_function(op_Div,         gen_Proj_Div);
 	be_set_transform_proj_function(op_Load,        gen_Proj_Load);
 	be_set_transform_proj_function(op_Proj,        gen_Proj_Proj);
 	be_set_transform_proj_function(op_Start,       gen_Proj_Start);
 	be_set_transform_proj_function(op_Store,       gen_Proj_Store);
-	be_set_transform_proj_function(op_Switch,      be_duplicate_node);
 }
 
 /**
