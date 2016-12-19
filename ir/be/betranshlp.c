@@ -9,11 +9,12 @@
  * @author      Matthias Braun, Michael Beck
  * @date        14.06.2007
  */
+#include "betranshlp.h"
+
 #include "bearch.h"
 #include "beirg.h"
 #include "belive.h"
 #include "benode.h"
-#include "betranshlp.h"
 #include "beutil.h"
 #include "cgana.h"
 #include "debug.h"
