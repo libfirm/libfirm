@@ -1,4 +1,4 @@
-// // assert_local_important_args("f", 0);
+// assert_local_important_args("f", 0);
 
 int f(int x);
 

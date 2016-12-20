@@ -1,4 +1,4 @@
-// // assert_important_args("f", 1);
+// assert_important_args("f", 1);
 
 typedef void (*proc)(int x);
 
