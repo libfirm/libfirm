@@ -521,9 +521,8 @@ int (is_Struct_type)(const ir_type *strct)
 
 ir_type *new_type_method(size_t const n_param, size_t const n_res, int const is_variadic, unsigned const cc_mask, mtp_additional_properties const property_mask)
 {
-	ir_type *res = new_type(tpo_method, sizeof(method_attr), mode_P);
+	ir_type *const res = new_type(tpo_method, sizeof(method_attr), NULL);
 	res->flags                       |= tf_layout_fixed;
-	res->size                         = get_mode_size_bytes(mode_P);
 	res->attr.method.n_params         = n_param;
 	res->attr.method.params           = XMALLOCNZ(ir_type*, n_param);
 	res->attr.method.n_res            = n_res;
