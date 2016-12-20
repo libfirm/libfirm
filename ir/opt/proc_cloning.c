@@ -102,7 +102,7 @@ static ir_type *get_clone_type(const ir_type *mtp, const cloning_vector_t cv)
 }
 
 static ir_entity *create_proc_clone(const ir_entity *src,
-                                 const cloning_vector_t cv)
+                                    const cloning_vector_t cv)
 {
 	// Generate a unique identifier for the clone
 	ident *const clone_ident = id_unique(get_entity_ident(src));
@@ -202,7 +202,6 @@ typedef struct order_t {
 	ir_graph **irgs;
 	size_t last;
 } order_t;
-
 
 static void build_reverse_postorder(ir_graph *g, void *env)
 {
