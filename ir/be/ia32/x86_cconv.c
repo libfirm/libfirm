@@ -10,6 +10,7 @@
  */
 #include <stdlib.h>
 
+#include "betranshlp.h"
 #include "irnode_t.h"
 #include "iredges_t.h"
 #include "irgmod.h"
@@ -53,25 +54,12 @@ void x86_create_parameter_loads(ir_graph *irg, const x86_cconv_t *cconv)
 void x86_layout_param_entities(ir_graph *const irg, x86_cconv_t *const cconv,
                                int const parameters_offset)
 {
-	/* construct argument type */
-	ir_type    *const frame_type = get_irg_frame_type(irg);
-	size_t      const n_params   = cconv->n_parameters;
-	ir_entity **const param_map  = ALLOCANZ(ir_entity*, n_params);
+	ir_type *const frame_type = get_irg_frame_type(irg);
 	/** Return address is on the stack after that comes the parameters */
 
-	for (size_t f = get_compound_n_members(frame_type); f-- > 0; ) {
-		ir_entity *member = get_compound_member(frame_type, f);
-		if (!is_parameter_entity(member))
-			continue;
-
-		size_t num = get_entity_parameter_number(member);
-		assert(num < n_params);
-		if (param_map[num] != NULL)
-			panic("multiple entities for parameter %u in %+F found", f, irg);
-		param_map[num] = member;
-	}
-
 	/* Create missing entities and set offsets */
+	ir_entity **const param_map = be_collect_parameter_entities(irg);
+	size_t      const n_params  = cconv->n_parameters;
 	for (size_t p = 0; p < n_params; ++p) {
 		reg_or_stackslot_t *param = &cconv->parameters[p];
 		if (param->type == NULL)
@@ -85,6 +73,7 @@ void x86_layout_param_entities(ir_graph *const irg, x86_cconv_t *const cconv,
 		int const offset = param->offset + parameters_offset;
 		set_entity_offset(param->entity, offset);
 	}
+	free(param_map);
 
 	ir_entity *const entity        = get_irg_entity(irg);
 	ir_type   *const function_type = get_entity_type(entity);

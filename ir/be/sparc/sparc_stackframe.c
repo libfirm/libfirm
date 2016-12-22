@@ -27,6 +27,7 @@
 #include "sparc_bearch_t.h"
 
 #include "beirg.h"
+#include "betranshlp.h"
 #include "panic.h"
 #include "firm_types.h"
 #include "iredges_t.h"
@@ -189,23 +190,9 @@ static bool sparc_variadic_fixups(ir_graph *const irg, calling_convention_t *con
 
 static void sparc_layout_param_entities(ir_graph *const irg, calling_convention_t *const cconv, ir_type *const non_lowered)
 {
-	/* search for existing parameter entities */
+	ir_entity **const param_map  = be_collect_parameter_entities(irg);
 	ir_type    *const frame_type = get_irg_frame_type(irg);
 	size_t      const n_params   = cconv->n_parameters;
-	ir_entity **const param_map  = ALLOCANZ(ir_entity*, n_params);
-	for (size_t f = get_compound_n_members(frame_type); f-- > 0; ) {
-		ir_entity *const member = get_compound_member(frame_type, f);
-		if (!is_parameter_entity(member))
-			continue;
-
-		size_t const num = get_entity_parameter_number(member);
-		assert(num < n_params);
-		if (param_map[num] != NULL)
-			panic("multiple entities for parameter %u in %+F found", f, irg);
-
-		param_map[num] = member;
-	}
-
 	/* calculate offsets/create missing entities */
 	for (size_t i = 0; i < n_params; ++i) {
 		reg_or_stackslot_t *const param  = &cconv->parameters[i];
@@ -240,6 +227,8 @@ static void sparc_layout_param_entities(ir_graph *const irg, calling_convention_
 		set_entity_offset(va_start_addr, offset);
 		cconv->va_start_addr = va_start_addr;
 	}
+
+	free(param_map);
 }
 
 calling_convention_t *sparc_prepare_calling_convention(ir_graph *const irg)

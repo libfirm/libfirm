@@ -152,6 +152,8 @@ void be_stack_record_chain(be_stack_env_t *env, ir_node *before, unsigned pos, i
  */
 void be_stack_finish(be_stack_env_t *env);
 
+ir_entity **be_collect_parameter_entities(ir_graph *irg);
+
 /**
  * In case where a parameter is transmitted via register but someone takes its
  * address a store to the frame which can be references is necessary.

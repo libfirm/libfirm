@@ -715,6 +715,26 @@ void be_stack_finish(be_stack_env_t *const env)
 	DEL_ARR_F(changes);
 }
 
+ir_entity **be_collect_parameter_entities(ir_graph *const irg)
+{
+	ir_entity  *const fun_ent    = get_irg_entity(irg);
+	ir_type    *const fun_type   = get_entity_type(fun_ent);
+	size_t      const n_params   = get_method_n_params(fun_type);
+	ir_entity **const params     = XMALLOCNZ(ir_entity*, n_params);
+	ir_type    *const frame_type = get_irg_frame_type(irg);
+	for (size_t f = get_compound_n_members(frame_type); f-- > 0;) {
+		ir_entity *const member = get_compound_member(frame_type, f);
+		if (is_parameter_entity(member)) {
+			size_t const num = get_entity_parameter_number(member);
+			assert(num < n_params);
+			if (params[num])
+				panic("multiple entities for parameter %u in %+F found", f, irg);
+			params[num] = member;
+		}
+	}
+	return params;
+}
+
 void be_add_parameter_entity_stores_list(ir_graph *irg, unsigned n_entities,
                                          ir_entity **entities)
 {
