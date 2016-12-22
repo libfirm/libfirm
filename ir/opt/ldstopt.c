@@ -806,6 +806,7 @@ static changes_t optimize_load(ir_node *load)
 	 * the value of the entity's initializer. */
 	ir_entity *entity = find_entity(ptr);
 	if (entity != NULL && get_entity_kind(entity) == IR_ENTITY_NORMAL
+	    && get_entity_owner(entity) != get_segment_type(IR_SEGMENT_THREAD_LOCAL)
 	    && !(get_entity_usage(entity) & ir_usage_write)) {
 
 		set_entity_linkage(entity, IR_LINKAGE_CONSTANT);
