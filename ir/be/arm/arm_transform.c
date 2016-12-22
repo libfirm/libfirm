@@ -1666,20 +1666,23 @@ static ir_node *gen_Unknown(ir_node *node)
 
 static void create_stacklayout(ir_graph *irg, calling_convention_t const *cconv)
 {
-	/* TODO: The following is not correct in the case where the address of
-	 * a parameter was taken (we will have duplicate entities) */
-
 	/* construct entities for arguments. */
-	ir_type *const frame_type = get_irg_frame_type(irg);
+	ir_entity **const param_map  = be_collect_parameter_entities(irg);
+	ir_type    *const frame_type = get_irg_frame_type(irg);
 	for (unsigned p = 0, n_params = cconv->n_parameters; p < n_params; ++p) {
 		reg_or_stackslot_t *param = &cconv->parameters[p];
 		if (param->type == NULL)
 			continue;
 
-		ident *const id = new_id_fmt("param_%u", p);
-		param->entity = new_entity(frame_type, id, param->type);
-		set_entity_offset(param->entity, param->offset);
+		ir_entity *ent = param_map[p];
+		if (!param->reg0) {
+			if (!ent)
+				ent = new_parameter_entity(frame_type, p, param->type);
+			set_entity_offset(ent, param->offset);
+		}
+		param->entity = ent;
 	}
+	free(param_map);
 }
 
 /**
