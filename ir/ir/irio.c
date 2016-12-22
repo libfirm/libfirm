@@ -880,6 +880,9 @@ static void write_node(const ir_node *node, write_env_t *env)
 	ir_op           *const op   = get_irn_op(node);
 	write_node_func *const func = get_generic_function_ptr(write_node_func, op);
 
+	if (op == op_Id)
+		return;
+
 	fputc('\t', env->file);
 	if (func == NULL)
 		panic("no write_node_func for %+F", node);
