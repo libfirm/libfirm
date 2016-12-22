@@ -406,11 +406,12 @@ int tr_verify(void)
 		const ir_entity *entity = get_compound_member(thread_locals, i);
 		/* this is odd and should not be allowed I think */
 		if (is_method_entity(entity)) {
-			report_error("method %+F in thread local segment");
+			report_error("method %+F in thread local segment", entity);
 			fine = false;
 		}
 		if (get_entity_linkage(entity) & IR_LINKAGE_CONSTANT) {
-			report_error("entity %+F in thread local segment is constant");
+			report_error("entity %+F in thread local segment is constant",
+			             entity);
 			fine = false;
 		}
 	}
