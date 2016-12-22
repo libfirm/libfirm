@@ -676,7 +676,7 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 	case IR_ENTITY_UNKNOWN:
 		write_symbol(env, "unknown");
 		write_long(env, get_entity_nr(ent));
-		return;
+		goto end_line;
 	case IR_ENTITY_SPILLSLOT:
 		panic("Unexpected entity %+F", ent); // Should only exist in backend
 	}
@@ -752,6 +752,7 @@ static void write_entity(write_env_t *env, ir_entity *ent)
 		break;
 	}
 
+end_line:
 	fputc('\n', env->file);
 }
 
