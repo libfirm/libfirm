@@ -4778,13 +4778,11 @@ static ir_node *gen_Call(ir_node *node)
 	in[n_ia32_Call_callee]     = am.new_op2;
 	in_req[n_ia32_Call_callee] = req_gp;
 
-	ir_node *const block               = be_transform_node(old_block);
-	ir_node *const stack               = get_initial_sp(irg);
-	unsigned const param_stacksize     = cconv->param_stacksize;
-	bool     const needs_stack         = param_stacksize != 0;
-	ir_node *const callframe           =
-		!needs_stack ? stack
-		             : ia32_new_IncSP(block, stack, param_stacksize, false);
+	ir_node *const block           = be_transform_node(old_block);
+	ir_node *const stack           = get_initial_sp(irg);
+	unsigned const param_stacksize = cconv->param_stacksize;
+	/* Always construct an IncSP, so calls do not accidentally CSE. */
+	ir_node *const callframe       = ia32_new_IncSP(block, stack, param_stacksize, false);
 	in[n_ia32_Call_stack]     = callframe;
 	in_req[n_ia32_Call_stack] = sp->single_req;
 
@@ -4900,9 +4898,7 @@ static ir_node *gen_Call(ir_node *node)
 	unsigned const reduce_size = param_stacksize - cconv->sp_delta;
 	if (reduce_size > 0)
 		new_stack = ia32_new_IncSP(block, new_stack, -(int)reduce_size, false);
-	ir_node *const old_stack     = needs_stack ? callframe       : call;
-	unsigned const old_stack_pos = needs_stack ? n_be_IncSP_pred : n_ia32_Call_stack;
-	be_stack_record_chain(&stack_env, old_stack, old_stack_pos, new_stack);
+	be_stack_record_chain(&stack_env, callframe, n_be_IncSP_pred, new_stack);
 
 	x86_free_calling_convention(cconv);
 

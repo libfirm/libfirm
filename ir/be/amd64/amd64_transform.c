@@ -1755,12 +1755,10 @@ static ir_node *gen_Call(ir_node *const node)
 	/* construct arguments */
 
 	/* stack pointer input */
-	/* construct an IncSP -> we have to always be sure that the stack is
-	 * aligned even if we don't push arguments on it */
 	ir_node *const stack           = get_initial_sp(irg);
 	unsigned       param_stacksize = cconv->param_stacksize;
-	ir_node       *callframe       = param_stacksize == 0 ? stack
-		: amd64_new_IncSP(new_block, stack, param_stacksize, false);
+	/* Always construct an IncSP, so calls do not accidentally CSE. */
+	ir_node *const callframe       = amd64_new_IncSP(new_block, stack, param_stacksize, false);
 
 	/* match callee */
 	x86_addr_t addr;
@@ -1948,20 +1946,10 @@ no_call_mem:;
 	set_irn_pinned(call, get_irn_pinned(node));
 
 	/* IncSP to destroy the call stackframe */
-	ir_node *const call_stack = be_new_Proj(call, pn_amd64_call_stack);
-	ir_node *sp;
-	ir_node *first_sp_node;
-	unsigned first_sp_pos;
-	if (param_stacksize > 0) {
-		sp = amd64_new_IncSP(new_block, call_stack, -param_stacksize, false);
-		first_sp_node = callframe;
-		first_sp_pos  = n_be_IncSP_pred;
-	} else {
-		sp = call_stack;
-		first_sp_node = call;
-		first_sp_pos = call_sp_pos;
-	}
-	be_stack_record_chain(&stack_env, first_sp_node, first_sp_pos, sp);
+	ir_node *sp = be_new_Proj(call, pn_amd64_call_stack);
+	if (param_stacksize != 0)
+		sp = amd64_new_IncSP(new_block, sp, -param_stacksize, false);
+	be_stack_record_chain(&stack_env, callframe, n_be_IncSP_pred, sp);
 
 	x86_free_calling_convention(cconv);
 	return call;
