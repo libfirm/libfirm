@@ -611,8 +611,7 @@ static bool lower_Bitcast(ir_node *const n)
 	ir_mode *dst_mode = get_irn_mode(n);
 	/* note that the predecessor may already be transformed, so it's
 	 * possible that we don't see a float mode anymore. */
-	if (mode_is_float(dst_mode))
-		dst_mode = get_lowered_mode(dst_mode);
+	dst_mode = get_lowered_mode(dst_mode);
 	ir_node *res = op;
 	if (src_mode != dst_mode) {
 		dbg_info *dbgi  = get_irn_dbg_info(n);
