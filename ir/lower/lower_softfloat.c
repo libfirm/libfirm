@@ -311,8 +311,10 @@ static bool lower_Add(ir_node *const n)
 /**
  * @return The lowered (floating point) type.
  */
-static ir_type *lower_type(ir_type *tp)
+static ir_type *lower_type(ir_type *const tp)
 {
+	if (!is_Primitive_type(tp))
+		return tp;
 	ir_mode *mode         = get_type_mode(tp);
 	ir_mode *lowered_mode = get_lowered_mode(mode);
 	return get_type_for_mode(lowered_mode);
@@ -336,24 +338,12 @@ static ir_type *lower_method_type(ir_type *mtp)
 
 	/* set param types and result types */
 	for (size_t i = 0; i < n_param; ++i) {
-		ir_type *ptp   = get_method_param_type(mtp, i);
-		ir_mode *pmode = get_type_mode(ptp);
-
-		if (pmode != NULL && mode_is_float(pmode)) {
-			ptp = lower_type(ptp);
-		}
-
-		set_method_param_type(res, i, ptp);
+		ir_type *const ptp = get_method_param_type(mtp, i);
+		set_method_param_type(res, i, lower_type(ptp));
 	}
 	for (size_t i = 0; i < n_res; ++i) {
-		ir_type *rtp   = get_method_res_type(mtp, i);
-		ir_mode *rmode = get_type_mode(rtp);
-
-		if (rmode != NULL && mode_is_float(rmode)) {
-			rtp = lower_type(rtp);
-		}
-
-		set_method_res_type(res, i, rtp);
+		ir_type *const rtp = get_method_res_type(mtp, i);
+		set_method_res_type(res, i, lower_type(rtp));
 	}
 
 	pmap_insert(lowered_type, mtp, res);
@@ -877,12 +867,10 @@ void lower_floating_point(void)
 		ir_type *const frame_tp  = get_irg_frame_type(irg);
 		size_t   const n_members = get_compound_n_members(frame_tp);
 		for (size_t j = 0; j < n_members; ++j) {
-			ir_entity *const member = get_compound_member(frame_tp, j);
-			ir_type   *const type   = get_entity_type(member);
-			if (is_Primitive_type(type)) {
-				ir_type *const lowered = lower_type(type);
-				set_entity_type(member, lowered);
-			}
+			ir_entity *const member  = get_compound_member(frame_tp, j);
+			ir_type   *const type    = get_entity_type(member);
+			ir_type   *const lowered = lower_type(type);
+			set_entity_type(member, lowered);
 		}
 
 		confirm_irg_properties(irg, changed_irgs[i] ? IR_GRAPH_PROPERTIES_NONE
