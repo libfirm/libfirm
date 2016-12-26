@@ -765,8 +765,9 @@ void dump_type_to_file(FILE *const F, const ir_type *const tp)
 	fprintf(F, "  state:      %s,\n", get_type_state_name(get_type_state(tp)));
 	fprintf(F, "  size:       %2u Bytes,\n", get_type_size(tp));
 	fprintf(F, "  alignment:  %2u Bytes,\n", get_type_alignment(tp));
-	if (is_atomic_type(tp) || is_Method_type(tp))
-		fprintf(F, "  mode:       %s,\n",  get_mode_name(get_type_mode(tp)));
+	ir_mode *const mode = get_type_mode(tp);
+	if (mode)
+		fprintf(F, "  mode:       %s,\n",  get_mode_name(mode));
 
 	fprintf(F, "\n\n");
 }
