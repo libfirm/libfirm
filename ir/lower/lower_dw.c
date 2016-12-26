@@ -124,6 +124,24 @@ static bool needs_lowering(const ir_mode *mode)
 	    && get_mode_arithmetic(mode) == irma_twos_complement;
 }
 
+static void lower_mode(void (*const set)(ir_type*, size_t, ir_type*), ir_type *const mtd, ir_mode *const mode)
+{
+	size_t n = 0;
+	if (!needs_lowering(mode)) {
+		ir_type *const tp = get_type_for_mode(mode);
+		set(mtd, n++, tp);
+	} else if (!mode_is_signed(mode)) {
+		set(mtd, n++, tp_l_u);
+		set(mtd, n++, tp_u);
+	} else if (env.p.big_endian) {
+		set(mtd, n++, tp_l_s);
+		set(mtd, n++, tp_u);
+	} else {
+		set(mtd, n++, tp_l_u);
+		set(mtd, n++, tp_s);
+	}
+}
+
 /**
  * Create a method type for a Conv emulation from imode to omode.
  */
@@ -152,43 +170,9 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode)
 	mtd = new_type_method(n_param, n_res, false, cc_cdecl_set, mtp_no_property);
 
 	/* set param types and result types */
-	n_param = 0;
-	if (needs_lowering(imode)) {
-		if (mode_is_signed(imode)) {
-			if (env.p.big_endian) {
-				set_method_param_type(mtd, n_param++, tp_l_s);
-				set_method_param_type(mtd, n_param++, tp_u);
-			} else {
-				set_method_param_type(mtd, n_param++, tp_l_u);
-				set_method_param_type(mtd, n_param++, tp_s);
-			}
-		} else {
-			set_method_param_type(mtd, n_param++, tp_l_u);
-			set_method_param_type(mtd, n_param++, tp_u);
-		}
-	} else {
-		ir_type *tp = get_type_for_mode(imode);
-		set_method_param_type(mtd, n_param++, tp);
-	}
+	lower_mode(&set_method_param_type, mtd, imode);
+	lower_mode(&set_method_res_type,   mtd, omode);
 
-	n_res = 0;
-	if (needs_lowering(omode)) {
-		if (mode_is_signed(omode)) {
-			if (env.p.big_endian) {
-				set_method_res_type(mtd, n_res++, tp_l_s);
-				set_method_res_type(mtd, n_res++, tp_u);
-			} else {
-				set_method_res_type(mtd, n_res++, tp_l_u);
-				set_method_res_type(mtd, n_res++, tp_s);
-			}
-		} else {
-			set_method_res_type(mtd, n_res++, tp_l_u);
-			set_method_res_type(mtd, n_res++, tp_u);
-		}
-	} else {
-		ir_type *tp = get_type_for_mode(omode);
-		set_method_res_type(mtd, n_res++, tp);
-	}
 	entry->mtd = mtd;
 	return mtd;
 }
@@ -1518,6 +1502,28 @@ static void fix_parameter_entities(ir_graph *irg, ir_type *orig_mtp)
 	}
 }
 
+static size_t lower_type(void (*const set)(ir_type*, size_t, ir_type*), ir_type *const mtp, size_t n, ir_type *const tp)
+{
+	if (is_Primitive_type(tp)) {
+		ir_mode *const mode = get_type_mode(tp);
+		if (needs_lowering(mode)) {
+			if (!mode_is_signed(mode)) {
+				set(mtp, n++, tp_l_u);
+				set(mtp, n++, tp_u);
+			} else if (env.p.big_endian) {
+				set(mtp, n++, tp_l_s);
+				set(mtp, n++, tp_u);
+			} else {
+				set(mtp, n++, tp_l_u);
+				set(mtp, n++, tp_s);
+			}
+			return n;
+		}
+	}
+	set(mtp, n++, tp);
+	return n;
+}
+
 /**
  * Lower the method type.
  * @param env  the lower environment
@@ -1581,48 +1587,12 @@ static ir_type *lower_mtp(ir_type *mtp)
 	n_param = 0;
 	for (size_t i = 0; i < orig_n_params; ++i) {
 		ir_type *tp = get_method_param_type(mtp, i);
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
-			if (needs_lowering(mode)) {
-				if (mode_is_signed(mode)) {
-					if (env.p.big_endian) {
-						set_method_param_type(res, n_param++, tp_l_s);
-						set_method_param_type(res, n_param++, tp_u);
-					} else {
-						set_method_param_type(res, n_param++, tp_l_u);
-						set_method_param_type(res, n_param++, tp_s);
-					}
-				} else {
-					set_method_param_type(res, n_param++, tp_l_u);
-					set_method_param_type(res, n_param++, tp_u);
-				}
-				continue;
-			}
-		}
-		set_method_param_type(res, n_param++, tp);
+		n_param = lower_type(&set_method_param_type, res, n_param, tp);
 	}
 	n_res = 0;
 	for (size_t i = 0; i < orig_n_res; ++i) {
 		ir_type *tp = get_method_res_type(mtp, i);
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
-			if (needs_lowering(mode)) {
-				if (mode_is_signed(mode)) {
-					if (env.p.big_endian) {
-						set_method_res_type(res, n_res++, tp_l_s);
-						set_method_res_type(res, n_res++, tp_u);
-					} else {
-						set_method_res_type(res, n_res++, tp_l_u);
-						set_method_res_type(res, n_res++, tp_s);
-					}
-				} else {
-					set_method_res_type(res, n_res++, tp_l_u);
-					set_method_res_type(res, n_res++, tp_u);
-				}
-				continue;
-			}
-		}
-		set_method_res_type(res, n_res++, tp);
+		n_res = lower_type(&set_method_res_type, res, n_res, tp);
 	}
 
 	set_type_link(res, mtp);
