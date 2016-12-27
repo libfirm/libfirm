@@ -553,7 +553,7 @@ ir_node *be_get_or_make_Proj_for_pn(ir_node *const irn, unsigned const pn)
 /**
  * ir_op-Operation: dump a be node to file
  */
-static void dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
+static void be_dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 {
 	assert(is_be_node(irn));
 
@@ -626,7 +626,7 @@ static ir_op *new_be_op(unsigned code, const char *name, op_pin_state p,
                         irop_flags flags, op_arity opar, size_t attr_size)
 {
 	ir_op *res = new_ir_op(code, name, p, flags, opar, 0, attr_size);
-	set_op_dump(res, dump_node);
+	set_op_dump(res, be_dump_node);
 	set_op_copy_attr(res, be_copy_attr);
 	set_op_tag(res, be_op_tag);
 	return res;

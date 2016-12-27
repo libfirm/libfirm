@@ -362,12 +362,69 @@ typedef void (dump_node_info_cb_t)(void *data, FILE *out, const ir_node *n);
 FIRM_API hook_entry_t *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data);
 
 /**
- * Remove a previously added info dumper callback.
+ * Removes a previously added info dumper callback.
  *
  * @param handle  the callback handle returned from
  *                dump_add_node_info_callback()
  */
 FIRM_API void dump_remove_node_info_callback(hook_entry_t *handle);
+
+/** @defgroup lowlevel Low Level Interface
+ * This interface exists to enable some custom vcg formatting/slicing
+ * used to produce example images for the homepage.
+ * @{
+ */
+
+/**
+ * Prints the typical header used in libfirm .vcg files to file \p out.
+ */
+void dump_vcg_header(FILE *out, const char *name, const char *layout,
+                     const char *orientation);
+
+/**
+ * Prints the typical footer used in libfirm .vcg files to file \p out.
+ */
+void dump_vcg_footer(FILE *out);
+
+/**
+ * Prints vcg node for a single firm graph node \p node to \p out.
+ */
+void dump_node(FILE *out, const ir_node *node);
+
+/**
+ * Prints vcg edges for firm graph node \p node to \p out.
+ */
+void dump_ir_data_edges(FILE *out, const ir_node *node);
+
+/**
+ * Prints the vcg identifier for firm graph node \p node to \p out.
+ */
+void print_nodeid(FILE *out, const ir_node *node);
+
+/**
+ * Prints the commands to begin of a new vcg subgraph intended for firm block
+ * \p block to \p out.
+ */
+void dump_begin_block_subgraph(FILE *out, const ir_node *block);
+
+/**
+ * Prints the commands to end a vcg subgraph of firm block \p block to \p out.
+ */
+void dump_end_block_subgraph(FILE *out, const ir_node *block);
+
+/**
+ * Prints vcg edges for predecessors of firm block \p block to \p out.
+ */
+void dump_block_edges(FILE *out, const ir_node *block);
+
+/**
+ * Prints vcg nodes+edges for all node in firm graph \p irg to \p out.
+ * Block nodes are turned into subgraphs containing all nodes using them as a
+ * parent.
+ */
+void dump_blocks_as_subgraphs(FILE *out, ir_graph *irg);
+
+/*@}*/
 
 /*@}*/
 

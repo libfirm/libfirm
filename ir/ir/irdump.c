@@ -1024,7 +1024,6 @@ void dump_node(FILE *F, const ir_node *n)
 	dump_node_vcgattr(F, n, NULL);
 	fputs("}\n", F);
 	dump_const_node_local(F, n);
-
 }
 
 /** dump the edge to the block this node belongs to */
