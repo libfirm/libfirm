@@ -55,11 +55,20 @@ static backend_params mips_backend_params = {
 	.float_int_overflow            = ir_overflow_indefinite,
 };
 
+static void mips_init_asm_constraints(void)
+{
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP,     "Rm");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER,  "cdrvy");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_ANY,       "g");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "IJKLMNOPin");
+}
+
 static void mips_init(void)
 {
 	ir_mode *const ptr_mode = new_reference_mode("p32", MIPS_MACHINE_SIZE, MIPS_MACHINE_SIZE);
 	set_modeP(ptr_mode);
 
+	mips_init_asm_constraints();
 	mips_create_opcodes();
 	mips_register_init();
 }

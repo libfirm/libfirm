@@ -78,6 +78,11 @@ static inline bool is_uimm16(long const val)
 	return 0 <= val && val < 65536;
 }
 
+static inline bool is_imm_lui(long const val)
+{
+	return (val & 0xFFFFU) == 0;
+}
+
 typedef struct mips_addr {
 	ir_node   *base;
 	ir_entity *ent;
@@ -102,6 +107,167 @@ static ir_node *make_address(ir_node const *const node, ir_entity *const ent, in
 	ir_node  *const block = be_transform_nodes_block(node);
 	ir_node  *const lui   = new_bd_mips_lui(dbgi, block, ent, val);
 	return new_bd_mips_addiu(dbgi, block, lui, ent, val);
+}
+
+static void mips_parse_constraint_letter(void const *const env, be_asm_constraint_t* const c, char const l)
+{
+	(void)env;
+
+	switch (l) {
+	case 'c':
+		c->cls               = &mips_reg_classes[CLASS_mips_gp];
+		c->allowed_registers = 1U << REG_GP_T9;
+		break;
+
+	case 'g':
+		c->all_registers_allowed = true;
+		c->memory_possible       = true;
+		/* FALLTHROUGH */
+	case 'I':
+	case 'J':
+	case 'K':
+	case 'L':
+	case 'M':
+	case 'N':
+	case 'O':
+	case 'P':
+	case 'i':
+	case 'n':
+		c->cls            = &mips_reg_classes[CLASS_mips_gp];
+		c->immediate_type = l;
+		break;
+
+	case 'R':
+	case 'm':
+		c->memory_possible = true;
+		break;
+
+	case 'd':
+	case 'r':
+	case 'y':
+		c->cls                   = &mips_reg_classes[CLASS_mips_gp];
+		c->all_registers_allowed = true;
+		break;
+
+	case 'v':
+		c->cls               = &mips_reg_classes[CLASS_mips_gp];
+		c->allowed_registers = 1U << REG_GP_V1;
+		break;
+
+	default:
+		panic("unknown asm constraint '%c'", l);
+	}
+}
+
+static bool mips_check_immediate_constraint(long const val, char const imm_type)
+{
+	switch (imm_type) {
+	case 'I': return is_simm16(val);
+	case 'J': return val == 0;
+	case 'K': return is_uimm16(val);
+	case 'L': return is_imm_lui(val);
+	case 'M': return !is_simm16(val) && !is_uimm16(val) && !is_imm_lui(val);
+	case 'N': return -65535 <= val && val < 0;
+	case 'O': return -16384 <= val && val < 16384;
+	case 'P': return      1 <= val && val < 65536;
+
+	case 'g':
+	case 'i':
+	case 'n': return true;
+	}
+	panic("invalid immediate constraint found");
+}
+
+static bool mips_match_immediate(mips_asm_operand_t *const operand, ir_node *const node, char const imm_type)
+{
+	ir_tarval *offset;
+	ir_entity *entity;
+	unsigned   reloc_kind;
+	if (!be_match_immediate(node, &offset, &entity, &reloc_kind))
+		return false;
+	assert(reloc_kind == 0);
+
+	if (entity && imm_type != 'g' && imm_type != 'i')
+		return false;
+
+	long value;
+	if (offset) {
+		value = get_tarval_long(offset);
+		if (!mips_check_immediate_constraint(value, imm_type))
+			return false;
+	} else {
+		value = 0;
+	}
+
+	operand->kind = BE_ASM_OPERAND_IMMEDIATE;
+	operand->val  = value;
+	operand->ent  = entity;
+	return true;
+}
+
+static void parse_asm_constraints(be_asm_constraint_t *const constraint, ident *const constraint_text, bool const is_output)
+{
+	be_parse_asm_constraints_internal(constraint, constraint_text, is_output, &mips_parse_constraint_letter, NULL);
+}
+
+static ir_node *gen_ASM(ir_node *const node)
+{
+	if (get_ASM_n_clobbers(node) != 0)
+		panic("TODO");
+
+	unsigned            const n_operands = be_count_asm_operands(node);
+	ir_graph           *const irg        = get_irn_irg(node);
+	struct obstack     *const obst       = get_irg_obstack(irg);
+	mips_asm_operand_t *const operands   = NEW_ARR_DZ(mips_asm_operand_t, obst, n_operands);
+
+	arch_register_req_t const      **out_reqs          = NEW_ARR_F(arch_register_req_t const*, 0);
+	ir_asm_constraint   const *const out_constraints   = get_ASM_output_constraints(node);
+	size_t              const  const n_out_constraints = get_ASM_n_output_constraints(node);
+	for (size_t o = 0; o != n_out_constraints; ++o) {
+		ir_asm_constraint const *const constraint = &out_constraints[o];
+		be_asm_constraint_t            parsed_constraint;
+		parse_asm_constraints(&parsed_constraint, constraint->constraint, true);
+
+		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, o);
+		ARR_APP1(arch_register_req_t const*, out_reqs, req);
+
+		mips_asm_operand_t *const operand = &operands[constraint->pos];
+		operand->kind = BE_ASM_OPERAND_OUTPUT_VALUE;
+		operand->pos  = o;
+	}
+
+	ir_node                        **in             = NEW_ARR_F(ir_node*, 0);
+	arch_register_req_t const      **in_reqs        = NEW_ARR_F(arch_register_req_t const*, 0);
+	ir_asm_constraint   const *const in_constraints = get_ASM_input_constraints(node);
+	int                        const n_inputs       = get_ASM_n_inputs(node);
+	for (int i = 0; i < n_inputs; ++i) {
+		ir_node                 *const pred       = get_ASM_input(node, i);
+		ir_asm_constraint const *const constraint = &in_constraints[i];
+
+		be_asm_constraint_t parsed_constraint;
+		parse_asm_constraints(&parsed_constraint, constraint->constraint, false);
+
+		mips_asm_operand_t *const operand = &operands[constraint->pos];
+
+		char const imm_type = parsed_constraint.immediate_type;
+		if (imm_type != '\0' && mips_match_immediate(operand, pred, imm_type))
+			continue;
+
+		ir_node             *const new_pred = be_transform_node(pred);
+		be_asm_operand_kind_t      kind     = BE_ASM_OPERAND_INPUT_VALUE;
+		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, i);
+		if (req == arch_no_register_req) {
+			kind = BE_ASM_OPERAND_MEMORY;
+			req  = arch_get_irn_register_req(new_pred)->cls->class_req;
+		}
+
+		operand->kind = kind;
+		operand->pos  = ARR_LEN(in);
+		ARR_APP1(ir_node*, in, new_pred);
+		ARR_APP1(arch_register_req_t const*, in_reqs, req);
+	}
+
+	return be_make_asm(node, in, in_reqs, out_reqs, operands);
 }
 
 static ir_node *gen_Add(ir_node *const node)
@@ -869,6 +1035,7 @@ static void mips_register_transformers(void)
 {
 	be_start_transform_setup();
 
+	be_set_transform_function(op_ASM,     gen_ASM);
 	be_set_transform_function(op_Add,     gen_Add);
 	be_set_transform_function(op_Address, gen_Address);
 	be_set_transform_function(op_And,     gen_And);

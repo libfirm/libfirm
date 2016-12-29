@@ -10,6 +10,7 @@
 #include "be_t.h"
 #include "bearch.h"
 #include "beblocksched.h"
+#include "bediagnostic.h"
 #include "beemithlp.h"
 #include "beemitter.h"
 #include "begnuas.h"
@@ -22,20 +23,25 @@
 #include "panic.h"
 #include "util.h"
 
-static void emit_immediate(char const *const prefix, ir_node const *const node)
+static void emit_immediate_val(char const *const prefix, ir_entity *const ent, int32_t const val)
 {
-	mips_immediate_attr_t const *const imm = get_mips_immediate_attr_const(node);
-	if (imm->ent) {
+	if (ent) {
 		if (prefix)
 			be_emit_irprintf("%s(", prefix);
-		be_gas_emit_entity(imm->ent);
-		if (imm->val != 0)
-			be_emit_irprintf("%+" PRId32, imm->val);
+		be_gas_emit_entity(ent);
+		if (val != 0)
+			be_emit_irprintf("%+" PRId32, val);
 		if (prefix)
 			be_emit_char(')');
 	} else {
-		be_emit_irprintf("%" PRId32, imm->val);
+		be_emit_irprintf("%" PRId32, val);
 	}
+}
+
+static void emit_immediate(char const *const prefix, ir_node const *const node)
+{
+	mips_immediate_attr_t const *const imm = get_mips_immediate_attr_const(node);
+	emit_immediate_val(prefix, imm->ent, imm->val);
 }
 
 static void emit_register(arch_register_t const *const reg)
@@ -89,6 +95,48 @@ unknown:
 			panic("unknown format conversion");
 		}
 	}
+}
+
+static void emit_mips_asm_operand(ir_node const *const node, char const modifier, unsigned const pos)
+{
+	be_asm_attr_t      const *const attr = get_be_asm_attr_const(node);
+	mips_asm_operand_t const *const op   = &((mips_asm_operand_t const*)attr->operands)[pos];
+	/* modifiers:
+	 *   z: print normally, except immediate 0 as '$zero' */
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "z", "", ""))
+		return;
+
+	switch (op->kind) {
+	case BE_ASM_OPERAND_INVALID:
+		panic("invalid asm operand");
+
+	case BE_ASM_OPERAND_INPUT_VALUE:
+		emit_register(arch_get_irn_register_in(node, op->pos));
+		return;
+
+	case BE_ASM_OPERAND_OUTPUT_VALUE:
+		emit_register(arch_get_irn_register_out(node, op->pos));
+		return;
+
+	case BE_ASM_OPERAND_IMMEDIATE:
+		if (modifier == 'z' && op->val == 0 && !op->ent)
+			emit_register(&mips_registers[REG_ZERO]);
+		else
+			emit_immediate_val(NULL, op->ent, op->val);
+		return;
+
+	case BE_ASM_OPERAND_MEMORY:
+		be_emit_char('(');
+		emit_register(arch_get_irn_register_in(node, op->pos));
+		be_emit_char(')');
+		return;
+	}
+	panic("invalid asm operand kind");
+}
+
+static void emit_be_ASM(const ir_node *node)
+{
+	be_emit_asm(node, &emit_mips_asm_operand);
 }
 
 static void emit_be_Copy(ir_node const *const node)
@@ -167,6 +215,7 @@ static void mips_register_emitters(void)
 	be_init_emitters();
 	mips_register_spec_emitters();
 
+	be_set_emitter(op_be_Asm,      emit_be_ASM);
 	be_set_emitter(op_be_Copy,     emit_be_Copy);
 	be_set_emitter(op_be_IncSP,    emit_be_IncSP);
 	be_set_emitter(op_be_Perm,     emit_be_Perm);
