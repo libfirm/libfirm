@@ -15,21 +15,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "be_types.h"
+#include "beasm.h"
 #include "compiler.h"
 #include "firm_types.h"
 #include "util.h"
 #include "x86_node.h"
 
-typedef enum x86_asm_operand_kind_t {
-	ASM_OP_INVALID,
-	ASM_OP_IN_REG,
-	ASM_OP_OUT_REG,
-	ASM_OP_MEMORY,
-	ASM_OP_IMMEDIATE,
-} x86_asm_operand_kind_t;
-
 typedef struct x86_asm_operand_t {
-	ENUMBF(x86_asm_operand_kind_t) kind : 3;
+	ENUMBF(be_asm_operand_kind_t) kind : 3;
 	uint8_t inout_pos; /**< in/out pos where register is assigned */
 	union {
 		ir_mode    *mode;
@@ -66,7 +59,5 @@ arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *additional_cl
 ir_node *x86_match_ASM(ir_node const *node, x86_clobber_name_t const *names, x86_asm_constraint_list_t const *constraints);
 
 void x86_set_be_asm_constraint_support(const x86_asm_constraint_list_t *constraints);
-
-char const *x86_get_constraint_name(x86_asm_operand_kind_t);
 
 #endif

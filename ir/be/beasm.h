@@ -16,6 +16,14 @@
 #include "firm_types.h"
 #include "obstack.h"
 
+typedef enum be_asm_operand_kind_t {
+	BE_ASM_OPERAND_INVALID,
+	BE_ASM_OPERAND_INPUT_VALUE,
+	BE_ASM_OPERAND_OUTPUT_VALUE,
+	BE_ASM_OPERAND_IMMEDIATE,
+	BE_ASM_OPERAND_MEMORY,
+} be_asm_operand_kind_t;
+
 /**
  * An assembler constraint.
  */
@@ -42,5 +50,7 @@ ir_node *be_make_asm(ir_node const *node, ir_node **in, arch_register_req_t cons
 typedef void be_emit_asm_operand_func(ir_node const *asmn, char modifier, unsigned pos);
 
 void be_emit_asm(ir_node const *asmn, be_emit_asm_operand_func *emit_asm_operand);
+
+char const *be_get_constraint_name(be_asm_operand_kind_t kind);
 
 #endif

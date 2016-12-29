@@ -80,12 +80,12 @@ static void parse_asm_constraints(be_asm_constraint_t *const constraint, x86_asm
 	be_parse_asm_constraints_internal(constraint, constraint_text, is_output, &x86_parse_constraint_letter, constraints);
 }
 
-static void set_operand_if_invalid(x86_asm_operand_t *const op, x86_asm_operand_kind_t const kind, unsigned const pos, ir_asm_constraint const *const constraint)
+static void set_operand_if_invalid(x86_asm_operand_t *const op, be_asm_operand_kind_t const kind, unsigned const pos, ir_asm_constraint const *const constraint)
 {
 	/* Multiple constraints for same pos. This can happen for example when
 	 * a =A constraint gets lowered to two constraints: =a and =d for the
 	 * same pos. */
-	if (op->kind == ASM_OP_INVALID) {
+	if (op->kind == BE_ASM_OPERAND_INVALID) {
 		op->kind      = kind;
 		op->inout_pos = pos;
 		op->u.mode    = constraint->mode;
@@ -120,7 +120,7 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 		ARR_APP1(arch_register_req_t const*, out_reqs, req);
 
 		x86_asm_operand_t *const op = &operands[constraint->pos];
-		set_operand_if_invalid(op, ASM_OP_OUT_REG, o, constraint);
+		set_operand_if_invalid(op, BE_ASM_OPERAND_OUTPUT_VALUE, o, constraint);
 	}
 
 	/* parse clobbers */
@@ -155,7 +155,7 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 		char               const imm_type = parsed_constraint.immediate_type;
 		if (imm_type != '\0'
 		    && x86_match_immediate(&op->u.imm32, pred, imm_type)) {
-			op->kind = ASM_OP_IMMEDIATE;
+			op->kind = BE_ASM_OPERAND_IMMEDIATE;
 			continue;
 		}
 
@@ -175,10 +175,10 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 		unsigned            const  in_pos   = ARR_LEN(in_reqs);
 		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, in_pos);
 
-		set_operand_if_invalid(op, ASM_OP_IN_REG, in_pos, constraint);
+		set_operand_if_invalid(op, BE_ASM_OPERAND_INPUT_VALUE, in_pos, constraint);
 
 		if (cls == NULL && parsed_constraint.same_as < 0) {
-			op->kind = ASM_OP_MEMORY;
+			op->kind = BE_ASM_OPERAND_MEMORY;
 			req = arch_get_irn_register_req(new_pred)->cls->class_req;
 		} else if (parsed_constraint.memory_possible) {
 			/* TODO: match Load or Load/Store if memory possible is set */
@@ -218,16 +218,4 @@ fine:
 		    || be_asm_constraint_flags[c] == ASM_CONSTRAINT_FLAG_NO_SUPPORT);
 		be_asm_constraint_flags[c] = flags;
 	}
-}
-
-char const *x86_get_constraint_name(x86_asm_operand_kind_t const kind)
-{
-	switch (kind) {
-	case ASM_OP_INVALID:   return "invalid";
-	case ASM_OP_IN_REG:    return "input register";
-	case ASM_OP_OUT_REG:   return "output register";
-	case ASM_OP_MEMORY:    return "memory";
-	case ASM_OP_IMMEDIATE: return "immediate";
-	}
-	panic("invalid constraint kind");
 }

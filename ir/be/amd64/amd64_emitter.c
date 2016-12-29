@@ -546,7 +546,7 @@ static void emit_amd64_asm_register(const arch_register_t *reg, char modifier,
 
 static void emit_amd64_asm_operand(ir_node const *const node, char const modifier, unsigned const pos)
 {
-	x86_asm_operand_kind_t required;
+	be_asm_operand_kind_t required;
 	switch (modifier) {
 	case '\0':
 	case 'b':
@@ -554,11 +554,11 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 	case 'k':
 	case 'q':
 	case 'w':
-		required = ASM_OP_INVALID;
+		required = BE_ASM_OPERAND_INVALID;
 		break;
 
 	case 'c':
-		required = ASM_OP_IMMEDIATE;
+		required = BE_ASM_OPERAND_IMMEDIATE;
 		break;
 
 	default:
@@ -569,39 +569,39 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 	be_asm_attr_t     const *const attr = get_be_asm_attr_const(node);
 	x86_asm_operand_t const *const op   = &((x86_asm_operand_t const*)attr->operands)[pos];
 
-	if (required != ASM_OP_INVALID && required != op->kind) {
-		char const *const want = x86_get_constraint_name(required);
-		char const *const have = x86_get_constraint_name(op->kind);
+	if (required != BE_ASM_OPERAND_INVALID && required != op->kind) {
+		char const *const want = be_get_constraint_name(required);
+		char const *const have = be_get_constraint_name(op->kind);
 		be_errorf(node, "modifier of operand '%%%c%u' requires an operand of type '%s', but got '%s'", modifier, pos, want, have);
 		return;
 	}
 
-	switch ((x86_asm_operand_kind_t)op->kind) {
-	case ASM_OP_INVALID:
+	switch ((be_asm_operand_kind_t)op->kind) {
+	case BE_ASM_OPERAND_INVALID:
 		panic("invalid asm operand");
 
-	case ASM_OP_IN_REG: {
+	case BE_ASM_OPERAND_INPUT_VALUE: {
 		arch_register_t const *const reg
 			= arch_get_irn_register_in(node, op->inout_pos);
 		emit_amd64_asm_register(reg, modifier, op->u.mode);
 		return;
 	}
 
-	case ASM_OP_OUT_REG: {
+	case BE_ASM_OPERAND_OUTPUT_VALUE: {
 		arch_register_t const *const reg
 			= arch_get_irn_register_out(node, op->inout_pos);
 		emit_amd64_asm_register(reg, modifier, op->u.mode);
 		return;
 	}
 
-	case ASM_OP_MEMORY: {
+	case BE_ASM_OPERAND_MEMORY: {
 		arch_register_t const *const reg
 			= arch_get_irn_register_in(node, op->inout_pos);
 		be_emit_irprintf("(%%%s)", reg->name);
 		return;
 	}
 
-	case ASM_OP_IMMEDIATE:
+	case BE_ASM_OPERAND_IMMEDIATE:
 		if (modifier != 'c')
 			be_emit_char('$');
 		x86_emit_imm32(&op->u.imm32);

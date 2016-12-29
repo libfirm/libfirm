@@ -265,7 +265,7 @@ static bool sparc_match_immediate(sparc_asm_operand_t *const operand, ir_node *c
 		value = 0;
 	}
 
-	operand->kind                   = ASM_OPERAND_IMMEDIATE;
+	operand->kind                   = BE_ASM_OPERAND_IMMEDIATE;
 	operand->immediate_value        = value;
 	operand->immediate_value_entity = entity;
 	return true;
@@ -314,7 +314,7 @@ static ir_node *gen_ASM(ir_node *node)
 		/* TODO: adjust register_req for clobbers */
 
 		sparc_asm_operand_t *const operand = &operands[pos];
-		operand->kind = ASM_OPERAND_OUTPUT_VALUE;
+		operand->kind = BE_ASM_OPERAND_OUTPUT_VALUE;
 		operand->pos  = out_idx;
 	}
 
@@ -339,10 +339,10 @@ static ir_node *gen_ASM(ir_node *node)
 			continue;
 
 		ir_node             *const new_pred = be_transform_node(pred);
-		operand_kind_t             kind     = ASM_OPERAND_INPUT_VALUE;
+		be_asm_operand_kind_t      kind     = BE_ASM_OPERAND_INPUT_VALUE;
 		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, i);
 		if (req == arch_no_register_req) {
-			kind = ASM_OPERAND_MEMORY;
+			kind = BE_ASM_OPERAND_MEMORY;
 			req  = arch_get_irn_register_req(new_pred)->cls->class_req;
 		}
 

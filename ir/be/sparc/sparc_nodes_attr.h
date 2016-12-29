@@ -14,6 +14,7 @@
 #include <stdint.h>
 
 #include "be_types.h"
+#include "beasm.h"
 #include "benode.h"
 #include "firm_types.h"
 #include "irnode_t.h"
@@ -93,18 +94,11 @@ struct sparc_switch_jmp_attr_t {
 	be_switch_attr_t swtch;
 };
 
-typedef enum operand_kind_t {
-	ASM_OPERAND_INPUT_VALUE,
-	ASM_OPERAND_OUTPUT_VALUE,
-	ASM_OPERAND_IMMEDIATE,
-	ASM_OPERAND_MEMORY,
-} operand_kind_t;
-
 typedef struct sparc_asm_operand_t {
-	operand_kind_t kind;
-	unsigned       pos;
-	int32_t        immediate_value;
-	ir_entity     *immediate_value_entity;
+	be_asm_operand_kind_t kind;
+	unsigned              pos;
+	int32_t               immediate_value;
+	ir_entity            *immediate_value_entity;
 } sparc_asm_operand_t;
 
 #endif

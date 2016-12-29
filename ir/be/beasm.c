@@ -359,3 +359,15 @@ void be_emit_asm(ir_node const *const asmn, be_emit_asm_operand_func *const emit
 	be_emit_cstring("\n#NO_APP\n");
 	be_emit_write_line();
 }
+
+char const *be_get_constraint_name(be_asm_operand_kind_t const kind)
+{
+	switch (kind) {
+	case BE_ASM_OPERAND_INVALID:      return "invalid";
+	case BE_ASM_OPERAND_INPUT_VALUE:  return "input register";
+	case BE_ASM_OPERAND_OUTPUT_VALUE: return "output register";
+	case BE_ASM_OPERAND_IMMEDIATE:    return "immediate";
+	case BE_ASM_OPERAND_MEMORY:       return "memory";
+	}
+	panic("invalid constraint kind");
+}

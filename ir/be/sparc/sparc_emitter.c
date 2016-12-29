@@ -659,22 +659,25 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 	be_asm_attr_t       const *const attr = get_be_asm_attr_const(node);
 	sparc_asm_operand_t const *const op   = &((sparc_asm_operand_t const*)attr->operands)[pos];
 	switch (op->kind) {
-	case ASM_OPERAND_IMMEDIATE:
+	case BE_ASM_OPERAND_INVALID:
+		panic("invalid asm operand");
+
+	case BE_ASM_OPERAND_IMMEDIATE:
 		if (zero_as_g0 && op->immediate_value == 0 && !op->immediate_value_entity)
 			sparc_emit_register(&sparc_registers[REG_G0]);
 		else
 			sparc_emit_immediate(op->immediate_value, op->immediate_value_entity);
 		return;
 
-	case ASM_OPERAND_INPUT_VALUE:
+	case BE_ASM_OPERAND_INPUT_VALUE:
 		sparc_emit_register(arch_get_irn_register_in(node, op->pos));
 		return;
 
-	case ASM_OPERAND_OUTPUT_VALUE:
+	case BE_ASM_OPERAND_OUTPUT_VALUE:
 		sparc_emit_register(arch_get_irn_register_out(node, op->pos));
 		return;
 
-	case ASM_OPERAND_MEMORY:
+	case BE_ASM_OPERAND_MEMORY:
 		if (!address_only)
 			be_emit_char('[');
 		sparc_emit_register(arch_get_irn_register_in(node, op->pos));
