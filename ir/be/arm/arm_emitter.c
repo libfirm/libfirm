@@ -15,6 +15,7 @@
 #include "arm_emitter.h"
 #include "arm_new_nodes.h"
 #include "be_t.h"
+#include "beasm.h"
 #include "beblocksched.h"
 #include "bediagnostic.h"
 #include "beemithlp.h"
@@ -434,6 +435,60 @@ static void emit_arm_SwitchJmp(const ir_node *irn)
 	be_emit_jump_table(irn, &attr->swtch, mode_P, emit_jumptable_target);
 }
 
+static void emit_arm_asm_operand(ir_node const *const node, char const modifier, unsigned const pos)
+{
+	be_asm_attr_t     const *const attr = get_be_asm_attr_const(node);
+	arm_asm_operand_t const *const op   = &((arm_asm_operand_t const*)attr->operands)[pos];
+	/* modifiers:
+	 *   B: Ones' complement of immediate and without prefix '#'
+	 *   C: memory reference consisting only of a single register
+	 *   c: immediate without prefix '#' */
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "", "Bc", "C"))
+		return;
+
+	switch (op->kind) {
+	case BE_ASM_OPERAND_INVALID:
+		panic("invalid asm operand");
+
+	case BE_ASM_OPERAND_INPUT_VALUE:
+		arm_emit_register(arch_get_irn_register_in(node, op->pos));
+		return;
+
+	case BE_ASM_OPERAND_OUTPUT_VALUE:
+		arm_emit_register(arch_get_irn_register_out(node, op->pos));
+		return;
+
+	case BE_ASM_OPERAND_IMMEDIATE:
+		if (modifier != 'B' && modifier != 'c')
+			be_emit_char('#');
+		if (op->ent) {
+			if (modifier == 'B')
+				be_emit_char('~');
+			be_gas_emit_entity(op->ent);
+			if (op->val != 0)
+				be_emit_irprintf("%+" PRId32, op->val);
+		} else {
+			int32_t val = op->val;
+			if (modifier == 'B')
+				val = ~val;
+			be_emit_irprintf("%" PRId32, val);
+		}
+		return;
+
+	case BE_ASM_OPERAND_MEMORY:
+		be_emit_char('[');
+		arm_emit_register(arch_get_irn_register_in(node, op->pos));
+		be_emit_char(']');
+		return;
+	}
+	panic("invalid asm operand kind");
+}
+
+static void emit_be_ASM(const ir_node *node)
+{
+	be_emit_asm(node, &emit_arm_asm_operand);
+}
+
 /** Emit an IncSP node */
 static void emit_be_IncSP(const ir_node *irn)
 {
@@ -532,6 +587,7 @@ static void arm_register_emitters(void)
 	be_set_emitter(op_arm_fConst,    emit_arm_fConst);
 	be_set_emitter(op_arm_FrameAddr, emit_arm_FrameAddr);
 	be_set_emitter(op_arm_SwitchJmp, emit_arm_SwitchJmp);
+	be_set_emitter(op_be_Asm,        emit_be_ASM);
 	be_set_emitter(op_be_Copy,       emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,   emit_be_Copy);
 	be_set_emitter(op_be_IncSP,      emit_be_IncSP);

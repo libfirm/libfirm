@@ -11,6 +11,7 @@
 #ifndef FIRM_BE_ARM_ARM_NODES_ATTR_H
 #define FIRM_BE_ARM_ARM_NODES_ATTR_H
 
+#include "beasm.h"
 #include "benode.h"
 #include "firm_types.h"
 #include "irnode_t.h"
@@ -51,6 +52,13 @@ typedef struct arm_attr_t {
 	except_attr exc;                /**< the exception attribute. MUST be the first one. */
 	bool        is_load_store : 1;  /**< if set, this is a load or store instruction */
 } arm_attr_t;
+
+typedef struct arm_asm_operand_t {
+	be_asm_operand_kind_t kind;
+	unsigned              pos;
+	int32_t               val;
+	ir_entity            *ent;
+} arm_asm_operand_t;
 
 /**
  * This struct holds information needed to produce the arm

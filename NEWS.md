@@ -47,6 +47,7 @@ libFirm 1.22.1 (2016-01-07)
 * amd64: Use store with immediate for call arguments
 * opt: Add local optimization `a * b [-1 <= b <= 0] -> -(a & b)`
 * sparc: More strict checking of modifiers of placeholders in asm templates
+* arm: Support inline asm with with constraints `I`, `J`, `K`, `L`, `M`, `Q`, `g`, `i`, `l`, `m`, `n` and `r` as well as modifiers `B`, `C` and `c`
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)

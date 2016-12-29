@@ -9,6 +9,7 @@
  * @author  Matthias Braun, Oliver Richter, Tobias Gneist, Michael Beck
  */
 #include "arm_bearch_t.h"
+#include "beasm.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"
@@ -1939,6 +1940,152 @@ static ir_node *gen_Phi(ir_node *node)
 	return be_transform_phi(node, req);
 }
 
+static void arm_parse_constraint_letter(void const *const env, be_asm_constraint_t* const c, char const l)
+{
+	(void)env;
+
+	switch (l) {
+	case 'g':
+		c->all_registers_allowed = true;
+		c->memory_possible       = true;
+		/* FALLTHROUGH */
+	case 'I':
+	case 'J':
+	case 'K':
+	case 'L':
+	case 'M':
+	case 'i':
+	case 'n':
+		c->cls            = &arm_reg_classes[CLASS_arm_gp];
+		c->immediate_type = l;
+		break;
+
+	case 'Q':
+	case 'm':
+		c->memory_possible = true;
+		break;
+
+	case 'l':
+	case 'r':
+		c->cls                   = &arm_reg_classes[CLASS_arm_gp];
+		c->all_registers_allowed = true;
+		break;
+
+	default:
+		panic("unknown asm constraint '%c'", l);
+	}
+}
+
+static bool arm_check_immediate_constraint(long const val, char const imm_type)
+{
+	(void)val;
+	arm_immediate_t res;
+	switch (imm_type) {
+	case 'I': return try_encode_val_as_immediate( val, &res);
+	case 'J': return -4095 <= val && val <= 4095;
+	case 'K': return try_encode_val_as_immediate(~val, &res);
+	case 'L': return try_encode_val_as_immediate(-val, &res);
+	case 'M': return     0 <= val && val <=   32;
+
+	case 'g':
+	case 'i':
+	case 'n': return true;
+	}
+	panic("invalid immediate constraint found");
+}
+
+static bool arm_match_immediate(arm_asm_operand_t *const operand, ir_node *const node, char const imm_type)
+{
+	ir_tarval *offset;
+	ir_entity *entity;
+	unsigned   reloc_kind;
+	if (!be_match_immediate(node, &offset, &entity, &reloc_kind))
+		return false;
+	assert(reloc_kind == 0);
+
+	if (entity && imm_type != 'g' && imm_type != 'i')
+		return false;
+
+	long value;
+	if (offset) {
+		value = get_tarval_long(offset);
+		if (!arm_check_immediate_constraint(value, imm_type))
+			return false;
+	} else {
+		value = 0;
+	}
+
+	operand->kind = BE_ASM_OPERAND_IMMEDIATE;
+	operand->val  = value;
+	operand->ent  = entity;
+	return true;
+}
+
+static void parse_asm_constraints(be_asm_constraint_t *const constraint, ident *const constraint_text, bool const is_output)
+{
+	be_parse_asm_constraints_internal(constraint, constraint_text, is_output, &arm_parse_constraint_letter, NULL);
+}
+
+static ir_node *gen_ASM(ir_node *const node)
+{
+	if (get_ASM_n_clobbers(node) != 0)
+		panic("TODO");
+
+	unsigned           const n_operands = be_count_asm_operands(node);
+	ir_graph          *const irg        = get_irn_irg(node);
+	struct obstack    *const obst       = get_irg_obstack(irg);
+	arm_asm_operand_t *const operands   = NEW_ARR_DZ(arm_asm_operand_t, obst, n_operands);
+
+	arch_register_req_t const      **out_reqs          = NEW_ARR_F(arch_register_req_t const*, 0);
+	ir_asm_constraint   const *const out_constraints   = get_ASM_output_constraints(node);
+	size_t              const  const n_out_constraints = get_ASM_n_output_constraints(node);
+	for (size_t o = 0; o != n_out_constraints; ++o) {
+		ir_asm_constraint const *const constraint = &out_constraints[o];
+		be_asm_constraint_t            parsed_constraint;
+		parse_asm_constraints(&parsed_constraint, constraint->constraint, true);
+
+		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, o);
+		ARR_APP1(arch_register_req_t const*, out_reqs, req);
+
+		arm_asm_operand_t *const operand = &operands[constraint->pos];
+		operand->kind = BE_ASM_OPERAND_OUTPUT_VALUE;
+		operand->pos  = o;
+	}
+
+	ir_node                        **in             = NEW_ARR_F(ir_node*, 0);
+	arch_register_req_t const      **in_reqs        = NEW_ARR_F(arch_register_req_t const*, 0);
+	ir_asm_constraint   const *const in_constraints = get_ASM_input_constraints(node);
+	int                        const n_inputs       = get_ASM_n_inputs(node);
+	for (int i = 0; i < n_inputs; ++i) {
+		ir_node                 *const pred       = get_ASM_input(node, i);
+		ir_asm_constraint const *const constraint = &in_constraints[i];
+
+		be_asm_constraint_t parsed_constraint;
+		parse_asm_constraints(&parsed_constraint, constraint->constraint, false);
+
+		arm_asm_operand_t *const operand = &operands[constraint->pos];
+
+		char const imm_type = parsed_constraint.immediate_type;
+		if (imm_type != '\0' && arm_match_immediate(operand, pred, imm_type))
+			continue;
+
+		ir_node             *const new_pred = be_transform_node(pred);
+		be_asm_operand_kind_t      kind     = BE_ASM_OPERAND_INPUT_VALUE;
+		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, i);
+		if (req == arch_no_register_req) {
+			kind = BE_ASM_OPERAND_MEMORY;
+			req  = arch_get_irn_register_req(new_pred)->cls->class_req;
+		}
+
+		operand->kind = kind;
+		operand->pos  = ARR_LEN(in);
+		ARR_APP1(ir_node*, in, new_pred);
+		ARR_APP1(arch_register_req_t const*, in_reqs, req);
+	}
+
+	return be_make_asm(node, in, in_reqs, out_reqs, operands);
+}
+
 /**
  * Enters all transform functions into the generic pointer
  */
@@ -1946,6 +2093,7 @@ static void arm_register_transformers(void)
 {
 	be_start_transform_setup();
 
+	be_set_transform_function(op_ASM,         gen_ASM);
 	be_set_transform_function(op_Add,         gen_Add);
 	be_set_transform_function(op_Address,     gen_Address);
 	be_set_transform_function(op_And,         gen_And);

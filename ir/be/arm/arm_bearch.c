@@ -288,6 +288,14 @@ static const backend_params *arm_get_libfirm_params(void)
 	return &arm_backend_params;
 }
 
+static void arm_init_asm_constraints(void)
+{
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP,     "Qm");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER,  "lr");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_ANY,       "g");
+	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "IJKLMin");
+}
+
 static void arm_init(void)
 {
 	arm_mode_gp    = new_int_mode("arm_gp", ARM_MACHINE_SIZE, 0,
@@ -296,6 +304,7 @@ static void arm_init(void)
 
 	set_modeP(new_reference_mode("p32", ARM_MACHINE_SIZE, ARM_MODULO_SHIFT));
 
+	arm_init_asm_constraints();
 	arm_register_init();
 	arm_create_opcodes();
 	arm_init_backend_params();
