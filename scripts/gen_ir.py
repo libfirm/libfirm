@@ -13,14 +13,15 @@ import jinjautil
 
 def main(argv):
 	parser = argparse.ArgumentParser(description='Generate code/docu from node specification', add_help=True)
-	parser.add_argument('--tagfile', dest='tagfile', action='store',
-	                    help='doxygen tag file for link generation')
 	parser.add_argument('-I', dest='includedirs', action='append',
 	                    help='include directories for templates/python modules',
 	                    default=[], metavar='DIR')
 	parser.add_argument('-D', dest='definitions', action='append',
 	                    help='definition exported to jinja',
 	                    default=[], metavar='NAME=DEF')
+	parser.add_argument('-e', dest='extra', action='append',
+	                    help='load extra specification/filters',
+	                    default=[])
 	parser.add_argument('specfile', action='store',
 	                    help='node specification file')
 	parser.add_argument('templatefile', action='store',
@@ -36,6 +37,8 @@ def main(argv):
 
 	# Load specfile
 	imp.load_source('spec', config.specfile)
+	for num, extrafile in enumerate(config.extra):
+		imp.load_source('extra%s' % (num,), extrafile)
 
 	env = Environment(loader=loader, keep_trailing_newline=True)
 	env.globals.update(jinjautil.exports)

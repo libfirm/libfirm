@@ -156,20 +156,8 @@ $(docdir)/libfirm.tag: doc/Doxyfile doc/logo.png $(IR_SPEC_GENERATED_INCLUDES) $
 	@echo Doxygen $@
 	$(Q)$(DOXYGEN) $<
 
-DOCU_TEMPLATE = $(srcdir)/scripts/templates/nodes.html
-DOCU_TEMPLATE_DEPS = $(srcdir)/scripts/templates/style.css
-$(docdir)/html/nodes.html: $(docdir)/libfirm.tag $(IR_SPEC_GENERATOR) $(IR_SPEC_GENERATOR_DEPS) $(IR_SPEC) $(DOCU_TEMPLATE) $(DOCU_TEMPLATE_DEPS)
-	@echo GEN $@
-	$(Q)$(IR_SPEC_GENERATOR) $(IR_SPEC) $(DOCU_TEMPLATE) --tagfile $(docdir)/libfirm.tag > $@
-	$(Q)cp $(DOCU_TEMPLATE_DEPS) $(docdir)/html
-
-NODES_TEMPLATE = firm-homepage/nodes_templates/Nodes
-$(docdir)/Nodes: $(docdir)/libfirm.tag $(IR_SPEC_GENERATOR) $(IR_SPEC_GENERATOR_DEPS) $(IR_SPEC) $(NODES_TEMPLATE)
-	@echo GEN $@
-	$(Q)$(IR_SPEC_GENERATOR) $(IR_SPEC) $(NODES_TEMPLATE) --tagfile $(docdir)/libfirm.tag -I $(dir $(NODES_TEMPLATE)) > $@
-
 .PHONY: doc
-doc: $(docdir)/libfirm.tag $(docdir)/html/nodes.html
+doc: $(docdir)/libfirm.tag
 
 .PHONY: clean
 clean:

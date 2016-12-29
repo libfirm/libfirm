@@ -329,63 +329,11 @@ def simplify_type(string):
 		res = res[3:]
 	return res
 
-def doxygrouplink(string, link=None):
-	global tags
-	if link == None:
-		link = string
-	if tags == None:
-		return string
-	e = tags.xpath("//compound[name/text()='%s']" % link)
-	if len(e) == 0:
-		return string
-	e = e[0]
-	anchorfile = e.xpath("filename/text()")
-	if len(anchorfile) == 0:
-		return string
-	global linkbase
-	return "<a href=\"%s%s\">%s</a>" % (linkbase, anchorfile[0], string)
-
-tags = None
-linkbase = None
-
-def doxylink(string, link=None):
-	global tags
-	if link == None:
-		link = string
-	if tags == None:
-		return string
-	e = tags.xpath("//tagfile/compound[name/text()='%s']" % link)
-	if len(e) == 0:
-		return string
-	e = e[0]
-	anchorfile = e.xpath("anchorfile/text()")
-	anchor = e.xpath("anchor/text()")
-	if len(anchorfile) == 0 or len(anchor) == 0:
-		return string
-	global linkbase
-	return "<a href=\"%s%s#%s\">%s</a>" % (linkbase, anchorfile[0], anchor[0], string)
-
-def docutils(string):
-	import docutils.writers.html4css1
-	import docutils.core
-	writer = docutils.writers.html4css1.Writer()
-	document = docutils.core.publish_parts(string, writer=writer)['body']
-	return document
-
-def parse_tagfile(filename):
-	global tags
-	tagfile = open(filename)
-	try:
-		from lxml import etree
-		tags = etree.parse(tagfile)
-	except:
-		tags = None
-
 for f in [a_an, args, arity_and_ins, arity, attr_size, blockargument, block,
 		blockparameter, blockparameterhelp, curblock, escape_keywords, flags,
 		insdecl, blockassign, irgassign, nodearguments, nodeparameters,
 		nodeparametershelp, opindex, parameterlist, parameters, pinned,
-		simplify_type, stringformat, docutils, doxylink, doxygrouplink]:
+		simplify_type, stringformat]:
 	export_filter(f)
 
 def _preprocess_node(node):
