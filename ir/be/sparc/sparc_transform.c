@@ -297,16 +297,11 @@ static ir_node *gen_ASM(ir_node *node)
 	struct obstack      *const obst       = get_irg_obstack(irg);
 	sparc_asm_operand_t *const operands   = NEW_ARR_DZ(sparc_asm_operand_t, obst, n_operands);
 
-	int                      n_inputs          = get_ASM_n_inputs(node);
-	size_t                   n_out_constraints = get_ASM_n_output_constraints(node);
-	ir_asm_constraint const *in_constraints    = get_ASM_input_constraints(node);
-	ir_asm_constraint const *out_constraints   = get_ASM_output_constraints(node);
-
 	/* construct output constraints */
-	arch_register_req_t const **out_reqs = NEW_ARR_F(arch_register_req_t const*, 0);
-
-	size_t out_idx;
-	for (out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
+	arch_register_req_t const      **out_reqs          = NEW_ARR_F(arch_register_req_t const*, 0);
+	ir_asm_constraint   const *const out_constraints   = get_ASM_output_constraints(node);
+	size_t                     const n_out_constraints = get_ASM_n_output_constraints(node);
+	for (size_t out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
 		const ir_asm_constraint *constraint = &out_constraints[out_idx];
 		unsigned                 pos        = constraint->pos;
 		be_asm_constraint_t      parsed_constraint;
@@ -324,8 +319,10 @@ static ir_node *gen_ASM(ir_node *node)
 	}
 
 	/* inputs + input constraints */
-	ir_node                   **in      = NEW_ARR_F(ir_node*, 0);
-	arch_register_req_t const **in_reqs = NEW_ARR_F(arch_register_req_t const*, 0);
+	ir_node                        **in             = NEW_ARR_F(ir_node*, 0);
+	arch_register_req_t const      **in_reqs        = NEW_ARR_F(arch_register_req_t const*, 0);
+	ir_asm_constraint   const *const in_constraints = get_ASM_input_constraints(node);
+	int                        const n_inputs       = get_ASM_n_inputs(node);
 	for (int i = 0; i < n_inputs; ++i) {
 		ir_node                 *pred         = get_ASM_input(node, i);
 		const ir_asm_constraint *constraint   = &in_constraints[i];
