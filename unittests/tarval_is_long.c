@@ -10,10 +10,8 @@ int main(void)
 {
 	ir_init();
 
-	ir_mode *big_s = new_int_mode("big signed", irma_twos_complement,
-	                              66, 1, 0);
-	ir_mode *big_u = new_int_mode("big signed", irma_twos_complement,
-	                              66, 0, 0);
+	ir_mode *big_s = new_int_mode("big signed", 66, 1, 0);
+	ir_mode *big_u = new_int_mode("big signed", 66, 0, 0);
 
 	ir_mode *long_u;
 	ir_mode *long_s;

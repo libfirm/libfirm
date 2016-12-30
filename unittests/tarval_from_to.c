@@ -95,12 +95,13 @@ int main(void)
 
 	ir_mode *modes[] = {
 		mode_Bs, mode_Bu, mode_Hs, mode_Hu, mode_Is, mode_Iu,
-		mode_Ls, mode_Lu, mode_F, mode_D, mode_P,
+		mode_Ls, mode_Lu, mode_F, mode_D,
+		new_reference_mode("p32", 32, 32),
 		new_float_mode("E", irma_x86_extended_float, 15, 64, ir_overflow_indefinite),
-		new_int_mode("uint6",  irma_twos_complement, 6,  false, 0),
-		new_int_mode("uint13", irma_twos_complement, 13, false, 0),
-		new_int_mode("int6",  irma_twos_complement, 6,  true, 0),
-		new_int_mode("int13", irma_twos_complement, 13, true, 0),
+		new_int_mode("uint6", 6,  false, 0),
+		new_int_mode("uint13", 13, false, 0),
+		new_int_mode("int6", 6,  true, 0),
+		new_int_mode("int13", 13, true, 0),
 	};
 
 	for (unsigned i = 0, n = ARRAY_SIZE(modes); i < n; ++i) {
