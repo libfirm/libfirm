@@ -184,6 +184,12 @@ FIRM_API ir_type *be_get_type_long_double(void);
 FIRM_API float_int_conversion_overflow_style_t be_get_float_int_overflow(void);
 
 /**
+ * Initialize the backend for the selected isa. This initializes mode_P and
+ * should be called after all options are set with be_parse_arg().
+ */
+FIRM_API void be_initialize(void);
+
+/**
  * Returns the backend configuration parameter.
  *
  * @return libFirm configuration parameters for the selected

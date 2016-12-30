@@ -147,7 +147,7 @@ static void be_init_default_asm_constraint_flags(void)
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_NONE, "\t\n\r !*?");
 }
 
-static void initialize_isa(void)
+void be_initialize(void)
 {
 	if (isa_initialized)
 		return;
@@ -169,7 +169,7 @@ static void finish_isa(void)
 
 asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 {
-	initialize_isa();
+	be_initialize();
 
 	asm_constraint_flags_t flags;
 	char            const *c = constraint;
@@ -199,7 +199,7 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 
 int be_is_valid_clobber(const char *clobber)
 {
-	initialize_isa();
+	be_initialize();
 
 	/* memory is a valid clobber. (the frontend has to detect this case too,
 	 * because it has to add memory edges to the asm) */
@@ -434,7 +434,7 @@ void firm_be_finish(void)
 /* Returns the backend parameter */
 const backend_params *be_get_backend_param(void)
 {
-	initialize_isa();
+	be_initialize();
 	return isa_if->get_params();
 }
 
@@ -520,7 +520,7 @@ void be_after_irp_transform(const char *name)
 
 void be_lower_for_target(void)
 {
-	initialize_isa();
+	be_initialize();
 
 	isa_if->lower_for_target();
 	/* set the phase to low */
@@ -659,7 +659,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 ir_jit_function_t *be_jit_compile(ir_jit_segment_t *const segment,
                                   ir_graph *const irg)
 {
-	initialize_isa();
+	be_initialize();
 	if (isa_if->jit_compile == NULL)
 		return NULL;
 
