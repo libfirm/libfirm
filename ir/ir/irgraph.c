@@ -128,6 +128,21 @@ static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	ir_node *const start_block = new_r_Block_noopt(res, 0, NULL);
 	set_irg_start_block(res, start_block);
 	set_irg_no_mem(res, new_r_NoMem(res));
+
+	res->index = get_irp_new_irg_idx();
+#ifdef DEBUG_libfirm
+	res->graph_nr = get_irp_new_node_nr();
+#endif
+
+	set_r_cur_block(res, start_block);
+
+	return res;
+}
+
+ir_graph *new_ir_graph(ir_entity *ent, int n_loc)
+{
+	ir_graph *res = new_r_ir_graph(ent, n_loc);
+
 	ir_node *const start = new_r_Start(res);
 	set_irg_start(res, start);
 
@@ -137,21 +152,9 @@ static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	ir_node *const initial_mem = new_r_Proj(start, mode_M, pn_Start_M);
 	set_irg_initial_mem(res, initial_mem);
 
-	res->index = get_irp_new_irg_idx();
-#ifdef DEBUG_libfirm
-	res->graph_nr = get_irp_new_node_nr();
-#endif
-
-	set_r_cur_block(res, start_block);
 	set_r_store(res, initial_mem);
 
-	return res;
-}
-
-ir_graph *new_ir_graph(ir_entity *ent, int n_loc)
-{
-	ir_graph *res = new_r_ir_graph(ent, n_loc);
-	add_irp_irg(res);          /* remember this graph global. */
+	add_irp_irg(res);
 	return res;
 }
 
@@ -160,7 +163,15 @@ ir_graph *new_const_code_irg(void)
 	ir_graph *const res = new_r_ir_graph(NULL, 0);
 	mature_immBlock(get_irg_end_block(res));
 
-	/* Set the visited flag high enough that the blocks will never be visited. */
+	/* There is not Start node in the const_code_irg */
+	set_irg_start(res, new_r_Bad(res, mode_T));
+	set_irg_frame(res, new_r_Bad(res, mode_BAD));
+	set_irg_args(res, new_r_Bad(res, mode_T));
+	set_irg_initial_mem(res, new_r_Bad(res, mode_M));
+	set_r_store(res, get_irg_no_mem(res));
+
+	/* Set the visited flag high enough that the blocks will never be
+	 * visited. */
 	ir_node *const body_block = get_r_cur_block(res);
 	set_irn_visited(body_block, -1);
 	set_Block_block_visited(body_block, -1);
