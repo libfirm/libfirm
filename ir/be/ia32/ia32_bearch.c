@@ -1372,6 +1372,9 @@ static backend_params ia32_backend_params = {
  */
 static void ia32_init(void)
 {
+	ir_mode *const ptr_mode = new_reference_mode("p32", 32, 32);
+	set_modeP(ptr_mode);
+
 	ia32_setup_cg_config();
 
 	x86_set_be_asm_constraint_support(&ia32_asm_constraints);

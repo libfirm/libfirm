@@ -366,6 +366,8 @@ static void sparc_setup_cg_config(void)
 
 static void sparc_init(void)
 {
+	ir_mode *const ptr_mode = new_reference_mode("p32", 32, 32);
+	set_modeP(ptr_mode);
 	sparc_init_asm_constraints();
 	sparc_register_init();
 	sparc_create_opcodes();

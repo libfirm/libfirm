@@ -106,6 +106,8 @@ static void TEMPLATE_generate_code(FILE *output, const char *cup_name)
 
 static void TEMPLATE_init(void)
 {
+	ir_mode *const ptr_mode = new_reference_mode("p32", 32, 32);
+	set_modeP(ptr_mode);
 	TEMPLATE_register_init();
 	TEMPLATE_create_opcodes();
 }

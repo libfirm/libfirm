@@ -456,8 +456,6 @@ void init_mode(void)
 	mode_Iu  = new_int_mode("Iu", 32, 0, 32);
 	mode_Ls  = new_int_mode("Ls", 64, 1, 64);
 	mode_Lu  = new_int_mode("Lu", 64, 0, 64);
-
-	mode_P   = new_reference_mode("P", 32, 32);
 }
 
 ir_mode *find_unsigned_mode(const ir_mode *mode)
