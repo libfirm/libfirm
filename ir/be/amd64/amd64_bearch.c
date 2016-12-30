@@ -776,12 +776,12 @@ static int amd64_is_valid_clobber(const char *clobber)
 
 static void amd64_init_types(void)
 {
-	ir_mode *const ptr_mode = new_reference_mode("p64", irma_twos_complement, 64, 64);
+	ir_mode *const ptr_mode = new_reference_mode("p64", 64, 64);
 	set_modeP(ptr_mode);
 
 	/* use an int128 mode for xmm registers for now, so that firm allows us to
 	 * create constants with the xmm mode... */
-	amd64_mode_xmm = new_int_mode("x86_xmm", irma_twos_complement, 128, 0, 0);
+	amd64_mode_xmm = new_int_mode("x86_xmm", 128, 0, 0);
 
 	ir_type *const type_f80 = x86_init_x87_type();
 	amd64_backend_params.type_long_double = type_f80;

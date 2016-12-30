@@ -62,7 +62,6 @@ typedef enum float_int_conversion_overflow_style_t {
  * Creates a new mode.
  *
  * @param name          the name of the mode to be created
- * @param arithmetic    arithmetic operations possible with a mode
  * @param bit_size      number of bits this mode allocate
  * @param sign          non-zero if this is a signed mode
  * @param modulo_shift  Is ignored for modes other than integer.
@@ -70,22 +69,21 @@ typedef enum float_int_conversion_overflow_style_t {
  * This function constructs a new mode given by the parameters.
  * If the parameters match an already defined mode, this mode is returned
  * (including the default modes).
+ * Arithmetic of int modes is irma_twos_complement.
  *
  * @return
  *   The new mode or NULL on error.
  */
 FIRM_API ir_mode *new_int_mode(const char *name,
-                               ir_mode_arithmetic arithmetic,
                                unsigned bit_size, int sign,
                                unsigned modulo_shift);
 
 /**
  * Create a new reference mode.
- *
  * Reference modes are always unsigned.
+ * Arithmetic of reference modes is irma_twos_complement.
  */
 FIRM_API ir_mode *new_reference_mode(const char *name,
-                                     ir_mode_arithmetic arithmetic,
                                      unsigned bit_size,
                                      unsigned modulo_shift);
 

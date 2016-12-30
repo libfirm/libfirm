@@ -1379,7 +1379,7 @@ static void ia32_init(void)
 	ia32_mode_fpcw = new_non_arithmetic_mode("fpcw", 16);
 	ia32_mode_flags = new_non_arithmetic_mode("flags", 32);
 
-	ia32_mode_gp = new_int_mode("gp", irma_twos_complement, 32, 0, 32);
+	ia32_mode_gp = new_int_mode("gp", 32, 0, 32);
 	ia32_mode_float64 = new_float_mode("fp64", irma_ieee754, 11, 52,
 	                                   ir_overflow_indefinite);
 	ia32_mode_float32 = new_float_mode("fp32", irma_ieee754, 8, 23,

@@ -139,33 +139,32 @@ static ir_mode *register_mode(ir_mode *mode)
 	return mode;
 }
 
-ir_mode *new_int_mode(const char *name, ir_mode_arithmetic arithmetic,
-                      unsigned bit_size, int sign, unsigned modulo_shift)
+ir_mode *new_int_mode(const char *name, unsigned bit_size, int sign,
+                      unsigned modulo_shift)
 {
 	if (bit_size >= (unsigned)sc_get_precision())
 		panic("cannot create mode: more bits than tarval module maximum");
 
-	ir_mode *result = alloc_mode(name, irms_int_number, arithmetic, bit_size,
-	                             sign, modulo_shift);
+	ir_mode *result = alloc_mode(name, irms_int_number, irma_twos_complement,
+	                             bit_size, sign, modulo_shift);
 	return register_mode(result);
 }
 
-ir_mode *new_reference_mode(const char *name, ir_mode_arithmetic arithmetic,
-                            unsigned bit_size, unsigned modulo_shift)
+ir_mode *new_reference_mode(const char *name, unsigned bit_size,
+                            unsigned modulo_shift)
 {
 	if (bit_size >= (unsigned)sc_get_precision())
 		panic("cannot create mode: more bits than tarval module maximum");
 
-	ir_mode *result = alloc_mode(name, irms_reference, arithmetic, bit_size,
-	                             0, modulo_shift);
+	ir_mode *result = alloc_mode(name, irms_reference, irma_twos_complement,
+	                             bit_size, 0, modulo_shift);
 	ir_mode *res = register_mode(result);
 
 	/* Construct offset mode if none is set yet. */
 	if (res->offset_mode == NULL) {
 		char buf[64];
 		snprintf(buf, sizeof(buf), "%s_i", name);
-		ir_mode *offset_mode = new_int_mode(buf, arithmetic, bit_size, 1,
-		                                    modulo_shift);
+		ir_mode *offset_mode = new_int_mode(buf, bit_size, 1, modulo_shift);
 		res->offset_mode = offset_mode;
 	}
 	return res;
@@ -449,16 +448,16 @@ void init_mode(void)
 	mode_F   = new_float_mode("F", irma_ieee754,  8, 23, ir_overflow_min_max);
 	mode_D   = new_float_mode("D", irma_ieee754, 11, 52, ir_overflow_min_max);
 
-	mode_Bs  = new_int_mode("Bs",  irma_twos_complement, 8,   1, 32);
-	mode_Bu  = new_int_mode("Bu",  irma_twos_complement, 8,   0, 32);
-	mode_Hs  = new_int_mode("Hs",  irma_twos_complement, 16,  1, 32);
-	mode_Hu  = new_int_mode("Hu",  irma_twos_complement, 16,  0, 32);
-	mode_Is  = new_int_mode("Is",  irma_twos_complement, 32,  1, 32);
-	mode_Iu  = new_int_mode("Iu",  irma_twos_complement, 32,  0, 32);
-	mode_Ls  = new_int_mode("Ls",  irma_twos_complement, 64,  1, 64);
-	mode_Lu  = new_int_mode("Lu",  irma_twos_complement, 64,  0, 64);
+	mode_Bs  = new_int_mode("Bs", 8,  1, 32);
+	mode_Bu  = new_int_mode("Bu", 8,  0, 32);
+	mode_Hs  = new_int_mode("Hs", 16, 1, 32);
+	mode_Hu  = new_int_mode("Hu", 16, 0, 32);
+	mode_Is  = new_int_mode("Is", 32, 1, 32);
+	mode_Iu  = new_int_mode("Iu", 32, 0, 32);
+	mode_Ls  = new_int_mode("Ls", 64, 1, 64);
+	mode_Lu  = new_int_mode("Lu", 64, 0, 64);
 
-	mode_P   = new_reference_mode("P", irma_twos_complement, 32, 32);
+	mode_P   = new_reference_mode("P", 32, 32);
 }
 
 ir_mode *find_unsigned_mode(const ir_mode *mode)

@@ -129,10 +129,9 @@ static void arm_create_runtime_entities(void)
 	if (divsi3 != NULL)
 		return;
 
-	ir_mode *mode_int = new_int_mode("arm_be_int", irma_twos_complement,
-	                                 ARM_MACHINE_SIZE, true, ARM_MODULO_SHIFT);
-	ir_mode *mode_uint = new_int_mode("arm_be_int", irma_twos_complement,
-	                                  ARM_MACHINE_SIZE, false,
+	ir_mode *mode_int = new_int_mode("arm_be_int", ARM_MACHINE_SIZE, true,
+	                                 ARM_MODULO_SHIFT);
+	ir_mode *mode_uint = new_int_mode("arm_be_int", ARM_MACHINE_SIZE, false,
 	                                  ARM_MODULO_SHIFT);
 
 	ir_type *int_tp  = get_type_for_mode(mode_int);
@@ -291,11 +290,11 @@ static const backend_params *arm_get_libfirm_params(void)
 
 static void arm_init(void)
 {
-	arm_mode_gp    = new_int_mode("arm_gp", irma_twos_complement,
-	                              ARM_MACHINE_SIZE, 0, ARM_MODULO_SHIFT);
+	arm_mode_gp    = new_int_mode("arm_gp", ARM_MACHINE_SIZE, 0,
+	                              ARM_MODULO_SHIFT);
 	arm_mode_flags = new_non_arithmetic_mode("arm_flags", 32);
 
-	set_modeP(new_reference_mode("p32", irma_twos_complement, ARM_MACHINE_SIZE, ARM_MODULO_SHIFT));
+	set_modeP(new_reference_mode("p32", ARM_MACHINE_SIZE, ARM_MODULO_SHIFT));
 
 	arm_register_init();
 	arm_create_opcodes();

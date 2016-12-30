@@ -2101,18 +2101,20 @@ static void read_modes(read_env_t *env)
 		case kw_int_mode: {
 			const char *name = read_string(env);
 			ir_mode_arithmetic arith = read_mode_arithmetic(env);
+			assert(arith == irma_twos_complement);
 			int size = read_long(env);
 			int sign = read_long(env);
 			unsigned modulo_shift = read_long(env);
-			new_int_mode(name, arith, size, sign, modulo_shift);
+			new_int_mode(name, size, sign, modulo_shift);
 			break;
 		}
 		case kw_reference_mode: {
 			const char *name = read_string(env);
 			ir_mode_arithmetic arith = read_mode_arithmetic(env);
+			assert(arith == irma_twos_complement);
 			int size = read_long(env);
 			unsigned modulo_shift = read_long(env);
-			ir_mode *mode = new_reference_mode(name, arith, size, modulo_shift);
+			ir_mode *mode = new_reference_mode(name, size, modulo_shift);
 			set_reference_offset_mode(mode, read_mode_ref(env));
 			int is_mode_P = read_int(env);
 			if (is_mode_P)
