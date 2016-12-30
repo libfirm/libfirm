@@ -124,6 +124,16 @@ static bool needs_lowering(const ir_mode *mode)
 	    && get_mode_arithmetic(mode) == irma_twos_complement;
 }
 
+static bool type_needs_lowering(ir_type const *const tp)
+{
+	if (is_Primitive_type(tp)) {
+		ir_mode *mode = get_type_mode(tp);
+		if (needs_lowering(mode))
+			return true;
+	}
+	return false;
+}
+
 static void lower_mode(void (*const set)(ir_type*, size_t, ir_type*), ir_type *const mtd, ir_mode *const mode)
 {
 	size_t n = 0;
@@ -280,12 +290,8 @@ static void prepare_links(ir_node *node, void *data)
 		const ir_type *tp = get_Call_type(node);
 		for (size_t i = 0, n_res = get_method_n_ress(tp); i < n_res; ++i) {
 			const ir_type *rtp = get_method_res_type(tp, i);
-			if (is_Primitive_type(rtp)) {
-				ir_mode *rmode = get_type_mode(rtp);
-				if (needs_lowering(rmode)) {
-					env.flags |= MUST_BE_LOWERED;
-				}
-			}
+			if (type_needs_lowering(rtp))
+				env.flags |= MUST_BE_LOWERED;
 		}
 	}
 }
@@ -1483,20 +1489,17 @@ static void fix_parameter_entities(ir_graph *irg, ir_type *orig_mtp)
 			set_entity_parameter_number(entity, n_param);
 
 		tp = get_method_param_type(orig_mtp, i);
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
-			if (needs_lowering(mode)) {
-				++n_param;
-				/* Note that we cannot split the parameter entity up, because
-				 * we have to guarantee that we have a continuous 64bit entity.
-				 * As an example imaging an arm function with the first half
-				 * of the doubleword ending up in a register, the 2nd half
-				 * on the stack. If we would have split the entities they would
-				 * not end up continuously. */
-				if (entity != NULL) {
-					assert(!entity->attr.parameter.is_lowered_doubleword);
-					entity->attr.parameter.is_lowered_doubleword = true;
-				}
+		if (type_needs_lowering(tp)) {
+			++n_param;
+			/* Note that we cannot split the parameter entity up, because
+			 * we have to guarantee that we have a continuous 64bit entity.
+			 * As an example imaging an arm function with the first half
+			 * of the doubleword ending up in a register, the 2nd half
+			 * on the stack. If we would have split the entities they would
+			 * not end up continuously. */
+			if (entity != NULL) {
+				assert(!entity->attr.parameter.is_lowered_doubleword);
+				entity->attr.parameter.is_lowered_doubleword = true;
 			}
 		}
 	}
@@ -1548,28 +1551,18 @@ static ir_type *lower_mtp(ir_type *mtp)
 	/* count new number of params */
 	for (size_t i = orig_n_params; i-- > 0;) {
 		ir_type *tp = get_method_param_type(mtp, i);
-
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
-
-			if (needs_lowering(mode)) {
-				++n_param;
-				must_be_lowered = true;
-			}
+		if (type_needs_lowering(tp)) {
+			++n_param;
+			must_be_lowered = true;
 		}
 	}
 
 	/* count new number of results */
 	for (size_t i = orig_n_res; i-- > 0;) {
 		ir_type *tp = get_method_res_type(mtp, i);
-
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
-
-			if (needs_lowering(mode)) {
-				++n_res;
-				must_be_lowered = true;
-			}
+		if (type_needs_lowering(tp)) {
+			++n_res;
+			must_be_lowered = true;
 		}
 	}
 	if (!must_be_lowered) {
@@ -1675,11 +1668,8 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 		ir_type *ptp = get_method_param_type(orig_mtp, i);
 
 		new_projs[i] = j;
-		if (is_Primitive_type(ptp)) {
-			ir_mode *amode = get_type_mode(ptp);
-			if (needs_lowering(amode))
-				++j;
-		}
+		if (type_needs_lowering(ptp))
+			++j;
 	}
 
 	/* find args Proj */
@@ -1736,12 +1726,9 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 	for (size_t p = 0; p < n_params; ++p) {
 		ir_type *ptp = get_method_param_type(tp, p);
 
-		if (is_Primitive_type(ptp)) {
-			ir_mode *pmode = get_type_mode(ptp);
-			if (needs_lowering(pmode)) {
-				need_lower = true;
-				break;
-			}
+		if (type_needs_lowering(ptp)) {
+			need_lower = true;
+			break;
 		}
 	}
 	size_t    n_res       = get_method_n_ress(tp);
@@ -1751,12 +1738,9 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 			ir_type *ptp = get_method_res_type(tp, i);
 
 			res_numbers[i] = j;
-			if (is_Primitive_type(ptp)) {
-				ir_mode *rmode = get_type_mode(ptp);
-				if (needs_lowering(rmode)) {
-					need_lower = true;
-					++j;
-				}
+			if (type_needs_lowering(ptp)) {
+				need_lower = true;
+				++j;
 			}
 		}
 	}
@@ -2068,12 +2052,9 @@ static ir_type *lower_Builtin_type(pmap *const type_map, ir_type *const mtp, ir_
 	bool         must_be_lowered = false;
 	for (size_t i = n_params; i-- > 0;) {
 		ir_type *const tp = get_method_param_type(mtp, i);
-		if (is_Primitive_type(tp)) {
-			ir_mode *const mode = get_type_mode(tp);
-			if (needs_lowering(mode)) {
-				must_be_lowered = true;
-				break;
-			}
+		if (type_needs_lowering(tp)) {
+			must_be_lowered = true;
+			break;
 		}
 	}
 
