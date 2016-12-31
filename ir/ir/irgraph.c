@@ -163,7 +163,7 @@ ir_graph *new_const_code_irg(void)
 	ir_graph *const res = new_r_ir_graph(NULL, 0);
 	mature_immBlock(get_irg_end_block(res));
 
-	/* There is not Start node in the const_code_irg */
+	/* There is no Start node in the const_code_irg */
 	set_irg_start(res, new_r_Bad(res, mode_T));
 	set_irg_frame(res, new_r_Bad(res, mode_BAD));
 	set_irg_args(res, new_r_Bad(res, mode_T));
