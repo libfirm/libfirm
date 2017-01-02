@@ -636,38 +636,27 @@ static void emit_be_IncSP(const ir_node *irn)
 
 static void emit_sparc_asm_operand(ir_node const *const node, char const modifier, unsigned const pos)
 {
-	bool address_only = false;
-	bool zero_as_g0   = false;
-	switch (modifier) {
-	case '\0':
-		break;
-
-	case 'f':
-	case 'm':
-		address_only = true;
-		break;
-
-	case 'r':
-		zero_as_g0 = true;
-		break;
-
-	default:
-		be_errorf(node, "asm contains unknown modifier '%c'", modifier);
-		return;
-	}
-
 	be_asm_attr_t       const *const attr = get_be_asm_attr_const(node);
 	sparc_asm_operand_t const *const op   = &((sparc_asm_operand_t const*)attr->operands)[pos];
+	/* modifiers:
+	 *   f: memory reference without surrounding '[]'
+	 *   m: see 'f'
+	 *   r: immediate, but show '%g0' instead of '0' */
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "r", "", "fm"))
+		return;
+
 	switch (op->kind) {
 	case BE_ASM_OPERAND_INVALID:
 		panic("invalid asm operand");
 
-	case BE_ASM_OPERAND_IMMEDIATE:
+	case BE_ASM_OPERAND_IMMEDIATE: {
+		bool const zero_as_g0 = modifier == 'r';
 		if (zero_as_g0 && op->immediate_value == 0 && !op->immediate_value_entity)
 			sparc_emit_register(&sparc_registers[REG_G0]);
 		else
 			sparc_emit_immediate(op->immediate_value, op->immediate_value_entity);
 		return;
+	}
 
 	case BE_ASM_OPERAND_INPUT_VALUE:
 		sparc_emit_register(arch_get_irn_register_in(node, op->pos));
@@ -677,13 +666,15 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 		sparc_emit_register(arch_get_irn_register_out(node, op->pos));
 		return;
 
-	case BE_ASM_OPERAND_MEMORY:
+	case BE_ASM_OPERAND_MEMORY: {
+		bool const address_only = modifier == 'f' || modifier == 'm';
 		if (!address_only)
 			be_emit_char('[');
 		sparc_emit_register(arch_get_irn_register_in(node, op->pos));
 		if (!address_only)
 			be_emit_char(']');
 		return;
+	}
 	}
 	panic("invalid asm operand kind");
 }

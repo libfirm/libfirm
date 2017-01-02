@@ -46,6 +46,7 @@ libFirm 1.22.1 (2016-01-07)
 * amd64: Use cltd/cqto for sign extension before a division
 * amd64: Use store with immediate for call arguments
 * opt: Add local optimization `a * b [-1 <= b <= 0] -> -(a & b)`
+* sparc: More strict checking of modifiers of placeholders in asm templates
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
