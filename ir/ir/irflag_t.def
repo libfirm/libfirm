@@ -29,3 +29,6 @@ FLAG(algebraic_simplification           , 4, ON)
 
 /** Use Global Null Pointer Test elimination. */
 FLAG(global_null_ptr_elimination        , 5, ON)
+
+/** Closed world assumption. */
+FLAG(closed_world                       , 12, OFF)

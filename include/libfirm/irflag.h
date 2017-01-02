@@ -109,6 +109,17 @@ FIRM_API void set_opt_global_null_ptr_elimination(int value);
 /** Returns global null pointer test elimination setting. */
 FIRM_API int get_opt_global_null_ptr_elimination(void);
 
+/** Enable/Disable closed world assumption.
+ *
+ * If enabled, optimizations expect to know the "whole world", i.e. no
+ * external types or callers exist.
+ * This enables some powerful optimizations.
+ */
+FIRM_API void set_opt_closed_world(int value);
+
+/** Returns closed world assumption setting. */
+FIRM_API int get_opt_closed_world(void);
+
 /**
  * Save the current optimization state.
  */
