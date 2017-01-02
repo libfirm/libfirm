@@ -813,34 +813,16 @@ static void emit_ia32_asm_register(const arch_register_t *reg, char modifier,
 
 static void emit_ia32_asm_operand(ir_node const *const node, char const modifier, unsigned const pos)
 {
-	be_asm_operand_kind_t required;
-	switch (modifier) {
-	case '\0':
-	case 'b':
-	case 'h':
-	case 'k':
-	case 'w':
-		required = BE_ASM_OPERAND_INVALID;
-		break;
-
-	case 'c':
-		required = BE_ASM_OPERAND_IMMEDIATE;
-		break;
-
-	default:
-		be_errorf(node, "asm contains unknown modifier '%c'", modifier);
-		return;
-	}
-
 	be_asm_attr_t     const *const attr = get_be_asm_attr_const(node);
 	x86_asm_operand_t const *const op   = &((x86_asm_operand_t const*)attr->operands)[pos];
-
-	if (required != BE_ASM_OPERAND_INVALID && required != op->kind) {
-		char const *const want = be_get_constraint_name(required);
-		char const *const have = be_get_constraint_name(op->kind);
-		be_errorf(node, "modifier of operand '%%%c%u' requires an operand of type '%s', but got '%s'", modifier, pos, want, have);
+	/* modifiers:
+	 *   b: 8 bit low name of register
+	 *   c: immediate without prefix '$'
+	 *   h: 8 bit high name of register
+	 *   k: 32 bit name of register
+	 *   w: 16 bit name of register */
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "bhkw", "c", ""))
 		return;
-	}
 
 	switch ((be_asm_operand_kind_t)op->kind) {
 	case BE_ASM_OPERAND_INVALID:

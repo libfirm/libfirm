@@ -360,7 +360,7 @@ void be_emit_asm(ir_node const *const asmn, be_emit_asm_operand_func *const emit
 	be_emit_write_line();
 }
 
-char const *be_get_constraint_name(be_asm_operand_kind_t const kind)
+static char const *be_get_constraint_name(be_asm_operand_kind_t const kind)
 {
 	switch (kind) {
 	case BE_ASM_OPERAND_INVALID:      return "invalid";
@@ -370,4 +370,26 @@ char const *be_get_constraint_name(be_asm_operand_kind_t const kind)
 	case BE_ASM_OPERAND_MEMORY:       return "memory";
 	}
 	panic("invalid constraint kind");
+}
+
+bool be_is_valid_asm_operand_kind(ir_node const *const node, char const modifier, unsigned const pos, be_asm_operand_kind_t const have, char const *const mod_any, char const *const mod_imm, char const *const mod_mem)
+{
+	be_asm_operand_kind_t want;
+	if (strchr(mod_any, modifier)) {
+		return true;
+	} else if (strchr(mod_imm, modifier)) {
+		want = BE_ASM_OPERAND_IMMEDIATE;
+	} else if (strchr(mod_mem, modifier)) {
+		want = BE_ASM_OPERAND_MEMORY;
+	} else {
+		be_errorf(node, "asm contains unknown modifier '%c'", modifier);
+		return false;
+	}
+	if (want != have) {
+		char const *const name_want = be_get_constraint_name(want);
+		char const *const name_have = be_get_constraint_name(have);
+		be_errorf(node, "modifier of operand '%%%c%u' requires an operand of type '%s', but got '%s'", modifier, pos, name_want, name_have);
+		return false;
+	}
+	return true;
 }

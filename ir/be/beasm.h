@@ -51,6 +51,6 @@ typedef void be_emit_asm_operand_func(ir_node const *asmn, char modifier, unsign
 
 void be_emit_asm(ir_node const *asmn, be_emit_asm_operand_func *emit_asm_operand);
 
-char const *be_get_constraint_name(be_asm_operand_kind_t kind);
+bool be_is_valid_asm_operand_kind(ir_node const *node, char modifier, unsigned pos, be_asm_operand_kind_t have, char const *mod_any, char const *mod_imm, char const *mod_mem);
 
 #endif
