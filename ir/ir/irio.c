@@ -16,6 +16,8 @@
 #include "irgmod.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
+#include "irio_t.h"
+#include "irlink_t.h"
 #include "irprintf.h"
 #include "irprog_t.h"
 #include "obst.h"
@@ -1598,6 +1600,17 @@ static ir_initializer_t *read_initializer(read_env_t *env)
 	panic("unknown initializer kind");
 }
 
+static ir_type *get_segment_by_name(ident *id)
+{
+	const char *name = get_id_str(id);
+	for (unsigned s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
+		ir_type *type = get_segment_type(s);
+		if (streq(name, type->name))
+			return type;
+	}
+	return NULL;
+}
+
 /** Reads a type description and remembers it by its id. */
 static void read_type(read_env_t *env)
 {
@@ -1683,7 +1696,9 @@ static void read_type(read_env_t *env)
 
 	case tpo_segment: {
 		ident *id = read_ident_null(env);
-		type = new_type_segment(id, 0);
+		type = get_segment_by_name(id);
+		if (type == NULL)
+			panic("could not find type for segment \"%s\"", get_id_str(id));
 		goto finish_type;
 	}
 
@@ -1715,6 +1730,26 @@ static void read_unknown_entity(read_env_t *env)
 	set_id(env, entnr, entity);
 }
 
+static ir_initializer_t* parse_initializer(read_env_t *env)
+{
+	const char *str = read_word(env);
+	if (streq(str, "initializer")) {
+		return read_initializer(env);
+	} else if (streq(str, "none")) {
+		/* do nothing */
+	} else {
+		parse_error(env, "expected 'initializer' or 'none' got '%s'\n", str);
+	}
+	return NULL;
+}
+
+static ident *rename_entity(ident *name)
+{
+	static unsigned  rename_count = 0;
+	const char      *str          = get_id_str(name);
+	return new_id_fmt("r.%d.%s", rename_count++, str);
+}
+
 /** Reads an entity description and remembers it by its id. */
 static void read_entity(read_env_t *env, ir_entity_kind kind)
 {
@@ -1725,8 +1760,9 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 	ir_linkage     linkage    = IR_LINKAGE_DEFAULT;
 	ir_type       *owner      = NULL;
 	ir_entity     *entity     = NULL;
+	bool           is_named   = kind != IR_ENTITY_LABEL && kind != IR_ENTITY_PARAMETER;
 
-	if (kind != IR_ENTITY_LABEL && kind != IR_ENTITY_PARAMETER) {
+	if (is_named) {
 		name    = read_ident(env);
 		ld_name = read_ident_null(env);
 	}
@@ -1743,6 +1779,45 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 
 	ir_volatility volatility = read_volatility(env);
 
+	// By default everything with a name, which is private is renamed
+	// TODO: this will rename every private entity even if it has been renamed
+	// in a prior import export cylce.
+	bool is_externally_visible = visibility != ir_visibility_local && visibility != ir_visibility_private;
+	if (is_named && !is_externally_visible) {
+		name    = rename_entity(name);
+		ld_name = rename_entity(ld_name);
+	}
+
+	// try to merge all entities that have a name and are not private
+	if (is_named && is_externally_visible) {
+		entity = ir_link_entity(name, type, kind, owner, linkage, volatility, visibility);
+
+		if (entity != NULL) {
+			// We might see the initializer for a previously constructed entity here
+			if (kind == IR_ENTITY_NORMAL) {
+				ir_initializer_t *initializer = parse_initializer(env);
+				// only one entity can have an initializer. This entity must be the definition!
+				if (initializer != NULL) {
+					if (get_entity_initializer(entity) == NULL) {
+						// the current entity has no initializer => it is only a declaration
+						// we take over the type and initializer of this entity, because we can not
+						// easily replace the old entity
+						set_entity_type(entity, type);
+						set_entity_initializer(entity, initializer);
+					} else {
+						parse_error(env, "duplicate initializer for entity %s\n", get_id_str(name));
+					}
+				}
+			}
+
+			// Ignore the (possibly) remaining text.
+			skip_to(env, '\n');
+
+			// No new entity is created. Link to the existing entity
+			goto finish_entity;
+		}
+	}
+
 	switch (kind) {
 	case IR_ENTITY_ALIAS: {
 		ir_entity *aliased = read_entity_ref(env);
@@ -1753,16 +1828,9 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		entity = new_entity(owner, name, type);
 		if (ld_name != NULL)
 			set_entity_ld_ident(entity, ld_name);
-		const char *str = read_word(env);
-		if (streq(str, "initializer")) {
-			ir_initializer_t *initializer = read_initializer(env);
-			if (initializer != NULL)
-				set_entity_initializer(entity, initializer);
-		} else if (streq(str, "none")) {
-			/* do nothing */
-		} else {
-			parse_error(env, "expected 'initializer' or 'none' got '%s'\n", str);
-		}
+		ir_initializer_t *initializer = parse_initializer(env);
+		if (initializer != NULL)
+			set_entity_initializer(entity, initializer);
 		break;
 	case IR_ENTITY_COMPOUND_MEMBER:
 		entity = new_entity(owner, name, type);
@@ -1808,6 +1876,8 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 	set_entity_visibility(entity, visibility);
 	set_entity_linkage(entity, linkage);
 
+finish_entity:
+	ir_adjust_visibility(entity);
 	set_id(env, entnr, entity);
 }
 
