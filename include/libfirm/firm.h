@@ -78,10 +78,9 @@
 #include "heights.h"
 #include "ident.h"
 #include "ircgopt.h"
-#include "irconsconfirm.h"
 #include "ircons.h"
+#include "irconsconfirm.h"
 #include "irdom.h"
-#include "vrp.h"
 #include "irdump.h"
 #include "iredgekinds.h"
 #include "iredges.h"
@@ -103,8 +102,10 @@
 #include "irprog.h"
 #include "irverify.h"
 #include "lowering.h"
+#include "target.h"
 #include "timing.h"
 #include "tv.h"
 #include "typerep.h"
+#include "vrp.h"
 
 #endif

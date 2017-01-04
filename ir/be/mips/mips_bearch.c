@@ -19,21 +19,15 @@
 #include "iredges.h"
 #include "irgwalk.h"
 #include "irprog_t.h"
+#include "isas.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lowering.h"
 #include "mips_emitter.h"
 #include "mips_lower64.h"
 #include "mips_transform.h"
+#include "target_t.h"
 #include "util.h"
-
-static int mips_is_mux_allowed(ir_node *const sel, ir_node *const mux_false, ir_node *const mux_true)
-{
-	(void)sel;
-	(void)mux_false;
-	(void)mux_true;
-	return false;
-}
 
 static ir_settings_arch_dep_t const mips_arch_dep = {
 	.replace_muls         = true,
@@ -48,19 +42,6 @@ static ir_settings_arch_dep_t const mips_arch_dep = {
 	.max_bits_for_mulh    = MIPS_MACHINE_SIZE,
 };
 
-static backend_params mips_backend_params = {
-	.experimental                  = "the MIPS backend is highly experimental and unfinished",
-	.byte_order_big_endian         = true,
-	.pic_supported                 = false,
-	.unaligned_memaccess_supported = false,
-	.modulo_shift                  = MIPS_MACHINE_SIZE,
-	.allow_ifconv                  = &mips_is_mux_allowed,
-	.machine_size                  = MIPS_MACHINE_SIZE,
-	.mode_float_arithmetic         = NULL,  /* will be set later */ // TODO
-	.type_long_double              = NULL,  /* will be set later */ // TODO
-	.float_int_overflow            = ir_overflow_indefinite,
-};
-
 static void mips_init_asm_constraints(void)
 {
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP,     "Rm");
@@ -71,22 +52,18 @@ static void mips_init_asm_constraints(void)
 
 static void mips_init(void)
 {
-	ir_mode *const ptr_mode = new_reference_mode("p32", MIPS_MACHINE_SIZE, MIPS_MACHINE_SIZE);
-	set_modeP(ptr_mode);
-
 	mips_init_asm_constraints();
 	mips_create_opcodes();
 	mips_register_init();
+
+	ir_target.experimental
+		= "the MIPS backend is highly experimental and unfinished";
+	ir_target.float_int_overflow = ir_overflow_indefinite;
 }
 
 static void mips_finish(void)
 {
 	mips_free_opcodes();
-}
-
-static const backend_params *mips_get_libfirm_params(void)
-{
-	return &mips_backend_params;
 }
 
 static void mips_select_instructions(ir_graph *const irg)
@@ -308,14 +285,19 @@ static unsigned mips_get_op_estimated_cost(ir_node const *const node)
 	return 1;
 }
 
-static arch_isa_if_t const mips_isa_if = {
+arch_isa_if_t const mips_isa_if = {
+	.name                  = "mips",
+	.pointer_size          = 4,
+	.modulo_shift          = 32,
+	.big_endian            = true,
+	.po2_biggest_alignment = 3,
+	.pic_supported         = false,
 	.n_registers           = N_MIPS_REGISTERS,
 	.registers             = mips_registers,
 	.n_register_classes    = N_MIPS_CLASSES,
 	.register_classes      = mips_reg_classes,
 	.init                  = mips_init,
 	.finish                = mips_finish,
-	.get_params            = mips_get_libfirm_params,
 	.generate_code         = mips_generate_code,
 	.lower_for_target      = mips_lower_for_target,
 	.is_valid_clobber      = NULL, // TODO
@@ -325,5 +307,4 @@ static arch_isa_if_t const mips_isa_if = {
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_mips)
 void be_init_arch_mips(void)
 {
-	be_register_isa_if("mips", &mips_isa_if);
 }

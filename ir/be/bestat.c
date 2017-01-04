@@ -22,6 +22,7 @@
 #include "irnode_t.h"
 #include "panic.h"
 #include "statev_t.h"
+#include "target_t.h"
 #include "util.h"
 #include <time.h>
 
@@ -95,7 +96,7 @@ static void estimate_block_costs(ir_node *block, void *data)
 	double costs = 0.0;
 
 	sched_foreach(block, node) {
-		costs += isa_if->get_op_estimated_cost(node);
+		costs += ir_target.isa->get_op_estimated_cost(node);
 	}
 
 	env->costs += costs * get_block_execfreq(block);

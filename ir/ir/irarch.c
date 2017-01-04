@@ -15,7 +15,6 @@
  */
 #include "irarch.h"
 
-#include "be.h"
 #include "dbginfo_t.h"
 #include "ircons.h"
 #include "ircons_t.h"

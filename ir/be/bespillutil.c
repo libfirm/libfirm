@@ -34,6 +34,7 @@
 #include "irnode_t.h"
 #include "irnodehashmap.h"
 #include "statev_t.h"
+#include "target_t.h"
 #include "type_t.h"
 #include "util.h"
 #include <stdbool.h>
@@ -368,7 +369,7 @@ static int check_remat_conditions_costs(spill_env_t *env,
 	if (!arch_irn_is(insn, rematerializable))
 		return REMAT_COST_INFINITE;
 
-	int costs = isa_if->get_op_estimated_cost(insn);
+	int costs = ir_target.isa->get_op_estimated_cost(insn);
 	int spillcosts = env->regif.reload_cost + env->regif.spill_cost;
 	if (parentcosts + costs >= spillcosts)
 		return REMAT_COST_INFINITE;
@@ -761,7 +762,7 @@ static void prepare_constr_insn(ir_node *const node)
 		if (req->limited == NULL)
 			continue;
 		if (def_constr == NULL)
-			def_constr = rbitset_alloca(isa_if->n_registers);
+			def_constr = rbitset_alloca(ir_target.isa->n_registers);
 		arch_register_class_t const *const cls = req->cls;
 		rbitset_foreach(req->limited, cls->n_regs, e) {
 			const arch_register_t *reg = arch_register_for_index(cls, e);

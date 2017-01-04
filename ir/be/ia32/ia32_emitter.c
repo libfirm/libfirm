@@ -28,7 +28,6 @@
  */
 #include "ia32_emitter.h"
 
-#include "be_t.h"
 #include "beasm.h"
 #include "beblocksched.h"
 #include "bediagnostic.h"
@@ -53,6 +52,7 @@
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 #include "panic.h"
+#include "platform_t.h"
 #include <inttypes.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -742,7 +742,7 @@ void ia32_emit_jumptable_target(ir_entity const *const table,
 {
 	(void)table;
 	be_emit_cfop_target(proj_x);
-	switch (be_options.pic_style) {
+	switch (ir_platform.pic_style) {
 	case BE_PIC_NONE:
 		break;
 
@@ -1104,7 +1104,7 @@ static void emit_ia32_GetEIP(const ir_node *node)
 		be_emit_irprintf("%s:\n", base);
 		be_emit_write_line();
 		ia32_emitf(node, "popl %D0");
-		switch (be_options.pic_style) {
+		switch (ir_platform.pic_style) {
 		case BE_PIC_ELF_PLT:
 		case BE_PIC_ELF_NO_PLT:
 			ia32_emitf(node, "addl $_GLOBAL_OFFSET_TABLE_ - (%s - .), %D0", base);
@@ -1138,7 +1138,7 @@ static void emit_ia32_GetEIP(const ir_node *node)
 		}
 
 		ia32_emitf(node, "call %E", thunk);
-		switch (be_options.pic_style) {
+		switch (ir_platform.pic_style) {
 		case BE_PIC_MACH_O:
 			be_emit_irprintf("%s:\n", pic_base_label);
 			be_emit_write_line();

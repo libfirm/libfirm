@@ -112,8 +112,8 @@ ir_node *ir_get_abs_op(const ir_node *sel, ir_node *mux_false,
  * the if-conversion callback. Allowing these Muxes should be always safe, even
  * if the backend cannot handle them.
  */
-bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
-                           const ir_node *mux_true);
+int ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
+                          const ir_node *mux_true);
 
 /**
  * Returns true if Conv_m0(Conv_m1( x_m2)) is equivalent to Conv_m0(x_m2)

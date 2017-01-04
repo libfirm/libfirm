@@ -28,11 +28,13 @@
 #include "irgwalk.h"
 #include "irprog_t.h"
 #include "irtools.h"
+#include "isas.h"
 #include "lc_opts_enum.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lower_softfloat.h"
 #include "lowering.h"
+#include "target_t.h"
 #include "util.h"
 
 #define ARM_MODULO_SHIFT 256
@@ -138,12 +140,12 @@ static void arm_create_runtime_entities(void)
 	ir_type *uint_tp = get_type_for_mode(mode_uint);
 
 	ir_type *const mtps = make_divmod_type(int_tp);
-	divsi3 = create_compilerlib_entity(new_id_from_str("__divsi3"), mtps);
-	modsi3 = create_compilerlib_entity(new_id_from_str("__modsi3"), mtps);
+	divsi3 = create_compilerlib_entity("__divsi3", mtps);
+	modsi3 = create_compilerlib_entity("__modsi3", mtps);
 
 	ir_type *const mtpu = make_divmod_type(uint_tp);
-	udivsi3 = create_compilerlib_entity(new_id_from_str("__udivsi3"), mtpu);
-	umodsi3 = create_compilerlib_entity(new_id_from_str("__umodsi3"), mtpu);
+	udivsi3 = create_compilerlib_entity("__udivsi3", mtpu);
+	umodsi3 = create_compilerlib_entity("__umodsi3", mtpu);
 }
 
 /**
@@ -204,19 +206,6 @@ static void arm_generate_code(FILE *output, const char *cup_name)
 	be_finish();
 }
 
-/**
- * Allows or disallows the creation of Mux nodes for the given Phi nodes.
- * @return 1 if allowed, 0 otherwise
- */
-static int arm_is_mux_allowed(ir_node *sel, ir_node *mux_false,
-                              ir_node *mux_true)
-{
-	(void)sel;
-	(void)mux_false;
-	(void)mux_true;
-	return false;
-}
-
 static const ir_settings_arch_dep_t arm_arch_dep = {
 	.replace_muls         = true,
 	.replace_divs         = true,
@@ -266,29 +255,6 @@ static void arm_lower_for_target(void)
 	be_after_irp_transform("lower-64");
 }
 
-static backend_params arm_backend_params = {
-	.experimental                  = "the arm backend is highly experimental and unfinished",
-	.byte_order_big_endian         = false,
-	.pic_supported                 = false,
-	.unaligned_memaccess_supported = false,
-	.modulo_shift                  = ARM_MODULO_SHIFT,
-	.allow_ifconv                  = arm_is_mux_allowed,
-	.machine_size                  = ARM_MACHINE_SIZE,
-	.mode_float_arithmetic         = NULL,
-	.type_long_double              = NULL,
-	.float_int_overflow            = ir_overflow_min_max,
-};
-
-static void arm_init_backend_params(void)
-{
-	arm_backend_params.byte_order_big_endian = arm_cg_config.big_endian;
-}
-
-static const backend_params *arm_get_libfirm_params(void)
-{
-	return &arm_backend_params;
-}
-
 static void arm_init_asm_constraints(void)
 {
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP,     "Qm");
@@ -303,12 +269,14 @@ static void arm_init(void)
 	                              ARM_MODULO_SHIFT);
 	arm_mode_flags = new_non_arithmetic_mode("arm_flags", 32);
 
-	set_modeP(new_reference_mode("p32", ARM_MACHINE_SIZE, ARM_MODULO_SHIFT));
-
 	arm_init_asm_constraints();
 	arm_register_init();
 	arm_create_opcodes();
-	arm_init_backend_params();
+
+	ir_target.experimental
+		= "the arm backend is highly experimental and unfinished";
+	ir_target.fast_unaligned_memaccess = false;
+	ir_target.float_int_overflow       = ir_overflow_min_max;
 }
 
 static void arm_finish(void)
@@ -322,14 +290,19 @@ static unsigned arm_get_op_estimated_cost(const ir_node *node)
 	return 1;
 }
 
-static arch_isa_if_t const arm_isa_if = {
+arch_isa_if_t const arm_isa_if = {
+	.name                  = "arm",
+	.pointer_size          = 4,
+	.big_endian            = false,
+	.modulo_shift          = ARM_MODULO_SHIFT,
+	.po2_biggest_alignment = 3,
+	.pic_supported         = false,
 	.n_registers           = N_ARM_REGISTERS,
 	.registers             = arm_registers,
 	.n_register_classes    = N_ARM_CLASSES,
 	.register_classes      = arm_reg_classes,
 	.init                  = arm_init,
 	.finish                = arm_finish,
-	.get_params            = arm_get_libfirm_params,
 	.generate_code         = arm_generate_code,
 	.lower_for_target      = arm_lower_for_target,
 	.is_valid_clobber      = be_default_is_valid_clobber,
@@ -369,7 +342,6 @@ static void arm_init_architecture(void)
 	memset(&arm_cg_config, 0, sizeof(arm_cg_config));
 	arm_cg_config.variant    = ARM_VARIANT_6T2;
 	arm_cg_config.fpu        = ARM_FPU_SOFTFLOAT;
-	arm_cg_config.big_endian = false;
 
 	lc_opt_entry_t *be_grp  = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *arm_grp = lc_opt_get_grp(be_grp, "arm");
@@ -382,6 +354,4 @@ void be_init_arch_arm(void)
 	arm_init_transform();
 	arm_init_emitter();
 	arm_init_architecture();
-
-	be_register_isa_if("arm", &arm_isa_if);
 }

@@ -25,6 +25,7 @@
 #include "panic.h"
 #include "pmap.h"
 #include "pset_new.h"
+#include "target_t.h"
 #include "tv.h"
 #include "typerep.h"
 #include "util.h"
@@ -42,7 +43,6 @@ enum {
 static int debug_level = LEVEL_NONE;
 
 static bool   has_cfi_sections = true;
-static size_t machine_size;
 
 /**
  * Usually we simply use the DW_TAG_xxx numbers for our abbrev IDs, but for
@@ -161,7 +161,8 @@ static unsigned get_sleb128_size(long value)
 
 static void emit_ref(const ir_entity *entity)
 {
-	const char *directive = machine_size == 64 ? "\t.quad " : "\t.long ";
+	const char *directive = ir_target_pointer_size() == 8 ? "\t.quad "
+	                                                    : "\t.long ";
 	be_emit_string(directive);
 	be_gas_emit_entity(entity);
 	be_emit_char('\n');
@@ -485,7 +486,7 @@ void be_dwarf_function_before(const ir_entity *entity,
 	}
 	emit_int8(is_extern_entity(entity));
 	emit_ref(entity);
-	const char *directive = machine_size == 64 ? ".quad" : ".long";
+	const char *directive = ir_target_pointer_size() == 8 ? ".quad" : ".long";
 	be_emit_irprintf("\t%s %sfunction_end_%s\n", directive,
 	                 be_gas_get_private_prefix(), get_entity_ld_name(entity));
 	/* frame_base prog */
@@ -870,9 +871,11 @@ void be_dwarf_unit_begin(const char *filename)
 {
 	if (debug_level < LEVEL_BASIC)
 		return;
-	const backend_params *be_params = be_get_backend_param();
-	machine_size = be_params->machine_size;
 	emit_abbrev();
+
+	/* The DWARF emission code only handles 4 or 8 byte pointer sizes. */
+	unsigned const pointer_size = ir_target_pointer_size();
+	assert(pointer_size == 4 || pointer_size == 8);
 
 	be_gas_emit_switch_section(GAS_SECTION_DEBUG_INFO);
 	emit_label("info_section_begin");
@@ -883,7 +886,7 @@ void be_dwarf_unit_begin(const char *filename)
 	emit_label("compile_unit_begin");
 	emit_int16(3);   /* dwarf version */
 	emit_address("abbrev_begin");
-	emit_int8(machine_size / 8); /* pointer size */
+	emit_int8(pointer_size);
 
 	/* compile_unit die */
 	emit_uleb128(abbrev_compile_unit);

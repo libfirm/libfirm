@@ -21,8 +21,6 @@
 #include "timing.h"
 #include "irdump.h"
 
-extern arch_isa_if_t const *isa_if;
-
 typedef enum be_dump_flags_t {
 	DUMP_NONE     = 0,
 	DUMP_INITIAL  = 1 << 0,
@@ -32,13 +30,6 @@ typedef enum be_dump_flags_t {
 	DUMP_FINAL    = 1 << 5,
 	DUMP_BE       = 1 << 6
 } be_dump_flags_t;
-
-typedef enum be_pic_style_t {
-	BE_PIC_NONE,
-	BE_PIC_MACH_O,
-	BE_PIC_ELF_PLT,
-	BE_PIC_ELF_NO_PLT,
-} be_pic_style_t;
 
 /** Backend options */
 struct be_options_t {
@@ -50,7 +41,6 @@ struct be_options_t {
 	bool do_verify;            /**< backend verify option */
 	char ilp_solver[128];      /**< the ilp solver name */
 	bool verbose_asm;          /**< dump verbose assembler */
-	be_pic_style_t pic_style;
 };
 extern be_options_t be_options;
 
@@ -137,11 +127,16 @@ static inline void be_timer_pop(be_timer_id_t id)
  * @param irg     the IR graph to dump
  * @param suffix  the suffix for the dumper
  */
-static inline void be_dump(be_dump_flags_t const mask, ir_graph *const irg, char const *const suffix)
+static inline void be_dump(be_dump_flags_t const mask, ir_graph *const irg,
+                           char const *const suffix)
 {
 	if (be_options.dump_flags & mask)
 		dump_ir_graph(irg, suffix);
 }
+
+void be_initialize(void);
+
+bool be_set_arch(char const *arch);
 
 /**
  * @defgroup beconvenience Convenience Function for driving code generation.

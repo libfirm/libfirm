@@ -31,6 +31,7 @@
 #include "iropt_t.h"
 #include "irprog_t.h"
 #include "panic.h"
+#include "platform_t.h"
 #include "tv_t.h"
 #include "util.h"
 
@@ -345,7 +346,7 @@ void init_lconst_addr(x86_addr_t *addr, ir_entity *entity)
 	assert(entity_has_definition(entity));
 	assert(get_entity_linkage(entity) & IR_LINKAGE_CONSTANT);
 	assert(get_entity_visibility(entity) == ir_visibility_private);
-	x86_immediate_kind_t kind = be_options.pic_style != BE_PIC_NONE
+	x86_immediate_kind_t kind = ir_platform.pic_style != BE_PIC_NONE
 	                          ? X86_IMM_PCREL : X86_IMM_ADDR;
 	*addr = (x86_addr_t) {
 		.immediate = {
@@ -1535,7 +1536,7 @@ static ir_node *gen_Switch(ir_node *const node)
 	int arity = 0;
 	ir_node *in[1];
 	x86_addr_t addr;
-	if (be_options.pic_style != BE_PIC_NONE) {
+	if (ir_platform.pic_style != BE_PIC_NONE) {
 		ir_node *const base
 			= create_picaddr_lea(dbgi, new_block, X86_IMM_PCREL, entity);
 		ir_node *load_in[3];

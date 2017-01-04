@@ -27,6 +27,7 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "panic.h"
+#include "platform_t.h"
 #include <inttypes.h>
 
 static bool omit_fp;
@@ -603,7 +604,7 @@ static void emit_jumptable_target(ir_entity const *const table,
                                   ir_node const *const proj_x)
 {
 	be_emit_cfop_target(proj_x);
-	if (be_options.pic_style != BE_PIC_NONE) {
+	if (ir_platform.pic_style != BE_PIC_NONE) {
 		be_emit_char('-');
 		be_gas_emit_entity(table);
 	}
@@ -614,8 +615,8 @@ static void emit_amd64_jmp_switch(const ir_node *node)
 	const amd64_switch_jmp_attr_t *attr = get_amd64_switch_jmp_attr_const(node);
 
 	amd64_emitf(node, "jmp %*AM");
-	ir_mode *entry_mode = be_options.pic_style != BE_PIC_NONE ? mode_Iu
-	                                                          : mode_Lu;
+	ir_mode *entry_mode = ir_platform.pic_style != BE_PIC_NONE ? mode_Iu
+	                                                           : mode_Lu;
 	be_emit_jump_table(node, &attr->swtch, entry_mode, emit_jumptable_target);
 }
 

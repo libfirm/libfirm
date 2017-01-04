@@ -25,22 +25,15 @@
 #include "irtools.h"
 #include "lc_opts_enum.h"
 #include "panic.h"
+#include "platform_t.h"
 #include "util.h"
 #include <assert.h>
 #include <ctype.h>
 
-typedef enum object_file_format_t {
-	OBJECT_FILE_FORMAT_ELF,    /**< Executable and Linkable Format (unixes) */
-	OBJECT_FILE_FORMAT_COFF,   /**< Common Object File Format (Windows) */
-	OBJECT_FILE_FORMAT_MACH_O, /**< Mach Object File Format (OS/X) */
-	OBJECT_FILE_FORMAT_LAST = OBJECT_FILE_FORMAT_MACH_O
-} object_file_format_t;
-
 /** by default, we generate assembler code for the Linux gas */
-static object_file_format_t be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
-elf_variant_t               be_gas_elf_variant        = ELF_VARIANT_NORMAL;
-bool                        be_gas_emit_types         = true;
-char                        be_gas_elf_type_char      = '@';
+elf_variant_t          be_gas_elf_variant   = ELF_VARIANT_NORMAL;
+bool                   be_gas_emit_types    = true;
+char                   be_gas_elf_type_char = '@';
 
 static be_gas_section_t current_section = (be_gas_section_t) -1;
 static pmap            *block_numbers;
@@ -48,7 +41,7 @@ static unsigned         next_block_nr;
 
 static bool is_macho(void)
 {
-	return be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O;
+	return ir_platform.object_format == OBJECT_FORMAT_MACH_O;
 }
 
 static void emit_section_macho(be_gas_section_t const section)
@@ -244,7 +237,7 @@ static void emit_section_elf_coff(be_gas_section_t const section, ir_entity cons
 		be_emit_char('G');
 
 	/* section type */
-	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_COFF)
+	if (ir_platform.object_format != OBJECT_FORMAT_PE_COFF)
 		be_emit_irprintf("\",%c%s", be_gas_elf_type_char, info->type);
 
 	if (flags & GAS_SECTION_FLAG_COMDAT) {
@@ -470,7 +463,7 @@ static be_gas_section_t determine_basic_section(const ir_entity *entity)
 		    && entity_is_string_const(entity, true))
 			return GAS_SECTION_CSTRING;
 
-		if (be_options.pic_style != BE_PIC_NONE) {
+		if (ir_platform.pic_style != BE_PIC_NONE) {
 			ir_initializer_t const *const init = get_entity_initializer(entity);
 			switch (classify_initializer_relocs(init)) {
 			case ONLY_LOCAL_RELOCATIONS: return GAS_SECTION_REL_RO_LOCAL;
@@ -547,24 +540,24 @@ static const char *get_visibility_directive(const ir_entity *entity,
 	switch (get_entity_visibility(entity)) {
 	case ir_visibility_external: return NULL;
 	case ir_visibility_external_private: {
-		switch (be_gas_object_file_format) {
-		case OBJECT_FILE_FORMAT_MACH_O:
+		switch (ir_platform.object_format) {
+		case OBJECT_FORMAT_MACH_O:
 			*output_global = false;
 			return ".private_extern";
-		case OBJECT_FILE_FORMAT_ELF:
+		case OBJECT_FORMAT_ELF:
 			return ".hidden";
-		case OBJECT_FILE_FORMAT_COFF:
+		case OBJECT_FORMAT_PE_COFF:
 			panic("ir_visibility_external_private not supported for COFF");
 		}
 		panic("invalid object file format");
 	}
 	case ir_visibility_external_protected: {
-		switch (be_gas_object_file_format) {
-		case OBJECT_FILE_FORMAT_MACH_O:
+		switch (ir_platform.object_format) {
+		case OBJECT_FORMAT_MACH_O:
 			return NULL;
-		case OBJECT_FILE_FORMAT_ELF:
+		case OBJECT_FORMAT_ELF:
 			return ".protected";
-		case OBJECT_FILE_FORMAT_COFF:
+		case OBJECT_FORMAT_PE_COFF:
 			panic("ir_visibility_external_protected not supported for COFF");
 		}
 		panic("invalid object file format");
@@ -625,21 +618,21 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment,
 	}
 	emit_visibility(entity, false);
 
-	switch (be_gas_object_file_format) {
-	case OBJECT_FILE_FORMAT_ELF:
+	switch (ir_platform.object_format) {
+	case OBJECT_FORMAT_ELF:
 		be_emit_cstring("\t.type\t");
 		be_gas_emit_entity(entity);
 		be_emit_irprintf(", %cfunction\n", be_gas_elf_type_char);
 		be_emit_write_line();
 		break;
-	case OBJECT_FILE_FORMAT_COFF:
+	case OBJECT_FORMAT_PE_COFF:
 		be_emit_cstring("\t.def\t");
 		be_gas_emit_entity(entity);
 		char const vis = get_entity_visibility(entity) == ir_visibility_local ? '3' : '2';
 		be_emit_irprintf(";\t.scl\t%c;\t.type\t32;\t.endef\n", vis);
 		be_emit_write_line();
 		break;
-	case OBJECT_FILE_FORMAT_MACH_O:
+	case OBJECT_FORMAT_MACH_O:
 		if (section == (GAS_SECTION_TEXT | GAS_SECTION_FLAG_COMDAT))
 			emit_symbol_directive(".weak_definition", entity);
 		break;
@@ -655,7 +648,7 @@ void be_gas_emit_function_epilog(ir_entity const *const entity)
 {
 	be_dwarf_function_end();
 
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF) {
+	if (ir_platform.object_format == OBJECT_FORMAT_ELF) {
 		be_emit_cstring("\t.size\t");
 		be_gas_emit_entity(entity);
 		be_emit_cstring(", .-");
@@ -954,7 +947,7 @@ static void emit_bitfield(normal_or_bitfield *vals, unsigned offset_bits,
 	int    value_len  = get_type_size(type);
 	size_t bit_offset = 0;
 	size_t end        = bitfield_size;
-	bool   big_endian = be_get_backend_param()->byte_order_big_endian;
+	bool   big_endian = ir_target_big_endian();
 	while (bit_offset < end) {
 		size_t src_offset      = bit_offset / BITS_PER_BYTE;
 		size_t src_offset_bits = bit_offset % BITS_PER_BYTE;
@@ -1078,7 +1071,7 @@ static void emit_tarval_data(ir_type *type, ir_tarval *tv)
 	size_t size = get_type_size(type);
 	if (size > 8) {
 		assert(size % 4 == 0);
-		if (be_get_backend_param()->byte_order_big_endian) {
+		if (ir_target_big_endian()) {
 			for (unsigned i = size; i != 0;) {
 				emit_size_type(4);
 				emit_tv(tv, i -= 4, 4);
@@ -1212,15 +1205,15 @@ static void emit_common(const ir_entity *entity, unsigned long size,
 {
 	unsigned const alignment = get_effective_entity_alignment(entity);
 
-	switch (be_gas_object_file_format) {
-	case OBJECT_FILE_FORMAT_MACH_O:
+	switch (ir_platform.object_format) {
+	case OBJECT_FORMAT_MACH_O:
 		assert(!is_local);
 		be_emit_cstring("\t.comm ");
 		be_gas_emit_entity(entity);
 		be_emit_irprintf(",%lu,%u\n", size, log2_floor(alignment));
 		be_emit_write_line();
 		return;
-	case OBJECT_FILE_FORMAT_ELF:
+	case OBJECT_FORMAT_ELF:
 		if (is_local)
 			emit_symbol_directive(".local", entity);
 		be_emit_cstring("\t.comm ");
@@ -1228,7 +1221,7 @@ static void emit_common(const ir_entity *entity, unsigned long size,
 		be_emit_irprintf(",%lu,%u\n", size, alignment);
 		be_emit_write_line();
 		return;
-	case OBJECT_FILE_FORMAT_COFF:
+	case OBJECT_FORMAT_PE_COFF:
 		be_emit_string(is_local ? "\t.lcomm " : "\t.comm ");
 		be_gas_emit_entity(entity);
 		be_emit_irprintf(",%lu # %u\n", size, alignment);
@@ -1273,7 +1266,7 @@ static void emit_indirect_symbol(const ir_entity *entity,
 
 static void emit_alias(const ir_entity *entity)
 {
-	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_ELF)
+	if (ir_platform.object_format != OBJECT_FORMAT_ELF)
 		panic("alias entities only supported for ELF");
 
 	be_emit_cstring("\t.set ");
@@ -1428,14 +1421,14 @@ static void emit_global(be_main_env_t const *const main_env,
 		case ir_visibility_local:
 		case ir_visibility_private:
 			if (!(linkage & IR_LINKAGE_CONSTANT)) {
-				switch (be_gas_object_file_format) {
-				case OBJECT_FILE_FORMAT_ELF:
-				case OBJECT_FILE_FORMAT_COFF:
+				switch (ir_platform.object_format) {
+				case OBJECT_FORMAT_ELF:
+				case OBJECT_FORMAT_PE_COFF:
 					emit_visibility(entity, true);
 					emit_common(entity, size, true);
 					return;
 
-				case OBJECT_FILE_FORMAT_MACH_O:
+				case OBJECT_FORMAT_MACH_O:
 					emit_visibility(entity, false);
 					emit_zerofill(entity, "__DATA,__bss", size);
 					return;
@@ -1463,7 +1456,7 @@ static void emit_global(be_main_env_t const *const main_env,
 		panic("alignment not a power of 2");
 	if (alignment > 1)
 		emit_align(alignment);
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF
+	if (ir_platform.object_format == OBJECT_FORMAT_ELF
 		&& be_gas_emit_types && visibility != ir_visibility_private) {
 		be_emit_cstring("\t.type\t");
 		be_gas_emit_entity(entity);
@@ -1632,7 +1625,7 @@ static void emit_global_asms(void)
 
 bool be_gas_produces_dwarf_line_info(void)
 {
-	return be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF;
+	return ir_platform.object_format == OBJECT_FORMAT_ELF;
 }
 
 void be_gas_begin_compilation_unit(const be_main_env_t *env)
@@ -1672,25 +1665,4 @@ void be_emit_finish_line_gas(const ir_node *node)
 		be_emit_char('\n');
 	}
 	be_emit_write_line();
-}
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_gas)
-void be_init_gas(void)
-{
-	static const lc_opt_enum_int_items_t objectformat_items[] = {
-		{ "elf",    OBJECT_FILE_FORMAT_ELF    },
-		{ "coff",   OBJECT_FILE_FORMAT_COFF   },
-		{ "mach-o", OBJECT_FILE_FORMAT_MACH_O },
-		{ NULL,     0 },
-	};
-	static lc_opt_enum_int_var_t format_var = {
-		(int*)&be_gas_object_file_format, objectformat_items
-	};
-	static const lc_opt_table_entry_t be_gas_options[] = {
-		LC_OPT_ENT_ENUM_INT("objectformat", "object file format", &format_var),
-		LC_OPT_LAST
-	};
-
-	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
-	lc_opt_add_table(be_grp, be_gas_options);
 }

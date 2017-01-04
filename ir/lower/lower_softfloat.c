@@ -10,7 +10,6 @@
  */
 #include "lower_softfloat.h"
 
-#include "be.h"
 #include "dbginfo_t.h"
 #include "ircons_t.h"
 #include "iredges_t.h"
@@ -25,6 +24,7 @@
 #include "lowering.h"
 #include "panic.h"
 #include "pmap.h"
+#include "target_t.h"
 #include "tv_t.h"
 #include "type_t.h"
 #include <stdbool.h>
@@ -269,7 +269,7 @@ static ir_node *create_softfloat_address(const ir_node *n, const char *name)
 		new_id_fmt("__%s%s%s%s",   name, first_param, second_param, result);
 
 	ir_graph  *const irg = get_irn_irg(n);
-	ir_entity *const ent = create_compilerlib_entity(id, method);
+	ir_entity *const ent = create_compilerlib_entity(get_id_str(id), method);
 	return new_r_Address(irg, ent);
 }
 
@@ -507,8 +507,7 @@ static bool lower_Cmp(ir_node *const n)
 
 		ir_node *const mux = new_rd_Mux(dbgi, block, cmp, result, zero);
 
-		arch_allow_ifconv_func const allow_ifconv
-			= be_get_backend_param()->allow_ifconv;
+		arch_allow_ifconv_func const allow_ifconv = ir_target.allow_ifconv;
 		if (!allow_ifconv(cmp, result, zero))
 			ir_nodeset_insert(&created_mux_nodes, mux);
 

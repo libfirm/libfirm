@@ -11,7 +11,6 @@
 #include "lower_builtins.h"
 
 #include "adt/pmap.h"
-#include "be.h"
 #include "ircons_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"
@@ -19,6 +18,7 @@
 #include "iroptimize.h"
 #include "irprog_t.h"
 #include "panic.h"
+#include "target_t.h"
 #include "util.h"
 #include <stdbool.h>
 #include <stdlib.h>
@@ -73,9 +73,8 @@ static void widen_builtin(ir_node *node)
 	ir_type *arg1 = get_method_param_type(mtp, 0);
 
 	// Nothing to do, if argument size is at least machine size.
-	if (8 * get_type_size(arg1) >= be_get_machine_size()) {
+	if (get_type_size(arg1) >= ir_target_pointer_size())
 		return;
-	}
 
 	// Only touch builtins with no 32-bit version.
 	ir_builtin_kind kind = get_Builtin_kind(node);
@@ -113,7 +112,8 @@ static void replace_with_call(ir_node *node)
 	ir_type        *const arg1     = get_method_param_type(mtp, 0);
 	char     const *const machmode = get_gcc_machmode(arg1);
 	ident          *const id       = new_id_fmt("__%s%s2", name, machmode);
-	ir_entity      *const entity   = create_compilerlib_entity(id, mtp);
+	ir_entity      *const entity
+		= create_compilerlib_entity(get_id_str(id), mtp);
 
 	dbg_info *const dbgi      = get_irn_dbg_info(node);
 	ir_node  *const block     = get_nodes_block(node);

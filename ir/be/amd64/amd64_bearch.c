@@ -33,12 +33,15 @@
 #include "irgwalk.h"
 #include "iropt_t.h"
 #include "irtools.h"
+#include "isas.h"
 #include "lower_alloc.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lower_mode_b.h"
 #include "lowering.h"
 #include "panic.h"
+#include "platform_t.h"
+#include "target_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -744,32 +747,6 @@ static void amd64_lower_for_target(void)
 	be_after_irp_transform("lower-builtins");
 }
 
-static int amd64_is_mux_allowed(ir_node *sel, ir_node *mux_false,
-                                ir_node *mux_true)
-{
-	/* optimizable by middleend */
-	if (ir_is_optimizable_mux(sel, mux_false, mux_true))
-		return true;
-	return false;
-}
-
-static backend_params amd64_backend_params = {
-	.experimental                  = "the amd64 backend is highly experimental and unfinished (consider the ia32 backend)",
-	.byte_order_big_endian         = false,
-	.pic_supported                 = true,
-	.unaligned_memaccess_supported = true,
-	.modulo_shift                  = 32,
-	.allow_ifconv                  = amd64_is_mux_allowed,
-	.machine_size                  = 64,
-	.mode_float_arithmetic         = NULL,  /* will be set later */
-	.type_long_double              = NULL,  /* will be set later */
-	.float_int_overflow            = ir_overflow_indefinite,
-};
-
-static const backend_params *amd64_get_backend_params(void) {
-	return &amd64_backend_params;
-}
-
 static int amd64_is_valid_clobber(const char *clobber)
 {
 	return x86_parse_clobber(amd64_additional_clobber_names, clobber) != NULL;
@@ -777,17 +754,12 @@ static int amd64_is_valid_clobber(const char *clobber)
 
 static void amd64_init_types(void)
 {
-	ir_mode *const ptr_mode = new_reference_mode("p64", 64, 64);
-	set_modeP(ptr_mode);
-
 	/* use an int128 mode for xmm registers for now, so that firm allows us to
 	 * create constants with the xmm mode... */
 	amd64_mode_xmm = new_int_mode("x86_xmm", 128, 0, 0);
+	x86_init_x87_type();
 
-	ir_type *const type_f80 = x86_init_x87_type();
-	amd64_backend_params.type_long_double = type_f80;
-
-	amd64_backend_params.va_list_type = amd64_build_va_list_type();
+	ir_platform.va_list_type = amd64_build_va_list_type();
 }
 
 static void amd64_init(void)
@@ -797,6 +769,10 @@ static void amd64_init(void)
 	amd64_create_opcodes();
 	amd64_cconv_init();
 	x86_set_be_asm_constraint_support(&amd64_asm_constraints);
+
+	ir_target.experimental = "the amd64 backend is experimental and unfinished (consider the ia32 backend)";
+	ir_target.fast_unaligned_memaccess = true;
+	ir_target.float_int_overflow       = ir_overflow_indefinite;
 }
 
 static unsigned amd64_get_op_estimated_cost(const ir_node *node)
@@ -805,14 +781,19 @@ static unsigned amd64_get_op_estimated_cost(const ir_node *node)
 	return 1;
 }
 
-static arch_isa_if_t const amd64_isa_if = {
+arch_isa_if_t const amd64_isa_if = {
+	.name                  = "amd64",
+	.pointer_size          = 8,
+	.modulo_shift          = 32,
+	.big_endian            = false,
+	.po2_biggest_alignment = 4,
+	.pic_supported         = true,
 	.n_registers           = N_AMD64_REGISTERS,
 	.registers             = amd64_registers,
 	.n_register_classes    = N_AMD64_CLASSES,
 	.register_classes      = amd64_reg_classes,
 	.init                  = amd64_init,
 	.finish                = amd64_finish,
-	.get_params            = amd64_get_backend_params,
 	.generate_code         = amd64_generate_code,
 	.lower_for_target      = amd64_lower_for_target,
 	.is_valid_clobber      = amd64_is_valid_clobber,
@@ -823,11 +804,9 @@ static arch_isa_if_t const amd64_isa_if = {
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)
 void be_init_arch_amd64(void)
 {
-	be_register_isa_if("amd64", &amd64_isa_if);
 	FIRM_DBG_REGISTER(dbg, "firm.be.amd64.cg");
 
 	static const lc_opt_table_entry_t options[] = {
-		LC_OPT_ENT_BOOL("x64abi",      "Use x64 ABI (otherwise system V)", &amd64_use_x64_abi),
 		LC_OPT_ENT_BOOL("no-red-zone", "gcc compatibility",                &amd64_use_red_zone),
 		LC_OPT_LAST
 	};

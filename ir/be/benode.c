@@ -36,6 +36,7 @@
 #include "pmap.h"
 #include "raw_bitset.h"
 #include "set.h"
+#include "target_t.h"
 #include "util.h"
 #include <stdlib.h>
 
@@ -474,7 +475,7 @@ ir_node *be_new_Start(ir_graph *const irg, be_start_out const *const outs)
 {
 	ir_node *const block  = get_irg_start_block(irg);
 	ir_node *const start  = new_ir_node(NULL, irg, block, op_be_Start, mode_T, 0, NULL);
-	unsigned const n_regs = isa_if->n_registers;
+	unsigned const n_regs = ir_target.isa->n_registers;
 
 	/* Count the number of outputs. */
 	unsigned k = 1; /* +1 for memory */
@@ -488,7 +489,7 @@ ir_node *be_new_Start(ir_graph *const irg, be_start_out const *const outs)
 	/* Set out requirements and registers. */
 	unsigned l = 0;
 	arch_set_irn_register_req_out(start, l++, arch_memory_req);
-	arch_register_t const *const regs = isa_if->registers;
+	arch_register_t const *const regs = ir_target.isa->registers;
 	for (unsigned i = 0; i != n_regs; ++i) {
 		if (outs[i] != BE_START_NO) {
 			arch_register_t     const *const reg    = &regs[i];

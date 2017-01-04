@@ -28,6 +28,7 @@
 #include "iropt_t.h"
 #include "irprog_t.h"
 #include "irtools.h"
+#include "isas.h"
 #include "lc_opts_enum.h"
 #include "lower_alloc.h"
 #include "lower_builtins.h"
@@ -35,10 +36,12 @@
 #include "lower_mode_b.h"
 #include "lower_softfloat.h"
 #include "lowering.h"
+#include "platform_t.h"
 #include "sparc_cconv.h"
 #include "sparc_emitter.h"
 #include "sparc_new_nodes.h"
 #include "sparc_transform.h"
+#include "target_t.h"
 #include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -302,11 +305,11 @@ static void sparc_create_runtime_entities(void)
 
 	ir_type *const int_tp = get_type_for_mode(mode_Is);
 	ir_type *const mod_tp = make_mod_type(int_tp);
-	rem = create_compilerlib_entity(new_id_from_str(".rem"), mod_tp);
+	rem = create_compilerlib_entity(".rem", mod_tp);
 
 	ir_type *const uint_tp = get_type_for_mode(mode_Iu);
 	ir_type *const umod_tp = make_mod_type(uint_tp);
-	urem = create_compilerlib_entity(new_id_from_str(".urem"), umod_tp);
+	urem = create_compilerlib_entity(".urem", umod_tp);
 }
 
 static void sparc_handle_intrinsics(ir_graph *irg)
@@ -366,13 +369,17 @@ static void sparc_setup_cg_config(void)
 
 static void sparc_init(void)
 {
-	ir_mode *const ptr_mode = new_reference_mode("p32", 32, 32);
-	set_modeP(ptr_mode);
 	sparc_init_asm_constraints();
 	sparc_register_init();
 	sparc_create_opcodes();
 	sparc_cconv_init();
 	sparc_setup_cg_config();
+
+	sparc_mode_Q
+		= new_float_mode("Q", irma_ieee754, 15, 112, ir_overflow_min_max);
+
+	ir_target.float_int_overflow = ir_overflow_min_max;
+	ir_platform_set_va_list_type_pointer();
 }
 
 static void sparc_finish(void)
@@ -534,41 +541,6 @@ static void sparc_lower_for_target(void)
 	}
 }
 
-static int sparc_is_mux_allowed(ir_node *sel, ir_node *mux_false,
-                                ir_node *mux_true)
-{
-	return ir_is_optimizable_mux(sel, mux_false, mux_true);
-}
-
-/**
- * Returns the libFirm configuration parameter for this backend.
- */
-static const backend_params *sparc_get_backend_params(void)
-{
-	static backend_params p = {
-		.byte_order_big_endian          = true,
-		.pic_supported                  = false,
-		.unaligned_memaccess_supported  = false,
-		.thread_local_storage_supported = true,
-		.modulo_shift                   = 32,
-		.allow_ifconv                   = sparc_is_mux_allowed,
-		.machine_size                   = 32,
-		.mode_float_arithmetic          = NULL,  /* will be set later */
-		.type_long_double               = NULL,  /* will be set later */
-		.float_int_overflow             = ir_overflow_min_max,
-	};
-
-	be_set_va_list_type_pointer(&p);
-
-	sparc_mode_Q
-		= new_float_mode("Q", irma_ieee754, 15, 112, ir_overflow_min_max);
-	ir_type *type_long_double = get_type_for_mode(sparc_mode_Q);
-	set_type_alignment(type_long_double, 8);
-	set_type_size(type_long_double, 16);
-	p.type_long_double = type_long_double;
-	return &p;
-}
-
 static unsigned sparc_get_op_estimated_cost(const ir_node *node)
 {
 	/* TODO: refine */
@@ -577,7 +549,13 @@ static unsigned sparc_get_op_estimated_cost(const ir_node *node)
 	return 1;
 }
 
-static arch_isa_if_t const sparc_isa_if = {
+arch_isa_if_t const sparc_isa_if = {
+	.name                  = "sparc",
+	.pointer_size          = 4,
+	.big_endian            = true,
+	.modulo_shift          = 32,
+	.po2_biggest_alignment = 3,
+	.pic_supported         = false,
 	.n_registers           = N_SPARC_REGISTERS,
 	.registers             = sparc_registers,
 	.n_register_classes    = N_SPARC_CLASSES,
@@ -585,7 +563,6 @@ static arch_isa_if_t const sparc_isa_if = {
 	.init                  = sparc_init,
 	.finish                = sparc_finish,
 	.generate_code         = sparc_generate_code,
-	.get_params            = sparc_get_backend_params,
 	.lower_for_target      = sparc_lower_for_target,
 	.is_valid_clobber      = be_default_is_valid_clobber,
 	.handle_intrinsics     = sparc_handle_intrinsics,
@@ -600,7 +577,6 @@ void be_init_arch_sparc(void)
 
 	lc_opt_add_table(sparc_grp, sparc_options);
 
-	be_register_isa_if("sparc", &sparc_isa_if);
 	FIRM_DBG_REGISTER(dbg, "firm.be.sparc.cg");
 	sparc_init_transform();
 	sparc_init_emitter();

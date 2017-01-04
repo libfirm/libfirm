@@ -13,6 +13,7 @@
 #ifndef FIRM_BE_BELOWER_H
 #define FIRM_BE_BELOWER_H
 
+#include <stdbool.h>
 #include "firm_types.h"
 #include <stdbool.h>
 

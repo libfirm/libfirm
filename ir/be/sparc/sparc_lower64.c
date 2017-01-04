@@ -117,8 +117,7 @@ static ir_entity *create_64_intrinsic_fkt(ir_type *method, const ir_op *op,
 		panic("cannot lower unexpected 64bit operation %s", get_op_name(op));
 	}
 
-	ident *const id = new_id_from_str(name);
-	return create_compilerlib_entity(id, method);
+	return create_compilerlib_entity(name, method);
 }
 
 void sparc_lower_64bit(void)

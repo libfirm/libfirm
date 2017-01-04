@@ -48,6 +48,7 @@
 #include "lc_opts_enum.h"
 #include "obst.h"
 #include "statev_t.h"
+#include "target_t.h"
 #include <stdlib.h>
 #include <time.h>
 
@@ -261,8 +262,9 @@ static void be_ra_chordal_main(ir_graph *irg, const regalloc_if_t *regif)
 	/* use one of the generic spiller */
 
 	/* Perform the following for each register class. */
-	arch_register_class_t const *const reg_classes = isa_if->register_classes;
-	for (int j = 0, m = isa_if->n_register_classes; j < m; ++j) {
+	arch_register_class_t const *const reg_classes
+		= ir_target.isa->register_classes;
+	for (int j = 0, m = ir_target.isa->n_register_classes; j < m; ++j) {
 		arch_register_class_t const *const cls = &reg_classes[j];
 		if (cls->manual_ra)
 			continue;

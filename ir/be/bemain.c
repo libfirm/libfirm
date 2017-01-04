@@ -46,6 +46,7 @@
 #include "lc_opts_enum.h"
 #include "obst.h"
 #include "statev.h"
+#include "target_t.h"
 #include "util.h"
 #include <stdio.h>
 
@@ -62,11 +63,7 @@ be_options_t be_options = {
 	.do_verify            = true,
 	.ilp_solver           = "",
 	.verbose_asm          = true,
-	.pic_style            = BE_PIC_NONE,
 };
-
-/* back end instruction set architecture to use */
-arch_isa_if_t const *isa_if = NULL;
 
 /* possible dumping options */
 static const lc_opt_enum_mask_items_t dump_items[] = {
@@ -81,17 +78,6 @@ static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ NULL,         0 }
 };
 
-static const lc_opt_enum_int_items_t pic_style_items[] = {
-	{ "none",      BE_PIC_NONE       },
-	{ "mach-o",    BE_PIC_MACH_O     },
-	{ "elf",       BE_PIC_ELF_PLT    },
-	{ "elf-noplt", BE_PIC_ELF_NO_PLT },
-	{ NULL,        BE_PIC_NONE       },
-};
-static lc_opt_enum_int_var_t pic_style_var = {
-	(int*)&be_options.pic_style, pic_style_items
-};
-
 static lc_opt_enum_mask_var_t dump_var = {
 	&be_options.dump_flags, dump_items
 };
@@ -99,7 +85,6 @@ static lc_opt_enum_mask_var_t dump_var = {
 static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_MASK("dump",       "dump irg on several occasions",                       &dump_var),
 	LC_OPT_ENT_BOOL     ("omitfp",     "omit frame pointer",                                  &be_options.omit_fp),
-	LC_OPT_ENT_ENUM_INT ("pic",        "Generate position independent code",                  &pic_style_var),
 	LC_OPT_ENT_BOOL     ("verify",     "verify the backend irg",                              &be_options.do_verify),
 	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profilegenerate", "instrument the code for execution count profiling", &be_options.opt_profile_generate),
@@ -109,9 +94,6 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_STR("ilp.solver", "the ilp solver name", &be_options.ilp_solver),
 	LC_OPT_LAST
 };
-
-static be_module_list_entry_t *isa_ifs         = NULL;
-static bool                    isa_initialized = false;
 
 asm_constraint_flags_t be_asm_constraint_flags[256];
 
@@ -143,29 +125,36 @@ static void be_init_default_asm_constraint_flags(void)
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_NONE, "\t\n\r !*?");
 }
 
+bool be_set_arch(char const *const arch)
+{
+	/* TODO: generalize to all backends */
+	bool res = false;
+	char buf[64];
+	snprintf(buf, sizeof(buf), "ia32-arch=%s", arch);
+	res |= ir_target_option(buf);
+	snprintf(buf, sizeof(buf), "sparc-cpu=%s", arch);
+	res |= ir_target_option(buf);
+
+	return res;
+}
+
 void be_initialize(void)
 {
-	if (isa_initialized)
-		return;
+	assert(!ir_target.isa_initialized);
 	be_init_default_asm_constraint_flags();
-	isa_if->init();
-
 	obstack_init(&obst);
-	isa_initialized = true;
 }
 
 static void finish_isa(void)
 {
-	if (isa_initialized) {
-		isa_if->finish();
-		isa_initialized = false;
-		obstack_free(&obst, NULL);
-	}
+	assert(ir_target.isa_initialized);
+	ir_target.isa->finish();
+	obstack_free(&obst, NULL);
 }
 
 asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 {
-	be_initialize();
+	assert(ir_target.isa_initialized);
 
 	asm_constraint_flags_t flags;
 	char            const *c = constraint;
@@ -195,7 +184,7 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 
 int be_is_valid_clobber(const char *clobber)
 {
-	be_initialize();
+	assert(ir_target.isa_initialized);
 
 	/* memory is a valid clobber. (the frontend has to detect this case too,
 	 * because it has to add memory edges to the asm) */
@@ -205,15 +194,7 @@ int be_is_valid_clobber(const char *clobber)
 	if (streq(clobber, "cc"))
 		return 1;
 
-	return isa_if->is_valid_clobber(clobber);
-}
-
-void be_register_isa_if(const char *name, const arch_isa_if_t *isa)
-{
-	if (isa_if == NULL)
-		isa_if = isa;
-
-	be_add_module_to_list(&isa_ifs, name, (void*) isa);
+	return ir_target.isa->is_valid_clobber(clobber);
 }
 
 static void be_opt_register(void)
@@ -225,24 +206,6 @@ static void be_opt_register(void)
 
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_add_table(be_grp, be_main_options);
-
-	be_add_module_list_opt(be_grp, "isa", "the instruction set architecture",
-	                       &isa_ifs, (void**) &isa_if);
-}
-
-/* Parse one argument. */
-int be_parse_arg(const char *arg)
-{
-	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
-	if (streq(arg, "help") || streq(arg, "?")) {
-		lc_opt_print_help_for_entry(be_grp, '-', stdout);
-		return -1;
-	}
-
-	/* backend args may not have an effect anymore after the backend
-	 * has been initialized */
-	assert(!isa_initialized);
-	return lc_opt_from_single_arg(be_grp, arg);
 }
 
 void be_check_verify_result(bool fine, ir_graph *irg)
@@ -406,8 +369,8 @@ void be_begin(FILE *file_handle, const char *cup_name)
 		if (get_entity_linkage(entity) & IR_LINKAGE_NO_CODEGEN)
 			continue;
 		initialize_birg(&birgs[num_birgs++], irg, &env);
-		if (isa_if->handle_intrinsics)
-			isa_if->handle_intrinsics(irg);
+		if (ir_target.isa->handle_intrinsics)
+			ir_target.isa->handle_intrinsics(irg);
 		be_dump(DUMP_INITIAL, irg, "prepared");
 	}
 
@@ -425,38 +388,6 @@ void firm_be_finish(void)
 {
 	finish_isa();
 	be_quit_modules();
-}
-
-/* Returns the backend parameter */
-const backend_params *be_get_backend_param(void)
-{
-	be_initialize();
-	return isa_if->get_params();
-}
-
-int be_is_big_endian(void)
-{
-	return be_get_backend_param()->byte_order_big_endian;
-}
-
-unsigned be_get_machine_size(void)
-{
-	return be_get_backend_param()->machine_size;
-}
-
-ir_mode *be_get_mode_float_arithmetic(void)
-{
-	return be_get_backend_param()->mode_float_arithmetic;
-}
-
-ir_type *be_get_type_long_double(void)
-{
-	return be_get_backend_param()->type_long_double;
-}
-
-float_int_conversion_overflow_style_t be_get_float_int_overflow(void)
-{
-	return be_get_backend_param()->float_int_overflow;
 }
 
 int be_timing;
@@ -516,9 +447,8 @@ void be_after_irp_transform(const char *name)
 
 void be_lower_for_target(void)
 {
-	be_initialize();
-
-	isa_if->lower_for_target();
+	assert(ir_target.isa_initialized);
+	ir_target.isa->lower_for_target();
 	/* set the phase to low */
 	foreach_irp_irg_r(i, irg) {
 		assert(!irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_TARGET_LOWERED));
@@ -649,14 +579,13 @@ void be_finish(void)
 void be_main(FILE *file_handle, const char *cup_name)
 {
 	/* Let the target control how the codegeneration works. */
-	isa_if->generate_code(file_handle, cup_name);
+	ir_target.isa->generate_code(file_handle, cup_name);
 }
 
 ir_jit_function_t *be_jit_compile(ir_jit_segment_t *const segment,
                                   ir_graph *const irg)
 {
-	be_initialize();
-	if (isa_if->jit_compile == NULL)
+	if (ir_target.isa->jit_compile == NULL)
 		return NULL;
 
 	obstack_init(&obst);
@@ -666,14 +595,14 @@ ir_jit_function_t *be_jit_compile(ir_jit_segment_t *const segment,
 		return NULL;
 	be_irg_t *const birg = OALLOCZ(&obst, be_irg_t);
 	initialize_birg(birg, irg, &env);
-	if (isa_if->handle_intrinsics)
-		isa_if->handle_intrinsics(irg);
+	if (ir_target.isa->handle_intrinsics)
+		ir_target.isa->handle_intrinsics(irg);
 	be_dump(DUMP_INITIAL, irg, "prepared");
 
-	return isa_if->jit_compile(segment, irg);
+	return ir_target.isa->jit_compile(segment, irg);
 }
 
 void be_emit_function(char *const buffer, ir_jit_function_t *const function)
 {
-	isa_if->emit_function(buffer, function);
+	ir_target.isa->emit_function(buffer, function);
 }
