@@ -16,6 +16,7 @@
 #include "be_types.h"
 #include "bedwarf.h"
 #include "benode.h"
+#include "target_t.h"
 
 typedef enum {
 	GAS_SECTION_TEXT,            /**< text section - program code */
@@ -137,5 +138,7 @@ bool be_gas_produces_dwarf_line_info(void);
  * @param node  the node to get the debug info from
  */
 void be_emit_finish_line_gas(const ir_node *node);
+
+void be_set_object_format(object_format_t format);
 
 #endif

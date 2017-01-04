@@ -6,6 +6,7 @@
 #include "mips_bearch_t.h"
 
 #include "be_t.h"
+#include "bearchs.h"
 #include "beirg.h"
 #include "bemodule.h"
 #include "bera.h"
@@ -50,12 +51,9 @@ static ir_settings_arch_dep_t const mips_arch_dep = {
 
 static backend_params mips_backend_params = {
 	.experimental                  = "the MIPS backend is highly experimental and unfinished",
-	.byte_order_big_endian         = true,
 	.pic_supported                 = false,
 	.unaligned_memaccess_supported = false,
-	.modulo_shift                  = MIPS_MACHINE_SIZE,
 	.allow_ifconv                  = &mips_is_mux_allowed,
-	.machine_size                  = MIPS_MACHINE_SIZE,
 	.mode_float_arithmetic         = NULL,  /* will be set later */ // TODO
 	.type_long_double              = NULL,  /* will be set later */ // TODO
 	.float_int_overflow            = ir_overflow_indefinite,
@@ -71,9 +69,6 @@ static void mips_init_asm_constraints(void)
 
 static void mips_init(void)
 {
-	ir_mode *const ptr_mode = new_reference_mode("p32", MIPS_MACHINE_SIZE, MIPS_MACHINE_SIZE);
-	set_modeP(ptr_mode);
-
 	mips_init_asm_constraints();
 	mips_create_opcodes();
 	mips_register_init();
@@ -308,7 +303,12 @@ static unsigned mips_get_op_estimated_cost(ir_node const *const node)
 	return 1;
 }
 
-static arch_isa_if_t const mips_isa_if = {
+arch_isa_if_t const mips_isa_if = {
+	.name                  = "mips",
+	.pointer_size          = 4,
+	.modulo_shift          = 32,
+	.big_endian            = true,
+	.po2_biggest_alignment = 3,
 	.n_registers           = N_MIPS_REGISTERS,
 	.registers             = mips_registers,
 	.n_register_classes    = N_MIPS_CLASSES,
@@ -325,5 +325,4 @@ static arch_isa_if_t const mips_isa_if = {
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_mips)
 void be_init_arch_mips(void)
 {
-	be_register_isa_if("mips", &mips_isa_if);
 }

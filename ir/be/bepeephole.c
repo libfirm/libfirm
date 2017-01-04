@@ -23,6 +23,7 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "panic.h"
+#include "target_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -161,7 +162,7 @@ static void process_block(ir_node *block, void *data)
 	(void)data;
 
 	/* construct initial register assignment */
-	memset(register_values, 0, sizeof(ir_node*) * isa_if->n_registers);
+	memset(register_values, 0, sizeof(ir_node*) * ir_target.isa->n_registers);
 
 	DB((dbg, LEVEL_1, "\nProcessing block %+F (from end)\n", block));
 	be_lv_foreach(lv, block, be_lv_state_end, node) {
@@ -405,7 +406,7 @@ void be_peephole_opt(ir_graph *irg)
 
 	lv = be_get_irg_liveness(irg);
 
-	register_values = XMALLOCN(ir_node*, isa_if->n_registers);
+	register_values = XMALLOCN(ir_node*, ir_target.isa->n_registers);
 
 	irg_block_walk_graph(irg, process_block, NULL, NULL);
 

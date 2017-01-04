@@ -24,6 +24,8 @@
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "set.h"
+#include "target_t.h"
+#include <stdbool.h>
 #include <stdbool.h>
 
 typedef struct be_verify_register_pressure_env_t_ {
@@ -392,7 +394,7 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 {
 	be_verify_reg_alloc_env_t *const env = (be_verify_reg_alloc_env_t*)data;
 
-	unsigned        const n_regs    = isa_if->n_registers;
+	unsigned        const n_regs    = ir_target.isa->n_registers;
 	ir_node const **const registers = ALLOCANZ(ir_node const*, n_regs);
 
 	be_lv_foreach(env->lv, block, be_lv_state_end, lv_node) {

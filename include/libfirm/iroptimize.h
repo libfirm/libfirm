@@ -510,20 +510,6 @@ FIRM_API int value_not_null(const ir_node *n, const ir_node **confirm);
 FIRM_API ir_tarval *computed_value_Cmp_Confirm(ir_node *left, ir_node *right,
                                                ir_relation relation);
 
-/** Type of callbacks for creating entities of the compiler library */
-typedef ident *(*compilerlib_name_mangle_t)(ident *id, ir_type *mt);
-
-/**
- * Sets the compilerlib entity creation callback that is used to create
- * compilerlib function entities.
- *
- * @param cb  the new compilerlib entity creation callback
- */
-FIRM_API void set_compilerlib_name_mangle(compilerlib_name_mangle_t cb);
-
-/** Returns the compilerlib entity creation callback. */
-FIRM_API compilerlib_name_mangle_t get_compilerlib_name_mangle(void);
-
 /**
  * Constructs the entity for a given function using the current compilerlib
  * entity creation callback.

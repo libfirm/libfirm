@@ -22,9 +22,33 @@
  */
 
 /**
- * Initializes the firm library.  Allocates default data structures.
+ * Initializes the firm library; prepares code generation for the host machine.
  */
 FIRM_API void ir_init(void);
+
+/**
+ * Initializes the firm library, prepare code generation for the machine
+ * specified by @p target_triple. The specification should be in the form
+ * 'cpu-vendor-os' or 'cpu-vendor-kernel' @see machine_triple.
+ *
+ * Returns 1 if successfull, 0 if @p target_triple is malformed or not
+ * supported.
+ */
+FIRM_API int ir_init_target(const char *target_triple);
+
+/**
+ * Initialize the firm library, prepare code generation for the machine
+ * specified by the parsed target triple @p machine.
+ * @see ir_init_target()
+ *
+ * Returns 1 if successfull, 0 if the target is malformed or not supported.
+ */
+FIRM_API int ir_init_target_triple(ir_machine_triple_t const *machine);
+
+/**
+ * Initializes the firm library does not prepare for any code generation.
+ */
+FIRM_API void ir_init_no_target(void);
 
 /**
  * Frees all memory occupied by the firm library.

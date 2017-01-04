@@ -11,6 +11,7 @@
 #include "ia32_bearch_t.h"
 
 #include "be_t.h"
+#include "bearchs.h"
 #include "beflags.h"
 #include "begnuas.h"
 #include "bemodule.h"
@@ -54,8 +55,6 @@ ir_mode *ia32_mode_flags;
 ir_mode *ia32_mode_gp;
 ir_mode *ia32_mode_float64;
 ir_mode *ia32_mode_float32;
-
-static bool return_small_struct_in_regs;
 
 typedef ir_node *(*create_const_node_func) (dbg_info *dbgi, ir_node *block);
 
@@ -1096,7 +1095,7 @@ static void ia32_before_emit(ir_graph *irg)
 	/* fix stack entity offsets */
 	be_fix_stack_nodes(irg, &ia32_registers[REG_ESP]);
 	be_birg_from_irg(irg)->non_ssa_regs = NULL;
-	unsigned const p2align = ia32_cg_config.po2_stack_alignment;
+	unsigned const p2align = ir_target.ia32_po2_stackalign;
 	be_sim_stack_pointer(irg, misalign, p2align, ia32_sp_sim);
 
 	/* fix 2-address code constraints */
@@ -1340,13 +1339,10 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 }
 
 static backend_params ia32_backend_params = {
-	.byte_order_big_endian          = false,
 	.pic_supported                  = true,
 	.unaligned_memaccess_supported  = true,
 	.thread_local_storage_supported = true,
-	.modulo_shift                   = 32,
 	.allow_ifconv                   = ia32_is_mux_allowed,
-	.machine_size                   = 32,
 	.mode_float_arithmetic          = NULL,  /* will be set later */
 	.type_long_double               = NULL,  /* will be set later */
 	.float_int_overflow             = ir_overflow_indefinite,
@@ -1358,9 +1354,6 @@ static backend_params ia32_backend_params = {
  */
 static void ia32_init(void)
 {
-	ir_mode *const ptr_mode = new_reference_mode("p32", 32, 32);
-	set_modeP(ptr_mode);
-
 	ia32_setup_cg_config();
 
 	x86_set_be_asm_constraint_support(&ia32_asm_constraints);
@@ -1545,7 +1538,7 @@ static aggregate_spec_t const *decide_compound_ret(ir_type const *type)
 	assert(is_compound_type(type));
 
 	/* return_small_struct_in_regs is used on OS X */
-	if (return_small_struct_in_regs && size <= 8) {
+	if (ir_target.ia32_struct_in_regs && size <= 8) {
 		if (get_compound_n_members(type) == 1) {
 			ir_entity *const member      = get_compound_member(type, 0);
 			ir_type   *const member_type = get_entity_type(member);
@@ -1649,7 +1642,7 @@ static void ia32_lower_for_target(void)
 		/* lower for mode_b stuff */
 		ir_lower_mode_b(irg, ia32_mode_gp);
 		be_after_transform(irg, "lower-modeb");
-		lower_alloc(irg, ia32_cg_config.po2_stack_alignment);
+		lower_alloc(irg, ir_target.ia32_po2_stackalign);
 		be_after_transform(irg, "lower-alloc");
 	}
 
@@ -1672,13 +1665,15 @@ static const backend_params *ia32_get_libfirm_params(void)
 
 static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_BOOL("gprof", "Create gprof profiling code", &gprof),
-	LC_OPT_ENT_BOOL("struct_in_reg",
-	                "Return small structs in integer registers",
-	                &return_small_struct_in_regs),
 	LC_OPT_LAST
 };
 
-static arch_isa_if_t const ia32_isa_if = {
+arch_isa_if_t const ia32_isa_if = {
+	.name                  = "ia32",
+	.pointer_size          = 4,
+	.modulo_shift          = 32,
+	.big_endian            = false,
+	.po2_biggest_alignment = 4,
 	.n_registers           = N_IA32_REGISTERS,
 	.registers             = ia32_registers,
 	.n_register_classes    = N_IA32_CLASSES,
@@ -1701,7 +1696,6 @@ void be_init_arch_ia32(void)
 	lc_opt_entry_t *ia32_grp = lc_opt_get_grp(be_grp, "ia32");
 
 	lc_opt_add_table(ia32_grp, ia32_options);
-	be_register_isa_if("ia32", &ia32_isa_if);
 
 	ia32_init_emitter();
 	ia32_init_optimize();

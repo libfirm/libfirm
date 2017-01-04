@@ -31,6 +31,7 @@
 #include "irtools.h"
 #include "panic.h"
 #include "set.h"
+#include "target_t.h"
 #include "tv_t.h"
 #include "type_t.h"
 #include "util.h"
@@ -414,7 +415,7 @@ static ir_node *transform_previous_value(ir_mode *const load_mode,
 	    load_arithmetic == irma_twos_complement) {
 		/* produce a shift to adjust offset delta */
 		long           delta = load_offset - prev_offset;
-		unsigned const shift = be_get_backend_param()->byte_order_big_endian
+		unsigned const shift = ir_target_big_endian()
 			? prev_mode_len - load_mode_len - delta
 			: delta;
 		ir_node *new_value = prev_value;
@@ -1460,7 +1461,7 @@ static changes_t optimize_conv_load(ir_node *conv)
 	if (mode_is_float(load_mode) || mode_is_float(mode) || bits_diff < 0)
 	    return NO_CHANGES;
 
-	if (be_get_backend_param()->byte_order_big_endian) {
+	if (ir_target_big_endian()) {
 		if (bits_diff % 8 != 0)
 			return NO_CHANGES;
 		ir_graph *irg       = get_irn_irg(conv);
@@ -2130,7 +2131,7 @@ static void combine_memop(ir_node *sync, void *data)
 	if (!is_Sync(sync))
 		return;
 
-	unsigned   machine_size = be_get_machine_size();
+	unsigned   pointer_size = ir_target_pointer_size();
 	int        n_preds      = get_Sync_n_preds(sync);
 	ir_node  **new_in       = ALLOCAN(ir_node*, n_preds);
 	MEMCPY(new_in, get_irn_in(sync), n_preds);
@@ -2154,8 +2155,8 @@ again:;
 			ir_mode *store_mode = get_irn_mode(store_val);
 			if (get_mode_arithmetic(store_mode) != irma_twos_complement)
 				continue;
-			unsigned store_size = get_mode_size_bits(store_mode);
-			if (store_size >= machine_size || !is_po2_or_zero(store_size))
+			unsigned store_size = get_mode_size_bytes(store_mode);
+			if (store_size >= pointer_size || !is_po2_or_zero(store_size))
 				continue;
 			ir_mode *mode_unsigned = find_unsigned_mode(store_mode);
 			if (mode_unsigned == NULL)
@@ -2189,18 +2190,18 @@ again:;
 			ir_node *store_val1  = get_Store_value(store1);
 			ir_mode *store_mode1 = get_irn_mode(store_val1);
 			if (get_mode_arithmetic(store_mode1) != irma_twos_complement
-			 || get_mode_size_bits(store_mode1) != store_size)
+			 || get_mode_size_bytes(store_mode1) != store_size)
 				continue;
 
 			ir_node *store_ptr1 = get_Store_ptr(store1);
 			base_offset_t base1;
 			get_base_and_offset(store_ptr1, &base1);
 			if (base0.base   != base1.base
-			 || base1.offset != base0.offset + (long)(store_size/8))
+			 || base1.offset != base0.offset + (long)(store_size))
 				continue;
 
 			/* sort values according to endianess */
-			if (be_is_big_endian()) {
+			if (ir_target_big_endian()) {
 				ir_node *tmp = store_val;
 				store_val  = store_val1;
 				store_val1 = tmp;
@@ -2216,7 +2217,7 @@ again:;
 					continue;
 				ir_tarval *tv = get_Const_tarval(shiftval);
 				if (!tarval_is_long(tv)
-				    || get_tarval_long(tv) != (long)store_size)
+				    || get_tarval_long(tv) != (long)store_size*8)
 					continue;
 			}
 
@@ -2246,7 +2247,7 @@ again:;
 			ir_node  *conv0  = new_r_Conv(block, convu0, double_mode);
 			ir_node  *convu1 = new_r_Conv(block, store_val1, mode_unsigned);
 			ir_node  *conv1  = new_r_Conv(block, convu1, double_mode);
-			ir_node  *cnst   = new_r_Const_long(irg, mode_Iu, store_size);
+			ir_node  *cnst   = new_r_Const_long(irg, mode_Iu, store_size*8);
 			ir_node  *shl    = new_r_Shl(block, conv1, cnst);
 			ir_node  *or     = new_r_Or(block, conv0, shl);
 

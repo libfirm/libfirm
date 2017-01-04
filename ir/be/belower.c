@@ -29,6 +29,7 @@
 #include "irnodehashmap.h"
 #include "irnodeset.h"
 #include "raw_bitset.h"
+#include "target_t.h"
 #include "util.h"
 #include "xmalloc.h"
 #include <stdlib.h>
@@ -77,7 +78,7 @@ static void mark_live_nodes_registers(const ir_node *irn, lower_env_t *env)
 	ir_graph                    *irg       = get_irn_irg(irn);
 	arch_register_class_t const *cls       = arch_get_irn_register(get_irn_n(irn, 0))->cls;
 	be_irg_t                    *birg      = be_birg_from_irg(irg);
-	unsigned                     n_regs    = isa_if->n_registers;
+	unsigned                     n_regs    = ir_target.isa->n_registers;
 	unsigned                    *free_regs = rbitset_duplicate_obstack_alloc(&env->obst, birg->allocatable_regs, n_regs);
 
 	be_lv_t *lv = be_get_irg_liveness(irg);
@@ -127,8 +128,8 @@ static arch_register_t const *get_free_register(ir_node *const perm, lower_env_t
 			break;
 	}
 
-	arch_register_t const *const regs   = isa_if->registers;
-	unsigned               const n_regs = isa_if->n_registers;
+	arch_register_t const *const regs   = ir_target.isa->registers;
+	unsigned               const n_regs = ir_target.isa->n_registers;
 	rbitset_foreach(free_regs, n_regs, free_idx) {
 		arch_register_t const *free_reg = &regs[free_idx];
 		if (free_reg->cls != cls)

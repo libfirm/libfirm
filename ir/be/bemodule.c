@@ -11,6 +11,7 @@
  */
 #include "bemodule.h"
 
+#include "bearchs.h"
 #include "util.h"
 #include "xmalloc.h"
 #include <stdbool.h>
@@ -27,12 +28,6 @@ struct be_module_list_entry_t {
 
 void be_init_2addr(void);
 void be_init_arch(void);
-void be_init_arch_TEMPLATE(void);
-void be_init_arch_amd64(void);
-void be_init_arch_arm(void);
-void be_init_arch_ia32(void);
-void be_init_arch_mips(void);
-void be_init_arch_sparc(void);
 void be_init_blocksched(void);
 void be_init_chordal(void);
 void be_init_chordal_common(void);
@@ -44,7 +39,6 @@ void be_init_copynone(void);
 void be_init_copyopt(void);
 void be_init_daemelspill(void);
 void be_init_dwarf(void);
-void be_init_gas(void);
 void be_init_listsched(void);
 void be_init_live(void);
 void be_init_loopana(void);
@@ -83,7 +77,6 @@ void be_init_modules(void)
 	be_init_chordal_common();
 	be_init_copyopt();
 	be_init_dwarf();
-	be_init_gas();
 	be_init_live();
 	be_init_loopana();
 	be_init_peephole();

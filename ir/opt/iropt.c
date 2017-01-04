@@ -34,6 +34,7 @@
 #include "irtools.h"
 #include "irverify.h"
 #include "panic.h"
+#include "target_t.h"
 #include "tv_t.h"
 #include "vrp.h"
 #include <stdbool.h>
@@ -7137,7 +7138,8 @@ static bool sim_store_bitfield(unsigned char *buf, ir_mode *mode, long offset,
 	for (unsigned b = (unsigned)MAX(0, offset); b < initializer_size; ++b) {
 		if (b > (unsigned)offset + mode_size)
 			continue;
-		unsigned      idx      = be_is_big_endian() ? (initializer_size - 1 - b) : b;
+		unsigned      idx      = ir_target_big_endian()
+		                         ? (initializer_size - 1 - b) : b;
 		unsigned char prev     = buf[b-offset];
 		unsigned char maskbits = get_tarval_sub_bits(mask, idx);
 		unsigned char val      = get_tarval_sub_bits(masked_value, idx);
@@ -7172,7 +7174,8 @@ handle_tv:
 		     b < initializer_size; ++b) {
 			if (b > (unsigned)offset + mode_size)
 				continue;
-			unsigned      idx = be_is_big_endian() ? (initializer_size - 1 - b) : b;
+			unsigned      idx = ir_target_big_endian()
+			                    ? (initializer_size - 1 - b) : b;
 			unsigned char v   = get_tarval_sub_bits(tv, idx);
 			buf[b-offset] = v;
 		}
@@ -7265,7 +7268,7 @@ static ir_node *sim_store_load(const ir_type *type,
 	unsigned char *storage      = ALLOCANZ(unsigned char, storage_size);
 	if (!sim_store(storage, mode, offset, type, initializer))
 		return NULL;
-	if (be_is_big_endian())
+	if (ir_target_big_endian())
 		reverse_bytes(storage, storage_size);
 	ir_tarval *tv = new_tarval_from_bytes(storage, mode);
 	if (tv == tarval_unknown)

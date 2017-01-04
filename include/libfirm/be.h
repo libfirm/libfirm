@@ -85,8 +85,6 @@ typedef struct backend_params {
 	/* Info whether this backend is unfinished. */
 	char const *experimental;
 
-	/** the backend uses big-endian byte ordering if set, else little endian */
-	unsigned byte_order_big_endian:1;
 	/** 1 if backend supports generation of position independent code (PIC) */
 	unsigned pic_supported:1;
 	/** unaligned memory accesses are not supported natively (but the backend
@@ -95,20 +93,8 @@ typedef struct backend_params {
 	/** Whether thread local storage is supported. */
 	unsigned thread_local_storage_supported:1;
 
-	/**
-	 * Shifts on this architecture only read some bits of the shift value.
-	 * For example on x86 for every mode with less than 32bits only 5 bits of
-	 * the shift value are read resulting in a modulo shift value of 32.
-	 * On an architecture without modulo_shift this value is 0.
-	 */
-	unsigned modulo_shift;
-
 	/** Backend settings for if-conversion. */
 	arch_allow_ifconv_func allow_ifconv;
-
-	/** size of machine word in bits. This is usually the size of the general
-	 * purpose integer/address registers. */
-	unsigned machine_size;
 
 	/**
 	 * some backends like x87 can only do arithmetic in a specific float
@@ -138,18 +124,6 @@ typedef struct backend_params {
 FIRM_API int be_parse_arg(const char *arg);
 
 /**
- * Returns 1 if the backend uses big-endian byte ordering
- * and 0 for little-endian.
- */
-FIRM_API int be_is_big_endian(void);
-
-/**
- * Returns size of machine words. This is usually the size
- * of the general purpose integer registers.
- */
-FIRM_API unsigned be_get_machine_size(void);
-
-/**
  * Returns supported float arithmetic mode or NULL if mode_D and mode_F
  * are supported natively.
  * Some backends like x87 can only do arithmetic in a specific float
@@ -164,8 +138,11 @@ FIRM_API ir_type *be_get_type_long_double(void);
 FIRM_API float_int_conversion_overflow_style_t be_get_float_int_overflow(void);
 
 /**
- * Initialize the backend for the selected isa. This initializes mode_P and
- * should be called after all options are set with be_parse_arg().
+ * Initializes the backend for the target ISA. This is done automatically
+ * when be_parse_arg(), be_lower_for_target() or be_main() is called and the
+ * backend is not initialized yet.
+ * It is still recommended for frontends to call this to explicitely mark the
+ * point in the program flow where no backend parameteres are changed anymore.
  */
 FIRM_API void be_initialize(void);
 

@@ -15,6 +15,7 @@
 #include "amd64_optimize.h"
 #include "amd64_transform.h"
 #include "amd64_varargs.h"
+#include "bearchs.h"
 #include "beflags.h"
 #include "beirg.h"
 #include "bemodule.h"
@@ -755,12 +756,9 @@ static int amd64_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 
 static backend_params amd64_backend_params = {
 	.experimental                  = "the amd64 backend is highly experimental and unfinished (consider the ia32 backend)",
-	.byte_order_big_endian         = false,
 	.pic_supported                 = true,
 	.unaligned_memaccess_supported = true,
-	.modulo_shift                  = 32,
 	.allow_ifconv                  = amd64_is_mux_allowed,
-	.machine_size                  = 64,
 	.mode_float_arithmetic         = NULL,  /* will be set later */
 	.type_long_double              = NULL,  /* will be set later */
 	.float_int_overflow            = ir_overflow_indefinite,
@@ -777,9 +775,6 @@ static int amd64_is_valid_clobber(const char *clobber)
 
 static void amd64_init_types(void)
 {
-	ir_mode *const ptr_mode = new_reference_mode("p64", 64, 64);
-	set_modeP(ptr_mode);
-
 	/* use an int128 mode for xmm registers for now, so that firm allows us to
 	 * create constants with the xmm mode... */
 	amd64_mode_xmm = new_int_mode("x86_xmm", 128, 0, 0);
@@ -805,7 +800,12 @@ static unsigned amd64_get_op_estimated_cost(const ir_node *node)
 	return 1;
 }
 
-static arch_isa_if_t const amd64_isa_if = {
+arch_isa_if_t const amd64_isa_if = {
+	.name                  = "amd64",
+	.pointer_size          = 8,
+	.modulo_shift          = 32,
+	.big_endian            = false,
+	.po2_biggest_alignment = 4,
 	.n_registers           = N_AMD64_REGISTERS,
 	.registers             = amd64_registers,
 	.n_register_classes    = N_AMD64_CLASSES,
@@ -823,11 +823,9 @@ static arch_isa_if_t const amd64_isa_if = {
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)
 void be_init_arch_amd64(void)
 {
-	be_register_isa_if("amd64", &amd64_isa_if);
 	FIRM_DBG_REGISTER(dbg, "firm.be.amd64.cg");
 
 	static const lc_opt_table_entry_t options[] = {
-		LC_OPT_ENT_BOOL("x64abi",      "Use x64 ABI (otherwise system V)", &amd64_use_x64_abi),
 		LC_OPT_ENT_BOOL("no-red-zone", "gcc compatibility",                &amd64_use_red_zone),
 		LC_OPT_LAST
 	};

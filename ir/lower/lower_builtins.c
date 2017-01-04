@@ -19,6 +19,7 @@
 #include "iroptimize.h"
 #include "irprog_t.h"
 #include "panic.h"
+#include "target_t.h"
 #include "util.h"
 #include <stdbool.h>
 #include <stdlib.h>
@@ -73,9 +74,8 @@ static void widen_builtin(ir_node *node)
 	ir_type *arg1 = get_method_param_type(mtp, 0);
 
 	// Nothing to do, if argument size is at least machine size.
-	if (8 * get_type_size(arg1) >= be_get_machine_size()) {
+	if (get_type_size(arg1) >= ir_target_pointer_size())
 		return;
-	}
 
 	// Only touch builtins with no 32-bit version.
 	ir_builtin_kind kind = get_Builtin_kind(node);

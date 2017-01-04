@@ -87,6 +87,9 @@ typedef struct ir_cdep              ir_cdep;
 /** @ingroup ir_initializer
  * Initializer (for entities) */
 typedef union  ir_initializer_t     ir_initializer_t;
+/** @ingroup machine_triple
+ * Machine triple */
+typedef struct ir_machine_triple_t  ir_machine_triple_t;
 
 /**
  * @ingroup irgwalk

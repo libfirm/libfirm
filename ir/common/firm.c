@@ -32,6 +32,7 @@
 #include "irtools.h"
 #include "lc_opts.h"
 #include "opt_init.h"
+#include "target_t.h"
 #include "tv_t.h"
 #include "type_t.h"
 #include "version.h"
@@ -47,7 +48,7 @@ lc_opt_entry_t *firm_opt_get_root(void)
 	return grp;
 }
 
-void ir_init(void)
+void ir_init_no_target(void)
 {
 	firm_init_flags();
 	init_ident();
@@ -89,6 +90,7 @@ void ir_finish(void)
 	finish_tarval();
 	finish_mode();
 	finish_ident();
+	finish_target();
 }
 
 unsigned ir_get_version_major(void)

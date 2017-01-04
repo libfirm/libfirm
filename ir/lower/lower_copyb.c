@@ -17,6 +17,7 @@
 #include "irprog_t.h"
 #include "lowering.h"
 #include "panic.h"
+#include "target_t.h"
 #include "type_t.h"
 #include "util.h"
 
@@ -177,13 +178,11 @@ static void find_copyb_nodes(ir_node *irn, void *ctx)
 void lower_CopyB(ir_graph *irg, unsigned max_small_sz, unsigned min_large_sz,
                  int allow_misaligns)
 {
-	const backend_params *bparams = be_get_backend_param();
-
 	assert(max_small_sz < min_large_sz && "CopyB size ranges must not overlap");
 
 	max_small_size      = max_small_sz;
 	min_large_size      = min_large_sz;
-	native_mode_bytes   = bparams->machine_size / 8;
+	native_mode_bytes   = ir_target_pointer_size();
 	allow_misalignments = allow_misaligns;
 
 	walk_env_t env = { .copybs = NEW_ARR_F(ir_node*, 0) };

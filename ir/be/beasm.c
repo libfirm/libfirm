@@ -246,7 +246,7 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 	 * FIXME: need to do this per register class...
 	 */
 	size_t const orig_n_outs = ARR_LEN(out_reqs);
-	uint8_t      add_pressure[isa_if->n_register_classes];
+	uint8_t      add_pressure[ir_target.isa->n_register_classes];
 	memset(add_pressure, 0, sizeof(add_pressure));
 	if (orig_n_outs < orig_n_ins) {
 		bitset_t *const used_ins = bitset_alloca(orig_n_ins);
@@ -281,10 +281,11 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 	ident                      *const text        = get_ASM_text(node);
 	arch_register_req_t const **const dup_in_reqs = DUP_ARR_D(arch_register_req_t const*, obst, in_reqs);
 	ir_node                    *const new_node    = be_new_Asm(dbgi, block, n_ins, in, dup_in_reqs, n_outs, text, operands);
-	for (unsigned i = 0, n = isa_if->n_register_classes; i < n; ++i) {
+	for (unsigned i = 0, n = ir_target.isa->n_register_classes; i < n; ++i) {
 		if (add_pressure[i] == 0)
 			continue;
-		arch_register_class_t const *const cls = &isa_if->register_classes[i];
+		arch_register_class_t const *const cls
+			= &ir_target.isa->register_classes[i];
 		arch_set_additional_pressure(new_node, cls, add_pressure[i]);
 	}
 

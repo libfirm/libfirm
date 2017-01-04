@@ -11,7 +11,6 @@
 #include "scalar_replace.h"
 
 #include "array.h"
-#include "be.h"
 #include "debug.h"
 #include "hashptr.h"
 #include "ircons_t.h"
@@ -25,6 +24,7 @@
 #include "panic.h"
 #include "pset.h"
 #include "set.h"
+#include "target_t.h"
 #include "tv.h"
 #include "util.h"
 #include "xmalloc.h"
@@ -130,7 +130,7 @@ static bool conv_is_bitcast(ir_mode *from, ir_mode *to)
 	unsigned from_size = get_mode_size_bits(from);
 	unsigned to_size   = get_mode_size_bits(to);
 	return from_size == to_size
-	    || (to_size < from_size && !be_is_big_endian());
+	    || (to_size < from_size && !ir_target_big_endian());
 }
 
 static ir_type *get_addr_type(const ir_node *addr)

@@ -11,6 +11,7 @@
 #include "TEMPLATE_new_nodes.h"
 #include "TEMPLATE_transform.h"
 #include "be_t.h"
+#include "bearchs.h"
 #include "beirg.h"
 #include "bemodule.h"
 #include "benode.h"
@@ -106,8 +107,6 @@ static void TEMPLATE_generate_code(FILE *output, const char *cup_name)
 
 static void TEMPLATE_init(void)
 {
-	ir_mode *const ptr_mode = new_reference_mode("p32", 32, 32);
-	set_modeP(ptr_mode);
 	TEMPLATE_register_init();
 	TEMPLATE_create_opcodes();
 }
@@ -143,12 +142,9 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 {
 	static backend_params p = {
 		.experimental                  = "The TEMPLATE backend is just a demo for writing backends",
-		.byte_order_big_endian         = false,
 		.pic_supported                 = false,
 		.unaligned_memaccess_supported = false,
-		.modulo_shift                  = 32,
 		.allow_ifconv                  = TEMPLATE_is_mux_allowed,
-		.machine_size                  = 32,
 		.mode_float_arithmetic         = NULL,
 		.type_long_double              = NULL,
 		.float_int_overflow            = ir_overflow_min_max,
@@ -165,7 +161,12 @@ static unsigned TEMPLATE_get_op_estimated_cost(const ir_node *node)
 	return 1;
 }
 
-static arch_isa_if_t const TEMPLATE_isa_if = {
+arch_isa_if_t const TEMPLATE_isa_if = {
+	.name                  = "TEMPLATE",
+	.pointer_size          = 4,
+	.modulo_shift          = 32,
+	.big_endian            = false,
+	.po2_biggest_alignment = 3,
 	.n_registers           = N_TEMPLATE_REGISTERS,
 	.registers             = TEMPLATE_registers,
 	.n_register_classes    = N_TEMPLATE_CLASSES,
@@ -182,6 +183,5 @@ static arch_isa_if_t const TEMPLATE_isa_if = {
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)
 void be_init_arch_TEMPLATE(void)
 {
-	be_register_isa_if("TEMPLATE", &TEMPLATE_isa_if);
 	TEMPLATE_init_transform();
 }

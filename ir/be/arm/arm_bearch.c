@@ -14,6 +14,7 @@
 #include "arm_new_nodes.h"
 #include "arm_transform.h"
 #include "be_t.h"
+#include "bearchs.h"
 #include "beflags.h"
 #include "begnuas.h"
 #include "beirg.h"
@@ -268,21 +269,13 @@ static void arm_lower_for_target(void)
 
 static backend_params arm_backend_params = {
 	.experimental                  = "the arm backend is highly experimental and unfinished",
-	.byte_order_big_endian         = false,
 	.pic_supported                 = false,
 	.unaligned_memaccess_supported = false,
-	.modulo_shift                  = ARM_MODULO_SHIFT,
 	.allow_ifconv                  = arm_is_mux_allowed,
-	.machine_size                  = ARM_MACHINE_SIZE,
 	.mode_float_arithmetic         = NULL,
 	.type_long_double              = NULL,
 	.float_int_overflow            = ir_overflow_min_max,
 };
-
-static void arm_init_backend_params(void)
-{
-	arm_backend_params.byte_order_big_endian = arm_cg_config.big_endian;
-}
 
 static const backend_params *arm_get_libfirm_params(void)
 {
@@ -303,12 +296,9 @@ static void arm_init(void)
 	                              ARM_MODULO_SHIFT);
 	arm_mode_flags = new_non_arithmetic_mode("arm_flags", 32);
 
-	set_modeP(new_reference_mode("p32", ARM_MACHINE_SIZE, ARM_MODULO_SHIFT));
-
 	arm_init_asm_constraints();
 	arm_register_init();
 	arm_create_opcodes();
-	arm_init_backend_params();
 }
 
 static void arm_finish(void)
@@ -322,7 +312,12 @@ static unsigned arm_get_op_estimated_cost(const ir_node *node)
 	return 1;
 }
 
-static arch_isa_if_t const arm_isa_if = {
+arch_isa_if_t const arm_isa_if = {
+	.name                  = "arm",
+	.pointer_size          = 4,
+	.big_endian            = false,
+	.modulo_shift          = ARM_MODULO_SHIFT,
+	.po2_biggest_alignment = 3,
 	.n_registers           = N_ARM_REGISTERS,
 	.registers             = arm_registers,
 	.n_register_classes    = N_ARM_CLASSES,
@@ -369,7 +364,6 @@ static void arm_init_architecture(void)
 	memset(&arm_cg_config, 0, sizeof(arm_cg_config));
 	arm_cg_config.variant    = ARM_VARIANT_6T2;
 	arm_cg_config.fpu        = ARM_FPU_SOFTFLOAT;
-	arm_cg_config.big_endian = false;
 
 	lc_opt_entry_t *be_grp  = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *arm_grp = lc_opt_get_grp(be_grp, "arm");
@@ -382,6 +376,4 @@ void be_init_arch_arm(void)
 	arm_init_transform();
 	arm_init_emitter();
 	arm_init_architecture();
-
-	be_register_isa_if("arm", &arm_isa_if);
 }

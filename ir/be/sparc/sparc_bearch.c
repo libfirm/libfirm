@@ -11,6 +11,7 @@
 #include "sparc_bearch_t.h"
 
 #include "be_t.h"
+#include "bearchs.h"
 #include "beflags.h"
 #include "begnuas.h"
 #include "beirg.h"
@@ -366,8 +367,6 @@ static void sparc_setup_cg_config(void)
 
 static void sparc_init(void)
 {
-	ir_mode *const ptr_mode = new_reference_mode("p32", 32, 32);
-	set_modeP(ptr_mode);
 	sparc_init_asm_constraints();
 	sparc_register_init();
 	sparc_create_opcodes();
@@ -546,13 +545,10 @@ static int sparc_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 static const backend_params *sparc_get_backend_params(void)
 {
 	static backend_params p = {
-		.byte_order_big_endian          = true,
 		.pic_supported                  = false,
 		.unaligned_memaccess_supported  = false,
 		.thread_local_storage_supported = true,
-		.modulo_shift                   = 32,
 		.allow_ifconv                   = sparc_is_mux_allowed,
-		.machine_size                   = 32,
 		.mode_float_arithmetic          = NULL,  /* will be set later */
 		.type_long_double               = NULL,  /* will be set later */
 		.float_int_overflow             = ir_overflow_min_max,
@@ -577,7 +573,12 @@ static unsigned sparc_get_op_estimated_cost(const ir_node *node)
 	return 1;
 }
 
-static arch_isa_if_t const sparc_isa_if = {
+arch_isa_if_t const sparc_isa_if = {
+	.name                  = "sparc",
+	.pointer_size          = 4,
+	.big_endian            = true,
+	.modulo_shift          = 32,
+	.po2_biggest_alignment = 3,
 	.n_registers           = N_SPARC_REGISTERS,
 	.registers             = sparc_registers,
 	.n_register_classes    = N_SPARC_CLASSES,
@@ -600,7 +601,6 @@ void be_init_arch_sparc(void)
 
 	lc_opt_add_table(sparc_grp, sparc_options);
 
-	be_register_isa_if("sparc", &sparc_isa_if);
 	FIRM_DBG_REGISTER(dbg, "firm.be.sparc.cg");
 	sparc_init_transform();
 	sparc_init_emitter();
