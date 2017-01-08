@@ -23,6 +23,7 @@
 #include "util.h"
 
 static bool dont_lower[ir_bk_last + 1];
+static lower_func lower_va_arg;
 
 static const char *get_builtin_name(ir_builtin_kind kind)
 {
@@ -191,7 +192,7 @@ changed:
 		return;
 
 	case ir_bk_va_arg:
-		be_get_backend_param()->vararg.lower_va_arg(node);
+		lower_va_arg(node);
 		return;
 
 	case ir_bk_trap:
@@ -210,8 +211,11 @@ changed:
 	panic("unexpected builtin %+F", node);
 }
 
-void lower_builtins(size_t const n_exceptions, ir_builtin_kind const *const exceptions)
+void lower_builtins(size_t n_exceptions,
+                    ir_builtin_kind const *const exceptions,
+                    lower_func new_lower_va_arg)
 {
+	lower_va_arg = new_lower_va_arg;
 	memset(dont_lower, 0, sizeof(dont_lower));
 	for (size_t i = 0; i < n_exceptions; ++i) {
 		dont_lower[exceptions[i]] = true;

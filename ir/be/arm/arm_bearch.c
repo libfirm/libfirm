@@ -238,7 +238,7 @@ static void arm_lower_for_target(void)
 	size_t s = 0;
 	supported[s++] = ir_bk_clz;
 	assert(s <= ARRAY_SIZE(supported));
-	lower_builtins(s, supported);
+	lower_builtins(s, supported, NULL);
 	be_after_irp_transform("lower-builtins");
 
 	foreach_irp_irg(i, irg) {
@@ -270,12 +270,7 @@ static backend_params arm_backend_params = {
 	.machine_size                  = ARM_MACHINE_SIZE,
 	.mode_float_arithmetic         = NULL,
 	.type_long_double              = NULL,
-	.stack_param_align             = 4,
 	.float_int_overflow            = ir_overflow_min_max,
-	.vararg                        = {
-		.va_list_type = NULL,
-		.lower_va_arg = NULL,
-	},
 };
 
 static void arm_init_backend_params(void)

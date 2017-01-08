@@ -18,7 +18,8 @@
 #include "irnode_t.h"
 #include "util.h"
 
-static void be_default_lower_va_arg(ir_node *const node, bool const compound_is_ptr)
+void be_default_lower_va_arg(ir_node *const node, bool const compound_is_ptr,
+                             unsigned const stack_param_align)
 {
 	ir_node  *block = get_nodes_block(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
@@ -46,30 +47,14 @@ load:;
 		new_mem = node_mem;
 	}
 
-	backend_params const *const be_params = be_get_backend_param();
 	unsigned const round_up    = round_up2(get_type_size(aptype),
-	                                       be_params->stack_param_align);
+	                                       stack_param_align);
 	ir_mode *const offset_mode = get_reference_offset_mode(mode_P);
 	ir_node *const offset      = new_r_Const_long(irg, offset_mode, round_up);
 	ir_node *const new_ap      = new_rd_Add(dbgi, block, ap, offset);
 
 	ir_node *const in[] = { new_mem, res, new_ap };
 	turn_into_tuple(node, ARRAY_SIZE(in), in);
-}
-
-void be_default_lower_va_arg_compound_ptr(ir_node *const node)
-{
-	be_default_lower_va_arg(node, true);
-}
-
-void be_default_lower_va_arg_compound_val(ir_node *const node)
-{
-	be_default_lower_va_arg(node, false);
-}
-
-void be_set_va_list_type_pointer(backend_params *const p)
-{
-	p->vararg.va_list_type = new_type_pointer(get_type_for_mode(mode_ANY));
 }
 
 ir_entity *be_make_va_start_entity(ir_type *const frame_type, int const offset)

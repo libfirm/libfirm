@@ -119,7 +119,7 @@ static void TEMPLATE_finish(void)
 
 static void TEMPLATE_lower_for_target(void)
 {
-	lower_builtins(0, NULL);
+	lower_builtins(0, NULL, NULL);
 	be_after_irp_transform("lower-builtins");
 
 	/* lower compound param handling */
@@ -152,7 +152,6 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 		.machine_size                  = 32,
 		.mode_float_arithmetic         = NULL,
 		.type_long_double              = NULL,
-		.stack_param_align             = 4,
 		.float_int_overflow            = ir_overflow_min_max,
 	};
 	return &p;

@@ -1359,12 +1359,8 @@ static backend_params ia32_backend_params = {
 	.machine_size                   = 32,
 	.mode_float_arithmetic          = NULL,  /* will be set later */
 	.type_long_double               = NULL,  /* will be set later */
-	.stack_param_align              = 4,
 	.float_int_overflow             = ir_overflow_indefinite,
-	.vararg                         = {
-		.va_list_type = NULL, /* will be set later */
-		.lower_va_arg = be_default_lower_va_arg_compound_val,
-	},
+	.va_list_type                   = NULL, /* will be set later */
 };
 
 /**
@@ -1388,7 +1384,9 @@ static void ia32_init(void)
 	ia32_mode_float32 = new_float_mode("fp32", irma_ieee754, 8, 23,
 	                                   ir_overflow_indefinite);
 
-	be_set_va_list_type_pointer(&ia32_backend_params);
+	// va_list is a void pointer
+	ir_type *type_va_list = new_type_pointer(get_type_for_mode(mode_ANY));
+	ia32_backend_params.va_list_type = type_va_list;
 
 	if (ia32_cg_config.use_sse2 || ia32_cg_config.use_softfloat) {
 		ia32_backend_params.mode_float_arithmetic = NULL;
@@ -1583,6 +1581,11 @@ static aggregate_spec_t const *decide_compound_ret(ir_type const *type)
 	return &no_values_aggregate_spec;
 }
 
+static void ia32_lower_va_arg(ir_node *node)
+{
+	be_default_lower_va_arg(node, false, 4);
+}
+
 static void ia32_lower_for_target(void)
 {
 	ir_mode *mode_gp = ia32_reg_classes[CLASS_ia32_gp].mode;
@@ -1626,7 +1629,7 @@ static void ia32_lower_for_target(void)
 	if (ia32_cg_config.use_cmpxchg)
 		supported[s++] = ir_bk_compare_swap;
 	assert(s < ARRAY_SIZE(supported));
-	lower_builtins(s, supported);
+	lower_builtins(s, supported, ia32_lower_va_arg);
 	be_after_irp_transform("lower-builtins");
 
 	foreach_irp_irg(i, irg) {

@@ -469,6 +469,11 @@ static void sparc_generate_code(FILE *output, const char *cup_name)
 	pmap_destroy(sparc_constants);
 }
 
+static void sparc_lower_va_arg(ir_node *node)
+{
+	be_default_lower_va_arg(node, true, 4);
+}
+
 static void sparc_lower_for_target(void)
 {
 	lower_calls_with_compounds(LF_RETURN_HIDDEN, NULL);
@@ -493,7 +498,7 @@ static void sparc_lower_for_target(void)
 		supported[s++] = ir_bk_compare_swap;
 	supported[s++] = ir_bk_va_start;
 	assert(s < ARRAY_SIZE(supported));
-	lower_builtins(s, supported);
+	lower_builtins(s, supported, sparc_lower_va_arg);
 	be_after_irp_transform("lower-builtins");
 
 	ir_mode *mode_gp = sparc_reg_classes[CLASS_sparc_gp].mode;
@@ -544,15 +549,10 @@ static const backend_params *sparc_get_backend_params(void)
 		.machine_size                   = 32,
 		.mode_float_arithmetic          = NULL,  /* will be set later */
 		.type_long_double               = NULL,  /* will be set later */
-		.stack_param_align              = 4,
 		.float_int_overflow             = ir_overflow_min_max,
-		.vararg                         = {
-			.va_list_type = NULL, /* will be set later */
-			.lower_va_arg = be_default_lower_va_arg_compound_ptr,
-		},
 	};
 
-	be_set_va_list_type_pointer(&p);
+	p.va_list_type = new_type_pointer(get_type_for_mode(mode_ANY));
 
 	sparc_mode_Q
 		= new_float_mode("Q", irma_ieee754, 15, 112, ir_overflow_min_max);

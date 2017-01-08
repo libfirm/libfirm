@@ -14,6 +14,9 @@
 #include "firm_types.h"
 #include <stddef.h>
 
-void lower_builtins(size_t n_exceptions, ir_builtin_kind const *exceptions);
+typedef void(*lower_func)(ir_node*);
+
+void lower_builtins(size_t n_exceptions, ir_builtin_kind const *exceptions,
+                    lower_func lower_va_arg);
 
 #endif

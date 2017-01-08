@@ -55,7 +55,6 @@ static backend_params mips_backend_params = {
 	.machine_size                  = MIPS_MACHINE_SIZE,
 	.mode_float_arithmetic         = NULL,  /* will be set later */ // TODO
 	.type_long_double              = NULL,  /* will be set later */ // TODO
-	.stack_param_align             = 4,
 	.float_int_overflow            = ir_overflow_indefinite,
 };
 
@@ -282,10 +281,10 @@ static void mips_lower_for_target(void)
 		be_after_transform(irg, "lower-copyb");
 	}
 
-	ir_builtin_kind const supported[] = {
+	static ir_builtin_kind const supported[] = {
 		ir_bk_saturating_increment,
 	};
-	lower_builtins(ARRAY_SIZE(supported), supported);
+	lower_builtins(ARRAY_SIZE(supported), supported, NULL);
 
 	ir_mode *const mode_gp = mips_reg_classes[CLASS_mips_gp].mode;
 	foreach_irp_irg(i, irg) {

@@ -723,7 +723,7 @@ static void amd64_lower_for_target(void)
 	supported[s++] = ir_bk_va_start;
 
 	assert(s <= ARRAY_SIZE(supported));
-	lower_builtins(s, supported);
+	lower_builtins(s, supported, amd64_lower_va_arg);
 	be_after_irp_transform("lower-builtins");
 }
 
@@ -757,12 +757,7 @@ static backend_params amd64_backend_params = {
 	.machine_size                  = 64,
 	.mode_float_arithmetic         = NULL,  /* will be set later */
 	.type_long_double              = NULL,  /* will be set later */
-	.stack_param_align             = 8,
 	.float_int_overflow            = ir_overflow_indefinite,
-	.vararg                        = {
-		.va_list_type = NULL,  /* Will be set later */
-		.lower_va_arg = amd64_lower_va_arg,
-	},
 };
 
 static const backend_params *amd64_get_backend_params(void) {
@@ -786,7 +781,7 @@ static void amd64_init_types(void)
 	ir_type *const type_f80 = x86_init_x87_type();
 	amd64_backend_params.type_long_double = type_f80;
 
-	amd64_backend_params.vararg.va_list_type = amd64_build_va_list_type();
+	amd64_backend_params.va_list_type = amd64_build_va_list_type();
 }
 
 static void amd64_init(void)
