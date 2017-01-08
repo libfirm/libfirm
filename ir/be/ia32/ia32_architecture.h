@@ -14,7 +14,7 @@
 #include <stdbool.h>
 
 #include "firm_types.h"
-#include "irarch_t.h"
+#include "irarch.h"
 
 typedef struct {
 	/** optimize for size */

@@ -27,7 +27,7 @@
 #include "iropt_dbg.h"
 #include "irflag_t.h"
 #include "irhooks.h"
-#include "irarch_t.h"
+#include "irarch.h"
 #include "hashptr.h"
 #include "irtools.h"
 #include "irhooks.h"

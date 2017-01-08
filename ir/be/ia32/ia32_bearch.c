@@ -1339,22 +1339,12 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 	return true;
 }
 
-static const ir_settings_arch_dep_t ia32_arch_dep = {
-	.also_use_subs        = true,
-	.maximum_shifts       = 4,
-	.highest_shift_amount = 63,
-	.evaluate             = ia32_evaluate_insn,
-	.allow_mulhs          = true,
-	.allow_mulhu          = true,
-	.max_bits_for_mulh    = 32,
-};
 static backend_params ia32_backend_params = {
 	.byte_order_big_endian          = false,
 	.pic_supported                  = true,
 	.unaligned_memaccess_supported  = true,
 	.thread_local_storage_supported = true,
 	.modulo_shift                   = 32,
-	.dep_param                      = &ia32_arch_dep,
 	.allow_ifconv                   = ia32_is_mux_allowed,
 	.machine_size                   = 32,
 	.mode_float_arithmetic          = NULL,  /* will be set later */
@@ -1586,8 +1576,24 @@ static void ia32_lower_va_arg(ir_node *node)
 	be_default_lower_va_arg(node, false, 4);
 }
 
+static const ir_settings_arch_dep_t ia32_arch_dep = {
+	.replace_muls         = true,
+	.replace_divs         = true,
+	.replace_mods         = true,
+	.allow_mulhs          = true,
+	.allow_mulhu          = true,
+	.also_use_subs        = true,
+	.maximum_shifts       = 4,
+	.highest_shift_amount = 63,
+	.evaluate             = ia32_evaluate_insn,
+	.max_bits_for_mulh    = 32,
+};
+
 static void ia32_lower_for_target(void)
 {
+	ir_arch_lower(&ia32_arch_dep);
+	be_after_irp_transform("lower-arch-dep");
+
 	ir_mode *mode_gp = ia32_reg_classes[CLASS_ia32_gp].mode;
 
 	/* lower compound param handling

@@ -12,7 +12,6 @@
 #define FIRM_BE_H
 
 #include <stdio.h>
-#include "irarch.h"
 #include "iroptimize.h"
 #include "irmode.h"
 #include "begin.h"
@@ -103,9 +102,6 @@ typedef struct backend_params {
 	 * On an architecture without modulo_shift this value is 0.
 	 */
 	unsigned modulo_shift;
-
-	/** Settings for architecture dependent optimizations. */
-	const ir_settings_arch_dep_t *dep_param;
 
 	/** Backend settings for if-conversion. */
 	arch_allow_ifconv_func allow_ifconv;

@@ -147,7 +147,6 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 		.pic_supported                 = false,
 		.unaligned_memaccess_supported = false,
 		.modulo_shift                  = 32,
-		.dep_param                     = NULL,
 		.allow_ifconv                  = TEMPLATE_is_mux_allowed,
 		.machine_size                  = 32,
 		.mode_float_arithmetic         = NULL,

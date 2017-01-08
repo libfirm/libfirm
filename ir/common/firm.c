@@ -27,7 +27,6 @@
 #include "irgraph_t.h"
 #include "type_t.h"
 #include "entity_t.h"
-#include "irarch.h"
 #include "irhooks.h"
 #include "iredges_t.h"
 #include "irmemory_t.h"
@@ -66,8 +65,6 @@ void ir_init(void)
 	init_irprog_2();
 	firm_init_memory_disambiguator();
 	firm_init_loop_opt();
-
-	arch_dep_set_opts(arch_dep_none);
 
 	init_execfreq();
 	firm_be_init();

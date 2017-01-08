@@ -21,7 +21,7 @@
 #include "bevarargs.h"
 #include "debug.h"
 #include "gen_sparc_regalloc_if.h"
-#include "irarch_t.h"
+#include "irarch.h"
 #include "ircons_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"
@@ -474,8 +474,24 @@ static void sparc_lower_va_arg(ir_node *node)
 	be_default_lower_va_arg(node, true, 4);
 }
 
+static const ir_settings_arch_dep_t sparc_arch_dep = {
+	.replace_muls         = true,
+	.replace_divs         = true,
+	.replace_mods         = true,
+	.allow_mulhs          = true,
+	.allow_mulhu          = true,
+	.also_use_subs        = true,
+	.maximum_shifts       = 1,
+	.highest_shift_amount = 31,
+	.evaluate             = NULL,
+	.max_bits_for_mulh    = 32,
+};
+
 static void sparc_lower_for_target(void)
 {
+	ir_arch_lower(&sparc_arch_dep);
+	be_after_irp_transform("lower-arch-dep");
+
 	lower_calls_with_compounds(LF_RETURN_HIDDEN, NULL);
 	be_after_irp_transform("lower-calls");
 
@@ -529,22 +545,12 @@ static int sparc_is_mux_allowed(ir_node *sel, ir_node *mux_false,
  */
 static const backend_params *sparc_get_backend_params(void)
 {
-	static const ir_settings_arch_dep_t arch_dep = {
-		.also_use_subs        = true,
-		.maximum_shifts       = 1,
-		.highest_shift_amount = 31,
-		.evaluate             = NULL,
-		.allow_mulhs          = true,
-		.allow_mulhu          = true,
-		.max_bits_for_mulh    = 32,
-	};
 	static backend_params p = {
 		.byte_order_big_endian          = true,
 		.pic_supported                  = false,
 		.unaligned_memaccess_supported  = false,
 		.thread_local_storage_supported = true,
 		.modulo_shift                   = 32,
-		.dep_param                      = &arch_dep,
 		.allow_ifconv                   = sparc_is_mux_allowed,
 		.machine_size                   = 32,
 		.mode_float_arithmetic          = NULL,  /* will be set later */

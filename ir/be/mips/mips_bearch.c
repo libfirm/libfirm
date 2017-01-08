@@ -13,7 +13,7 @@
 #include "betranshlp.h"
 #include "gen_mips_new_nodes.h"
 #include "gen_mips_regalloc_if.h"
-#include "irarch_t.h"
+#include "irarch.h"
 #include "iredges.h"
 #include "irgwalk.h"
 #include "irprog_t.h"
@@ -50,7 +50,6 @@ static backend_params mips_backend_params = {
 	.pic_supported                 = false,
 	.unaligned_memaccess_supported = false,
 	.modulo_shift                  = MIPS_MACHINE_SIZE,
-	.dep_param                     = &mips_arch_dep,
 	.allow_ifconv                  = &mips_is_mux_allowed,
 	.machine_size                  = MIPS_MACHINE_SIZE,
 	.mode_float_arithmetic         = NULL,  /* will be set later */ // TODO
@@ -273,6 +272,9 @@ static void mips_generate_code(FILE *const output, char const *const cup_name)
 
 static void mips_lower_for_target(void)
 {
+	ir_arch_lower(&mips_arch_dep);
+	be_after_irp_transform("lower-arch-dep");
+
 	lower_calls_with_compounds(LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS, NULL);
 	be_after_irp_transform("lower-calls");
 

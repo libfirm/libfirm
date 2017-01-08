@@ -23,7 +23,7 @@
 #include "besched.h"
 #include "betranshlp.h"
 #include "gen_arm_regalloc_if.h"
-#include "irarch_t.h"
+#include "irarch.h"
 #include "irgopt.h"
 #include "irgwalk.h"
 #include "irprog_t.h"
@@ -217,8 +217,24 @@ static int arm_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 	return false;
 }
 
+static const ir_settings_arch_dep_t arm_arch_dep = {
+	.replace_muls         = true,
+	.replace_divs         = true,
+	.replace_mods         = true,
+	.allow_mulhs          = false,
+	.allow_mulhu          = false,
+	.also_use_subs        = true,
+	.maximum_shifts       = 1,
+	.highest_shift_amount = 31,
+	.evaluate             = NULL,
+	.max_bits_for_mulh    = ARM_MACHINE_SIZE,
+};
+
 static void arm_lower_for_target(void)
 {
+	ir_arch_lower(&arm_arch_dep);
+	be_after_irp_transform("lower-arch-dep");
+
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN, NULL);
 	be_after_irp_transform("lower-calls");
@@ -250,22 +266,12 @@ static void arm_lower_for_target(void)
 	be_after_irp_transform("lower-64");
 }
 
-static const ir_settings_arch_dep_t arm_arch_dep = {
-	.also_use_subs        = true,
-	.maximum_shifts       = 1,
-	.highest_shift_amount = 31,
-	.evaluate             = NULL,
-	.allow_mulhs          = false,
-	.allow_mulhu          = false,
-	.max_bits_for_mulh    = ARM_MACHINE_SIZE,
-};
 static backend_params arm_backend_params = {
 	.experimental                  = "the arm backend is highly experimental and unfinished",
 	.byte_order_big_endian         = false,
 	.pic_supported                 = false,
 	.unaligned_memaccess_supported = false,
 	.modulo_shift                  = ARM_MODULO_SHIFT,
-	.dep_param                     = &arm_arch_dep,
 	.allow_ifconv                  = arm_is_mux_allowed,
 	.machine_size                  = ARM_MACHINE_SIZE,
 	.mode_float_arithmetic         = NULL,
