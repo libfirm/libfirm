@@ -371,8 +371,7 @@ void arm_lower_64bit(void)
 		NULL,
 		word_unsigned,
 		word_signed,
-		64, /* doubleword size */
-		arm_cg_config.big_endian,
+		64  /* doubleword size */
 	};
 
 	create_divmod_intrinsics(word_unsigned, word_signed);

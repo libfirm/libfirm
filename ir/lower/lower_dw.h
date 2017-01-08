@@ -45,8 +45,6 @@ typedef struct lwrdw_param_t {
 	ir_mode              *word_unsigned;    /**< mode for unsigned word */
 	ir_mode              *word_signed;      /**< mode for signed word */
 	unsigned short        doubleword_size;  /**< bitsize of the doubleword mode */
-	bool                  big_endian:1;     /**< target is big endian if true,
-											     else little endian */
 } lwrdw_param_t;
 
 /**

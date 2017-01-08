@@ -66,7 +66,6 @@ void mips_lower64(void)
 		.word_unsigned    = word_unsigned,
 		.word_signed      = word_signed,
 		.doubleword_size  = 64,
-		.big_endian       = be_is_big_endian(),
 	};
 
 	ir_prepare_dw_lowering(&lower_dw_params);

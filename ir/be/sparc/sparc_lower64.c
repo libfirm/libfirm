@@ -131,8 +131,7 @@ void sparc_lower_64bit(void)
 		NULL,
 		word_unsigned,
 		word_signed,
-		64,    /* doubleword size */
-		be_is_big_endian(),
+		64    /* doubleword size */
 	};
 
 	/* make sure opcodes are initialized */
