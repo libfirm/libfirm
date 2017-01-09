@@ -193,4 +193,10 @@ static inline bool be_mode_needs_gp_reg(ir_mode *const mode)
 	return get_mode_arithmetic(mode) == irma_twos_complement;
 }
 
+/**
+ * Finds number of output value of a node which is constrained to a single
+ * specific register.
+ */
+unsigned be_get_out_for_reg(ir_node const *node, arch_register_t const *reg);
+
 #endif
