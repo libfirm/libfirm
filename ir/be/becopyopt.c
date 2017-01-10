@@ -344,6 +344,13 @@ no_stable_set:
 	return safe_costs+best_weight;
 }
 
+static void free_unit(unit_t *unit)
+{
+	free(unit->nodes);
+	free(unit->costs);
+	free(unit);
+}
+
 static void co_collect_units(ir_node *irn, void *env)
 {
 	if (get_irn_mode(irn) == mode_T)
@@ -472,7 +479,7 @@ static void co_collect_units(ir_node *irn, void *env)
 		}
 		list_add(&unit->units, tmp);
 	} else {
-		free(unit);
+		free_unit(unit);
 	}
 }
 
@@ -487,9 +494,7 @@ static void co_free_ou_structure(copy_opt_t *co)
 {
 	ASSERT_OU_AVAIL(co);
 	list_for_each_entry_safe(unit_t, curr, tmp, &co->units, units) {
-		free(curr->nodes);
-		free(curr->costs);
-		free(curr);
+		free_unit(curr);
 	}
 	co->units.next = NULL;
 }
