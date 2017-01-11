@@ -132,6 +132,17 @@ typedef int lower_mux_callback(ir_node* mux);
  */
 FIRM_API void lower_mux(ir_graph *irg, lower_mux_callback *cb_func);
 
+
+/** Helper, keep here? */
+FIRM_API ir_entity* create_std_malloc_entity(char* name);
+
+/**
+ * Lowers all closure and callclosure nodes in the given graph.
+ *
+ * @param malloc_ent      The malloc entity to use to allocate closures.
+ */
+FIRM_API void lower_closure(ir_entity *malloc_ent);
+
 /**
  * An intrinsic mapper function.
  *

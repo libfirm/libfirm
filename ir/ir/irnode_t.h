@@ -261,6 +261,7 @@ typedef union ir_attr {
 	mod_attr       mod;
 	asm_attr       assem;
 	switch_attr    switcha;
+	call_attr      callclosure;
 } ir_attr;
 
 /**

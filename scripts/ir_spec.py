@@ -584,6 +584,52 @@ class Load(Node):
     throws_init = "(flags & cons_throws_exception) != 0"
 
 
+
+@op
+class Closure(Node):
+	"""constructs a closure"""
+	ins  = [
+	       ("mem",  "memory dependency"),
+	       ("proc", "procedure pointer, whose first argument is the env"),
+	       ("env",  "the data which is closed over")
+	]
+	outs = [
+	       ("M",   "memory result"),
+	       ("res", "the constructed closure")
+	]
+	flags = [ "uses_memory" ]
+	mode  = "mode_P"
+
+@op
+class CallClosure(Node):
+	"""Calls other code. Control flow is transfered to ptr, additional
+	operands are passed to the called code. Called code usually performs a
+	return operation. The operands of this return operation are the result
+	of the Call node."""
+	ins         = [
+		("mem",   "memory dependency"),
+		("ptr",   "pointer to called closure"),
+	]
+	arity       = "variable"
+	input_name  = "param"
+	outs        = [
+		("M",                "memory result"),
+		("T_result",         "tuple containing all results"),
+	]
+	flags       = [ "uses_memory" ]
+	attrs       = [
+		Attribute("type", type="ir_type*",
+		          comment="type of the call (usually type of the called procedure), including the env argument"),
+	]
+	attr_struct = "call_attr"
+	pinned      = "exception"
+	pinned_init = "op_pin_state_pinned"
+	init = '''
+	assert((get_unknown_type() == type) || is_Method_type(type));
+	'''
+
+
+
 @op
 class Minus(Node):
     """returns the additive inverse of its operand"""
