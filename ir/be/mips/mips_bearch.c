@@ -18,6 +18,7 @@
 #include "irgwalk.h"
 #include "irprog_t.h"
 #include "lower_dw.h"
+#include "lowering.h"
 #include "mips_bearch_t.h"
 #include "mips_emitter.h"
 #include "mips_transform.h"
@@ -286,6 +287,12 @@ static void mips_lower64(void)
 
 static void mips_lower_for_target(void)
 {
+	ir_mode *const mode_gp = mips_reg_classes[CLASS_mips_gp].mode;
+	foreach_irp_irg(i, irg) {
+		lower_switch(irg, 4, 256, mode_gp);
+		be_after_transform(irg, "lower-switch");
+	}
+
 	mips_lower64();
 }
 
