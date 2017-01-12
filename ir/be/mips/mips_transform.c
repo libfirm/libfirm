@@ -105,6 +105,30 @@ static ir_node *gen_Const(ir_node *const node)
 	panic("TODO");
 }
 
+static ir_node *gen_Proj_Proj_Start(ir_node *const node)
+{
+	assert(get_Proj_num(get_Proj_pred(node)) == pn_Start_T_args);
+
+	ir_graph           *const irg   = get_irn_irg(node);
+	unsigned            const num   = get_Proj_num(node);
+	mips_reg_or_slot_t *const param = &cur_cconv.parameters[num];
+	if (param->reg) {
+		return be_get_Start_proj(irg, param->reg);
+	} else {
+		panic("TODO");
+	}
+}
+
+static ir_node *gen_Proj_Proj(ir_node *const node)
+{
+	ir_node *const pred      = get_Proj_pred(node);
+	ir_node *const pred_pred = get_Proj_pred(pred);
+	switch (get_irn_opcode(pred_pred)) {
+	case iro_Start: return gen_Proj_Proj_Start(node);
+	default:        panic("unexpected Proj-Proj");
+	}
+}
+
 static ir_node *gen_Proj_Start(ir_node *const node)
 {
 	ir_graph *const irg = get_irn_irg(node);
@@ -170,7 +194,15 @@ static ir_node *gen_Start(ir_node *const node)
 		outs[callee_saves[i]] = BE_START_REG;
 	}
 
-	ir_graph *const irg = get_irn_irg(node);
+	ir_graph  *const irg  = get_irn_irg(node);
+	ir_entity *const ent  = get_irg_entity(irg);
+	ir_type   *const type = get_entity_type(ent);
+	for (size_t i = 0, n = get_method_n_params(type); i != n; ++i) {
+		arch_register_t const *const reg = cur_cconv.parameters[i].reg;
+		if (reg)
+			outs[reg->global_index] = BE_START_REG;
+	}
+
 	return be_new_Start(irg, outs);
 }
 
@@ -182,6 +214,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Return, gen_Return);
 	be_set_transform_function(op_Start,  gen_Start);
 
+	be_set_transform_proj_function(op_Proj,  gen_Proj_Proj);
 	be_set_transform_proj_function(op_Start, gen_Proj_Start);
 }
 

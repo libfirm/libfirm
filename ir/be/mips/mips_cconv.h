@@ -13,6 +13,7 @@ typedef struct mips_reg_or_slot_t {
 } mips_reg_or_slot_t;
 
 typedef struct mips_calling_convention_t {
+	mips_reg_or_slot_t *parameters;
 	mips_reg_or_slot_t *results;
 } mips_calling_convention_t;
 
