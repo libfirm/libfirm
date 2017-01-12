@@ -810,7 +810,12 @@ static ir_node *gen_Proj_Proj_Start(ir_node *const node)
 	if (param->reg) {
 		return be_get_Start_proj(irg, param->reg);
 	} else {
-		panic("TODO");
+		dbg_info *const dbgi  = get_irn_dbg_info(node);
+		ir_node  *const block = be_transform_nodes_block(node);
+		ir_node  *const mem   = be_get_Start_mem(irg);
+		ir_node  *const base  = get_Start_sp(irg);
+		ir_node  *const load  = new_bd_mips_lw(dbgi, block, mem, base, param->entity, 0);
+		return be_new_Proj(load, pn_mips_lw_res);
 	}
 }
 
@@ -1100,6 +1105,8 @@ void mips_transform_graph(ir_graph *const irg)
 	ir_entity *const fun_ent  = get_irg_entity(irg);
 	ir_type   *const fun_type = get_entity_type(fun_ent);
 	mips_determine_calling_convention(&cur_cconv, fun_type);
+	mips_layout_parameter_entities(&cur_cconv, irg);
+	be_add_parameter_entity_stores(irg);
 	be_transform_graph(irg, NULL);
 	mips_free_calling_convention(&cur_cconv);
 

@@ -5,7 +5,9 @@
 
 #include "mips_cconv.h"
 
+#include "betranshlp.h"
 #include "gen_mips_regalloc_if.h"
+#include "mips_bearch_t.h"
 #include "util.h"
 
 static unsigned const regs_param_gp[] = {
@@ -39,6 +41,7 @@ void mips_determine_calling_convention(mips_calling_convention_t *const cconv, i
 					++gp_param;
 				if (gp_param < ARRAY_SIZE(regs_param_gp))
 					params[i].reg = &mips_registers[regs_param_gp[gp_param]];
+				params[i].offset = gp_param * (MIPS_MACHINE_SIZE / 8);
 				++gp_param;
 			}
 		}
@@ -69,6 +72,30 @@ void mips_determine_calling_convention(mips_calling_convention_t *const cconv, i
 		results = 0;
 	}
 	cconv->results = results;
+}
+
+void mips_layout_parameter_entities(mips_calling_convention_t *const cconv, ir_graph *const irg)
+{
+	ir_entity **const param_map  = be_collect_parameter_entities(irg);
+	ir_type    *const frame_type = get_irg_frame_type(irg);
+	ir_entity  *const fun_ent    = get_irg_entity(irg);
+	ir_type    *const fun_type   = get_entity_type(fun_ent);
+	size_t      const n_params   = get_method_n_params(fun_type);
+	for (size_t i = 0; i != n_params; ++i) {
+		mips_reg_or_slot_t *const param      = &cconv->parameters[i];
+		ir_type            *const param_type = get_method_param_type(fun_type, i);
+		if (!is_atomic_type(param_type))
+			panic("unhandled parameter type");
+		ir_entity *param_ent = param_map[i];
+		if (!param->reg) {
+			if (!param_ent)
+				param_ent = new_parameter_entity(frame_type, i, param_type);
+			assert(get_entity_offset(param_ent) == INVALID_OFFSET);
+			set_entity_offset(param_ent, param->offset);
+		}
+		param->entity = param_ent;
+	}
+	free(param_map);
 }
 
 void mips_free_calling_convention(mips_calling_convention_t *const cconv)
