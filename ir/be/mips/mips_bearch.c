@@ -42,7 +42,7 @@ static ir_settings_arch_dep_t const mips_arch_dep = {
 
 static backend_params mips_backend_params = {
 	.experimental                  = "the MIPS backend is highly experimental and unfinished",
-	.byte_order_big_endian         = false,
+	.byte_order_big_endian         = true,
 	.pic_supported                 = false,
 	.unaligned_memaccess_supported = false,
 	.modulo_shift                  = MIPS_MACHINE_SIZE,
