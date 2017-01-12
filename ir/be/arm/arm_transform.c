@@ -1575,20 +1575,6 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	}
 }
 
-/**
- * Finds number of output value of a mode_T node which is constrained to
- * a single specific register.
- */
-static int find_out_for_reg(ir_node *node, const arch_register_t *reg)
-{
-	be_foreach_out(node, o) {
-		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
-		if (req == reg->single_req)
-			return o;
-	}
-	return -1;
-}
-
 static ir_node *gen_Proj_Proj_Call(ir_node *node)
 {
 	unsigned              pn            = get_Proj_num(node);
@@ -1600,10 +1586,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	const reg_or_stackslot_t *res = &cconv->results[pn];
 
 	assert(res->reg0 != NULL && res->reg1 == NULL);
-	int regn = find_out_for_reg(new_call, res->reg0);
-	if (regn < 0) {
-		panic("Internal error in calling convention for return %+F", node);
-	}
+	unsigned const regn = be_get_out_for_reg(new_call, res->reg0);
 
 	arm_free_calling_convention(cconv);
 

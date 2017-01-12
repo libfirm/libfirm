@@ -953,3 +953,13 @@ ir_node *be_make_Sync(ir_node *const block, int const arity, ir_node **const ins
 		arity == 1 ? ins[0] :
 		new_r_Sync(block, arity, ins);
 }
+
+unsigned be_get_out_for_reg(ir_node const *const node, arch_register_t const *const reg)
+{
+	be_foreach_out(node, o) {
+		arch_register_req_t const *const req = arch_get_irn_register_req_out(node, o);
+		if (req == reg->single_req)
+			return o;
+	}
+	panic("register requirement not found");
+}

@@ -568,16 +568,6 @@ emit_S:
 				}
 				break;
 
-			case 'd':
-				if (mod & EMIT_LONG) {
-					long num = va_arg(ap, long);
-					be_emit_irprintf("%ld", num);
-				} else {
-					int num = va_arg(ap, int);
-					be_emit_irprintf("%d", num);
-				}
-				break;
-
 			default:
 unknown:
 				panic("unknown format conversion");
