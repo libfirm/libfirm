@@ -682,6 +682,45 @@ static void emit_amd64_mov_gp(const ir_node *node)
 }
 
 /**
+ * Emit movsb/w instructions to make mov count divisible by 8.
+ */
+static void emit_copyB_prolog(unsigned size)
+{
+	if (size & 1)
+		amd64_emitf(NULL, "movsb");
+	if (size & 2)
+		amd64_emitf(NULL, "movsw");
+	if (size & 4)
+		amd64_emitf(NULL, "movsd");
+}
+
+/**
+ * Emit rep movsq instruction for memcopy.
+ */
+static void emit_amd64_copyB(const ir_node *node)
+{
+	unsigned size = get_amd64_copyb_attr_const(node)->size;
+
+	emit_copyB_prolog(size);
+	amd64_emitf(node, "rep movsd");
+}
+
+/**
+ * Emits unrolled memcopy.
+ */
+static void emit_amd64_copyB_i(const ir_node *node)
+{
+	unsigned size = get_amd64_copyb_attr_const(node)->size;
+
+	emit_copyB_prolog(size);
+
+	size >>= 3;
+	while (size--) {
+		amd64_emitf(NULL, "movsq");
+	}
+}
+
+/**
  * emit copy node
  */
 static void emit_be_Copy(const ir_node *irn)
@@ -755,6 +794,8 @@ static void amd64_register_emitters(void)
 	be_set_emitter(op_amd64_jmp,        emit_amd64_jmp);
 	be_set_emitter(op_amd64_jmp_switch, emit_amd64_jmp_switch);
 	be_set_emitter(op_amd64_mov_gp,     emit_amd64_mov_gp);
+	be_set_emitter(op_amd64_copyB,      emit_amd64_copyB);
+	be_set_emitter(op_amd64_copyB_i,    emit_amd64_copyB_i);
 	be_set_emitter(op_be_Asm,           emit_amd64_asm);
 	be_set_emitter(op_be_Copy,          emit_be_Copy);
 	be_set_emitter(op_be_CopyKeep,      emit_be_Copy);

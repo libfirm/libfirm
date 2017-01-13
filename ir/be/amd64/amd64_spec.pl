@@ -90,6 +90,9 @@ $mode_x87   = "x86_mode_E";
 	amd64_call_addr_attr_t =>
 		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
 		."\t*attr = *attr_init;",
+	amd64_copyb_attr_t =>
+		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_NONE, size);\n"
+		."\tinit_amd64_copyb_attributes(res, size);",
 	amd64_x87_attr_t =>
 		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_X87, X86_SIZE_80);\n",
 	amd64_x87_addr_attr_t =>
@@ -681,6 +684,28 @@ movdqu_store => {
 	attr_type => "amd64_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 	emit      => "movdqu %^S0, %A",
+},
+
+copyB => {
+	op_flags  => [ "uses_memory" ],
+	in_reqs   => [ "rdi", "rsi", "rcx", "mem" ],
+	out_reqs  => [ "rdi", "rsi", "rcx", "mem" ],
+	ins       => [ "dest", "source", "count", "mem" ],
+	outs      => [ "dest", "source", "count", "M" ],
+	attr_type => "amd64_copyb_attr_t",
+	attr      => "unsigned size",
+	latency   => 250,
+},
+
+copyB_i => {
+	op_flags  => [ "uses_memory" ],
+	in_reqs   => [ "rdi", "rsi", "mem" ],
+	out_reqs  => [ "rdi", "rsi", "mem" ],
+	ins       => [ "dest", "source", "mem" ],
+	outs      => [ "dest", "source", "M" ],
+	attr_type => "amd64_copyb_attr_t",
+	attr      => "unsigned size",
+	latency   => 3,
 },
 
 l_punpckldq => {
