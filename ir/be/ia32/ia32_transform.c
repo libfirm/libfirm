@@ -4750,7 +4750,7 @@ static ir_node *gen_Call(ir_node *node)
 	ia32_address_mode_t am;
 	ir_node      *const old_block = get_nodes_block(node);
 	ir_node      *const callee    = get_Call_ptr(node);
-	ir_node      *const mem       = get_Call_mem(node);
+	ir_node      *      mem       = get_Call_mem(node);
 	match_arguments(&am, old_block, NULL, callee, mem, match_am | match_immediate);
 	adjust_pc_relative_relocation(am.new_op2);
 
@@ -4794,7 +4794,7 @@ static ir_node *gen_Call(ir_node *node)
 	unsigned        sync_arity = 0;
 	unsigned  const n_params   = get_Call_n_params(node);
 	ir_node **const sync_ins   = ALLOCAN(ir_node*, n_params + 1);
-	sync_ins[sync_arity++] = transform_AM_mem(block, callee, mem, am.addr.mem);
+	mem = transform_AM_mem(block, callee, mem, am.addr.mem);
 
 	dbg_info *const dbgi = get_irn_dbg_info(node);
 	for (unsigned p = 0; p < n_params; ++p) {
@@ -4806,8 +4806,8 @@ static ir_node *gen_Call(ir_node *node)
 			ir_node *const lea       = create_lea(dbgi, block, callframe, noreg_GP, 0, param->offset);
 			ir_node *const new_value = be_transform_node(value);
 			unsigned const size      = get_type_size(param_type);
-			ir_node *const copyb     = new_bd_ia32_CopyB_i(dbgi, block, lea, new_value, nomem, size);
-			sync_ins[sync_arity++] = be_new_Proj(copyb, pn_ia32_CopyB_i_M);
+			ir_node *const copyb     = new_bd_ia32_CopyB_i(dbgi, block, lea, new_value, mem, size);
+			sync_ins[sync_arity++]   = be_new_Proj(copyb, pn_ia32_CopyB_i_M);
 		} else if (param->reg) {
 			/* Value transmitted in register. */
 			unsigned const parami = in_arity++;
@@ -4819,7 +4819,7 @@ static ir_node *gen_Call(ir_node *node)
 				.variant = X86_ADDR_BASE,
 				.base    = callframe,
 				.index   = noreg_GP,
-				.mem     = nomem,
+				.mem     = mem,
 				.imm     = {
 					.offset = param->offset
 				},
@@ -4829,6 +4829,11 @@ static ir_node *gen_Call(ir_node *node)
 			sync_ins[sync_arity++] = create_proj_for_store(store, pn_Store_M);
 		}
 	}
+
+	if (sync_arity == 0) {
+		sync_ins[sync_arity++] = mem;
+	}
+
 	/* PIC calls need the GOT address in ebx */
 	if (is_plt) {
 		unsigned goti = in_arity++;

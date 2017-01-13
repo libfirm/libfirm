@@ -1871,6 +1871,10 @@ static ir_node *gen_Call(ir_node *const node)
 	sync_ins[sync_arity++] = be_transform_node(mem);
 no_call_mem:;
 
+	ir_node *sync1 = be_make_Sync(new_block, sync_arity, sync_ins);
+	// Reset for next sync
+	sync_arity = 0;
+
 	int const call_sp_pos = in_arity++;
 	in_req[call_sp_pos]   = amd64_registers[REG_RSP].single_req;
 	in[call_sp_pos]       = callframe;
@@ -1919,9 +1923,13 @@ no_call_mem:;
 
 			attr.base.addr.base_input = arity;
 			in[arity++]               = callframe;
-			in[arity++]               = get_irg_no_mem(irg);
+			in[arity++]               = sync1;
 			sync_ins[sync_arity++]    = make_store_for_mode(mode, dbgi, new_block, arity, in, &attr, false);
 		}
+	}
+
+	if (sync_arity == 0) {
+		sync_ins[sync_arity++] = sync1;
 	}
 
 	/* memory input */
