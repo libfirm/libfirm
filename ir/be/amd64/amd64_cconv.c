@@ -109,14 +109,14 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 	unsigned stack_offset = amd64_use_x64_abi ? 32 : 0;
 	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *param_type = get_method_param_type(function_type,i);
-		if (is_compound_type(param_type))
-			panic("compound arguments NIY");
-
-		ir_mode *mode = get_type_mode(param_type);
-		int      bits = get_mode_size_bits(mode);
 		reg_or_stackslot_t *param = &params[i];
 
-		if (mode_is_float(mode) && float_param_regnum < n_float_param_regs
+		ir_mode *mode = get_type_mode(param_type);
+
+		if (is_aggregate_type(param_type)) {
+			goto use_memory;
+
+		} else if (mode_is_float(mode) && float_param_regnum < n_float_param_regs
 		    && mode != x86_mode_E) {
 			param->reg = float_param_regs[float_param_regnum++];
 			if (amd64_use_x64_abi) {
@@ -128,11 +128,12 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 				++float_param_regnum;
 			}
 		} else {
+		use_memory:
 			param->type   = param_type;
 			param->offset = stack_offset;
 			/* increase offset by at least AMD64_REGISTER_SIZE bytes so
 			 * everything is aligned */
-			stack_offset += round_up2(bits / 8, AMD64_REGISTER_SIZE);
+			stack_offset += round_up2(get_type_size(param_type), AMD64_REGISTER_SIZE);
 		}
 	}
 
