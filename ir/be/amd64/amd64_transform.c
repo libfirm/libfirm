@@ -1770,6 +1770,20 @@ static ir_node *make_store_for_mode(ir_mode *const mode, dbg_info *const dbgi, i
 	return new_store;
 }
 
+static ir_node *make_lea_base_frameoffset(dbg_info *dbgi, ir_node *block, ir_node *base, int32_t offset)
+{
+	ir_node *lea_in[] = { base };
+	x86_addr_t lea_addr = {
+		.immediate = {
+			.offset = offset,
+			.kind   = X86_IMM_VALUE,
+		},
+		.variant    = X86_ADDR_BASE,
+		.base_input = 0,
+	};
+	return new_bd_amd64_lea(dbgi, block, ARRAY_SIZE(lea_in), lea_in, reg_reqs, X86_SIZE_64, lea_addr);
+}
+
 static ir_node *gen_Call(ir_node *const node)
 {
 	ir_node           *const callee       = get_Call_ptr(node);
@@ -1891,13 +1905,21 @@ no_call_mem:;
 	for (size_t p = 0; p < n_params; ++p) {
 		ir_node                  *const value = get_Call_param(node, p);
 		reg_or_stackslot_t const *const param = &cconv->parameters[p];
-
-		/* put value into registers */
-		if (param->reg != NULL) {
+		ir_type                  *const param_type = get_method_param_type(type, p);
+		if (is_aggregate_type(param_type)) {
+			/* Copy aggregate onto stack */
+			ir_node *const lea       = make_lea_base_frameoffset(dbgi, block, callframe, param->offset);
+			ir_node *const new_value = be_transform_node(value);
+			unsigned const size      = get_type_size(param_type);
+			ir_node *const copyb     = new_bd_amd64_copyB_i(dbgi, block, lea, new_value, sync1, size);
+			sync_ins[sync_arity++] = be_new_Proj(copyb, pn_amd64_copyB_i_M);
+		} else if (param->reg != NULL) {
+			/* put value into registers */
 			in[in_arity]     = be_transform_node(value);
 			in_req[in_arity] = param->reg->single_req;
 			++in_arity;
 		} else {
+			/* put value onto stack */
 			ir_mode        *const mode = get_type_mode(get_method_param_type(type, p));
 			x86_insn_size_t       size = x86_size_from_mode(mode);
 			if (size < X86_SIZE_32)
