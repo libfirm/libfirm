@@ -773,6 +773,22 @@ static ir_node *gen_Minus(ir_node *const node)
 	panic("TODO");
 }
 
+static ir_node *gen_Mux(ir_node *const node)
+{
+	ir_mode *const mode = get_irn_mode(node);
+	if (be_mode_needs_gp_reg(mode)) {
+		if (is_irn_null(get_Mux_false(node)) && is_irn_one(get_Mux_true(node))) {
+			ir_node *const sel = get_Mux_sel(node);
+			if (is_Cmp(sel)) {
+				ir_relation const rel = get_Cmp_relation(sel);
+				if (rel == ir_relation_less || rel == ir_relation_greater)
+					return be_transform_node(sel);
+			}
+		}
+	}
+	panic("TODO");
+}
+
 static ir_node *gen_Not(ir_node *const node)
 {
 	dbg_info *const dbgi    = get_irn_dbg_info(node);
@@ -1183,6 +1199,7 @@ static void mips_register_transformers(void)
 	be_set_transform_function(op_Mul,     gen_Mul);
 	be_set_transform_function(op_Minus,   gen_Minus);
 	be_set_transform_function(op_Mod,     gen_Mod);
+	be_set_transform_function(op_Mux,     gen_Mux);
 	be_set_transform_function(op_Not,     gen_Not);
 	be_set_transform_function(op_Or,      gen_Or);
 	be_set_transform_function(op_Phi,     gen_Phi);
