@@ -1477,59 +1477,61 @@ static bool is_float(ir_type const *const type)
 	return is_atomic_type(type) && mode_is_float(get_type_mode(type));
 }
 
-static ir_mode *iu4_iu4_modes[2];
-static aggregate_spec_t const iu4_iu4_spec = {
-	.n_values = 2,
-	.modes    = iu4_iu4_modes,
+/* modes filled in below */
+static aggregate_spec_t iu4_iu4_spec = {
+	.length = 2,
 };
-static aggregate_spec_t const iu4_spec = {
-	.n_values = 1,
-	.modes    = iu4_iu4_modes,
+static aggregate_spec_t iu4_spec = {
+	.length = 1,
 };
-static ir_mode *iu2_modes[1];
-static aggregate_spec_t const iu2_spec = {
-	.n_values = 1,
-	.modes    = iu2_modes,
+static aggregate_spec_t iu2_spec = {
+	.length = 1,
 };
-static ir_mode *iu1_modes[1];
-static aggregate_spec_t const iu1_spec = {
-	.n_values = 1,
-	.modes    = iu1_modes,
+static aggregate_spec_t iu1_spec = {
+	.length = 1,
 };
-static ir_mode *float_modes[1];
-static aggregate_spec_t const float_spec = {
-	.n_values = 1,
-	.modes    = float_modes,
+static aggregate_spec_t float_spec = {
+	.length = 1,
 };
-static ir_mode *double_modes[1];
-static aggregate_spec_t const double_spec = {
-	.n_values = 1,
-	.modes    = double_modes,
+static aggregate_spec_t double_spec = {
+	.length = 1,
 };
 
 static void init_aggregate_specs(void)
 {
-	iu4_iu4_modes[0] = mode_Iu;
-	iu4_iu4_modes[1] = mode_Iu;
-	iu2_modes[0]     = mode_Hu;
-	iu1_modes[0]     = mode_Bu;
-	float_modes[0]   = mode_F;
-	double_modes[0]  = mode_D;
+	iu4_iu4_spec.modes[0] = mode_Iu;
+	iu4_iu4_spec.modes[1] = mode_Iu;
+	iu4_spec.modes[0]     = mode_Iu;
+	iu2_spec.modes[0]     = mode_Hu;
+	iu1_spec.modes[0]     = mode_Bu;
+	float_spec.modes[0]   = mode_F;
+	double_spec.modes[0]  = mode_D;
 }
 
-static aggregate_spec_t const *decide_compound_ret(ir_type const *type)
+static aggregate_spec_t decide_compound_ret(void *env, ir_type const *type)
 {
+	(void)env;
+
 	unsigned size = get_type_size(type);
 	if (is_Array_type(type)) {
 		/* This is used for returning complex float numbers */
 		if (size == 8 && get_array_size(type) == 2
 		 && is_float(get_array_element_type(type))) {
-			return &iu4_iu4_spec;
+			return iu4_iu4_spec;
 		}
-		return &no_values_aggregate_spec;
+		return (aggregate_spec_t) {
+			.length = 1,
+			.modes  = { mode_P },
+		};
 	}
 
-	assert(is_compound_type(type));
+	if (is_atomic_type(type)) {
+		switch (size) {
+		case 1: return iu1_spec;
+		case 2: return iu2_spec;
+		case 4: return iu4_spec;
+		}
+	}
 
 	/* return_small_struct_in_regs is used on OS X */
 	if (ir_platform.ia32_struct_in_regs && size <= 8) {
@@ -1539,21 +1541,24 @@ static aggregate_spec_t const *decide_compound_ret(ir_type const *type)
 			if (is_float(member_type)) {
 				unsigned member_size = get_type_size(member_type);
 				if (member_size == 4)
-					return &float_spec;
+					return float_spec;
 				if (member_size == 8)
-					return &double_spec;
+					return double_spec;
 			}
 		}
 
 		switch (size) {
-		case 1: return &iu1_spec;
-		case 2: return &iu2_spec;
-		case 4: return &iu4_spec;
-		case 8: return &iu4_iu4_spec;
+		case 1: return iu1_spec;
+		case 2: return iu2_spec;
+		case 4: return iu4_spec;
+		case 8: return iu4_iu4_spec;
 		}
 	}
 
-	return &no_values_aggregate_spec;
+	return (aggregate_spec_t) {
+		.length = 1,
+		.modes  = { mode_P },
+	};
 }
 
 static void ia32_lower_va_arg(ir_node *node)
@@ -1590,7 +1595,7 @@ static void ia32_lower_for_target(void)
 	init_aggregate_specs();
 	lower_calls_with_compounds(LF_RETURN_HIDDEN,
 				   dont_lower_aggregates, NULL,
-				   lower_aggregates_as_pointers, NULL,
+				   decide_compound_ret, NULL,
 				   reset_stateless_abi);
 	be_after_irp_transform("lower-calls");
 
