@@ -390,24 +390,23 @@ static ir_node *gen_Call(ir_node *const node)
 		++p;
 	}
 
-	unsigned const n_mem_param = n_params > 4 ? n_params - 4 : 0;
-	ir_node       *mems[1 + n_mem_param];
-	unsigned       m = 0;
+	mips_calling_convention_t cconv;
+	ir_type            *const fun_type = get_Call_type(node);
+	mips_determine_calling_convention(&cconv, fun_type);
+
+	ir_node *mems[1 + cconv.n_mem_param];
+	unsigned m = 0;
 
 	ir_node *const mem = get_Call_mem(node);
 	mems[m++] = be_transform_node(mem);
 
-	int      const frame_size = (MIPS_MACHINE_SIZE / 8) * (4 + n_mem_param);
+	int      const frame_size = cconv.param_stack_size;
 	ir_node *const block      = be_transform_nodes_block(node);
 	ir_node *const sp         = get_Start_sp(irg);
 	ir_node *const call_frame = be_new_IncSP(&mips_registers[REG_SP], block, sp, frame_size, 0);
 
 	ins[n_mips_jal_stack]  = call_frame;
 	reqs[n_mips_jal_stack] = &mips_single_reg_req_gp_sp;
-
-	mips_calling_convention_t cconv;
-	ir_type            *const fun_type = get_Call_type(node);
-	mips_determine_calling_convention(&cconv, fun_type);
 
 	dbg_info *const dbgi = get_irn_dbg_info(node);
 	for (size_t i = 0; i != n_params; ++i) {

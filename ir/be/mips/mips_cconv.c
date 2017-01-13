@@ -26,11 +26,11 @@ void mips_determine_calling_convention(mips_calling_convention_t *const cconv, i
 {
 	/* Handle parameters. */
 	mips_reg_or_slot_t *params;
+	size_t              gp_param = 0;
 	size_t        const n_params = get_method_n_params(fun_type);
 	if (n_params != 0) {
 		params = XMALLOCNZ(mips_reg_or_slot_t, n_params);
 
-		size_t gp_param = 0;
 		for (size_t i = 0; i != n_params; ++i) {
 			ir_type *const param_type = get_method_param_type(fun_type, i);
 			ir_mode *const param_mode = get_type_mode(param_type);
@@ -48,7 +48,9 @@ void mips_determine_calling_convention(mips_calling_convention_t *const cconv, i
 	} else {
 		params = 0;
 	}
-	cconv->parameters = params;
+	cconv->param_stack_size = MAX(4, gp_param) * (MIPS_MACHINE_SIZE / 8);
+	cconv->n_mem_param      = gp_param > 4 ? gp_param - 4 : 0;
+	cconv->parameters       = params;
 
 	/* Handle results. */
 	mips_reg_or_slot_t *results;
