@@ -145,6 +145,12 @@ void init_amd64_movimm_attributes(ir_node *node, const amd64_imm64_t *imm)
 	attr->immediate = *imm;
 }
 
+void init_amd64_copyb_attributes(ir_node *node, unsigned size)
+{
+	amd64_copyb_attr_t *attr = get_amd64_copyb_attr(node);
+	attr->size = size;
+}
+
 static bool imm64s_equal(const amd64_imm64_t *const imm0,
                          const amd64_imm64_t *const imm1)
 {
@@ -187,6 +193,14 @@ int amd64_movimm_attrs_equal(const ir_node *const a, const ir_node *const b)
 	const amd64_movimm_attr_t *const attr_b = get_amd64_movimm_attr_const(b);
 	return amd64_attrs_equal(a, b)
 	    && imm64s_equal(&attr_a->immediate, &attr_b->immediate);
+}
+
+int amd64_copyb_attrs_equal(const ir_node *const a, const ir_node *const b)
+{
+	const amd64_copyb_attr_t *const attr_a = get_amd64_copyb_attr_const(a);
+	const amd64_copyb_attr_t *const attr_b = get_amd64_copyb_attr_const(b);
+	return amd64_attrs_equal(a, b)
+	    && attr_a->size == attr_b->size;
 }
 
 int amd64_shift_attrs_equal(const ir_node *const a, const ir_node *const b)

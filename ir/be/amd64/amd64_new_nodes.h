@@ -149,6 +149,19 @@ static inline amd64_movimm_attr_t *get_amd64_movimm_attr(ir_node *node)
 	return (amd64_movimm_attr_t*)get_irn_generic_attr(node);
 }
 
+static inline const amd64_copyb_attr_t *get_amd64_copyb_attr_const(
+		const ir_node *node)
+{
+	assert(is_amd64_copyB(node) || is_amd64_copyB_i(node));
+	return (const amd64_copyb_attr_t*)get_irn_generic_attr_const(node);
+}
+
+static inline amd64_copyb_attr_t *get_amd64_copyb_attr(ir_node *node)
+{
+	assert(is_amd64_copyB(node) || is_amd64_copyB_i(node));
+	return (amd64_copyb_attr_t*)get_irn_generic_attr_const(node);
+}
+
 static inline const amd64_call_addr_attr_t *get_amd64_call_addr_attr_const(
 		const ir_node *node)
 {

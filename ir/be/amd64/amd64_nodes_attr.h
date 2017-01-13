@@ -77,6 +77,11 @@ typedef struct amd64_movimm_attr_t {
 	amd64_imm64_t immediate;
 } amd64_movimm_attr_t;
 
+typedef struct amd64_copyb_attr_t {
+	amd64_attr_t base;
+	unsigned     size;
+} amd64_copyb_attr_t;
+
 typedef struct amd64_cc_attr_t {
 	amd64_attr_t         base;
 	x86_condition_code_t cc;
