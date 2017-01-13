@@ -7,6 +7,7 @@
  * @file
  * @brief    The main amd64 backend driver file.
  */
+#include "amd64_abi.h"
 #include "amd64_bearch_t.h"
 
 #include "amd64_emitter.h"
@@ -707,11 +708,21 @@ static void amd64_lower_for_target(void)
 	ir_arch_lower(&amd64_arch_dep);
 	be_after_irp_transform("lower_arch-dep");
 
+	amd64_abi_state parameter_state = (amd64_abi_state) {
+		.integer_params = 0,
+		.sse_params = 0,
+	};
+
+	amd64_abi_state result_state = (amd64_abi_state) {
+		.integer_params = 0,
+		.sse_params = 0,
+	};
+
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN,
-	                           dummy_abi_lower, NULL,
-	                           dummy_abi_lower, NULL,
-	                           dummy_reset_abi_state);
+				   amd64_lower_parameter, &parameter_state,
+				   amd64_lower_result, &result_state,
+				   amd64_reset_abi_state);
 	be_after_irp_transform("lower-calls");
 
 	foreach_irp_irg(i, irg) {
