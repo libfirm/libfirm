@@ -92,13 +92,27 @@ typedef struct mips_addr {
 static mips_addr make_addr(ir_node *addr)
 {
 	ir_entity *ent = 0;
+	int32_t    val = 0;
+
+	if (is_Add(addr)) {
+		ir_node *const r = get_Add_right(addr);
+		if (is_Const(r)) {
+			long const v = get_Const_long(r);
+			if (is_simm16(v)) {
+				val  = v;
+				addr = get_Add_left(addr);
+			}
+		}
+	}
+
 	if (is_Member(addr)) {
 		ent  = get_Member_entity(addr);
 		addr = get_Member_ptr(addr);
 		assert(is_Proj(addr) && get_Proj_num(addr) == pn_Start_P_frame_base && is_Start(get_Proj_pred(addr)));
 	}
+
 	ir_node *const base = be_transform_node(addr);
-	return (mips_addr){ base, ent, 0 };
+	return (mips_addr){ base, ent, val };
 }
 
 static ir_node *make_address(ir_node const *const node, ir_entity *const ent, int32_t const val)
