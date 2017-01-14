@@ -34,7 +34,9 @@ void mips_determine_calling_convention(mips_calling_convention_t *const cconv, i
 		for (size_t i = 0; i != n_params; ++i) {
 			ir_type *const param_type = get_method_param_type(fun_type, i);
 			ir_mode *const param_mode = get_type_mode(param_type);
-			if (mode_is_float(param_mode)) {
+			if (!param_mode) {
+				panic("TODO");
+			} else if (mode_is_float(param_mode)) {
 				panic("TODO");
 			} else {
 				if (param_type->flags & tf_lowered_dw && gp_param % 2 != 0)
@@ -62,7 +64,9 @@ void mips_determine_calling_convention(mips_calling_convention_t *const cconv, i
 		for (size_t i = 0; i != n_results; ++i) {
 			ir_type *const res_type = get_method_res_type(fun_type, i);
 			ir_mode *const res_mode = get_type_mode(res_type);
-			if (mode_is_float(res_mode)) {
+			if (!res_mode) {
+				panic("TODO");
+			} else if (mode_is_float(res_mode)) {
 				panic("TODO");
 			} else {
 				if (gp_res == ARRAY_SIZE(regs_result_gp))
