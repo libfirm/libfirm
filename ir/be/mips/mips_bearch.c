@@ -271,6 +271,11 @@ static void mips_generate_code(FILE *const output, char const *const cup_name)
 
 static void mips_lower_for_target(void)
 {
+	foreach_irp_irg(i, irg) {
+		lower_CopyB(irg, 16, 17, false);
+		be_after_transform(irg, "lower-copyb");
+	}
+
 	ir_mode *const mode_gp = mips_reg_classes[CLASS_mips_gp].mode;
 	foreach_irp_irg(i, irg) {
 		lower_switch(irg, 4, 256, mode_gp);
