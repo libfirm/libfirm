@@ -473,7 +473,7 @@ static ir_node *gen_Cmp(ir_node *const node)
 	ir_node       *r    = get_Cmp_right(node);
 	ir_mode *const mode = get_irn_mode(l);
 	if (be_mode_needs_gp_reg(mode) && get_mode_size_bits(mode) == MIPS_MACHINE_SIZE) {
-		ir_relation const rel = get_Cmp_relation(node);
+		ir_relation const rel = get_Cmp_relation(node) & ir_relation_less_equal_greater;
 		switch (rel) {
 		case ir_relation_greater:
 		case ir_relation_less_equal: {
@@ -519,7 +519,7 @@ static ir_node *gen_Cond(ir_node *const node)
 		ir_node *const l    = get_Cmp_left(sel);
 		ir_mode *const mode = get_irn_mode(l);
 		if (be_mode_needs_gp_reg(mode) && get_mode_size_bits(mode) == MIPS_MACHINE_SIZE) {
-			ir_relation    rel = get_Cmp_relation(sel);
+			ir_relation    rel = get_Cmp_relation(sel) & ir_relation_less_equal_greater;
 			ir_node *const r   = get_Cmp_right(sel);
 			if (is_irn_null(r)) {
 				if (mode_is_signed(mode)) {
@@ -793,7 +793,7 @@ static ir_node *gen_Mux(ir_node *const node)
 		if (is_irn_null(get_Mux_false(node)) && is_irn_one(get_Mux_true(node))) {
 			ir_node *const sel = get_Mux_sel(node);
 			if (is_Cmp(sel)) {
-				ir_relation const rel = get_Cmp_relation(sel);
+				ir_relation const rel = get_Cmp_relation(sel) & ir_relation_less_equal_greater;
 				if (rel == ir_relation_less || rel == ir_relation_greater)
 					return be_transform_node(sel);
 			}
