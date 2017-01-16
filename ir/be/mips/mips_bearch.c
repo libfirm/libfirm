@@ -17,6 +17,7 @@
 #include "iredges.h"
 #include "irgwalk.h"
 #include "irprog_t.h"
+#include "lower_calls.h"
 #include "lowering.h"
 #include "mips_bearch_t.h"
 #include "mips_emitter.h"
@@ -271,6 +272,9 @@ static void mips_generate_code(FILE *const output, char const *const cup_name)
 
 static void mips_lower_for_target(void)
 {
+	lower_calls_with_compounds(LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS, NULL);
+	be_after_irp_transform("lower-calls");
+
 	foreach_irp_irg(i, irg) {
 		lower_CopyB(irg, 16, 17, false);
 		be_after_transform(irg, "lower-copyb");
