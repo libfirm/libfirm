@@ -266,7 +266,10 @@ static void mips_lower_for_target(void)
 	ir_arch_lower(&mips_arch_dep);
 	be_after_irp_transform("lower-arch-dep");
 
-	lower_calls_with_compounds(LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS, NULL);
+	lower_calls_with_compounds(LF_RETURN_HIDDEN,
+	                           dont_lower_aggregates, NULL,
+	                           lower_aggregates_as_pointers, NULL,
+	                           reset_stateless_abi);
 	be_after_irp_transform("lower-calls");
 
 	foreach_irp_irg(i, irg) {
