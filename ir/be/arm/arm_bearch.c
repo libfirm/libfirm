@@ -225,7 +225,10 @@ static void arm_lower_for_target(void)
 	be_after_irp_transform("lower-arch-dep");
 
 	/* lower compound param handling */
-	lower_calls_with_compounds(LF_RETURN_HIDDEN, NULL);
+	lower_calls_with_compounds(LF_RETURN_HIDDEN,
+				   lower_aggregates_as_pointers, NULL,
+				   lower_aggregates_as_pointers, NULL,
+				   reset_stateless_abi);
 	be_after_irp_transform("lower-calls");
 
 	foreach_irp_irg(i, irg) {

@@ -11,6 +11,8 @@
 #include "lower_calls.h"
 
 #include "array.h"
+#include "be.h"
+#include "debug.h"
 #include "firm_types.h"
 #include "heights.h"
 #include "ircons.h"
@@ -31,23 +33,94 @@
 #include "util.h"
 #include <stdbool.h>
 
-static pmap    *pointer_types;
-static pmap    *lowered_mtps;
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
+
+static pmap *pointer_types;
+static pmap *lowered_mtps;
 
 typedef struct lowering_env_t {
+	struct obstack              *obst;
 	compound_call_lowering_flags flags;
-	decide_aggregate_ret_func    aggregate_ret;
+	lower_call_func              lower_parameter;
+	void                        *lower_parameter_env;
+	lower_call_func              lower_return;
+	void                        *lower_return_env;
+	reset_abi_state_func         reset_abi_state;
 } lowering_env_t;
 
-aggregate_spec_t const no_values_aggregate_spec = {
-	.n_values = 0,
-	.modes    = NULL,
-};
+typedef struct mtp_info_t {
+	unsigned          n_hidden;
+	aggregate_spec_t *parameter_specs;
+	aggregate_spec_t *result_specs;
+} mtp_info_t;
 
-static aggregate_spec_t const *get_no_values(ir_type const *const type)
+typedef enum {
+	PASS_AS_VALUES,
+	PASS_ON_STACK,
+	PASS_AS_POINTER,
+} how_to_pass_t;
+
+aggregate_spec_t lower_aggregates_as_pointers(void *env, ir_type const *type)
 {
-	(void)type;
-	return &no_values_aggregate_spec;
+	(void)env;
+
+	if (is_aggregate_type(type)) {
+		return (aggregate_spec_t) {
+			.length = 1,
+			.modes = { mode_P },
+		};
+	} else {
+		return (aggregate_spec_t) {
+			.length = 1,
+			.modes = { get_type_mode(type) },
+		};
+	}
+}
+
+aggregate_spec_t dont_lower_aggregates(void *env, ir_type const *type)
+{
+	(void)env;
+
+	if (is_aggregate_type(type)) {
+		return (aggregate_spec_t) {
+			.length = 1,
+			.modes = { mode_M },
+		};
+	} else {
+		return (aggregate_spec_t) {
+			.length = 1,
+			.modes = { get_type_mode(type) },
+		};
+	}
+}
+
+void reset_stateless_abi(void *param_env, void *result_env)
+{
+	(void)param_env;
+	(void)result_env;
+}
+
+static how_to_pass_t how_to_pass(aggregate_spec_t const *const spec)
+{
+	if (spec->length == 1) {
+		if (spec->modes[0] == mode_M) {
+			return PASS_ON_STACK;
+		}
+		if (spec->modes[0] == mode_P) {
+			return PASS_AS_POINTER;
+		}
+	}
+	return PASS_AS_VALUES;
+}
+
+static unsigned higher_arg_number(unsigned *arg_map, unsigned lower_arg)
+{
+	for (unsigned i = 0; arg_map[i] <= lower_arg; i++) {
+		if (arg_map[i] == lower_arg) {
+			return i;
+		}
+	}
+	panic("lower_arg not found");
 }
 
 /**
@@ -64,7 +137,11 @@ static ir_type *get_pointer_type(ir_type *dest_type)
 	return res;
 }
 
-static void fix_parameter_entities(ir_graph *irg, unsigned arg_shift)
+/**
+ * Update parameter numbers of parameter entities to adjust for
+ * additional parameters inserted during lowering.
+ */
+static void fix_parameter_entities(ir_graph *irg, unsigned *arg_map)
 {
 	ir_type *frame_type = get_irg_frame_type(irg);
 	size_t   n_members  = get_compound_n_members(frame_type);
@@ -74,29 +151,53 @@ static void fix_parameter_entities(ir_graph *irg, unsigned arg_shift)
 		if (!is_parameter_entity(member))
 			continue;
 
-		/* increase parameter number since we added a new parameter in front */
 		size_t num = get_entity_parameter_number(member);
 		if (num == IR_VA_START_PARAMETER_NUMBER)
 			continue;
-		set_entity_parameter_number(member, num + arg_shift);
+		set_entity_parameter_number(member, arg_map[num]);
 	}
 }
 
-static void remove_compound_param_entities(ir_graph *irg)
+static void remove_compound_param_entities(ir_graph *irg, unsigned *arg_map, mtp_info_t *mtp_info)
 {
 	ir_type *frame_type = get_irg_frame_type(irg);
 	size_t   n_members  = get_compound_n_members(frame_type);
 
 	for (size_t i = n_members; i-- > 0; ) {
 		ir_entity *member = get_compound_member(frame_type, i);
+		DBG((dbg, LEVEL_1, "Member no. %d is %+F\n", i, member));
 		if (!is_parameter_entity(member))
 			continue;
 
-		ir_type *type = get_entity_type(member);
-		if (is_aggregate_type(type)) {
+		ir_type          *type      = get_entity_type(member);
+		unsigned          n_hidden  = mtp_info->n_hidden;
+		int               entity_nr = get_entity_parameter_number(member);
+		int               arg_nr    = higher_arg_number(arg_map, entity_nr) + n_hidden;
+		aggregate_spec_t  spec      = mtp_info->parameter_specs[arg_nr];
+
+		if (is_aggregate_type(type) &&
+		    how_to_pass(&spec) != PASS_ON_STACK) {
+			DBG((dbg, LEVEL_1, "Removing entity %+F\n", member));
 			free_entity(member);
 		}
 	}
+}
+
+static void grow_aggregate_spec(struct obstack *obst, aggregate_spec_t const *const spec)
+{
+	obstack_grow(obst, spec, sizeof(aggregate_spec_t));
+}
+
+static void link_specs_to_type(struct obstack *obst, ir_type *mtp,
+                               unsigned n_hidden,
+                               aggregate_spec_t *parameter_specs,
+                               aggregate_spec_t *result_specs)
+{
+	mtp_info_t *info = OALLOCZ(obst, mtp_info_t);
+	info->n_hidden        = n_hidden;
+	info->parameter_specs = parameter_specs;
+	info->result_specs    = result_specs;
+	set_type_link(mtp, info);
 }
 
 /**
@@ -112,6 +213,8 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 	if (lowered != NULL)
 		return lowered;
 
+	DBG((dbg, LEVEL_1, "lowering method type %+F...\n", mtp));
+
 	/* check if the type has to be lowered at all */
 	bool   must_be_lowered = false;
 	size_t n_params        = get_method_n_params(mtp);
@@ -123,7 +226,7 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 			break;
 		}
 	}
-	if (!must_be_lowered && !(env->flags & LF_DONT_LOWER_ARGUMENTS)) {
+	if (!must_be_lowered) {
 		for (size_t i = 0; i < n_params; ++i) {
 			ir_type *param_type = get_method_param_type(mtp, i);
 			if (is_aggregate_type(param_type)) {
@@ -132,51 +235,106 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 			}
 		}
 	}
-	if (!must_be_lowered)
-		return mtp;
 
-	ir_type **params    = ALLOCANZ(ir_type*, n_params + n_ress);
-	ir_type **results   = ALLOCANZ(ir_type*, n_ress * 2);
+	struct obstack *obst = env->obst;
+
+	if (!must_be_lowered) {
+		DBG((dbg, LEVEL_1, "Does not need to be lowered\n"));
+		link_specs_to_type(obst, mtp, 0, NULL, NULL);
+		return mtp;
+	}
+
+	ir_type **params    = ALLOCANZ(ir_type*, n_params * MAX_REGS_PER_AGGREGATE + n_ress);
+	ir_type **results   = ALLOCANZ(ir_type*, n_ress * MAX_REGS_PER_AGGREGATE);
 	size_t    nn_params = 0;
 	size_t    nn_ress   = 0;
 
-	/* add a hidden parameter in front for every compound result */
+	env->reset_abi_state(env->lower_parameter_env, env->lower_return_env);
+
+	/* handle aggregate results */
+	unsigned n_hidden = 0;
 	for (size_t i = 0; i < n_ress; ++i) {
-		ir_type *const res_tp = get_method_res_type(mtp, i);
+		ir_type         *const res_tp = get_method_res_type(mtp, i);
+		aggregate_spec_t const spec   = env->lower_return(env->lower_return_env, res_tp);
+		grow_aggregate_spec(obst, &spec);
 
 		if (is_aggregate_type(res_tp)) {
-			aggregate_spec_t const *const ret_spec = env->aggregate_ret(res_tp);
-			unsigned                const n_values = ret_spec->n_values;
-			if (n_values > 0) {
-				for (unsigned i = 0; i < n_values; ++i) {
-					ir_mode *const mode = ret_spec->modes[i];
+			switch (how_to_pass(&spec)) {
+			case PASS_AS_VALUES:
+				for (unsigned i = 0; i < spec.length; ++i) {
+					ir_mode *const mode = spec.modes[i];
 					results[nn_ress++] = get_type_for_mode(mode);
 				}
-			} else {
+				break;
+
+			case PASS_ON_STACK:
+				panic("Return values cannot be passed on stack");
+				break;
+
+			case PASS_AS_POINTER: {
 				/* this compound will be allocated on callers stack and its
 				   address will be transmitted as a hidden parameter. */
+				n_hidden++;
 				ir_type *ptr_tp = get_pointer_type(res_tp);
 				params[nn_params++] = ptr_tp;
 				if (env->flags & LF_RETURN_HIDDEN)
 					results[nn_ress++] = ptr_tp;
+				break;
+			}
 			}
 		} else {
 			/* scalar result */
 			results[nn_ress++] = res_tp;
 		}
 	}
-	/* copy over parameter types */
-	for (size_t i = 0; i < n_params; ++i) {
-		ir_type *param_type = get_method_param_type(mtp, i);
-		if (!(env->flags & LF_DONT_LOWER_ARGUMENTS)
-		    && is_aggregate_type(param_type)) {
-		    /* turn parameter into a pointer type */
-		    param_type = new_type_pointer(param_type);
-		}
-		params[nn_params++] = param_type;
+	aggregate_spec_t *result_specs = obstack_finish(obst);
+
+	/* Handle hidden parameters. Since they are all scalar, we
+	 * assume they do not have to be lowered. Still, in case of a
+	 * stateful ABI, we need to notify the backend of the new
+	 * parameters. */
+	for (size_t i = 0; i < nn_params; i++) {
+		ir_type         *const ptr_tp = params[i];
+		aggregate_spec_t const spec   = env->lower_parameter(env->lower_parameter_env, ptr_tp);
+		grow_aggregate_spec(obst, &spec);
 	}
-	assert(nn_ress <= n_ress*2);
-	assert(nn_params <= n_params + n_ress);
+
+	/* handle aggregate parameters */
+	for (size_t i = 0; i < n_params; ++i) {
+		ir_type          *const param_tp = get_method_param_type(mtp, i);
+		aggregate_spec_t  const spec     = env->lower_parameter(env->lower_parameter_env, param_tp);
+		DBG((dbg, LEVEL_1, "Aggregate spec for %+F: length=%d, %+F, %+F\n", param_tp, spec.length, spec.modes[0], spec.length > 1 ? spec.modes[1] : NULL));
+		grow_aggregate_spec(obst, &spec);
+
+		if (is_aggregate_type(param_tp)) {
+			switch (how_to_pass(&spec)) {
+			case PASS_AS_VALUES:
+				for (size_t j = 0; j < spec.length; j++) {
+					params[nn_params++] = get_type_for_mode(spec.modes[j]);
+				}
+				break;
+
+			case PASS_ON_STACK:
+				params[nn_params++] = param_tp;
+				break;
+
+			case PASS_AS_POINTER: {
+				/* turn parameter into a pointer type */
+				ir_type *ptr_tp = new_type_pointer(param_tp);
+				DBG((dbg, LEVEL_3, "param_tp %+F --> ptr_tp %+F\n", param_tp, ptr_tp));
+				params[nn_params++] = ptr_tp;
+				break;
+			}
+			}
+		} else {
+			params[nn_params++] = param_tp;
+		}
+	}
+	aggregate_spec_t *parameter_specs = obstack_finish(obst);
+	link_specs_to_type(obst, mtp, n_hidden, parameter_specs, result_specs);
+
+	assert(nn_ress <= n_ress * MAX_REGS_PER_AGGREGATE);
+	assert(nn_params <= n_params * MAX_REGS_PER_AGGREGATE + n_ress);
 
 	unsigned cconv = get_method_calling_convention(mtp);
 	if (nn_params > n_params)
@@ -200,6 +358,7 @@ static ir_type *lower_mtp(lowering_env_t const *const env, ir_type *mtp)
 
 	pmap_insert(lowered_mtps, mtp, lowered);
 
+	DBG((dbg, LEVEL_1, "%+F lowered to %+F\n", mtp, lowered));
 	return lowered;
 }
 
@@ -221,8 +380,8 @@ struct cl_entry {
  * Walker environment for fix_args_and_collect_calls().
  */
 typedef struct wlk_env {
-	unsigned             arg_shift;        /**< The Argument index shift for parameters. */
-	struct obstack       obst;             /**< An obstack to allocate the data on. */
+	unsigned             *arg_map ;        /**< Map from old to new argument indices. */
+	struct obstack       *obst;            /**< An obstack to allocate the data on. */
 	cl_entry             *cl_list;         /**< The call list. */
 	compound_call_lowering_flags flags;
 	lowering_env_t const *env;
@@ -246,7 +405,7 @@ static cl_entry *get_call_entry(ir_node *call, wlk_env *env)
 {
 	cl_entry *res = (cl_entry*)get_irn_link(call);
 	if (res == NULL) {
-		res = OALLOCZ(&env->obst, cl_entry);
+		res = OALLOCZ(env->obst, cl_entry);
 		res->next = env->cl_list;
 		res->call = call;
 		set_irn_link(call, res);
@@ -343,10 +502,10 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 		ir_node  *pred = get_Proj_pred(n);
 		ir_graph *irg  = get_irn_irg(n);
 		if (pred == get_irg_args(irg)) {
-			unsigned arg_shift = env->arg_shift;
-			if (arg_shift > 0) {
-				unsigned pn = get_Proj_num(n);
-				set_Proj_num(n, pn + arg_shift);
+			unsigned pn     = get_Proj_num(n);
+			unsigned new_pn = env->arg_map[pn];
+			if (new_pn != pn) {
+				set_Proj_num(n, new_pn);
 				env->changed = true;
 			}
 		} else if (is_Call(pred)) {
@@ -374,8 +533,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 		for (size_t i = 0; i < n_ress; ++i) {
 			ir_type *type = get_method_res_type(ctp, i);
 			if (is_aggregate_type(type)) {
-				/*
-				 * This is a call with a compound return. As the result
+				/* This is a call with a compound return. As the result
 				 * might be ignored, we must put it in the list.
 				 */
 				cl_entry *entry = get_call_entry(n, env);
@@ -423,8 +581,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 			break;
 		ir_type *type = get_entity_type(entity);
 		if (is_aggregate_type(type)) {
-			if (! (env->flags & LF_DONT_LOWER_ARGUMENTS))
-				ARR_APP1(ir_node*, env->param_members, n);
+			ARR_APP1(ir_node*, env->param_members, n);
 			/* we need to copy compound parameters */
 			env->only_local_mem = false;
 		}
@@ -453,7 +610,7 @@ static bool is_compound_address(ir_type *ft, ir_node *adr)
 /** A pair for the copy-return-optimization. */
 typedef struct cr_pair {
 	ir_entity *ent; /**< the entity than can be removed from the frame */
-	ir_node *arg;   /**< the argument that replaces the entities address */
+	ir_node   *arg;  /**< the argument that replaces the entities address */
 } cr_pair;
 
 typedef struct copy_return_opt_env {
@@ -619,10 +776,10 @@ static void fix_int_return(cl_entry const *const entry,
 	ir_node *dummy = new_r_Dummy(irg, mode_M);
 	edges_reroute(proj_mem, dummy);
 
-	unsigned  const n_values = ret_spec->n_values;
-	ir_node **const sync_in  = ALLOCAN(ir_node*, n_values);
+	unsigned  const length = ret_spec->length;
+	ir_node **const sync_in  = ALLOCAN(ir_node*, length);
 	int             offset   = 0;
-	for (unsigned i = 0; i < n_values; ++i) {
+	for (unsigned i = 0; i < length; ++i) {
 		ir_mode *const mode = ret_spec->modes[i];
 		ir_node *      addr = base_addr;
 		if (offset > 0) {
@@ -639,13 +796,15 @@ static void fix_int_return(cl_entry const *const entry,
 		offset += get_mode_size_bytes(mode);
 	}
 
-	ir_node *const sync = new_r_Sync(block, n_values, sync_in);
+	ir_node *const sync = new_r_Sync(block, length, sync_in);
 	edges_reroute(dummy, sync);
 }
 
 static void fix_call_compound_ret(const cl_entry *entry,
                                   const ir_type *orig_ctp, wlk_env *env)
 {
+	DBG((dbg, LEVEL_1, "Fixing %+F for compound returns\n", entry->call));
+
 	/* produce destination addresses */
 	unsigned  n_compound_ret = entry->n_compound_ret;
 	ir_node **dest_addrs     = ALLOCANZ(ir_node*, n_compound_ret);
@@ -653,27 +812,37 @@ static void fix_call_compound_ret(const cl_entry *entry,
 
 	/* now add parameters for destinations or produce stores if compound is
 	 * returned as values */
-	ir_node  *call     = entry->call;
-	size_t    n_params = get_Call_n_params(call);
-	size_t    max_ins  = n_params + (n_Call_max+1) + n_compound_ret;
-	ir_node **new_in   = NULL;
-	size_t    pos      = (size_t)-1;
-	long      pn       = 0;
+	ir_node           *call         = entry->call;
+	size_t             n_params     = get_Call_n_params(call);
+	size_t             max_ins      = n_params + (n_Call_max+1) + n_compound_ret;
+	ir_node          **new_in       = NULL;
+	size_t             pos          = (size_t)-1;
+	long               pn           = 0;
+	mtp_info_t        *mtp_info     = get_type_link(orig_ctp);
+	aggregate_spec_t  *result_specs = mtp_info->result_specs;
 	for (size_t i = 0, c = 0, n_ress = get_method_n_ress(orig_ctp);
 	     i < n_ress; ++i) {
 		ir_type *type = get_method_res_type(orig_ctp, i);
+
 		if (!is_aggregate_type(type)) {
 			++pn;
 			continue;
 		}
 
 		ir_node *dest_addr = dest_addrs[c++];
-		aggregate_spec_t const *const ret_spec = env->env->aggregate_ret(type);
-		unsigned                const n_values = ret_spec->n_values;
-		if (n_values > 0) {
-			fix_int_return(entry, dest_addr, ret_spec, i, pn);
-			pn += n_values;
-		} else {
+		aggregate_spec_t const ret_spec = result_specs[i];
+
+		switch (how_to_pass(&ret_spec)) {
+		case PASS_AS_VALUES:
+			fix_int_return(entry, dest_addr, &ret_spec, i, pn);
+			pn += ret_spec.length;
+			break;
+
+		case PASS_ON_STACK:
+			panic("Return values cannot be passed on stack");
+			break;
+
+		case PASS_AS_POINTER:
 			/* add parameter with destination */
 			/* lazily construct new_input list */
 			if (new_in == NULL) {
@@ -685,8 +854,11 @@ static void fix_call_compound_ret(const cl_entry *entry,
 			}
 			new_in[pos++] = dest_addr;
 
+			DBG((dbg, LEVEL_1, "Added hidden parameter %+F\n", dest_addr));
+
 			if (env->flags & LF_RETURN_HIDDEN)
 				++pn;
+			break;
 		}
 	}
 
@@ -698,6 +870,7 @@ static void fix_call_compound_ret(const cl_entry *entry,
 			new_in[pos++] = param;
 		}
 		assert(pos <= max_ins);
+		DBG((dbg, LEVEL_1, "Changing call inputs to %+F %+F %+F ...\n", new_in[0], new_in[1], new_in[2]));
 		set_irn_in(call, pos, new_in);
 	}
 }
@@ -712,29 +885,98 @@ static ir_entity *create_compound_arg_entity(ir_graph *irg, ir_type *type)
 	return entity;
 }
 
-static void fix_call_compound_params(const cl_entry *entry, const ir_type *ctp, wlk_env *env)
+static ir_node *get_compound_slice(ir_node *block, ir_node *ptr, int offset,
+                                   ir_type *compound_type, ir_type *lower_param_type,
+                                   ir_node **mem)
 {
-	ir_node  *call     = entry->call;
-	dbg_info *dbgi     = get_irn_dbg_info(call);
-	ir_node  *mem      = get_Call_mem(call);
-	ir_graph *irg      = get_irn_irg(call);
-	ir_node  *frame    = get_irg_frame(irg);
-	size_t    n_params = get_method_n_params(ctp);
+	ir_graph *irg  = get_irn_irg(block);
+	dbg_info *dbgi = get_irn_dbg_info(ptr);
+	ir_mode  *mode = get_type_mode(lower_param_type);
 
-	for (size_t i = 0; i < n_params; ++i) {
-		ir_type *type = get_method_param_type(ctp, i);
-		if (!is_aggregate_type(type) || (env->flags & LF_DONT_LOWER_ARGUMENTS))
-			continue;
-
-		ir_node   *arg         = get_Call_param(call, i);
-		ir_entity *arg_entity  = create_compound_arg_entity(irg, type);
-		ir_node   *block       = get_nodes_block(call);
-		ir_node   *sel         = new_rd_Member(dbgi, block, frame, arg_entity);
-		bool       is_volatile = is_partly_volatile(arg);
-		mem = new_rd_CopyB(dbgi, block, mem, sel, arg, type, is_volatile ? cons_volatile : cons_none);
-		set_Call_param(call, i, sel);
+	if (offset != 0) {
+		ir_mode *offset_mode = get_reference_offset_mode(get_irn_mode(ptr));
+		ir_node *offset_irn  = new_rd_Const_long(dbgi, irg, offset_mode, offset);
+		ptr = new_rd_Add(dbgi, block, ptr, offset_irn);
 	}
+
+	ir_node *load = new_rd_Load(dbgi, block, *mem, ptr, mode, compound_type, cons_none);
+	*mem = new_rd_Proj(dbgi, load, mode_M, pn_Load_M);
+	return new_rd_Proj(dbgi, load, mode, pn_Load_res);
+}
+
+static void fix_call_compound_params(const cl_entry *entry, const ir_type *ctp)
+{
+	ir_node     *call           = entry->call;
+	dbg_info    *dbgi           = get_irn_dbg_info(call);
+	ir_node     *mem            = get_Call_mem(call);
+	ir_graph    *irg            = get_irn_irg(call);
+	ir_node     *frame          = get_irg_frame(irg);
+	size_t       n_params       = get_method_n_params(ctp);
+	ir_type     *lower          = get_Call_type(call);
+	size_t       n_params_lower = get_method_n_params(lower);
+	ir_node    **new_in         = ALLOCANZ(ir_node*, n_params_lower + 2);
+	mtp_info_t  *mtp_info       = get_type_link(ctp);
+
+	static const size_t fixed_call_args = n_Call_max + 1;
+	new_in[n_Call_mem] = get_Call_mem(call);
+	new_in[n_Call_ptr] = get_Call_ptr(call);
+
+	/* h counts higher type parameters, i counts Call input
+	 * numbers (i.e. lower type parameters + memory and ptr) */
+	size_t i = fixed_call_args;
+
+#define INPUT_TO_PARAM(x) ((x) - fixed_call_args + mtp_info->n_hidden)
+#define PARAM_TO_INPUT(x) ((x) + fixed_call_args - mtp_info->n_hidden)
+
+	DEBUG_ONLY(size_t max_input = PARAM_TO_INPUT(n_params_lower));
+	for (size_t h = 0; h < n_params; ++h) {
+		assert(i < max_input);
+
+		ir_type *arg_type = get_method_param_type(ctp, h);
+		ir_node *arg      = get_Call_param(call, h);
+		if (!is_aggregate_type(arg_type)) {
+			new_in[i++] = arg;
+			continue;
+		}
+
+		/* compound type */
+		aggregate_spec_t spec = mtp_info->parameter_specs[h + mtp_info->n_hidden];
+
+		switch (how_to_pass(&spec)) {
+		case PASS_AS_VALUES: {
+			ir_node *block = get_nodes_block(call);
+			int offset = 0;
+			for (size_t v = 0; v < spec.length; v++) {
+				ir_type *lower_arg_type = get_method_param_type(lower, INPUT_TO_PARAM(i));
+				new_in[i++] = get_compound_slice(block, arg, offset, arg_type, lower_arg_type, &mem);
+				offset += get_mode_size_bytes(spec.modes[v]);
+			}
+			break;
+		}
+
+		case PASS_ON_STACK:
+			new_in[i++] = arg;
+			break;
+
+		case PASS_AS_POINTER: {
+			ir_entity *arg_entity  = create_compound_arg_entity(irg, arg_type);
+			ir_node   *block       = get_nodes_block(call);
+			ir_node   *sel         = new_rd_Member(dbgi, block, frame, arg_entity);
+			bool       is_volatile = is_partly_volatile(arg);
+			mem = new_rd_CopyB(dbgi, block, mem, sel, arg, arg_type,
+			                   is_volatile ? cons_volatile : cons_none);
+			new_in[i++] = sel;
+			break;
+		}
+		}
+	}
+
+	assert(i == max_input);
+	set_irn_in(call, i, new_in);
 	set_Call_mem(call, mem);
+
+#undef PARAM_TO_INPUT
+#undef INPUT_TO_PARAM
 }
 
 static void fix_calls(wlk_env *env)
@@ -748,7 +990,7 @@ static void fix_calls(wlk_env *env)
 		set_Call_type(call, lowered_mtp);
 
 		if (entry->has_compound_param) {
-			fix_call_compound_params(entry, ctp, env);
+			fix_call_compound_params(entry, ctp);
 		}
 		if (entry->n_compound_ret > 0) {
 			fix_call_compound_ret(entry, ctp, env);
@@ -759,17 +1001,19 @@ static void fix_calls(wlk_env *env)
 
 static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 {
-	ir_node   *block      = get_nodes_block(ret);
-	ir_graph  *irg        = get_irn_irg(ret);
-	ir_type   *mtp        = env->mtp;
-	size_t     n_ress     = get_method_n_ress(mtp);
-	ir_node   *mem        = get_Return_mem(ret);
-	ir_node   *args       = get_irg_args(irg);
-	ir_type   *frame_type = get_irg_frame_type(irg);
-	size_t     n_cr_opt   = 0;
-	size_t     n_in       = 1;
-	ir_node  **new_in     = ALLOCAN(ir_node*, n_ress*2 + 1);
-	cr_pair   *cr_opt     = ALLOCAN(cr_pair, n_ret_com);
+	ir_node           *block        = get_nodes_block(ret);
+	ir_graph          *irg          = get_irn_irg(ret);
+	ir_type           *mtp          = env->mtp;
+	size_t             n_ress       = get_method_n_ress(mtp);
+	ir_node           *mem          = get_Return_mem(ret);
+	ir_node           *args         = get_irg_args(irg);
+	ir_type           *frame_type   = get_irg_frame_type(irg);
+	size_t             n_cr_opt     = 0;
+	size_t             n_in         = 1;
+	ir_node          **new_in       = ALLOCAN(ir_node*, n_ress * MAX_REGS_PER_AGGREGATE + 1);
+	cr_pair           *cr_opt       = ALLOCAN(cr_pair, n_ret_com);
+	mtp_info_t        *mtp_info     = get_type_link(mtp);
+	aggregate_spec_t  *result_specs = mtp_info->result_specs;
 
 	for (size_t i = 0, k = 0; i < n_ress; ++i) {
 		ir_node *pred = get_Return_res(ret, i);
@@ -779,17 +1023,17 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 			continue;
 		}
 
-		aggregate_spec_t const *const ret_spec = env->env->aggregate_ret(type);
-		unsigned                const n_values = ret_spec->n_values;
-		if (n_values > 0) {
+		aggregate_spec_t const ret_spec = result_specs[i];
+		if (how_to_pass(&ret_spec) == PASS_AS_VALUES) {
+			unsigned const length = ret_spec.length;
 			if (is_Unknown(pred)) {
-				for (unsigned i = 0; i < n_values; ++i) {
-					new_in[n_in++] = new_r_Unknown(irg, ret_spec->modes[i]);
+				for (unsigned i = 0; i < length; ++i) {
+					new_in[n_in++] = new_r_Unknown(irg, ret_spec.modes[i]);
 				}
 			} else {
-				ir_node **const sync_in = ALLOCAN(ir_node*, n_values);
+				ir_node **const sync_in = ALLOCAN(ir_node*, length);
 				int             offset  = 0;
-				for (unsigned i = 0; i < n_values; ++i) {
+				for (unsigned i = 0; i < length; ++i) {
 					ir_node *      addr     = pred;
 					ir_mode *const mode_ref = get_irn_mode(addr);
 					if (offset > 0) {
@@ -799,14 +1043,14 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 							= new_r_Const_long(irg, mode_offset, offset);
 						addr = new_r_Add(block, addr, offset_cnst);
 					}
-					ir_mode *const mode = ret_spec->modes[i];
+					ir_mode *const mode = ret_spec.modes[i];
 					ir_node *const load = new_r_Load(block, mem, addr, mode,
 					                                 type, cons_none);
 					sync_in[i]     = new_r_Proj(load, mode_M, pn_Load_M);
 					new_in[n_in++] = new_r_Proj(load, mode, pn_Load_res);
 					offset += get_mode_size_bytes(mode);
 				}
-				mem = new_r_Sync(block, n_values, sync_in);
+				mem = new_r_Sync(block, length, sync_in);
 			}
 			continue;
 		}
@@ -840,7 +1084,7 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 		}
 	}
 	/* replace the in of the Return */
-	assert(n_in <= n_ress*2 + 1);
+	assert(n_in <= n_ress * MAX_REGS_PER_AGGREGATE + 1);
 	new_in[0] = mem;
 	set_irn_in(ret, n_in, new_in);
 
@@ -857,6 +1101,96 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 	env->changed = true;
 }
 
+static ir_mode *reduce_mode(ir_mode *orig, unsigned max_size)
+{
+	unsigned orig_size = get_mode_size_bytes(orig);
+	unsigned target_size = MIN(orig_size, max_size);
+
+	switch (target_size) {
+	case 1:
+		return mode_Bu;
+	case 2:
+	case 3:
+		return mode_Hu;
+	case 4:
+	case 5:
+	case 6:
+	case 7:
+		return mode_Iu;
+	case 8:
+		return mode_Lu;
+	default:
+		panic("Cannot handle modes larger than 8 bytes.");
+	}
+}
+
+static ir_node *build_compound_from_arguments(ir_node *irn, wlk_env *env, unsigned pn, ir_type *tp,
+                                              aggregate_spec_t *spec)
+{
+	ir_graph  *irg        = get_irn_irg(irn);
+	ir_node   *block      = get_irg_start_block(irg);
+	ir_node   *frame      = get_irg_frame(irg);
+	ir_type   *frame_type = get_irg_frame_type(irg);
+	ir_node   *args       = get_irg_args(irg);
+	dbg_info  *dbgi       = get_irn_dbg_info(irn);
+	ident     *id         = new_id_fmt("$compound_param_%d", pn);
+	ir_entity *compound   = new_entity(frame_type, id, tp);
+	ir_node   *initial    = get_irg_initial_mem(irg);
+	ir_node   *mem        = initial;
+	ir_node   *first      = NULL;
+	unsigned   tp_size    = get_type_size(tp);
+
+	long offset = 0;
+
+	for (unsigned i = 0; i < spec->length; i++) {
+		long reg_offset = 0;
+
+		ir_type *lower_arg_type = get_method_param_type(env->lowered_mtp, pn + i);
+		ir_mode *arg_mode       = get_type_mode(lower_arg_type);
+		long     arg_size       = get_mode_size_bytes(arg_mode);
+		ir_node *new_arg        = new_rd_Proj(dbgi, args, arg_mode, pn + i);
+		ir_node *member         = new_rd_Member(dbgi, block, frame, compound);
+
+		while (reg_offset < arg_size && offset < tp_size) {
+			ir_node *ptr;
+
+			if (offset != 0) {
+				ir_mode *offset_mode = get_reference_offset_mode(get_irn_mode(member));
+				ir_node *offset_irn  = new_rd_Const_long(dbgi, irg, offset_mode, offset);
+				ptr = new_rd_Add(dbgi, block, member, offset_irn);
+			} else {
+				ptr = member;
+			}
+
+			ir_node *value = new_arg;
+			if (reg_offset != 0) {
+				ir_node *shift_amount = new_rd_Const_long(dbgi, irg, arg_mode, reg_offset * 8);
+				value = new_rd_Shr(dbgi, block, value, shift_amount);
+			}
+
+			ir_mode *small_mode = reduce_mode(arg_mode, tp_size - offset);
+			value = new_rd_Conv(dbgi, block, value, small_mode);
+
+			ir_node *store = new_rd_Store(dbgi, block, mem, ptr, value,
+			                              tp, cons_none);
+			mem = new_rd_Proj(dbgi, store, mode_M, pn_Store_M);
+			if (first == NULL) {
+				first = store;
+			}
+
+			offset     += get_mode_size_bytes(small_mode);
+			reg_offset += get_mode_size_bytes(small_mode);
+		}
+	}
+
+	if (first != NULL) {
+		edges_reroute_except(initial, mem, first);
+		set_irg_initial_mem(irg, initial);
+	}
+
+	return new_rd_Member(dbgi, block, frame, compound);
+}
+
 /**
  * Transform a graph. If it has compound parameter returns,
  * remove them and use the hidden parameter instead.
@@ -865,53 +1199,64 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
  */
 static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 {
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+
 	ir_entity *ent         = get_irg_entity(irg);
 	ir_type   *mtp         = get_entity_type(ent);
 	size_t     n_ress      = get_method_n_ress(mtp);
 	size_t     n_params    = get_method_n_params(mtp);
 	size_t     n_param_com = 0;
 
+	ir_type *lowered_mtp = lower_mtp(env, mtp);
+
 	/* calculate the number of compound returns */
-	size_t   n_ret_com = 0;
-	unsigned arg_shift = 0;
+	size_t            n_ret_com    = 0;
+	unsigned         *arg_map      = ALLOCANZ(unsigned, n_params);
+	unsigned          arg          = 0;
+	mtp_info_t       *mtp_info     = get_type_link(mtp);
+	aggregate_spec_t *result_specs = mtp_info->result_specs;
+
 	for (size_t i = 0; i < n_ress; ++i) {
 		ir_type *type = get_method_res_type(mtp, i);
 		if (is_aggregate_type(type)) {
 			++n_ret_com;
 
-			aggregate_spec_t const *const ret_spec = env->aggregate_ret(type);
+			aggregate_spec_t const ret_spec = result_specs[i];
 			/* if we don't return it as values, then we will add a new parameter
 			 * with the address of the destination memory */
-			if (ret_spec->n_values == 0)
-				++arg_shift;
+			if (how_to_pass(&ret_spec) == PASS_AS_POINTER)
+				++arg;
 		}
 	}
 	for (size_t i = 0; i < n_params; ++i) {
+		arg_map[i] = arg;
 		ir_type *type = get_method_param_type(mtp, i);
-		if (is_aggregate_type(type))
+		if (is_aggregate_type(type)) {
 			++n_param_com;
+			arg += mtp_info->parameter_specs[i + mtp_info->n_hidden].length;
+		} else {
+			arg++;
+		}
 	}
 
-	if (arg_shift > 0)
-		fix_parameter_entities(irg, arg_shift);
+	fix_parameter_entities(irg, arg_map);
 
 	/* much easier if we have only one return */
 	if (n_ret_com != 0)
 		assure_irg_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN);
 
-	ir_type *lowered_mtp = lower_mtp(env, mtp);
 	set_entity_type(ent, lowered_mtp);
 
 	wlk_env walk_env = {
-		.arg_shift      = arg_shift,
+		.arg_map        = arg_map,
 		.flags          = env->flags,
+		.obst           = env->obst,
 		.env            = env,
 		.mtp            = mtp,
 		.lowered_mtp    = lowered_mtp,
 		.param_members  = NEW_ARR_F(ir_node*, 0),
 		.only_local_mem = true,
 	};
-	obstack_init(&walk_env.obst);
 
 	/* scan the code, fix argument numbers and collect calls. */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
@@ -935,13 +1280,37 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 		ir_node   *member = walk_env.param_members[i];
 		ir_entity *entity = get_Member_entity(member);
 		size_t     num    = get_entity_parameter_number(entity);
-		ir_node   *ptr    = new_r_Proj(args, mode_P, num);
-		exchange(member, ptr);
+		ir_node   *ptr    = NULL;
+
+		if (!is_aggregate_type(get_entity_type(entity))) {
+			panic("Walker collected non-aggregate parameter Member");
+		}
+
+		unsigned h_num        = higher_arg_number(arg_map, num);
+		aggregate_spec_t spec = mtp_info->parameter_specs[h_num + mtp_info->n_hidden];
+
+		switch (how_to_pass(&spec)) {
+		case PASS_AS_VALUES: {
+			ir_type *tp = get_entity_type(entity);
+			ptr = build_compound_from_arguments(member, &walk_env, num, tp, &spec);
+			exchange(member, ptr);
+			break;
+		}
+
+		case PASS_ON_STACK:
+			/* Nothing to do. */
+			break;
+
+		case PASS_AS_POINTER:
+			ptr = new_r_Proj(args, mode_P, num);
+			exchange(member, ptr);
+			break;
+		}
 	}
 	DEL_ARR_F(walk_env.param_members);
 
-	if (n_param_com > 0 && !(env->flags & LF_DONT_LOWER_ARGUMENTS))
-		remove_compound_param_entities(irg);
+	if (n_param_com > 0)
+		remove_compound_param_entities(irg, arg_map, mtp_info);
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE | IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE);
 	fix_calls(&walk_env);
@@ -949,7 +1318,6 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 
 	if (walk_env.heights != NULL)
 		heights_free(walk_env.heights);
-	obstack_free(&walk_env.obst, NULL);
 	confirm_irg_properties(irg, walk_env.changed
 		? IR_GRAPH_PROPERTIES_CONTROL_FLOW : IR_GRAPH_PROPERTIES_ALL);
 }
@@ -975,14 +1343,28 @@ static void lower_method_types(ir_type *const type, ir_entity *const entity,
 }
 
 void lower_calls_with_compounds(compound_call_lowering_flags flags,
-                                decide_aggregate_ret_func aggregate_ret)
+				lower_call_func lower_parameter,
+				void *lower_parameter_env,
+				lower_call_func lower_return,
+				void *lower_return_env,
+				reset_abi_state_func reset_abi_state)
 {
+	FIRM_DBG_REGISTER(dbg, "firm.lower.calls");
+
 	pointer_types = pmap_create();
 	lowered_mtps = pmap_create();
+	struct obstack obst;
+	obstack_init(&obst);
+	irp_reserve_resources(get_irp(), IRP_RESOURCE_TYPE_LINK);
 
 	lowering_env_t env = {
-		.flags         = flags,
-		.aggregate_ret = aggregate_ret != NULL ? aggregate_ret : get_no_values,
+		.obst                = &obst,
+		.flags               = flags,
+		.lower_parameter     = lower_parameter,
+		.lower_parameter_env = lower_parameter_env,
+		.lower_return        = lower_return,
+		.lower_return_env    = lower_return_env,
+		.reset_abi_state     = reset_abi_state,
 	};
 
 	/* first step: Transform all graphs */
@@ -995,4 +1377,6 @@ void lower_calls_with_compounds(compound_call_lowering_flags flags,
 
 	pmap_destroy(lowered_mtps);
 	pmap_destroy(pointer_types);
+	obstack_free(&obst, NULL);
+	irp_free_resources(get_irp(), IRP_RESOURCE_TYPE_LINK);
 }

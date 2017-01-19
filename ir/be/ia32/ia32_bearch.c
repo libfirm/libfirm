@@ -1588,9 +1588,10 @@ static void ia32_lower_for_target(void)
 	 *  on the callframe and we can't just use an arbitrary position on the
 	 *  stackframe) */
 	init_aggregate_specs();
-	compound_call_lowering_flags lower_call_flags
-		= LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS;
-	lower_calls_with_compounds(lower_call_flags, decide_compound_ret);
+	lower_calls_with_compounds(LF_RETURN_HIDDEN,
+				   dont_lower_aggregates, NULL,
+				   lower_aggregates_as_pointers, NULL,
+				   reset_stateless_abi);
 	be_after_irp_transform("lower-calls");
 
 	/* replace floating point operations by function calls */
