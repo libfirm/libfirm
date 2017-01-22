@@ -108,7 +108,7 @@ static ir_node *mips_new_spill(ir_node *const value, ir_node *const after)
 		sched_add_after(after, store);
 		return store;
 	}
-	panic("TODO");
+	TODO(value);
 }
 
 static ir_node *mips_new_reload(ir_node *const value, ir_node *const spill, ir_node *const before)
@@ -122,7 +122,7 @@ static ir_node *mips_new_reload(ir_node *const value, ir_node *const spill, ir_n
 		sched_add_before(before, load);
 		return be_new_Proj(load, pn_mips_lw_res);
 	}
-	panic("TODO");
+	TODO(value);
 }
 
 static regalloc_if_t const mips_regalloc_if = {

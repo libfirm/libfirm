@@ -227,7 +227,7 @@ static void parse_asm_constraints(be_asm_constraint_t *const constraint, ident *
 static ir_node *gen_ASM(ir_node *const node)
 {
 	if (get_ASM_n_clobbers(node) != 0)
-		panic("TODO");
+		TODO(node);
 
 	unsigned            const n_operands = be_count_asm_operands(node);
 	ir_graph           *const irg        = get_irn_irg(node);
@@ -310,7 +310,7 @@ static ir_node *gen_Add(ir_node *const node)
 		ir_node *const new_r = be_transform_node(r);
 		return new_bd_mips_addu(dbgi, block, new_l, new_r);
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Address(ir_node *const node)
@@ -378,7 +378,7 @@ static ir_node *gen_Builtin(ir_node *const node)
 	case ir_bk_trap:
 	case ir_bk_va_arg:
 	case ir_bk_va_start:
-		panic("TODO");
+		TODO(node);
 	}
 	panic("unexpected Builtin");
 }
@@ -509,7 +509,7 @@ static ir_node *gen_Cmp(ir_node *const node)
 			panic("unexpected relation");
 		}
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Cond(ir_node *const node)
@@ -588,7 +588,7 @@ bcceqz:;
 			}
 		}
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Conv(ir_node *const node)
@@ -613,7 +613,7 @@ static ir_node *gen_Conv(ir_node *const node)
 			return new_bd_mips_andi(dbgi, block, new_op, NULL, (1U << op_size) - 1);
 		}
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Const(ir_node *const node)
@@ -647,7 +647,7 @@ static ir_node *gen_Const(ir_node *const node)
 			return res;
 		}
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Div(ir_node *const node)
@@ -664,7 +664,7 @@ static ir_node *gen_Div(ir_node *const node)
 			return new_bd_mips_divu_lo(dbgi, block, l, r);
 		}
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Eor(ir_node *const node)
@@ -710,7 +710,7 @@ static ir_node *gen_Load(ir_node *const node)
 		mips_addr const addr  = make_addr(get_Load_ptr(node));
 		return cons(dbgi, block, mem, addr.base, addr.ent, addr.val);
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Mod(ir_node *const node)
@@ -727,7 +727,7 @@ static ir_node *gen_Mod(ir_node *const node)
 			return new_bd_mips_divu_hi(dbgi, block, l, r);
 		}
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Member(ir_node *const node)
@@ -755,7 +755,7 @@ static ir_node *gen_Mulh(ir_node *const node)
 			return new_bd_mips_multu_hi(dbgi, block, l, r);
 		}
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Mul(ir_node *const node)
@@ -768,7 +768,7 @@ static ir_node *gen_Mul(ir_node *const node)
 		ir_node  *const r     = be_transform_node(get_Mul_right(node));
 		return new_bd_mips_mult_lo(dbgi, block, l, r);
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Minus(ir_node *const node)
@@ -783,7 +783,7 @@ static ir_node *gen_Minus(ir_node *const node)
 		ir_node  *const new_r = be_transform_node(val);
 		return new_bd_mips_subu(dbgi, block, new_l, new_r);
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Mux(ir_node *const node)
@@ -799,7 +799,7 @@ static ir_node *gen_Mux(ir_node *const node)
 			}
 		}
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Not(ir_node *const node)
@@ -866,7 +866,7 @@ static ir_node *gen_Proj_Builtin(ir_node *const node)
 	case ir_bk_trap:
 	case ir_bk_va_arg:
 	case ir_bk_va_start:
-		panic("TODO");
+		TODO(node);
 	}
 	panic("unexpected Builtin");
 }
@@ -898,7 +898,7 @@ static ir_node *gen_Proj_Div(ir_node *const node)
 	case pn_Div_X_except:
 		break;
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Proj_Load(ir_node *const node)
@@ -913,7 +913,7 @@ static ir_node *gen_Proj_Load(ir_node *const node)
 	case pn_Load_X_except:
 		break;
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Proj_Mod(ir_node *const node)
@@ -927,7 +927,7 @@ static ir_node *gen_Proj_Mod(ir_node *const node)
 	case pn_Mod_X_except:
 		break;
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Proj_Proj_Call(ir_node *const node)
@@ -1003,7 +1003,7 @@ static ir_node *gen_Proj_Store(ir_node *const node)
 	case pn_Store_X_except:
 		break;
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Return(ir_node *const node)
@@ -1076,7 +1076,7 @@ static ir_node *gen_Shr(ir_node *const node)
 	unsigned const size = get_mode_size_bits(mode);
 	if (size == MIPS_MACHINE_SIZE)
 		return gen_shift_op(node, &new_bd_mips_srlv, &new_bd_mips_srl);
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Shrs(ir_node *const node)
@@ -1085,7 +1085,7 @@ static ir_node *gen_Shrs(ir_node *const node)
 	unsigned const size = get_mode_size_bits(mode);
 	if (size == MIPS_MACHINE_SIZE)
 		return gen_shift_op(node, &new_bd_mips_srav, &new_bd_mips_sra);
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Start(ir_node *const node)
@@ -1137,7 +1137,7 @@ static ir_node *gen_Store(ir_node *const node)
 		mips_addr const addr  = make_addr(get_Store_ptr(node));
 		return cons(dbgi, block, mem, addr.base, val, addr.ent, addr.val);
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Sub(ir_node *const node)
@@ -1152,7 +1152,7 @@ static ir_node *gen_Sub(ir_node *const node)
 		ir_node  *const new_r = be_transform_node(r);
 		return new_bd_mips_subu(dbgi, block, new_l, new_r);
 	}
-	panic("TODO");
+	TODO(node);
 }
 
 static ir_node *gen_Switch(ir_node *const node)
@@ -1184,7 +1184,7 @@ static ir_node *gen_Unknown(ir_node *const node)
 	if (be_mode_needs_gp_reg(mode)) {
 		return be_new_Unknown(block, &mips_class_reg_req_gp);
 	} else {
-		panic("TODO");
+		TODO(node);
 	}
 }
 
