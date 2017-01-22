@@ -131,6 +131,13 @@ static ir_node *make_extension(dbg_info *const dbgi, ir_node *const op, unsigned
 	if (op_size >= to_size)
 		return new_op;
 
+	/* Check whether the value is correctly extended already. */
+	if (is_Proj(op)) {
+		ir_node *const pred = get_Proj_pred(op);
+		if (is_Load(pred))
+			return new_op;
+	}
+
 	assert(op_size <= 16);
 	ir_node *const block = get_nodes_block(new_op);
 	if (mode_is_signed(op_mode)) {
