@@ -143,6 +143,11 @@ static ir_node *make_extension(dbg_info *const dbgi, ir_node *const op, unsigned
 	}
 }
 
+static ir_node *extend_value(ir_node *const val)
+{
+	return make_extension(NULL, val, MIPS_MACHINE_SIZE);
+}
+
 static void mips_parse_constraint_letter(void const *const env, be_asm_constraint_t* const c, char const l)
 {
 	(void)env;
@@ -492,7 +497,7 @@ static ir_node *gen_Cmp(ir_node *const node)
 	ir_node       *l    = get_Cmp_left(node);
 	ir_node       *r    = get_Cmp_right(node);
 	ir_mode *const mode = get_irn_mode(l);
-	if (be_mode_needs_gp_reg(mode) && get_mode_size_bits(mode) == MIPS_MACHINE_SIZE) {
+	if (be_mode_needs_gp_reg(mode)) {
 		ir_relation const rel = get_Cmp_relation(node) & ir_relation_less_equal_greater;
 		switch (rel) {
 		case ir_relation_greater:
@@ -505,8 +510,8 @@ static ir_node *gen_Cmp(ir_node *const node)
 		case ir_relation_less: {
 			dbg_info *const dbgi  = get_irn_dbg_info(node);
 			ir_node  *const block = be_transform_nodes_block(node);
-			ir_node  *const new_l = be_transform_node(l);
-			ir_node  *const new_r = be_transform_node(r);
+			ir_node  *const new_l = extend_value(l);
+			ir_node  *const new_r = extend_value(r);
 			if (mode_is_signed(mode)) {
 				return new_bd_mips_slt(dbgi, block, new_l, new_r);
 			} else {
@@ -538,7 +543,7 @@ static ir_node *gen_Cond(ir_node *const node)
 	if (is_Cmp(sel)) {
 		ir_node *const l    = get_Cmp_left(sel);
 		ir_mode *const mode = get_irn_mode(l);
-		if (be_mode_needs_gp_reg(mode) && get_mode_size_bits(mode) == MIPS_MACHINE_SIZE) {
+		if (be_mode_needs_gp_reg(mode)) {
 			ir_relation    rel = get_Cmp_relation(sel) & ir_relation_less_equal_greater;
 			ir_node *const r   = get_Cmp_right(sel);
 			if (is_irn_null(r)) {
@@ -552,7 +557,7 @@ static ir_node *gen_Cond(ir_node *const node)
 bccrelz:;
 						dbg_info *const dbgi  = get_irn_dbg_info(node);
 						ir_node  *const block = be_transform_nodes_block(node);
-						ir_node  *const new_l = be_transform_node(l);
+						ir_node  *const new_l = extend_value(l);
 						return new_bd_mips_bcc_z(dbgi, block, new_l, cc);
 
 					default: goto normal;
@@ -573,8 +578,8 @@ normal:
 bcc:;
 					dbg_info *const dbgi  = get_irn_dbg_info(node);
 					ir_node  *const block = be_transform_nodes_block(node);
-					ir_node  *const new_l = be_transform_node(l);
-					ir_node  *const new_r = be_transform_node(r);
+					ir_node  *const new_l = extend_value(l);
+					ir_node  *const new_r = extend_value(r);
 					return new_bd_mips_bcc(dbgi, block, new_l, new_r, cc);
 				}
 
