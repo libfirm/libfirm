@@ -123,6 +123,26 @@ static ir_node *make_address(ir_node const *const node, ir_entity *const ent, in
 	return new_bd_mips_addiu(dbgi, block, lui, ent, val);
 }
 
+static ir_node *make_extension(dbg_info *const dbgi, ir_node *const op, unsigned const to_size)
+{
+	ir_node *const new_op  = be_transform_node(op);
+	ir_mode *const op_mode = get_irn_mode(op);
+	unsigned const op_size = get_mode_size_bits(op_mode);
+	if (op_size >= to_size)
+		return new_op;
+
+	assert(op_size <= 16);
+	ir_node *const block = get_nodes_block(new_op);
+	if (mode_is_signed(op_mode)) {
+		int32_t  const val = MIPS_MACHINE_SIZE - op_size;
+		ir_node *const sll = new_bd_mips_sll(dbgi, block, new_op, NULL, val);
+		ir_node *const sra = new_bd_mips_sra(dbgi, block, sll,    NULL, val);
+		return sra;
+	} else {
+		return new_bd_mips_andi(dbgi, block, new_op, NULL, (1U << op_size) - 1);
+	}
+}
+
 static void mips_parse_constraint_letter(void const *const env, be_asm_constraint_t* const c, char const l)
 {
 	(void)env;
@@ -597,21 +617,8 @@ static ir_node *gen_Conv(ir_node *const node)
 	ir_mode *const op_mode = get_irn_mode(op);
 	ir_mode *const mode    = get_irn_mode(node);
 	if (be_mode_needs_gp_reg(op_mode) && be_mode_needs_gp_reg(mode)) {
-		ir_node *const new_op  = be_transform_node(op);
-		unsigned const op_size = get_mode_size_bits(op_mode);
-		if (op_size >= get_mode_size_bits(mode))
-			return new_op;
-		assert(op_size <= 16);
-		dbg_info *const dbgi  = get_irn_dbg_info(node);
-		ir_node  *const block = be_transform_nodes_block(node);
-		if (mode_is_signed(op_mode)) {
-			int32_t  const val = MIPS_MACHINE_SIZE - op_size;
-			ir_node *const sll = new_bd_mips_sll(dbgi, block, new_op, NULL, val);
-			ir_node *const sra = new_bd_mips_sra(dbgi, block, sll,    NULL, val);
-			return sra;
-		} else {
-			return new_bd_mips_andi(dbgi, block, new_op, NULL, (1U << op_size) - 1);
-		}
+		dbg_info *const dbgi = get_irn_dbg_info(node);
+		return make_extension(dbgi, op, get_mode_size_bits(mode));
 	}
 	TODO(node);
 }
