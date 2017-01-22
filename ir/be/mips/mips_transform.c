@@ -343,7 +343,7 @@ static ir_node *gen_And(ir_node *const node)
 	return gen_logic_op(node, &new_bd_mips_and, &new_bd_mips_andi);
 }
 
-static ir_node *gen_saturating_incremnt(ir_node *const node)
+static ir_node *gen_saturating_increment(ir_node *const node)
 {
   dbg_info *const dbgi    = get_irn_dbg_info(node);
   ir_node  *const block   = be_transform_nodes_block(node);
@@ -359,7 +359,7 @@ static ir_node *gen_Builtin(ir_node *const node)
 {
 	ir_builtin_kind const kind = get_Builtin_kind(node);
 	switch (kind) {
-	case ir_bk_saturating_increment: return gen_saturating_incremnt(node);
+	case ir_bk_saturating_increment: return gen_saturating_increment(node);
 
 	case ir_bk_bswap:
 	case ir_bk_clz:
