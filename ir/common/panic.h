@@ -21,4 +21,6 @@ FIRM_NORETURN print_panic(char const *file, int line, char const *func,
 
 #define panic(...) print_panic(__FILE__, __LINE__, __func__, __VA_ARGS__)
 
+#define TODO(node) panic("%+F: TODO", node)
+
 # endif
