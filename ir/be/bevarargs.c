@@ -66,3 +66,8 @@ void be_default_lower_va_arg_compound_val(ir_node *const node)
 {
 	be_default_lower_va_arg(node, false);
 }
+
+void be_set_va_list_type_pointer(backend_params *const p)
+{
+	p->vararg.va_list_type = new_type_pointer(get_type_for_mode(mode_ANY));
+}

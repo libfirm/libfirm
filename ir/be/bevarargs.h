@@ -12,6 +12,7 @@
 #ifndef FIRM_BE_BEVARARGS_H
 #define FIRM_BE_BEVARARGS_H
 
+#include "be.h"
 #include "firm_types.h"
 
 /**
@@ -35,5 +36,7 @@ void be_default_lower_va_arg_compound_ptr(ir_node *node);
  * @param node A Builtin node with kind ir_bk_va_arg to be lowered
  */
 void be_default_lower_va_arg_compound_val(ir_node *node);
+
+void be_set_va_list_type_pointer(backend_params *p);
 
 #endif
