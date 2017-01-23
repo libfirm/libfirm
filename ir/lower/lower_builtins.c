@@ -210,7 +210,7 @@ changed:
 	panic("unexpected builtin %+F", node);
 }
 
-void lower_builtins(size_t n_exceptions, ir_builtin_kind *exceptions)
+void lower_builtins(size_t const n_exceptions, ir_builtin_kind const *const exceptions)
 {
 	memset(dont_lower, 0, sizeof(dont_lower));
 	for (size_t i = 0; i < n_exceptions; ++i) {
