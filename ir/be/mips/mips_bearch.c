@@ -17,12 +17,14 @@
 #include "iredges.h"
 #include "irgwalk.h"
 #include "irprog_t.h"
+#include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lowering.h"
 #include "mips_bearch_t.h"
 #include "mips_emitter.h"
 #include "mips_lower64.h"
 #include "mips_transform.h"
+#include "util.h"
 
 static int mips_is_mux_allowed(ir_node *const sel, ir_node *const mux_false, ir_node *const mux_true)
 {
@@ -279,6 +281,11 @@ static void mips_lower_for_target(void)
 		lower_CopyB(irg, 16, 17, false);
 		be_after_transform(irg, "lower-copyb");
 	}
+
+	ir_builtin_kind const supported[] = {
+		ir_bk_saturating_increment,
+	};
+	lower_builtins(ARRAY_SIZE(supported), supported);
 
 	ir_mode *const mode_gp = mips_reg_classes[CLASS_mips_gp].mode;
 	foreach_irp_irg(i, irg) {
