@@ -39,4 +39,6 @@ void be_default_lower_va_arg_compound_val(ir_node *node);
 
 void be_set_va_list_type_pointer(backend_params *p);
 
+ir_entity *be_make_va_start_entity(ir_type *frame_type, int offset);
+
 #endif

@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include "betranshlp.h"
+#include "bevarargs.h"
 #include "irnode_t.h"
 #include "iredges_t.h"
 #include "irgmod.h"
@@ -78,11 +79,7 @@ void x86_layout_param_entities(ir_graph *const irg, x86_cconv_t *const cconv,
 	ir_entity *const entity        = get_irg_entity(irg);
 	ir_type   *const function_type = get_entity_type(entity);
 	if (is_method_variadic(function_type)) {
-		ir_type   *unknown       = get_unknown_type();
-		ident     *id            = new_id_from_str("$va_start");
-		ir_entity *va_start_addr = new_entity(frame_type, id, unknown);
 		int const offset = cconv->param_stacksize + parameters_offset;
-		set_entity_offset(va_start_addr, offset);
-		cconv->va_start_addr = va_start_addr;
+		cconv->va_start_addr = be_make_va_start_entity(frame_type, offset);
 	}
 }

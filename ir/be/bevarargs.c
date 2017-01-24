@@ -71,3 +71,12 @@ void be_set_va_list_type_pointer(backend_params *const p)
 {
 	p->vararg.va_list_type = new_type_pointer(get_type_for_mode(mode_ANY));
 }
+
+ir_entity *be_make_va_start_entity(ir_type *const frame_type, int const offset)
+{
+	ident     *const id       = new_id_from_str("$va_start");
+	ir_type   *const unknown  = get_unknown_type();
+	ir_entity *const va_start = new_entity(frame_type, id, unknown);
+	set_entity_offset(va_start, offset);
+	return va_start;
+}

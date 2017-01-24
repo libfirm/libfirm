@@ -28,6 +28,7 @@
 
 #include "beirg.h"
 #include "betranshlp.h"
+#include "bevarargs.h"
 #include "panic.h"
 #include "firm_types.h"
 #include "iredges_t.h"
@@ -209,10 +210,6 @@ static void sparc_layout_param_entities(ir_graph *const irg, calling_convention_
 	ir_entity *const function      = get_irg_entity(irg);
 	ir_type   *const function_type = get_entity_type(function);
 	if (is_method_variadic(function_type)) {
-		ir_type   *unknown       = get_unknown_type();
-		ident     *id            = new_id_from_str("$va_start");
-		ir_entity *va_start_addr = new_entity(frame_type, id, unknown);
-
 		/* sparc_variadic_fixups() fiddled with our type, find out the
 		 * original number of parameters */
 		size_t const orig_n_params = get_method_n_params(non_lowered);
@@ -224,8 +221,7 @@ static void sparc_layout_param_entities(ir_graph *const irg, calling_convention_
 			offset = cconv->param_stack_size + SPARC_MIN_STACKSIZE;
 		}
 
-		set_entity_offset(va_start_addr, offset);
-		cconv->va_start_addr = va_start_addr;
+		cconv->va_start_addr = be_make_va_start_entity(frame_type, offset);
 	}
 
 	free(param_map);
