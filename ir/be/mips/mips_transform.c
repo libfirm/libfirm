@@ -456,15 +456,10 @@ static ir_node *gen_Call(ir_node *const node)
 
 	dbg_info *const dbgi = get_irn_dbg_info(node);
 	for (size_t i = 0; i != n_params; ++i) {
+		ir_node *const arg = get_Call_param(node, i);
+		ir_node *const val = extend_value(arg);
+
 		mips_reg_or_slot_t const *const param = &cconv.parameters[i];
-		ir_node                  *const arg   = get_Call_param(node, i);
-
-		ir_mode *const arg_mode = get_irn_mode(arg);
-		unsigned const size     = get_mode_size_bits(arg_mode);
-		if (size != 32)
-			panic("unsupported parameter size");
-
-		ir_node *const val = be_transform_node(arg);
 		if (param->reg) {
 			ins[p]  = val;
 			reqs[p] = param->reg->single_req;
