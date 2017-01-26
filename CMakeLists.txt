@@ -376,6 +376,15 @@ add_backend(amd64
 	ir/be/amd64/amd64_varargs.c
 	ir/be/amd64/amd64_x87.c
 )
+add_backend(mips
+	ir/be/mips/mips_bearch.c
+	ir/be/mips/mips_cconv.c
+	ir/be/mips/mips_emitter.c
+	ir/be/mips/mips_lower64.c
+	ir/be/mips/mips_new_nodes.c
+	ir/be/mips/mips_nodes_attr.c
+	ir/be/mips/mips_transform.c
+)
 add_backend(TEMPLATE
 	ir/be/TEMPLATE/TEMPLATE_bearch.c
 	ir/be/TEMPLATE/TEMPLATE_emitter.c
