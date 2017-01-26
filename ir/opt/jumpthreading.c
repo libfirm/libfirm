@@ -439,6 +439,8 @@ static ir_node *find_const_or_confirm(jumpthreading_env_t *env, ir_node *jump,
 	}
 
 	if (is_Phi(value)) {
+		assert(get_irn_arity(value) > 1);
+
 		/* the Phi has to be in the same Block as the Jmp */
 		if (get_nodes_block(value) != block)
 			return NULL;
