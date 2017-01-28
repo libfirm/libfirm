@@ -268,7 +268,7 @@ static ir_node *gen_ASM(ir_node *const node)
 
 	arch_register_req_t const      **out_reqs          = NEW_ARR_F(arch_register_req_t const*, 0);
 	ir_asm_constraint   const *const out_constraints   = get_ASM_output_constraints(node);
-	size_t              const  const n_out_constraints = get_ASM_n_output_constraints(node);
+	size_t                     const n_out_constraints = get_ASM_n_output_constraints(node);
 	for (size_t o = 0; o != n_out_constraints; ++o) {
 		ir_asm_constraint const *const constraint = &out_constraints[o];
 		be_asm_constraint_t            parsed_constraint;
