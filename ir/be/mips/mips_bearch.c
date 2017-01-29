@@ -35,12 +35,15 @@ static int mips_is_mux_allowed(ir_node *const sel, ir_node *const mux_false, ir_
 }
 
 static ir_settings_arch_dep_t const mips_arch_dep = {
+	.replace_muls         = true,
+	.replace_divs         = true,
+	.replace_mods         = true,
+	.allow_mulhs          = true,
+	.allow_mulhu          = true,
 	.also_use_subs        = true,
 	.maximum_shifts       = 4,
 	.highest_shift_amount = MIPS_MACHINE_SIZE - 1,
 	.evaluate             = NULL,
-	.allow_mulhs          = true,
-	.allow_mulhu          = true,
 	.max_bits_for_mulh    = MIPS_MACHINE_SIZE,
 };
 
