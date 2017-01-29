@@ -124,6 +124,8 @@ typedef struct backend_params {
 	/** Semantic on float->int conversion overflow. */
 	float_int_conversion_overflow_style_t float_int_overflow;
 
+	/** Which type is to be used for va_list. If this is NULL, the
+	 * backend does not implement variadic functions. */
 	ir_type *va_list_type;
 } backend_params;
 
