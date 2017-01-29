@@ -558,7 +558,7 @@ static const backend_params *sparc_get_backend_params(void)
 		.float_int_overflow             = ir_overflow_min_max,
 	};
 
-	p.va_list_type = new_type_pointer(get_type_for_mode(mode_ANY));
+	be_set_va_list_type_pointer(&p);
 
 	sparc_mode_Q
 		= new_float_mode("Q", irma_ieee754, 15, 112, ir_overflow_min_max);

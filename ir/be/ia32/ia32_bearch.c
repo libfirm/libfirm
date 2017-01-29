@@ -1374,9 +1374,7 @@ static void ia32_init(void)
 	ia32_mode_float32 = new_float_mode("fp32", irma_ieee754, 8, 23,
 	                                   ir_overflow_indefinite);
 
-	// va_list is a void pointer
-	ir_type *type_va_list = new_type_pointer(get_type_for_mode(mode_ANY));
-	ia32_backend_params.va_list_type = type_va_list;
+	be_set_va_list_type_pointer(&ia32_backend_params);
 
 	if (ia32_cg_config.use_sse2 || ia32_cg_config.use_softfloat) {
 		ia32_backend_params.mode_float_arithmetic = NULL;
