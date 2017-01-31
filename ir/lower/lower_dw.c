@@ -143,7 +143,7 @@ static void lower_mode(void (*const set)(ir_type*, size_t, ir_type*), ir_type *c
 	} else if (!mode_is_signed(mode)) {
 		set(mtd, n++, tp_l_u);
 		set(mtd, n++, tp_u);
-	} else if (env.p.big_endian) {
+	} else if (be_is_big_endian()) {
 		set(mtd, n++, tp_l_s);
 		set(mtd, n++, tp_u);
 	} else {
@@ -347,7 +347,7 @@ static void lower_Load(ir_node *node, ir_mode *mode)
 	ir_node  *block    = get_nodes_block(node);
 	ir_node *low;
 	ir_node *high;
-	if (env.p.big_endian) {
+	if (be_is_big_endian()) {
 		low  = new_r_Add(block, adr, cnst);
 		high = adr;
 	} else {
@@ -411,7 +411,7 @@ static void lower_Store(ir_node *node, ir_mode *mode)
 	ir_node  *cnst  = new_r_Const(irg, env.tv_mode_bytes);
 	ir_node  *low;
 	ir_node  *high;
-	if (env.p.big_endian) {
+	if (be_is_big_endian()) {
 		low  = new_r_Add(block, adr, cnst);
 		high = adr;
 	} else {
@@ -501,7 +501,7 @@ static void lower_Div(ir_node *node, ir_mode *mode)
 	                                         opmode);
 
 	ir_node  *in[4];
-	if (env.p.big_endian) {
+	if (be_is_big_endian()) {
 		in[0] = get_lowered_high(left);
 		in[1] = get_lowered_low(left);
 		in[2] = get_lowered_high(right);
@@ -537,7 +537,7 @@ static void lower_Div(ir_node *node, ir_mode *mode)
 			set_Proj_num(proj, pn_Call_X_except);
 			break;
 		case pn_Div_res:
-			if (env.p.big_endian) {
+			if (be_is_big_endian()) {
 				ir_node *res_low  = new_r_Proj(resproj, env.p.word_unsigned, 1);
 				ir_node *res_high = new_r_Proj(resproj, mode,                0);
 				ir_set_dw_lowered(proj, res_low, res_high);
@@ -570,7 +570,7 @@ static void lower_Mod(ir_node *node, ir_mode *mode)
 	ir_node  *addr   = get_intrinsic_address(mtp, get_irn_op(node), opmode, opmode);
 
 	ir_node *in[4];
-	if (env.p.big_endian) {
+	if (be_is_big_endian()) {
 		in[0] = get_lowered_high(left);
 		in[1] = get_lowered_low(left);
 		in[2] = get_lowered_high(right);
@@ -606,7 +606,7 @@ static void lower_Mod(ir_node *node, ir_mode *mode)
 			set_Proj_num(proj, pn_Call_X_except);
 			break;
 		case pn_Mod_res:
-			if (env.p.big_endian) {
+			if (be_is_big_endian()) {
 				ir_node *res_low  = new_r_Proj(resproj, env.p.word_unsigned, 1);
 				ir_node *res_high = new_r_Proj(resproj, mode,                0);
 				ir_set_dw_lowered(proj, res_low, res_high);
@@ -639,7 +639,7 @@ static void lower_binop(ir_node *node, ir_mode *mode)
 	ir_node  *addr  = get_intrinsic_address(mtp, get_irn_op(node), mode, mode);
 
 	ir_node  *in[4];
-	if (env.p.big_endian) {
+	if (be_is_big_endian()) {
 		in[0] = get_lowered_high(left);
 		in[1] = get_lowered_low(left);
 		in[2] = get_lowered_high(right);
@@ -655,7 +655,7 @@ static void lower_binop(ir_node *node, ir_mode *mode)
 	ir_node *resproj = new_r_Proj(call, mode_T, pn_Call_T_result);
 	set_irn_pinned(call, get_irn_pinned(node));
 
-	if (env.p.big_endian) {
+	if (be_is_big_endian()) {
 		ir_node *res_low  = new_r_Proj(resproj, env.p.word_unsigned, 1);
 		ir_node *res_high = new_r_Proj(resproj, mode,                0);
 		ir_set_dw_lowered(node, res_low, res_high);
@@ -959,7 +959,7 @@ static void lower_Minus(ir_node *node, ir_mode *mode)
 	ir_node  *nomem = get_irg_no_mem(irg);
 
 	ir_node *in[2];
-	if (env.p.big_endian) {
+	if (be_is_big_endian()) {
 		in[0] = get_lowered_high(op);
 		in[1] = get_lowered_low(op);
 	} else {
@@ -970,7 +970,7 @@ static void lower_Minus(ir_node *node, ir_mode *mode)
 	ir_node *resproj = new_r_Proj(call, mode_T, pn_Call_T_result);
 	set_irn_pinned(call, get_irn_pinned(node));
 
-	if (env.p.big_endian) {
+	if (be_is_big_endian()) {
 		ir_node *res_low  = new_r_Proj(resproj, env.p.word_unsigned, 1);
 		ir_node *res_high = new_r_Proj(resproj, mode,                0);
 		ir_set_dw_lowered(node, res_low, res_high);
@@ -1264,7 +1264,7 @@ static void lower_Conv_to_Ll(ir_node *node)
 		set_irn_pinned(call, get_irn_pinned(node));
 		irn = new_r_Proj(call, mode_T, pn_Call_T_result);
 
-		if (env.p.big_endian) {
+		if (be_is_big_endian()) {
 			res_low  = new_r_Proj(irn, low_unsigned, 1);
 			res_high = new_r_Proj(irn, low_signed,   0);
 		} else {
@@ -1292,7 +1292,7 @@ static void lower_Conv_from_Ll(ir_node *node)
 		set_Conv_op(node, entry->low_word);
 	} else {
 		ir_node *in[2];
-		if (env.p.big_endian) {
+		if (be_is_big_endian()) {
 			in[0] = entry->high_word;
 			in[1] = entry->low_word;
 		} else {
@@ -1415,7 +1415,7 @@ transform:
 	ir_node   *high        = new_r_Add(block, addr, cnst);
 	ir_type   *src_type    = get_type_for_mode(src_mode);
 	/* big endian requires different order for lower/higher word */
-	if (env.p.big_endian) {
+	if (be_is_big_endian()) {
 		ir_node *tmp = low;
 		low  = high;
 		high = tmp;
@@ -1513,7 +1513,7 @@ static size_t lower_type(void (*const set)(ir_type*, size_t, ir_type*), ir_type 
 			if (!mode_is_signed(mode)) {
 				set(mtp, n++, tp_l_u);
 				set(mtp, n++, tp_u);
-			} else if (env.p.big_endian) {
+			} else if (be_is_big_endian()) {
 				set(mtp, n++, tp_l_s);
 				set(mtp, n++, tp_u);
 			} else {
@@ -1629,7 +1629,7 @@ static void lower_Return(ir_node *node, ir_mode *mode)
 
 		if (needs_lowering(pred_mode)) {
 			const lower64_entry_t *entry = get_node_entry(pred);
-			if (env.p.big_endian) {
+			if (be_is_big_endian()) {
 				in[j++] = entry->high_word;
 				in[j++] = entry->low_word;
 			} else {
@@ -1702,7 +1702,7 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 		ir_node  *pred   = get_Proj_pred(proj);
 		ir_node  *res_low;
 		ir_node  *res_high;
-		if (env.p.big_endian) {
+		if (be_is_big_endian()) {
 			res_high = new_rd_Proj(dbg, pred, mode_h, new_projs[proj_nr]);
 			res_low  = new_rd_Proj(dbg, pred, mode_l, new_projs[proj_nr] + 1);
 		} else {
@@ -1762,7 +1762,7 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 
 		if (needs_lowering(pred_mode)) {
 			const lower64_entry_t *pred_entry = get_node_entry(pred);
-			if (env.p.big_endian) {
+			if (be_is_big_endian()) {
 				in[j++] = pred_entry->high_word;
 				in[j++] = pred_entry->low_word;
 			} else {
@@ -1800,7 +1800,7 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 		ir_node  *pred   = get_Proj_pred(proj);
 		ir_node  *res_low;
 		ir_node  *res_high;
-		if (env.p.big_endian) {
+		if (be_is_big_endian()) {
 			res_high = new_rd_Proj(dbg, pred, mode_h, res_numbers[proj_nr]);
 			res_low  = new_rd_Proj(dbg, pred, mode_l, res_numbers[proj_nr] + 1);
 		} else {
@@ -2083,7 +2083,7 @@ static ir_type *lower_Builtin_type(pmap *const type_map, ir_type *const mtp, ir_
  */
 static ir_type *lower_Builtin_type_high(ir_type *mtp)
 {
-	ir_type *const tp_s_l = env.p.big_endian ? tp_s : tp_u;
+	ir_type *const tp_s_l = be_is_big_endian() ? tp_s : tp_u;
 	return lower_Builtin_type(lowered_builtin_type_high, mtp, tp_s_l, tp_u);
 }
 
@@ -2094,7 +2094,7 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
  */
 static ir_type *lower_Builtin_type_low(ir_type *mtp)
 {
-	ir_type *const tp_s_l = !env.p.big_endian ? tp_s : tp_u;
+	ir_type *const tp_s_l = !be_is_big_endian() ? tp_s : tp_u;
 	return lower_Builtin_type(lowered_builtin_type_low, mtp, tp_s_l, tp_u);
 }
 
@@ -2576,8 +2576,8 @@ void ir_lower_dw_ops(void)
 		tp_l_s = new_type_primitive(env.p.word_signed);
 		tp_l_s->flags |= tf_lowered_dw;
 
-		ir_type *const even = env.p.big_endian ? tp_l_s : tp_l_u;
-		ir_type *const odd  = env.p.big_endian ? tp_u   : tp_s;
+		ir_type *const even = be_is_big_endian() ? tp_l_s : tp_l_u;
+		ir_type *const odd  = be_is_big_endian() ? tp_u   : tp_s;
 		binop_tp_u = make_type_4_2(tp_l_u, tp_u);
 		binop_tp_s = make_type_4_2(even, odd);
 		unop_tp_u  = make_type_2_2(tp_l_u, tp_u);

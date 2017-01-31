@@ -13,41 +13,46 @@
  * by Youfeng Wu.
  * Implements Division and Modulo by Consts from "Hackers Delight",
  */
+#include "irarch.h"
+
 #include <stdlib.h>
 #include <assert.h>
 
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irmode_t.h"
-#include "iropt_t.h"
-#include "ircons_t.h"
-#include "irgmod.h"
-#include "irverify.h"
-#include "tv_t.h"
-#include "dbginfo_t.h"
-#include "iropt_dbg.h"
-#include "irflag_t.h"
-#include "irhooks.h"
-#include "ircons.h"
-#include "irarch_t.h"
-#include "irflag.h"
 #include "be.h"
+#include "dbginfo_t.h"
+#include "ircons.h"
+#include "ircons_t.h"
+#include "irflag.h"
+#include "irflag_t.h"
+#include "irgmod.h"
+#include "irgraph_t.h"
+#include "irhooks.h"
+#include "irmode_t.h"
+#include "irgopt.h"
+#include "irnode_t.h"
+#include "iropt_dbg.h"
+#include "iropt_t.h"
+#include "irprog_t.h"
+#include "irverify.h"
 #include "panic.h"
+#include "tv_t.h"
 
-/** The bit mask, which optimizations to apply. */
-static arch_dep_opts_t opts;
+static ir_settings_arch_dep_t settings;
 
-void arch_dep_set_opts(arch_dep_opts_t the_opts)
+void ir_arch_lower(ir_settings_arch_dep_t const *const new_settings)
 {
-	opts = the_opts;
+	settings = *new_settings;
+	foreach_irp_irg(i, irg) {
+		optimize_graph_df(irg);
+	}
 }
 
 /** check, whether a mode allows a Mulh instruction. */
-static int allow_Mulh(const ir_settings_arch_dep_t *params, ir_mode *mode)
+static bool allow_Mulh(ir_mode *mode)
 {
-	if (get_mode_size_bits(mode) > params->max_bits_for_mulh)
-		return 0;
-	return mode_is_signed(mode) ? params->allow_mulhs : params->allow_mulhu;
+	if (get_mode_size_bits(mode) > settings.max_bits_for_mulh)
+		return false;
+	return mode_is_signed(mode) ? settings.allow_mulhs : settings.allow_mulhu;
 }
 
 /**
@@ -67,7 +72,6 @@ struct instruction {
  */
 typedef struct mul_env {
 	struct obstack                obst;
-	const ir_settings_arch_dep_t *params;
 	ir_mode     *mode;     /**< the mode of the multiplication constant */
 	unsigned     bits;     /**< number of bits in the mode */
 	unsigned     max_S;    /**< the maximum LEA shift value. */
@@ -305,7 +309,7 @@ static instruction *decompose_mul(mul_env *env, unsigned char *R, int r,
 	if (r <= 2)
 		return decompose_simple_cases(env, R, r);
 
-	if (env->params->also_use_subs) {
+	if (settings.also_use_subs) {
 		int gain = calculate_gain(R, r);
 		if (gain > 0) {
 			int            r1;
@@ -449,7 +453,7 @@ static int evaluate_insn(mul_env *env, instruction *inst)
 		return costs;
 	}
 	case SHIFT:
-		if (inst->shift_count > env->params->highest_shift_amount)
+		if (inst->shift_count > settings.highest_shift_amount)
 			env->fail = true;
 		if (env->n_shift <= 0)
 			env->fail = true;
@@ -486,15 +490,14 @@ static ir_node *do_decomposition(ir_node *irn, ir_node *operand, ir_tarval *tv)
 {
 	mul_env env;
 	obstack_init(&env.obst);
-	env.params   = be_get_backend_param()->dep_param;
 	env.mode     = get_tarval_mode(tv);
 	env.bits     = (unsigned)get_mode_size_bits(env.mode);
 	env.max_S    = 3;
 	env.root     = emit_ROOT(&env, operand);
 	env.fail     = false;
-	env.n_shift  = env.params->maximum_shifts;
-	env.evaluate = env.params->evaluate != NULL ? env.params->evaluate
-	                                            : default_evaluate;
+	env.n_shift  = settings.maximum_shifts;
+	env.evaluate = settings.evaluate != NULL ? settings.evaluate
+	                                         : default_evaluate;
 	env.irg      = get_irn_irg(irn);
 
 	int            r;
@@ -521,11 +524,9 @@ static ir_node *do_decomposition(ir_node *irn, ir_node *operand, ir_tarval *tv)
 /* Replace Muls with Shifts and Add/Subs. */
 ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 {
-	const ir_settings_arch_dep_t *params = be_get_backend_param()->dep_param;
-
 	/* If the architecture dependent optimizations were not initialized
 	   or this optimization was not enabled. */
-	if (params == NULL || (opts & arch_dep_mul_to_shift) == 0)
+	if (!settings.replace_muls)
 		return irn;
 
 	assert(is_Mul(irn));
@@ -887,8 +888,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 {
 	/* If the architecture dependent optimizations were not initialized
 		or this optimization was not enabled. */
-	const ir_settings_arch_dep_t *params = be_get_backend_param()->dep_param;
-	if (params == NULL || (opts & arch_dep_div_by_const) == 0)
+	if (!settings.replace_divs)
 		return irn;
 	if (!is_Div(irn))
 		return irn;
@@ -965,7 +965,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 		}
 	} else if (k != 0) {
 		/* other constant */
-		if (allow_Mulh(params, mode))
+		if (allow_Mulh(mode))
 			res = replace_div_by_mulh(irn, tv);
 	} else { /* k == 0  i.e. division by 1 */
 		res = left;
@@ -979,8 +979,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 {
 	/* If the architecture dependent optimizations were not initialized
 	   or this optimization was not enabled. */
-	const ir_settings_arch_dep_t *params = be_get_backend_param()->dep_param;
-	if (params == NULL || (opts & arch_dep_mod_by_const) == 0)
+	if (!settings.replace_mods)
 		return irn;
 	if (!is_Mod(irn))
 		return irn;
@@ -1046,7 +1045,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 			res = new_rd_And(dbg, block, left, k_node);
 		}
 	/* other constant */
-	} else if (allow_Mulh(params, mode)) {
+	} else if (allow_Mulh(mode)) {
 		res = replace_div_by_mulh(irn, tv);
 		res = new_rd_Mul(dbg, block, res, c);
 		res = new_rd_Sub(dbg, block, left, res);

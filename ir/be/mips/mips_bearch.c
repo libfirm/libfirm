@@ -13,7 +13,7 @@
 #include "betranshlp.h"
 #include "gen_mips_new_nodes.h"
 #include "gen_mips_regalloc_if.h"
-#include "irarch_t.h"
+#include "irarch.h"
 #include "iredges.h"
 #include "irgwalk.h"
 #include "irprog_t.h"
@@ -35,12 +35,15 @@ static int mips_is_mux_allowed(ir_node *const sel, ir_node *const mux_false, ir_
 }
 
 static ir_settings_arch_dep_t const mips_arch_dep = {
+	.replace_muls         = true,
+	.replace_divs         = true,
+	.replace_mods         = true,
+	.allow_mulhs          = true,
+	.allow_mulhu          = true,
 	.also_use_subs        = true,
 	.maximum_shifts       = 4,
 	.highest_shift_amount = MIPS_MACHINE_SIZE - 1,
 	.evaluate             = NULL,
-	.allow_mulhs          = true,
-	.allow_mulhu          = true,
 	.max_bits_for_mulh    = MIPS_MACHINE_SIZE,
 };
 
@@ -50,12 +53,10 @@ static backend_params mips_backend_params = {
 	.pic_supported                 = false,
 	.unaligned_memaccess_supported = false,
 	.modulo_shift                  = MIPS_MACHINE_SIZE,
-	.dep_param                     = &mips_arch_dep,
 	.allow_ifconv                  = &mips_is_mux_allowed,
 	.machine_size                  = MIPS_MACHINE_SIZE,
 	.mode_float_arithmetic         = NULL,  /* will be set later */ // TODO
 	.type_long_double              = NULL,  /* will be set later */ // TODO
-	.stack_param_align             = 4,
 	.float_int_overflow            = ir_overflow_indefinite,
 };
 
@@ -274,6 +275,9 @@ static void mips_generate_code(FILE *const output, char const *const cup_name)
 
 static void mips_lower_for_target(void)
 {
+	ir_arch_lower(&mips_arch_dep);
+	be_after_irp_transform("lower-arch-dep");
+
 	lower_calls_with_compounds(LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS, NULL);
 	be_after_irp_transform("lower-calls");
 
@@ -282,10 +286,10 @@ static void mips_lower_for_target(void)
 		be_after_transform(irg, "lower-copyb");
 	}
 
-	ir_builtin_kind const supported[] = {
+	static ir_builtin_kind const supported[] = {
 		ir_bk_saturating_increment,
 	};
-	lower_builtins(ARRAY_SIZE(supported), supported);
+	lower_builtins(ARRAY_SIZE(supported), supported, NULL);
 
 	ir_mode *const mode_gp = mips_reg_classes[CLASS_mips_gp].mode;
 	foreach_irp_irg(i, irg) {

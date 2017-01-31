@@ -467,8 +467,7 @@ void ia32_lower64(void)
 		NULL,
 		word_unsigned,
 		word_signed,
-		64,    /* doubleword size */
-		be_is_big_endian(),
+		64    /* doubleword size */
 	};
 
 	ir_prepare_dw_lowering(&lower_dw_params);

@@ -1071,10 +1071,9 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	 * a suitable color using costs as done above (determine_color_costs). */
 	deq_t tmp_chunks;
 	deq_init(&tmp_chunks);
-	deq_t       *best_starts = NULL;
-	unsigned     n_nodes     = ARR_LEN(c->n);
-	aff_chunk_t *best_chunk  = NULL;
-	int          best_color  = -1;
+	unsigned     n_nodes    = ARR_LEN(c->n);
+	aff_chunk_t *best_chunk = NULL;
+	int          best_color = -1;
 	for (unsigned i = 0, n = env->n_regs; i < n; ++i) {
 		/* skip ignore colors */
 		unsigned col = order[i].col;
@@ -1085,8 +1084,6 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 
 		/* try to bring all nodes of given chunk to the current color. */
 		unsigned n_succeeded = 0;
-		deq_t   *good_starts = XMALLOC(deq_t);
-		deq_init(good_starts);
 		for (size_t idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
 			const ir_node   *irn  = c->n[idx];
 			co_mst_irn_t    *node = get_co_mst_irn(env, irn);
@@ -1102,7 +1099,6 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 			bool good = change_node_color(env, node, col, &changed);
 			stat_ev_tim_pop("heur4_recolor");
 			if (good) {
-				deq_push_pointer_right(good_starts, node);
 				materialize_coloring(&changed);
 				node->fixed = 1;
 			} else {
@@ -1120,11 +1116,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 		}
 
 		/* try next color when failed */
-		if (n_succeeded == 0) {
-			deq_free(good_starts);
-			free(good_starts);
+		if (n_succeeded == 0)
 			continue;
-		}
 
 		/* fragment the chunk according to the coloring */
 		aff_chunk_t *local_best = fragment_chunk(env, col, c, &tmp_chunks);
@@ -1140,20 +1133,10 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 			if (!best_chunk || best_chunk->weight < local_best->weight) {
 				best_chunk = local_best;
 				best_color = col;
-				if (best_starts) {
-					deq_free(best_starts);
-					free(best_starts);
-				}
-				best_starts = good_starts;
 				DB((dbg, LEVEL_3, "\n\t\t... setting global best chunk (id %u), color %d\n", best_chunk->id, best_color));
 			} else {
 				DB((dbg, LEVEL_3, "\n\t\t... omitting, global best is better\n"));
-				deq_free(good_starts);
-				free(good_starts);
 			}
-		} else {
-			deq_free(good_starts);
-			free(good_starts);
 		}
 
 		/* if all nodes were recolored, bail out */
@@ -1172,13 +1155,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	deq_free(&tmp_chunks);
 
 	/* return if coloring failed */
-	if (!best_chunk) {
-		if (best_starts) {
-			deq_free(best_starts);
-			free(best_starts);
-		}
+	if (!best_chunk)
 		return;
-	}
 
 	DB((dbg, LEVEL_2, "\tbest chunk #%u ", best_chunk->id));
 	DBG_AFF_CHUNK(env, LEVEL_2, best_chunk);
@@ -1252,10 +1230,6 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	/* clear obsolete chunks and free some memory */
 	delete_aff_chunk(best_chunk);
 	free(visited);
-	if (best_starts) {
-		deq_free(best_starts);
-		free(best_starts);
-	}
 
 	stat_ev_ctx_pop("heur4_color_chunk");
 }

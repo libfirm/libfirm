@@ -8,10 +8,11 @@
  * @brief  Some machine dependent optimizations.
  * @author Sebastian Hack
  */
-#ifndef FIRM_IR_IRARCH_T_H
-#define FIRM_IR_IRARCH_T_H
+#ifndef FIRM_IR_IRARCH_H
+#define FIRM_IR_IRARCH_H
 
-#include "irarch.h"
+#include "firm_types.h"
+#include <stdbool.h>
 
 /**
  * The Multiplication replacement can consist of the following instructions.
@@ -41,9 +42,13 @@ typedef int (*evaluate_costs_func)(insn_kind kind, const ir_mode *mode, ir_tarva
  * A parameter structure that drives the machine dependent Firm
  * optimizations.
  */
-struct ir_settings_arch_dep_t {
-	/* Mul optimization */
-	unsigned also_use_subs : 1;    /**< Use also Subs when resolving Muls to shifts */
+typedef struct ir_settings_arch_dep_t {
+	bool replace_muls  : 1;
+	bool replace_divs  : 1;
+	bool replace_mods  : 1;
+	bool allow_mulhs   : 1;  /**< Use Mulhs for division by constant */
+	bool allow_mulhu   : 1;  /**< Use Mulhu for division by constant */
+	bool also_use_subs : 1;  /**< Use Subs when resolving Muls to shifts */
 	unsigned maximum_shifts;       /**< The maximum number of shifts that shall be inserted for a mul. */
 	unsigned highest_shift_amount; /**< The highest shift amount you want to
 	                                    tolerate. Muls which would require a higher
@@ -51,17 +56,9 @@ struct ir_settings_arch_dep_t {
 	evaluate_costs_func evaluate;  /**< Evaluate the costs of a generated instruction. */
 
 	/* Div/Mod optimization */
-	unsigned allow_mulhs   : 1;    /**< Use the Mulhs operation for division by constant */
-	unsigned allow_mulhu   : 1;    /**< Use the Mulhu operation for division by constant */
 	unsigned max_bits_for_mulh;    /**< Maximum number of bits the Mulh operation can take.
 	                                    Modes with higher amount of bits will use Mulh */
-};
-
-/**
- * A factory function, that provides architecture parameters for
- * machine dependent optimizations.
- */
-typedef const ir_settings_arch_dep_t *(*arch_dep_params_factory_t)(void);
+} ir_settings_arch_dep_t;
 
 /**
  * Replaces Muls with Lea/Shifts/Add/Subs if these
@@ -105,5 +102,11 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn);
  * @return          A replacement expression for irn.
  */
 ir_node *arch_dep_replace_mod_by_const(ir_node *irn);
+
+/**
+ * Initialize machine dependent mul/div/mod with constant localopts and
+ * run optimize_graph_df() once to do the replacements.
+ */
+void ir_arch_lower(ir_settings_arch_dep_t const *settings);
 
 #endif

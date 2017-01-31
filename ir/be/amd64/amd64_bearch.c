@@ -24,7 +24,7 @@
 #include "beutil.h"
 #include "debug.h"
 #include "gen_amd64_regalloc_if.h"
-#include "irarch_t.h"
+#include "irarch.h"
 #include "ircons.h"
 #include "iredges_t.h"
 #include "irgmod.h"
@@ -685,8 +685,24 @@ static void amd64_generate_code(FILE *output, const char *cup_name)
 	pmap_destroy(amd64_constants);
 }
 
+static const ir_settings_arch_dep_t amd64_arch_dep = {
+	.replace_muls         = true,
+	.replace_divs         = true,
+	.replace_mods         = true,
+	.allow_mulhs          = true,
+	.allow_mulhu          = true,
+	.also_use_subs        = true,
+	.maximum_shifts       = 4,
+	.highest_shift_amount = 63,
+	.evaluate             = NULL,
+	.max_bits_for_mulh    = 32,
+};
+
 static void amd64_lower_for_target(void)
 {
+	ir_arch_lower(&amd64_arch_dep);
+	be_after_irp_transform("lower_arch-dep");
+
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN, NULL);
 	be_after_irp_transform("lower-calls");
@@ -723,7 +739,7 @@ static void amd64_lower_for_target(void)
 	supported[s++] = ir_bk_va_start;
 
 	assert(s <= ARRAY_SIZE(supported));
-	lower_builtins(s, supported);
+	lower_builtins(s, supported, amd64_lower_va_arg);
 	be_after_irp_transform("lower-builtins");
 }
 
@@ -736,33 +752,17 @@ static int amd64_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 	return false;
 }
 
-static const ir_settings_arch_dep_t amd64_arch_dep = {
-	.also_use_subs        = true,
-	.maximum_shifts       = 4,
-	.highest_shift_amount = 63,
-	.evaluate             = NULL,
-	.allow_mulhs          = true,
-	.allow_mulhu          = true,
-	.max_bits_for_mulh    = 32,
-};
-
 static backend_params amd64_backend_params = {
 	.experimental                  = "the amd64 backend is highly experimental and unfinished (consider the ia32 backend)",
 	.byte_order_big_endian         = false,
 	.pic_supported                 = true,
 	.unaligned_memaccess_supported = true,
 	.modulo_shift                  = 32,
-	.dep_param                     = &amd64_arch_dep,
 	.allow_ifconv                  = amd64_is_mux_allowed,
 	.machine_size                  = 64,
 	.mode_float_arithmetic         = NULL,  /* will be set later */
 	.type_long_double              = NULL,  /* will be set later */
-	.stack_param_align             = 8,
 	.float_int_overflow            = ir_overflow_indefinite,
-	.vararg                        = {
-		.va_list_type = NULL,  /* Will be set later */
-		.lower_va_arg = amd64_lower_va_arg,
-	},
 };
 
 static const backend_params *amd64_get_backend_params(void) {
@@ -786,7 +786,7 @@ static void amd64_init_types(void)
 	ir_type *const type_f80 = x86_init_x87_type();
 	amd64_backend_params.type_long_double = type_f80;
 
-	amd64_backend_params.vararg.va_list_type = amd64_build_va_list_type();
+	amd64_backend_params.va_list_type = amd64_build_va_list_type();
 }
 
 static void amd64_init(void)
