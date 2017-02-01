@@ -2100,8 +2100,7 @@ static void read_modes(read_env_t *env)
 		switch (kwkind) {
 		case kw_int_mode: {
 			const char *name = read_string(env);
-			ir_mode_arithmetic arith = read_mode_arithmetic(env);
-			assert(arith == irma_twos_complement);
+			assert(read_mode_arithmetic(env) == irma_twos_complement);
 			int size = read_long(env);
 			int sign = read_long(env);
 			unsigned modulo_shift = read_long(env);
@@ -2110,8 +2109,7 @@ static void read_modes(read_env_t *env)
 		}
 		case kw_reference_mode: {
 			const char *name = read_string(env);
-			ir_mode_arithmetic arith = read_mode_arithmetic(env);
-			assert(arith == irma_twos_complement);
+			assert(read_mode_arithmetic(env) == irma_twos_complement);
 			int size = read_long(env);
 			unsigned modulo_shift = read_long(env);
 			ir_mode *mode = new_reference_mode(name, size, modulo_shift);
