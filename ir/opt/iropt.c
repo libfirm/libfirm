@@ -6553,8 +6553,8 @@ static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation,
 		if (!mode_is_signed(mode) || !is_Const(right))
 			return false;
 
-		if (!(rel_lt != ir_relation_false && is_Const_null(right)) &&
-		    !(rel_gt != ir_relation_false && is_Const_all_one(right)))
+		if ((rel_lt == ir_relation_false || !is_Const_null(right)) &&
+		    (rel_gt == ir_relation_false || !is_Const_all_one(right)))
 			return false;
 	} else if (!mode_is_signed(dest_mode)) {
 		return false;
@@ -6751,8 +6751,8 @@ static ir_node *transform_Mux_set(ir_node *n, ir_relation relation)
 		if (!mode_is_signed(mode) || !is_Const(right))
 			return n;
 
-		if (!(rel_lt != ir_relation_false && is_Const_null(right)) &&
-		    !(rel_gt != ir_relation_false && is_Const_all_one(right)))
+		if ((rel_lt == ir_relation_false || !is_Const_null(right)) &&
+		    (rel_gt == ir_relation_false || !is_Const_all_one(right)))
 			return n;
 	} else if (!mode_is_signed(dest_mode)) {
 		return n;
