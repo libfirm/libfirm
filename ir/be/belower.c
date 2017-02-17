@@ -10,29 +10,28 @@
  * @author      Christian Wuerdig
  * @date        14.12.2005
  */
-#include <stdlib.h>
+#include "belower.h"
 
-#include "ircons.h"
-#include "debug.h"
-#include "xmalloc.h"
-#include "irnodeset.h"
-#include "irnodehashmap.h"
-#include "irgmod.h"
-#include "iredges_t.h"
-#include "irgwalk.h"
-#include "array.h"
-#include "raw_bitset.h"
 #include "adt/obstack.h"
-#include "util.h"
-
+#include "array.h"
 #include "bearch.h"
 #include "beirg.h"
-#include "belower.h"
+#include "belive.h"
 #include "benode.h"
 #include "besched.h"
-#include "bestat.h"
 #include "bessaconstr.h"
-#include "belive.h"
+#include "bestat.h"
+#include "debug.h"
+#include "ircons.h"
+#include "iredges_t.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+#include "irnodehashmap.h"
+#include "irnodeset.h"
+#include "raw_bitset.h"
+#include "util.h"
+#include "xmalloc.h"
+#include <stdlib.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg_permmove;)

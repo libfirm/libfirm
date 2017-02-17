@@ -9,12 +9,12 @@
  * @author      Matthias Braun
  * @date        29.09.2005
  */
-#include <stdlib.h>
-#include <stdbool.h>
-
 #include "bemodule.h"
+
 #include "util.h"
 #include "xmalloc.h"
+#include <stdbool.h>
+#include <stdlib.h>
 
 /**
  * A module list entry.

@@ -19,14 +19,15 @@
    Boston, MA 02110-1301, USA.  */
 #include "obstack.h"
 
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 /* NOTE BEFORE MODIFYING THIS FILE: This version number must be
    incremented whenever callers compiled using an old obstack.h can no
    longer properly call the functions in this obstack.c.  */
 #define OBSTACK_INTERFACE_VERSION 1
-
-#include <stdio.h>
-#include <stddef.h>
-#include <stdint.h>
 
 /* Determine default alignment.  */
 union fooround
@@ -68,7 +69,6 @@ static FIRM_NORETURN print_and_abort (void);
 FIRM_NORETURN_FUNCPTR (*obstack_alloc_failed_handler) (void) = print_and_abort;
 
 /* Exit value used when `print_and_abort' is used.  */
-# include <stdlib.h>
 int obstack_exit_failure = EXIT_FAILURE;
 
 /* Define a macro that either calls functions with the traditional malloc/free
@@ -80,7 +80,7 @@ int obstack_exit_failure = EXIT_FAILURE;
 # define CALL_CHUNKFUN(h, size) \
   (((h) -> use_extra_arg) \
    ? (*(h)->chunkfun) ((h)->extra_arg, (size)) \
-   : (*(struct _obstack_chunk *(*) (PTR_INT_TYPE)) (h)->chunkfun) ((size)))
+   : (*(struct _obstack_chunk *(*) (ptrdiff_t)) (h)->chunkfun) ((size)))
 
 # define CALL_FREEFUN(h, old_chunk) \
   do { \
@@ -100,7 +100,7 @@ int obstack_exit_failure = EXIT_FAILURE;
    allocation fails.  */
 
 int _obstack_begin(struct obstack *h, int size, int alignment,
-                   void *(*chunkfun)(PTR_INT_TYPE), void (*freefun)(void *))
+                   void *(*chunkfun)(ptrdiff_t), void (*freefun)(void *))
 {
   register struct _obstack_chunk *chunk; /* points to new chunk */
 
@@ -123,7 +123,7 @@ int _obstack_begin(struct obstack *h, int size, int alignment,
       size = 4096 - extra;
     }
 
-  h->chunkfun = (struct _obstack_chunk * (*)(void *, PTR_INT_TYPE)) chunkfun;
+  h->chunkfun = (struct _obstack_chunk * (*)(void *, ptrdiff_t)) chunkfun;
   h->freefun = (void (*) (void *, struct _obstack_chunk *)) freefun;
   h->chunk_size = size;
   h->alignment_mask = alignment - 1;
@@ -144,7 +144,7 @@ int _obstack_begin(struct obstack *h, int size, int alignment,
 }
 
 int _obstack_begin_1(struct obstack *h, int size, int alignment,
-                     void *(*chunkfun) (void *, PTR_INT_TYPE),
+                     void *(*chunkfun) (void *, ptrdiff_t),
                      void (*freefun) (void *, void *), void *arg)
 {
   register struct _obstack_chunk *chunk; /* points to new chunk */
@@ -168,7 +168,7 @@ int _obstack_begin_1(struct obstack *h, int size, int alignment,
       size = 4096 - extra;
     }
 
-  h->chunkfun = (struct _obstack_chunk * (*)(void *,PTR_INT_TYPE)) chunkfun;
+  h->chunkfun = (struct _obstack_chunk * (*)(void *,ptrdiff_t)) chunkfun;
   h->freefun = (void (*) (void *, struct _obstack_chunk *)) freefun;
   h->chunk_size = size;
   h->alignment_mask = alignment - 1;
@@ -195,14 +195,14 @@ int _obstack_begin_1(struct obstack *h, int size, int alignment,
    Copies any partial object from the end of the old chunk
    to the beginning of the new one.  */
 
-void _obstack_newchunk(struct obstack *h, PTR_INT_TYPE length)
+void _obstack_newchunk(struct obstack *h, ptrdiff_t length)
 {
   register struct _obstack_chunk *old_chunk = h->chunk;
   register struct _obstack_chunk *new_chunk;
-  register PTR_INT_TYPE new_size;
-  register PTR_INT_TYPE obj_size = h->next_free - h->object_base;
-  register PTR_INT_TYPE i;
-  PTR_INT_TYPE already;
+  register ptrdiff_t new_size;
+  register ptrdiff_t obj_size = h->next_free - h->object_base;
+  register ptrdiff_t i;
+  ptrdiff_t already;
   char *object_base;
 
   /* Compute size for new chunk.  */
@@ -319,10 +319,10 @@ void obstack_free(struct obstack *h, void *obj)
     abort ();
 }
 
-PTR_INT_TYPE _obstack_memory_used(struct obstack *h)
+ptrdiff_t _obstack_memory_used(struct obstack *h)
 {
   register struct _obstack_chunk* lp;
-  register PTR_INT_TYPE nbytes = 0;
+  register ptrdiff_t nbytes = 0;
 
   for (lp = h->chunk; lp != 0; lp = lp->prev)
     {

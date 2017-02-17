@@ -14,6 +14,7 @@
 #define FIRM_BE_BELOWER_H
 
 #include "firm_types.h"
+#include <stdbool.h>
 
 /**
  * Walks over all blocks in an irg and performs lowering need to be

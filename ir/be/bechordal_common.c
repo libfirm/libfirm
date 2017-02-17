@@ -11,20 +11,19 @@
  */
 #include "bechordal_common.h"
 
-#include "debug.h"
-
-#include "iredges_t.h"
 #include "bechordal.h"
 #include "bechordal_t.h"
-#include "beirg.h"
 #include "beinsn_t.h"
+#include "beirg.h"
+#include "belive.h"
+#include "belive.h"
+#include "bemodule.h"
+#include "benode.h"
 #include "besched.h"
 #include "beutil.h"
+#include "debug.h"
+#include "iredges_t.h"
 #include "statev_t.h"
-#include "benode.h"
-#include "bemodule.h"
-#include "belive.h"
-#include "belive.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

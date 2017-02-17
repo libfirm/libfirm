@@ -9,22 +9,21 @@
  * @author      Matthias Braun
  * @date        29.09.2005
  */
-#include "irtools.h"
-#include "iredges_t.h"
-#include "raw_bitset.h"
-#include "statev_t.h"
-#include "irgwalk.h"
-
 #include "bespill.h"
-#include "bemodule.h"
+
 #include "be.h"
-#include "belive.h"
 #include "beirg.h"
+#include "belive.h"
+#include "bemodule.h"
 #include "benode.h"
 #include "bera.h"
-
+#include "iredges_t.h"
+#include "irgwalk.h"
+#include "irtools.h"
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
+#include "raw_bitset.h"
+#include "statev_t.h"
 
 bool be_coalesce_spill_slots = true;
 bool be_do_remats            = true;

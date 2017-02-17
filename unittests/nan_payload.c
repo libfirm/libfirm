@@ -1,14 +1,14 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <limits.h>
-#include "xmalloc.h"
-#include "util.h"
-#include "irmode_t.h"
-#include "tv_t.h"
 #include "ident_t.h"
+#include "irmode_t.h"
 #include "irprog_t.h"
+#include "tv_t.h"
 #include "type_t.h"
+#include "util.h"
+#include "xmalloc.h"
+#include <assert.h>
+#include <limits.h>
+#include <stdint.h>
+#include <stdio.h>
 
 static int64_t nan_payload(double d) {
 	int64_t result;

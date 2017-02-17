@@ -9,32 +9,30 @@
  * @author      Daniel Grund, Matthias Braun
  * @date        20.09.2005
  */
-#include <stdbool.h>
-
+#include "bearch.h"
+#include "bechordal_t.h"
+#include "beirg.h"
+#include "belive.h"
+#include "beloopana.h"
+#include "bemodule.h"
+#include "benode.h"
+#include "besched.h"
+#include "bespill.h"
+#include "bespillutil.h"
+#include "beuses.h"
+#include "beutil.h"
 #include "debug.h"
-#include "obst.h"
-#include "irnode_t.h"
-#include "irmode_t.h"
+#include "ircons_t.h"
+#include "iredges_t.h"
 #include "irgwalk.h"
 #include "irloop.h"
-#include "iredges_t.h"
-#include "ircons_t.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
 #include "irtools.h"
+#include "obst.h"
 #include "statev_t.h"
 #include "util.h"
-
-#include "beutil.h"
-#include "bearch.h"
-#include "beuses.h"
-#include "besched.h"
-#include "belive.h"
-#include "benode.h"
-#include "bechordal_t.h"
-#include "bespill.h"
-#include "beloopana.h"
-#include "beirg.h"
-#include "bespillutil.h"
-#include "bemodule.h"
+#include <stdbool.h>
 
 #define DBG_SPILL     1
 #define DBG_WSETS     2

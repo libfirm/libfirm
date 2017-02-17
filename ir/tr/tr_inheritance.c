@@ -8,13 +8,13 @@
  * @brief   Utility routines for inheritance representation
  * @author  Goetz Lindenmaier
  */
-#include "typerep.h"
+#include "irflag.h"
 #include "irgraph_t.h"
+#include "irgwalk.h"
 #include "irprog_t.h"
 #include "pset.h"
 #include "set.h"
-#include "irgwalk.h"
-#include "irflag.h"
+#include "typerep.h"
 
 /* ----------------------------------------------------------------------- */
 /* The transitive closure of the subclass/superclass and                   */

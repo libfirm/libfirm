@@ -8,12 +8,12 @@
  * @brief     Error handling for libFirm
  * @author    Michael Beck
  */
-#include <stdlib.h>
-
-#include <stdio.h>
-#include <stdarg.h>
-#include "irprintf.h"
 #include "panic.h"
+
+#include "irprintf.h"
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 FIRM_NORETURN print_panic(char const *const file, int const line,
                           char const *const func, char const *const fmt, ...)

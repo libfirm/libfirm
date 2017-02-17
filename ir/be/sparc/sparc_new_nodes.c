@@ -10,25 +10,23 @@
  *          assembler irg.
  * @author  Hannes Rapp, Matthias Braun
  */
-#include <stdlib.h>
-
-#include "irprog_t.h"
-#include "irgraph_t.h"
-#include "irnode_t.h"
-#include "irmode_t.h"
-#include "ircons_t.h"
-#include "iropt_t.h"
-#include "irop_t.h"
-#include "irprintf.h"
-#include "xmalloc.h"
+#include "sparc_new_nodes_t.h"
 
 #include "bearch.h"
 #include "bedump.h"
-
+#include "gen_sparc_regalloc_if.h"
+#include "ircons_t.h"
+#include "irgraph_t.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "irop_t.h"
+#include "iropt_t.h"
+#include "irprintf.h"
+#include "irprog_t.h"
 #include "sparc_bearch_t.h"
 #include "sparc_nodes_attr.h"
-#include "sparc_new_nodes_t.h"
-#include "gen_sparc_regalloc_if.h"
+#include "xmalloc.h"
+#include <stdlib.h>
 
 bool sparc_has_load_store_attr(const ir_node *node)
 {

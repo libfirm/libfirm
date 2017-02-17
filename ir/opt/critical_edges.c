@@ -9,13 +9,12 @@
  * @author   Christian Schaefer, Goetz Lindenmaier, Sebastian Felis,
  *           Michael Beck
  */
-#include <stdbool.h>
-
 #include "ircons.h"
 #include "irgopt.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irop_t.h"
+#include <stdbool.h>
 
 typedef struct cf_env {
 	bool ignore_exc_edges; /**< set if exception edges should be ignored. */

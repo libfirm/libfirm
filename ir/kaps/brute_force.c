@@ -9,24 +9,24 @@
  * @date    02.12.2008
  * @author  Sebastian Buchwald
  */
-#include <assert.h>
-#include <stdbool.h>
-
-#include "panic.h"
+#include "brute_force.h"
 
 #include "bucket.h"
-#include "brute_force.h"
-#include "optimal.h"
-#if KAPS_DUMP
-#include "html_dumper.h"
-#endif
 #include "kaps.h"
 #include "matrix.h"
+#include "optimal.h"
+#include "panic.h"
 #include "pbqp_edge.h"
 #include "pbqp_edge_t.h"
 #include "pbqp_node.h"
 #include "pbqp_node_t.h"
 #include "vector.h"
+#include <assert.h>
+#include <stdbool.h>
+
+#if KAPS_DUMP
+#include "html_dumper.h"
+#endif
 
 #if KAPS_STATISTIC
 static int dump = 0;

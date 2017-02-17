@@ -9,24 +9,23 @@
  * @date    08.06.2004
  * @author  Michael Beck
  */
-#include <assert.h>
-
-#include "debug.h"
-#include "panic.h"
-#include "iroptimize.h"
-#include "scalar_replace.h"
 #include "array.h"
-#include "irprog_t.h"
-#include "irgwalk.h"
-#include "irgmod.h"
-#include "irnode_t.h"
-#include "irgraph_t.h"
+#include "debug.h"
 #include "ircons.h"
-#include "irflag.h"
-#include "irouts_t.h"
-#include "irhooks.h"
 #include "ircons_t.h"
+#include "irflag.h"
+#include "irgmod.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irhooks.h"
+#include "irnode_t.h"
+#include "iroptimize.h"
+#include "irouts_t.h"
+#include "irprog_t.h"
+#include "panic.h"
+#include "scalar_replace.h"
 #include "util.h"
+#include <assert.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

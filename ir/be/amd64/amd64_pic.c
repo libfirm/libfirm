@@ -9,7 +9,6 @@
  * @author      Matthias Braun
  */
 #include "amd64_bearch_t.h"
-
 #include "amd64_new_nodes.h"
 #include "be_t.h"
 #include "beutil.h"

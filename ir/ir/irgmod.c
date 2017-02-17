@@ -8,15 +8,16 @@
  * @brief    Support for ir graph modification.
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier
  */
-#include "irflag_t.h"
-#include "irgwalk.h"
-#include "irnode_t.h"
-#include "irgraph_t.h"
 #include "irgmod.h"
+
 #include "array.h"
 #include "ircons.h"
-#include "irhooks.h"
 #include "iredges_t.h"
+#include "irflag_t.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irhooks.h"
+#include "irnode_t.h"
 #include "irtools.h"
 #include "panic.h"
 

@@ -9,18 +9,19 @@
  * @author  Matthias Braun
  */
 #include "lower_builtins.h"
-#include <stdbool.h>
-#include <stdlib.h>
+
 #include "adt/pmap.h"
 #include "be.h"
-#include "irnode_t.h"
 #include "ircons_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "irnode_t.h"
 #include "iroptimize.h"
-#include "panic.h"
 #include "irprog_t.h"
+#include "panic.h"
 #include "util.h"
+#include <stdbool.h>
+#include <stdlib.h>
 
 static bool dont_lower[ir_bk_last + 1];
 static lower_func lower_va_arg;

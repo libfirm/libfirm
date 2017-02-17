@@ -11,11 +11,11 @@
  * @brief
  *   Optimize the frame type by removing unused type members.
  */
-#include "iroptimize.h"
-#include "irgraph_t.h"
-#include "type_t.h"
-#include "irouts_t.h"
 #include "iredges_t.h"
+#include "irgraph_t.h"
+#include "iroptimize.h"
+#include "irouts_t.h"
+#include "type_t.h"
 
 /*
  * Optimize the frame type of an irg by removing

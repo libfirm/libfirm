@@ -3,6 +3,8 @@
  * Copyright (C) 2017 University of Karlsruhe.
  */
 
+#include "mips_bearch_t.h"
+
 #include "be_t.h"
 #include "beirg.h"
 #include "bemodule.h"
@@ -20,7 +22,6 @@
 #include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lowering.h"
-#include "mips_bearch_t.h"
 #include "mips_emitter.h"
 #include "mips_lower64.h"
 #include "mips_transform.h"

@@ -30,16 +30,15 @@
  */
 #include "hungarian.h"
 
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-
-#include "util.h"
-#include "xmalloc.h"
 #include "debug.h"
 #include "panic.h"
 #include "raw_bitset.h"
+#include "util.h"
+#include "xmalloc.h"
+#include <assert.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

@@ -8,37 +8,36 @@
  * @brief   iropt --- optimizations intertwined with IR construction.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
  */
-#include <string.h>
-#include <stdbool.h>
-
-#include "constbits.h"
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "iredges_t.h"
-#include "irmode_t.h"
 #include "iropt_t.h"
+
+#include "array.h"
+#include "be.h"
+#include "bitfiddle.h"
+#include "constbits.h"
+#include "dbginfo_t.h"
+#include "entity_t.h"
+#include "firm_types.h"
+#include "hashptr.h"
+#include "irarch.h"
 #include "ircons_t.h"
+#include "iredges_t.h"
+#include "irflag_t.h"
 #include "irgmod.h"
 #include "irgopt.h"
-#include "irverify.h"
-#include "iroptimize.h"
-#include "tv_t.h"
-#include "dbginfo_t.h"
+#include "irgraph_t.h"
+#include "irhooks.h"
+#include "irhooks.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
 #include "iropt_dbg.h"
-#include "irflag_t.h"
-#include "irhooks.h"
-#include "irarch.h"
-#include "hashptr.h"
+#include "iroptimize.h"
 #include "irtools.h"
-#include "irhooks.h"
-#include "array.h"
-#include "vrp.h"
-#include "firm_types.h"
-#include "bitfiddle.h"
-#include "be.h"
+#include "irverify.h"
 #include "panic.h"
-
-#include "entity_t.h"
+#include "tv_t.h"
+#include "vrp.h"
+#include <stdbool.h>
+#include <string.h>
 
 static bool imprecise_float_transforms_allowed;
 

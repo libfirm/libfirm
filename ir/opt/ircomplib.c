@@ -9,12 +9,11 @@
  * @date    2011-09-22
  * @author  Manuel Mohr
  */
-#include <assert.h>
-
 #include "iroptimize.h"
 #include "irprog_t.h"
 #include "type_t.h"
 #include "typerep.h"
+#include <assert.h>
 
 /* The default implementation does not set a different ld name. */
 static ident *compilerlib_name_mangle_default(ident *id, ir_type *mt)

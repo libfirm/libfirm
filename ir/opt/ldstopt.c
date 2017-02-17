@@ -8,14 +8,11 @@
  * @brief   Load/Store optimizations.
  * @author  Michael Beck
  */
-#include <string.h>
-
 #include "array.h"
 #include "be.h"
 #include "dbginfo_t.h"
 #include "debug.h"
 #include "entity_t.h"
-#include "panic.h"
 #include "ircons_t.h"
 #include "iredges_t.h"
 #include "irflag_t.h"
@@ -32,10 +29,12 @@
 #include "iropt_t.h"
 #include "iroptimize.h"
 #include "irtools.h"
+#include "panic.h"
 #include "set.h"
 #include "tv_t.h"
 #include "type_t.h"
 #include "util.h"
+#include <string.h>
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)

@@ -8,17 +8,17 @@
  * @brief      read/write analyze of graph argument, which have mode reference.
  * @author     Beyhan Veliev
  */
-#include <stdlib.h>
+#include "analyze_irg_args.h"
 
-#include "irouts_t.h"
-#include "irnode_t.h"
-#include "irmode_t.h"
 #include "array.h"
 #include "cgana.h"
-#include "irprog.h"
 #include "entity_t.h"
-#include "analyze_irg_args.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "irouts_t.h"
+#include "irprog.h"
 #include "util.h"
+#include <stdlib.h>
 
 /**
  * Walk recursive the successors of a graph argument

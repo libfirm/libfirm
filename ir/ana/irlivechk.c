@@ -22,25 +22,23 @@
  *
  * The precomputation remains valid as long as the CFG is not altered.
  */
-#include <stdio.h>
+#include "irlivechk.h"
 
 /* statev is expensive here, only enable when needed */
 #define DISABLE_STATEV
 
+#include "bitset.h"
 #include "debug.h"
+#include "dfs_t.h"
+#include "irdom.h"
+#include "irdump.h"
+#include "iredges_t.h"
+#include "irgraph_t.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "irnodemap.h"
-#include "iredges_t.h"
-#include "irgraph_t.h"
-#include "irdom.h"
-#include "irdump.h"
-
-#include "dfs_t.h"
-#include "bitset.h"
-#include "irlivechk.h"
-
 #include "statev_t.h"
+#include <stdio.h>
 
 typedef struct bl_info_t {
 	const ir_node *block;      /**< The block. */

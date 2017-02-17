@@ -9,22 +9,21 @@
  * @author   Christian Schaefer, Goetz Lindenmaier, Sebastian Felis,
  *           Michael Beck
  */
-#include <assert.h>
-
-#include "irnode_t.h"
-#include "irgraph_t.h"
+#include "irgopt.h"
 
 #include "constbits.h"
 #include "ircons.h"
 #include "iredges_t.h"
 #include "irflag_t.h"
 #include "irgmod.h"
-#include "irgopt.h"
+#include "irgraph_t.h"
 #include "irgwalk.h"
+#include "irnode_t.h"
 #include "iropt_t.h"
 #include "iroptimize.h"
 #include "irtools.h"
 #include "pdeq.h"
+#include <assert.h>
 
 /**
  * A wrapper around optimize_inplace_2() to be called from a walker.

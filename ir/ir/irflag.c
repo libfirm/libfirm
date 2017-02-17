@@ -8,13 +8,12 @@
  * @brief   Flags to control optimizations.
  * @author  Michael Beck, Sebastian Hack
  */
-#include <stdio.h>
-
-#include "lc_opts.h"
+#include "irflag_t.h"
 
 #include "firm_common.h"
 #include "irtools.h"
-#include "irflag_t.h"
+#include "lc_opts.h"
+#include <stdio.h>
 
 /* DISABLE - don't do this optimization
    ENABLE  - lets see, if there is a better graph */

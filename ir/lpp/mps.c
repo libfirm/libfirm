@@ -7,10 +7,11 @@
  * @file
  * @author Daniel Grund
  */
-#include <stdarg.h>
-#include <assert.h>
 #include "mps.h"
+
 #include "panic.h"
+#include <assert.h>
+#include <stdarg.h>
 
 /**
  * These must comply to the enum cst_t in lpp.h

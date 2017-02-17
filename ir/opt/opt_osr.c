@@ -13,8 +13,6 @@
  *  by Keith D. Cooper, L. Taylor Simpson, Christopher A. Vick.
  *  Extended version.
  */
-#include <stdbool.h>
-
 #include "array.h"
 #include "debug.h"
 #include "hashptr.h"
@@ -36,6 +34,7 @@
 #include "set.h"
 #include "tv.h"
 #include "util.h"
+#include <stdbool.h>
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)

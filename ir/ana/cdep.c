@@ -8,18 +8,19 @@
  * @brief   Implementation of cdep
  * @author  Christoph Mallon
  */
-#include <assert.h>
-#include <stdlib.h>
+#include "cdep_t.h"
+
 #include "irdom_t.h"
+#include "irdump.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
-#include "pmap.h"
-#include "obst.h"
-#include "xmalloc.h"
-#include "cdep_t.h"
 #include "irprintf.h"
-#include "irdump.h"
+#include "obst.h"
+#include "pmap.h"
+#include "xmalloc.h"
+#include <assert.h>
+#include <stdlib.h>
 
 typedef struct cdep_info {
 	pmap          *cdep_map; /**< A map to find the list of all control dependence nodes for a block. */

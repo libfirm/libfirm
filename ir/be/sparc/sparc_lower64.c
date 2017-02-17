@@ -8,15 +8,14 @@
  * @brief    Sparc 64bit lowering
  * @author   Matthias Braun
  */
-#include "sparc_bearch_t.h"
-
 #include "benode.h"
-#include "panic.h"
-#include "sparc_nodes_attr.h"
 #include "gen_sparc_new_nodes.h"
 #include "gen_sparc_regalloc_if.h"
-#include "lower_dw.h"
 #include "ircons_t.h"
+#include "lower_dw.h"
+#include "panic.h"
+#include "sparc_bearch_t.h"
+#include "sparc_nodes_attr.h"
 
 static void lower64_add(ir_node *node, ir_mode *mode)
 {

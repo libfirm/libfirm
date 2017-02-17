@@ -8,13 +8,11 @@
  * @brief   Scalar replacement of compounds.
  * @author  Beyhan Veliev, Michael Beck
  */
-#include <stdbool.h>
-#include <string.h>
+#include "scalar_replace.h"
 
 #include "array.h"
 #include "be.h"
 #include "debug.h"
-#include "panic.h"
 #include "hashptr.h"
 #include "ircons_t.h"
 #include "irflag_t.h"
@@ -24,12 +22,14 @@
 #include "iroptimize.h"
 #include "irouts_t.h"
 #include "opt_init.h"
+#include "panic.h"
 #include "pset.h"
-#include "scalar_replace.h"
 #include "set.h"
 #include "tv.h"
 #include "util.h"
 #include "xmalloc.h"
+#include <stdbool.h>
+#include <string.h>
 
 static unsigned get_vnum(const ir_node *node)
 {

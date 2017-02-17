@@ -10,17 +10,16 @@
  */
 #include "x86_node.h"
 
-#include <inttypes.h>
-
 #include "bediagnostic.h"
+#include "beemitter.h"
 #include "begnuas.h"
 #include "betranshlp.h"
-#include "beemitter.h"
 #include "irmode_t.h"
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "panic.h"
 #include "tv_t.h"
+#include <inttypes.h>
 
 char const *x86_pic_base_label;
 

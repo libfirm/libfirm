@@ -27,27 +27,25 @@
  *  on the level of the programming language, modes at the level of
  *  the target processor.
  */
-#include <string.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <stdbool.h>
-
-#include "irnode_t.h"
 #include "type_t.h"
 
-#include "xmalloc.h"
-#include "irprog_t.h"
-#include "ircons.h"
-#include "tv_t.h"
-#include "irhooks.h"
-#include "util.h"
-#include "entity_t.h"
-#include "panic.h"
-#include "dbginfo.h"
-#include "irprog_t.h"
-#include "bitfiddle.h"
-
 #include "array.h"
+#include "bitfiddle.h"
+#include "dbginfo.h"
+#include "entity_t.h"
+#include "ircons.h"
+#include "irhooks.h"
+#include "irnode_t.h"
+#include "irprog_t.h"
+#include "irprog_t.h"
+#include "panic.h"
+#include "tv_t.h"
+#include "util.h"
+#include "xmalloc.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
 static ir_type *new_type(tp_opcode opcode, size_t attr_size, ir_mode *mode);
 static void free_compound_entities(ir_type *type);

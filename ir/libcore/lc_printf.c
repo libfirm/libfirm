@@ -9,18 +9,18 @@
  * @author Sebastian Hack
  * @date 4.12.2005
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
+#include "lc_printf.h"
+
+#include "hashptr.h"
+#include "set.h"
+#include "util.h"
+#include "xmalloc.h"
 #include <assert.h>
 #include <ctype.h>
-
-#include "xmalloc.h"
-#include "lc_printf.h"
-#include "hashptr.h"
-#include "util.h"
-#include "set.h"
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* printf implementation */
 

@@ -8,12 +8,12 @@
  * @brief       implementation of xmalloc & friends
  * @author      Markus Armbruster
  */
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "xmalloc.h"
 
 #include "funcattr.h"
-#include "xmalloc.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static FIRM_NORETURN xnomem(void)
 {

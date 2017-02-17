@@ -2,12 +2,12 @@
  * This file is part of libFirm.
  * Copyright (C) 2015 University of Karlsruhe.
  */
-#include <stdarg.h>
-
 #include "bediagnostic.h"
+
 #include "dbginfo.h"
 #include "irnode_t.h"
 #include "irprintf.h"
+#include <stdarg.h>
 
 static void be_vdiagnosticf(ir_node const *const node, char const *const kind, char const *const fmt, va_list ap)
 {

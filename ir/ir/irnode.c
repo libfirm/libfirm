@@ -8,28 +8,26 @@
  * @brief   Representation of an intermediate operation.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
  */
-#include <string.h>
-
-#include "pset_new.h"
-#include "ident.h"
 #include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irmode_t.h"
-#include "irbackedge_t.h"
-#include "irdump.h"
-#include "irop_t.h"
-#include "irprog_t.h"
-#include "iredgekinds.h"
-#include "iredges_t.h"
-#include "ircons.h"
-#include "irprintf.h"
-#include "panic.h"
-#include "irverify.h"
-
-#include "irhooks.h"
-#include "util.h"
 
 #include "beinfo.h"
+#include "ident.h"
+#include "irbackedge_t.h"
+#include "ircons.h"
+#include "irdump.h"
+#include "iredgekinds.h"
+#include "iredges_t.h"
+#include "irgraph_t.h"
+#include "irhooks.h"
+#include "irmode_t.h"
+#include "irop_t.h"
+#include "irprintf.h"
+#include "irprog_t.h"
+#include "irverify.h"
+#include "panic.h"
+#include "pset_new.h"
+#include "util.h"
+#include <string.h>
 
 /* some constants fixing the positions of nodes predecessors
    in the in array */

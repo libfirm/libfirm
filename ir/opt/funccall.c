@@ -8,28 +8,26 @@
  * @brief   Optimization of function calls.
  * @author  Michael Beck
  */
-#include <stdbool.h>
-
-#include "util.h"
-#include "opt_init.h"
-
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irgmod.h"
-#include "irgwalk.h"
+#include "analyze_irg_args.h"
 #include "dbginfo_t.h"
-#include "irflag_t.h"
-#include "irloop_t.h"
+#include "debug.h"
 #include "ircons.h"
 #include "iredges_t.h"
-#include "iroptimize.h"
-#include "analyze_irg_args.h"
+#include "irflag_t.h"
+#include "irgmod.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
 #include "irhooks.h"
+#include "irloop_t.h"
+#include "irnode_t.h"
+#include "iroptimize.h"
 #include "irprog_t.h"
 #include "irtools.h"
-#include "raw_bitset.h"
-#include "debug.h"
+#include "opt_init.h"
 #include "panic.h"
+#include "raw_bitset.h"
+#include "util.h"
+#include <stdbool.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

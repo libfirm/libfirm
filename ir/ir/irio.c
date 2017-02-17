@@ -8,12 +8,7 @@
  * @brief   Write textual representation of firm to file.
  * @author  Moritz Kroll, Matthias Braun
  */
-#include "irio.h"
-
-#include <string.h>
-#include <ctype.h>
-#include <stdbool.h>
-#include <stdarg.h>
+#include "irio_t.h"
 
 #include "array.h"
 #include "ircons_t.h"
@@ -21,7 +16,6 @@
 #include "irgmod.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
-#include "irio_t.h"
 #include "irprintf.h"
 #include "irprog_t.h"
 #include "obst.h"
@@ -29,6 +23,10 @@
 #include "pmap.h"
 #include "tv_t.h"
 #include "util.h"
+#include <ctype.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <string.h>
 
 #define SYMERROR ((unsigned) ~0)
 

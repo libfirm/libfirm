@@ -16,13 +16,14 @@
  * for an improved Conv optimization.  It also allows finding
  * additional constants (vrp->z ^ vrp->o & dc == 0).
  */
+#include "dca.h"
+
 #include "constbits.h"
 #include "debug.h"
-#include "irnode_t.h"
-#include "tv.h"
-#include "pdeq.h"
 #include "irgwalk.h"
-#include "dca.h"
+#include "irnode_t.h"
+#include "pdeq.h"
+#include "tv.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

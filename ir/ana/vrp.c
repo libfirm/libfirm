@@ -9,19 +9,20 @@
  * @author  Jonas Fietz
  */
 #include "vrp.h"
-#include "iroptimize.h"
-#include "irouts_t.h"
-#include "irgraph_t.h"
-#include "irgopt.h"
-#include "irgwalk.h"
-#include "iredges_t.h"
-#include "tv.h"
-#include "irprintf.h"
-#include "pdeq.h"
-#include "irnodemap.h"
-#include "irhooks.h"
+
 #include "bitset.h"
 #include "debug.h"
+#include "iredges_t.h"
+#include "irgopt.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irhooks.h"
+#include "irnodemap.h"
+#include "iroptimize.h"
+#include "irouts_t.h"
+#include "irprintf.h"
+#include "pdeq.h"
+#include "tv.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

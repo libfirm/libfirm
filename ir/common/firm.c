@@ -8,33 +8,35 @@
  * @brief     Central firm functionality.
  * @author    Martin Trapp, Christian Schaefer, Goetz Lindenmaier
  */
-#include <stdio.h>
+#include "firm_common.h"
 
 #ifdef HAVE_FIRM_REVISION_H
-# include "firm_revision.h"
+#include "firm_revision.h"
 #endif
+
+#include "be_t.h"
+#include "debugger.h"
+#include "entity_t.h"
+#include "execfreq_t.h"
+#include "firm.h"
+#include "ident_t.h"
+#include "ircons_t.h"
+#include "iredges_t.h"
+#include "irflag_t.h"
+#include "irgraph_t.h"
+#include "irhooks.h"
+#include "irmemory_t.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "irprog_t.h"
+#include "irtools.h"
+#include "lc_opts.h"
+#include "opt_init.h"
+#include "tv_t.h"
+#include "type_t.h"
 #include "version.h"
 #include <stdio.h>
-#include "lc_opts.h"
-#include "ident_t.h"
-#include "firm.h"
-#include "irflag_t.h"
-#include "tv_t.h"
-#include "irprog_t.h"
-#include "irnode_t.h"
-#include "irmode_t.h"
-#include "ircons_t.h"
-#include "irgraph_t.h"
-#include "type_t.h"
-#include "entity_t.h"
-#include "irhooks.h"
-#include "iredges_t.h"
-#include "irmemory_t.h"
-#include "opt_init.h"
-#include "debugger.h"
-#include "be_t.h"
-#include "irtools.h"
-#include "execfreq_t.h"
+#include <stdio.h>
 
 /* returns the firm root */
 lc_opt_entry_t *firm_opt_get_root(void)

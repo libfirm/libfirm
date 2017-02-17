@@ -9,13 +9,14 @@
  * @author   Goetz Lindenmaier, Michael Beck
  * @date     1.2002
  */
-#include "xmalloc.h"
 #include "irouts_t.h"
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irprog_t.h"
-#include "irgwalk.h"
+
 #include "ircons.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irprog_t.h"
+#include "xmalloc.h"
 
 unsigned get_irn_n_outs(const ir_node *node)
 {

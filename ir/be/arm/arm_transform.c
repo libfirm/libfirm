@@ -8,33 +8,31 @@
  * @brief   The codegenerator (transform FIRM into arm FIRM)
  * @author  Matthias Braun, Oliver Richter, Tobias Gneist, Michael Beck
  */
+#include "arm_transform.h"
+
 #include "arm_bearch_t.h"
+#include "arm_cconv.h"
+#include "arm_new_nodes.h"
+#include "arm_nodes_attr.h"
+#include "arm_optimize.h"
 #include "beasm.h"
-#include "irnode_t.h"
+#include "beirg.h"
+#include "benode.h"
+#include "betranshlp.h"
+#include "beutil.h"
+#include "dbginfo.h"
+#include "debug.h"
+#include "gen_arm_new_nodes.h"
+#include "gen_arm_regalloc_if.h"
+#include "ircons.h"
+#include "iredges_t.h"
+#include "irgmod.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"
-#include "irgmod.h"
-#include "iredges_t.h"
-#include "ircons.h"
-#include "dbginfo.h"
+#include "irnode_t.h"
 #include "iropt_t.h"
-#include "debug.h"
 #include "panic.h"
 #include "util.h"
-
-#include "benode.h"
-#include "beirg.h"
-#include "beutil.h"
-#include "betranshlp.h"
-
-#include "arm_nodes_attr.h"
-#include "arm_transform.h"
-#include "arm_optimize.h"
-#include "arm_new_nodes.h"
-#include "arm_cconv.h"
-
-#include "gen_arm_regalloc_if.h"
-#include "gen_arm_new_nodes.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

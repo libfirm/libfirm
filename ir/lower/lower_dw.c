@@ -9,10 +9,7 @@
  * @date    8.10.2004
  * @author  Michael Beck
  */
-#include <string.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <assert.h>
+#include "lower_dw.h"
 
 #include "array.h"
 #include "be.h"
@@ -28,13 +25,12 @@
 #include "irgraph_t.h"
 #include "irgwalk.h"
 #include "irmode_t.h"
-#include "irnodeset.h"
 #include "irnode_t.h"
+#include "irnodeset.h"
 #include "iropt_dbg.h"
-#include "iroptimize.h"
 #include "iropt_t.h"
+#include "iroptimize.h"
 #include "irprog_t.h"
-#include "lower_dw.h"
 #include "lowering.h"
 #include "panic.h"
 #include "pdeq.h"
@@ -42,6 +38,10 @@
 #include "set.h"
 #include "tv_t.h"
 #include "type_t.h"
+#include <assert.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 /** A map from (op, imode, omode) to Intrinsic functions entities. */
 static set *intrinsic_fkt;

@@ -10,10 +10,10 @@
  */
 #include "beemithlp.h"
 
+#include "be_t.h"
 #include "bearch.h"
 #include "bedwarf.h"
 #include "beemitter.h"
-#include "be_t.h"
 #include "begnuas.h"
 #include "benode.h"
 #include "dbginfo.h"

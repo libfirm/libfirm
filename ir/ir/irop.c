@@ -8,22 +8,20 @@
  * @brief   Representation of opcode of intermediate operation.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
  */
-#include <string.h>
-
-#include "panic.h"
-#include "cgana.h"
 #include "irop_t.h"
-#include "irnode_t.h"
-#include "irhooks.h"
-#include "irbackedge_t.h"
 
+#include "benode.h"
+#include "cgana.h"
+#include "irbackedge_t.h"
+#include "irhooks.h"
+#include "irnode_t.h"
+#include "irnode_t.h"
 #include "iropt_t.h"
 #include "irverify_t.h"
+#include "panic.h"
 #include "reassoc_t.h"
-
 #include "xmalloc.h"
-#include "benode.h"
-#include "irnode_t.h"
+#include <string.h>
 
 static ir_op **opcodes;
 /** the available next opcode */

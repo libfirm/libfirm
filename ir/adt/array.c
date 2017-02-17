@@ -8,12 +8,12 @@
  * @brief       Array --- dynamic & flexible arrays.
  * @author      Markus Armbruster
  */
-#include <stdlib.h>
-
 #include "array.h"
+
+#include "fourcc.h"
 #include "util.h"
 #include "xmalloc.h"
-#include "fourcc.h"
+#include <stdlib.h>
 
 #define ARR_D_MAGIC FOURCC('A','R','R','D')
 #define ARR_F_MAGIC FOURCC('A','R','R','F')

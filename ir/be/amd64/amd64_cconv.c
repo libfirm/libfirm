@@ -12,20 +12,19 @@
  *  - http://www.x86-64.org/documentation/abi.pdf
  *  - MSDN - "x64 Software Conventions"
  */
+#include "../ia32/x86_cconv.h"
 #include "amd64_bearch_t.h"
-
 #include "be_t.h"
 #include "becconv.h"
 #include "beirg.h"
-#include "irmode_t.h"
-#include "irgwalk.h"
-#include "typerep.h"
-#include "xmalloc.h"
-#include "util.h"
-#include "panic.h"
-#include "gen_amd64_regalloc_if.h"
 #include "bitfiddle.h"
-#include "../ia32/x86_cconv.h"
+#include "gen_amd64_regalloc_if.h"
+#include "irgwalk.h"
+#include "irmode_t.h"
+#include "panic.h"
+#include "typerep.h"
+#include "util.h"
+#include "xmalloc.h"
 
 /*
  * Note: "X64 ABI" refers to the Windows ABI for x86_64 (the SysV ABI

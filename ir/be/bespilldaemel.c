@@ -18,6 +18,15 @@
  *   Spilling in this context means placing a spill instruction behind the
  *   definition of the value and a reload before each usage.
  */
+#include "be_t.h"
+#include "bearch.h"
+#include "beirg.h"
+#include "belive.h"
+#include "bemodule.h"
+#include "benode.h"
+#include "besched.h"
+#include "bespill.h"
+#include "bespillutil.h"
 #include "debug.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
@@ -25,16 +34,6 @@
 #include "irprintf.h"
 #include "panic.h"
 #include "util.h"
-
-#include "beirg.h"
-#include "bespill.h"
-#include "bespillutil.h"
-#include "bemodule.h"
-#include "besched.h"
-#include "bearch.h"
-#include "be_t.h"
-#include "benode.h"
-#include "belive.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

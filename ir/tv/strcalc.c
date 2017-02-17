@@ -8,18 +8,18 @@
  * @brief   Arithmetic operations on arbitrary precision integer numbers.
  * @author  Mathias Heil, Matthias Braun
  */
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
-#include <limits.h>
-
 #include "strcalc.h"
-#include "xmalloc.h"
-#include "panic.h"
+
 #include "bitfiddle.h"
+#include "panic.h"
 #include "tv_t.h"
 #include "util.h"
+#include "xmalloc.h"
+#include <assert.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define SC_MASK      ((sc_word)0xFF)
 #define SC_RESULT(x) ((x) & SC_MASK)

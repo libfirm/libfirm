@@ -5,8 +5,6 @@
 
 #include "mips_emitter.h"
 
-#include <inttypes.h>
-
 #include "be_t.h"
 #include "bearch.h"
 #include "beblocksched.h"
@@ -22,6 +20,7 @@
 #include "mips_nodes_attr.h"
 #include "panic.h"
 #include "util.h"
+#include <inttypes.h>
 
 static void emit_immediate_val(char const *const prefix, ir_entity *const ent, int32_t const val)
 {

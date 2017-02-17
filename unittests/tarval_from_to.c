@@ -1,6 +1,3 @@
-#include <assert.h>
-#include <float.h>
-#include <limits.h>
 #include "firm.h"
 #include "fltcalc.h"
 #include "irprintf.h"
@@ -8,6 +5,9 @@
 #include "strcalc.h"
 #include "tv_t.h"
 #include "util.h"
+#include <assert.h>
+#include <float.h>
+#include <limits.h>
 
 static int res = 0;
 

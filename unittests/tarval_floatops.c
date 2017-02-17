@@ -1,10 +1,10 @@
+#include "firm.h"
+#include "tv_t.h"
+#include "util.h"
 #include <assert.h>
 #include <float.h>
 #include <stdlib.h>
 #include <string.h>
-#include "tv_t.h"
-#include "firm.h"
-#include "util.h"
 
 static void check_mode(ir_mode *mode)
 {

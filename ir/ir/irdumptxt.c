@@ -9,23 +9,20 @@
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt,
  *          Matthias Braun
  */
-#include <stdlib.h>
-#include <stdbool.h>
-
+#include "cgana.h"
 #include "constbits.h"
+#include "entity_t.h"
+#include "irdom.h"
 #include "irdump_t.h"
 #include "irgraph_t.h"
-#include "irnode_t.h"
-
-#include "irprog_t.h"
-#include "entity_t.h"
 #include "irgwalk.h"
-#include "tv_t.h"
+#include "irnode_t.h"
 #include "irprintf.h"
+#include "irprog_t.h"
 #include "panic.h"
-#include "cgana.h"
-
-#include "irdom.h"
+#include "tv_t.h"
+#include <stdbool.h>
+#include <stdlib.h>
 
 typedef struct bitflag_name_t {
 	unsigned    flag;

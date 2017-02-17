@@ -11,6 +11,7 @@
 #define FIRM_BE_AMD64_AMD64_TRANSFORM_H
 
 #include "firm_types.h"
+#include "x86_address_mode.h"
 #include "x86_asm.h"
 
 extern const x86_clobber_name_t        amd64_additional_clobber_names[];

@@ -9,25 +9,21 @@
  * @author      Goetz Lindenmaier
  * @date        21.7.2004
  */
-#include <stdlib.h>
-
-#include "util.h"
 #include "callgraph.h"
 
-#include "irloop_t.h"
-#include "irprog_t.h"
-#include "irgraph_t.h"
-#include "irnode_t.h"
-
-#include "cgana.h"
-
 #include "array.h"
-#include "pmap.h"
+#include "cgana.h"
 #include "hashptr.h"
-#include "raw_bitset.h"
-#include "panic.h"
-
+#include "irgraph_t.h"
 #include "irgwalk.h"
+#include "irloop_t.h"
+#include "irnode_t.h"
+#include "irprog_t.h"
+#include "panic.h"
+#include "pmap.h"
+#include "raw_bitset.h"
+#include "util.h"
+#include <stdlib.h>
 
 static ir_visited_t master_cg_visited = 0;
 

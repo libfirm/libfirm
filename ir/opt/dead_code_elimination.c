@@ -14,16 +14,16 @@
  * this by copying all (reachable) nodes to a new obstack and throwing away
  * the old one.
  */
-#include "iroptimize.h"
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "iredges_t.h"
-#include "irhooks.h"
-#include "irtools.h"
-#include "irgwalk.h"
 #include "cgana.h"
-#include "irouts.h"
+#include "iredges_t.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irhooks.h"
+#include "irnode_t.h"
 #include "iropt_t.h"
+#include "iroptimize.h"
+#include "irouts.h"
+#include "irtools.h"
 #include "pmap.h"
 #include "vrp.h"
 

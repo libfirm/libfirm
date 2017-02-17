@@ -9,23 +9,22 @@
  * @date    10. Sep. 2006
  * @author  Christoph Mallon, Matthias Braun
  */
-#include "iroptimize.h"
-
-#include <assert.h>
-#include <stdbool.h>
 #include "array.h"
 #include "debug.h"
 #include "ircons.h"
+#include "iredges_t.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
-#include "iredges_t.h"
+#include "iropt_dbg.h"
+#include "iroptimize.h"
+#include "iroptimize.h"
 #include "irtools.h"
 #include "tv.h"
-#include "iroptimize.h"
-#include "iropt_dbg.h"
 #include "vrp.h"
+#include <assert.h>
+#include <stdbool.h>
 
 #undef AVOID_PHIB
 

@@ -8,13 +8,13 @@
  * @brief     Hash table to store names.
  * @author    Goetz Lindenmaier
  */
-#include <stdio.h>
-#include <string.h>
+#include "ident_t.h"
 
 #include "hashptr.h"
-#include "ident_t.h"
 #include "obst.h"
 #include "set.h"
+#include <stdio.h>
+#include <string.h>
 
 static set *id_set;
 

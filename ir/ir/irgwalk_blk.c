@@ -8,14 +8,14 @@
  * @brief   Blockwise walker implementation
  * @author  Michael Beck
  */
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irgwalk.h"
-#include "pset.h"
-#include "irhooks.h"
 #include "array.h"
 #include "hashptr.h"
 #include "ircons.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irhooks.h"
+#include "irnode_t.h"
+#include "pset.h"
 
 /**
  * Metadata for block walker.

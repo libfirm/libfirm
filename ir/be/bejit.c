@@ -11,9 +11,6 @@
  */
 #include "bejit.h"
 
-#include <assert.h>
-#include <limits.h>
-
 #include "array.h"
 #include "beemitter.h"
 #include "begnuas.h"
@@ -22,6 +19,8 @@
 #include "entity_t.h"
 #include "obst.h"
 #include "panic.h"
+#include <assert.h>
+#include <limits.h>
 
 typedef enum reloc_dest_kind_t {
 	RELOC_DEST_CODE_FRAGMENT,

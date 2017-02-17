@@ -8,16 +8,16 @@
  * @brief   Lower some High-level constructs, moved from the firmlower.
  * @author  Boris Boesler, Goetz Lindenmaier, Michael Beck
  */
-#include "lowering.h"
-#include "irmode_t.h"
-#include "irnode_t.h"
 #include "entity_t.h"
-#include "typerep.h"
-#include "irprog_t.h"
 #include "ircons.h"
-#include "irhooks.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "irhooks.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "irprog_t.h"
+#include "lowering.h"
+#include "typerep.h"
 
 /**
  * Lower a Sel node. Do not touch Sels accessing entities on the frame type.

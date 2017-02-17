@@ -1,6 +1,6 @@
 #include "raw_bitset.h"
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 int main(void)
 {

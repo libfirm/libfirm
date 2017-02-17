@@ -9,9 +9,9 @@
  * @date    30.11.2008
  * @author  Sebastian Buchwald
  */
-#include "adt/array.h"
-
 #include "bucket.h"
+
+#include "adt/array.h"
 #include "pbqp_edge_t.h"
 #include "pbqp_node.h"
 #include "pbqp_node_t.h"

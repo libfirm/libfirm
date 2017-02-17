@@ -10,7 +10,6 @@
  */
 #include "ia32_encode.h"
 
-#include <stdint.h>
 #include "bearch.h"
 #include "beblocksched.h"
 #include "beemithlp.h"
@@ -26,6 +25,7 @@
 #include "ia32_new_nodes.h"
 #include "irnodehashmap.h"
 #include "x86_node.h"
+#include <stdint.h>
 
 static ir_nodehashmap_t block_fragmentnum;
 

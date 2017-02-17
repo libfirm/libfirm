@@ -12,15 +12,12 @@
 
 #ifdef WITH_GUROBI
 
+#include "obst.h"
+#include "sp_matrix.h"
+#include <gurobi_c.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
-
-#include "obst.h"
-
-#include <gurobi_c.h>
-
-#include "sp_matrix.h"
 
 static char gurobi_cst_encoding[4] = { 0, GRB_EQUAL, GRB_LESS_EQUAL, GRB_GREATER_EQUAL };
 static char gurobi_var_encoding[4] = { 0, 0, GRB_CONTINUOUS, GRB_BINARY };

@@ -9,11 +9,10 @@
  * @date    02.10.2008
  * @author  Sebastian Buchwald
  */
-#include <string.h>
+#include "vector.h"
 
 #include "adt/array.h"
-
-#include "vector.h"
+#include <string.h>
 
 num pbqp_add(num x, num y)
 {

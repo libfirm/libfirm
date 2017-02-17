@@ -20,22 +20,21 @@
  * spilled. So in some situations (for example 2 adc-nodes that use the flags of
  * a single add node on x86) operations have to be repeated to work correctly.
  */
-#include <stdbool.h>
-
-#include "irgwalk.h"
-#include "irnode_t.h"
-#include "irtools.h"
-#include "ircons.h"
-#include "iredges_t.h"
-#include "irouts_t.h"
-
 #include "beflags.h"
+
 #include "bearch.h"
 #include "beirg.h"
+#include "belive.h"
+#include "benode.h"
 #include "besched.h"
 #include "beutil.h"
-#include "benode.h"
-#include "belive.h"
+#include "ircons.h"
+#include "iredges_t.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irouts_t.h"
+#include "irtools.h"
+#include <stdbool.h>
 
 static const arch_register_class_t *flag_class;
 static const arch_register_t       *flags_reg;

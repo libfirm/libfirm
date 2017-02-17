@@ -11,8 +11,6 @@
  */
 #include "x86_asm.h"
 
-#include <assert.h>
-
 #include "array.h"
 #include "be_t.h"
 #include "bearch.h"
@@ -20,6 +18,7 @@
 #include "betranshlp.h"
 #include "gen_ia32_regalloc_if.h"
 #include "panic.h"
+#include <assert.h>
 
 arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *const additional_clobber_names, char const *const clobber)
 {

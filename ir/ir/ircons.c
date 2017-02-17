@@ -10,11 +10,10 @@
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Boris Boesler
  *          Michael Beck, Matthias Braun
  */
+#include "ircons_t.h"
 
-#include "util.h"
 #include "array.h"
 #include "irbackedge_t.h"
-#include "ircons_t.h"
 #include "iredges_t.h"
 #include "irflag_t.h"
 #include "irflag_t.h"
@@ -28,6 +27,7 @@
 #include "iropt_t.h"
 #include "irprog_t.h"
 #include "irverify.h"
+#include "util.h"
 
 /**
  * Language dependent variable initialization callback.

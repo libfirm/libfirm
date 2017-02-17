@@ -11,8 +11,8 @@
  */
 #include "beemitter.h"
 
-#include "panic.h"
 #include "irprintf.h"
+#include "panic.h"
 
 static FILE    *emit_file;
 struct obstack  emit_obst;

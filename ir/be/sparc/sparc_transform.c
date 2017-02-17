@@ -8,36 +8,33 @@
  * @brief   code selection (transform FIRM into SPARC FIRM)
  * @author  Hannes Rapp, Matthias Braun
  */
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irmode_t.h"
-#include "irgmod.h"
-#include "iredges_t.h"
-#include "ircons.h"
-#include "iroptimize.h"
-#include "dbginfo.h"
-#include "iropt_t.h"
-#include "debug.h"
-#include "panic.h"
-#include "util.h"
+#include "sparc_transform.h"
 
 #include "beasm.h"
-#include "benode.h"
 #include "beirg.h"
-#include "beutil.h"
+#include "benode.h"
 #include "betranshlp.h"
-
-#include "sparc_bearch_t.h"
-#include "sparc_nodes_attr.h"
-#include "sparc_transform.h"
-#include "sparc_new_nodes.h"
+#include "beutil.h"
+#include "dbginfo.h"
+#include "debug.h"
 #include "gen_sparc_new_nodes.h"
-
 #include "gen_sparc_regalloc_if.h"
+#include "ircons.h"
+#include "iredges_t.h"
+#include "irgmod.h"
+#include "irgraph_t.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "iropt_t.h"
+#include "iroptimize.h"
+#include "panic.h"
+#include "sparc_bearch_t.h"
 #include "sparc_cconv.h"
+#include "sparc_new_nodes.h"
+#include "sparc_nodes_attr.h"
+#include "util.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

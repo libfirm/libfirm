@@ -9,22 +9,21 @@
  * @author  Sebastian Hack
  * @date    29.11.2004
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
+#include "irprintf.h"
 
-#include <ctype.h>
-
+#include "dbginfo_t.h"
+#include "entity_t.h"
 #include "ident.h"
+#include "irargs_t.h"
 #include "irmode_t.h"
 #include "irnode_t.h"
-#include "entity_t.h"
-#include "type_t.h"
-#include "tv_t.h"
-#include "irprintf.h"
 #include "obst.h"
-#include "dbginfo_t.h"
-#include "irargs_t.h"
+#include "tv_t.h"
+#include "type_t.h"
+#include <ctype.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 int ir_printf(const char *fmt, ...)
 {

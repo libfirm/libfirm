@@ -14,9 +14,11 @@
 #ifndef FIRM_ANA_DFS_T_H
 #define FIRM_ANA_DFS_T_H
 
-#include <stdbool.h>
-#include "hashptr.h"
 #include "dfs.h"
+#include "hashptr.h"
+#include "set.h"
+#include <stdbool.h>
+#include <string.h>
 
 #define dfs_get_n_nodes(dfs)            ((dfs)->pre_num)
 #define dfs_get_pre_num(dfs, node)      (_dfs_get_node((dfs), (node))->pre_num)

@@ -10,23 +10,22 @@
  */
 #include "lower_mode_b.h"
 
-#include <stdlib.h>
-#include <stdbool.h>
-
-#include "irnode_t.h"
-#include "ircons_t.h"
-#include "irflag.h"
-#include "irgwalk.h"
-#include "irtools.h"
-#include "iredges_t.h"
-#include "iropt_t.h"
-#include "irgmod.h"
-#include "tv.h"
-#include "panic.h"
-#include "lowering.h"
-#include "util.h"
 #include "array.h"
+#include "ircons_t.h"
+#include "iredges_t.h"
+#include "irflag.h"
+#include "irgmod.h"
 #include "irgopt.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "iropt_t.h"
+#include "irtools.h"
+#include "lowering.h"
+#include "panic.h"
+#include "tv.h"
+#include "util.h"
+#include <stdbool.h>
+#include <stdlib.h>
 
 typedef struct needs_lowering_t {
 	ir_node *node;

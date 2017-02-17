@@ -8,30 +8,30 @@
  * @brief   DWARF debugging info support
  * @author  Matthias Braun
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-
-#include "bearch.h"
 #include "bedwarf_t.h"
-#include "panic.h"
-#include "obst.h"
-#include "irprog.h"
-#include "tv.h"
-#include "xmalloc.h"
-#include "pmap.h"
-#include "pset_new.h"
-#include "util.h"
-#include "obst.h"
+
 #include "array.h"
+#include "bearch.h"
+#include "beemitter.h"
+#include "begnuas.h"
+#include "bemodule.h"
+#include "dbginfo.h"
+#include "irprog.h"
 #include "irtools.h"
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
-#include "bemodule.h"
-#include "beemitter.h"
-#include "dbginfo.h"
-#include "begnuas.h"
+#include "obst.h"
+#include "obst.h"
+#include "panic.h"
+#include "pmap.h"
+#include "pset_new.h"
+#include "tv.h"
 #include "typerep.h"
+#include "util.h"
+#include "xmalloc.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 enum {
 	LEVEL_NONE,

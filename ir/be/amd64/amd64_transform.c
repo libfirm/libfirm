@@ -7,8 +7,20 @@
  * @file
  * @brief   code selection (transform FIRM into amd64 FIRM)
  */
+#include "amd64_transform.h"
+
+#include "../ia32/x86_address_mode.h"
+#include "../ia32/x86_cconv.h"
+#include "amd64_bearch_t.h"
+#include "amd64_new_nodes.h"
+#include "amd64_nodes_attr.h"
+#include "amd64_varargs.h"
+#include "beirg.h"
+#include "benode.h"
+#include "besched.h"
+#include "betranshlp.h"
 #include "debug.h"
-#include "panic.h"
+#include "gen_amd64_regalloc_if.h"
 #include "heights.h"
 #include "ircons.h"
 #include "iredges_t.h"
@@ -18,23 +30,9 @@
 #include "irnode_t.h"
 #include "iropt_t.h"
 #include "irprog_t.h"
+#include "panic.h"
 #include "tv_t.h"
 #include "util.h"
-
-#include "benode.h"
-#include "betranshlp.h"
-#include "beirg.h"
-#include "besched.h"
-
-#include "amd64_bearch_t.h"
-#include "amd64_new_nodes.h"
-#include "amd64_nodes_attr.h"
-#include "amd64_transform.h"
-#include "amd64_varargs.h"
-#include "../ia32/x86_address_mode.h"
-#include "../ia32/x86_cconv.h"
-
-#include "gen_amd64_regalloc_if.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

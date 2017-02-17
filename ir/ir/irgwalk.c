@@ -12,19 +12,18 @@
  *  - execute the pre function before recursion
  *  - execute the post function after recursion
  */
-#include <stdlib.h>
-
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irprog_t.h"
 #include "irgwalk.h"
-#include "irhooks.h"
+
+#include "array.h"
 #include "entity_t.h"
 #include "ircons.h"
-
+#include "irgraph_t.h"
+#include "irhooks.h"
+#include "irnode_t.h"
+#include "irprog_t.h"
 #include "panic.h"
 #include "pset_new.h"
-#include "array.h"
+#include <stdlib.h>
 
 /**
  * specialized version of irg_walk_2, called if only pre callback exists

@@ -11,6 +11,8 @@
 #ifndef FIRM_STATEVENT_H
 #define FIRM_STATEVENT_H
 
+#include "begin.h"
+
 /**
  * @defgroup statev Statistic Events
  *
@@ -71,5 +73,7 @@ FIRM_API void stat_ev_end(void);
 FIRM_API int stat_ev_enabled;
 
 /** @} */
+
+#include "end.h"
 
 #endif

@@ -9,26 +9,25 @@
  * @author   Michael Beck
  * @date     27.12.2006
  */
-#include <stdlib.h>
-#include <stdbool.h>
+#include "irmemory_t.h"
 
 #include "adt/pmap.h"
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irprog_t.h"
-#include "irmemory_t.h"
-#include "irmemory.h"
-#include "irflag.h"
+#include "debug.h"
 #include "hashptr.h"
 #include "irflag.h"
-#include "irouts_t.h"
+#include "irflag.h"
+#include "irgraph_t.h"
 #include "irgwalk.h"
+#include "irnode_t.h"
+#include "irouts_t.h"
 #include "irprintf.h"
-#include "debug.h"
+#include "irprog_t.h"
 #include "panic.h"
-#include "typerep.h"
 #include "type_t.h"
+#include "typerep.h"
 #include "util.h"
+#include <stdbool.h>
+#include <stdlib.h>
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)

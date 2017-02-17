@@ -9,21 +9,20 @@
  * @author      Sebastian Hack
  * @date        18.11.2005
  */
-#include <stdlib.h>
+#include "beifg.h"
 
 #include "bechordal_t.h"
-#include "lc_opts.h"
-#include "lc_opts_enum.h"
-
-#include "timing.h"
+#include "beirg.h"
+#include "belive.h"
+#include "bemodule.h"
 #include "bitset.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
-#include "beifg.h"
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
+#include "timing.h"
 #include "xmalloc.h"
-#include "beirg.h"
-#include "bemodule.h"
-#include "belive.h"
+#include <stdlib.h>
 
 void be_ifg_free(be_ifg_t *self)
 {

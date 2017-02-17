@@ -15,6 +15,7 @@
 #define FIRM_ANA_DFS_H
 
 #include "firm_types.h"
+#include <stdio.h>
 
 typedef struct dfs_t      dfs_t;
 typedef struct dfs_node_t dfs_node_t;

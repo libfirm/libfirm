@@ -9,10 +9,10 @@
  * @author   Goetz Lindenmaier
  * @date     7.2002
  */
-#include <stdlib.h>
-
 #include "irloop_t.h"
+
 #include "irprog_t.h"
+#include <stdlib.h>
 
 void add_loop_son(ir_loop *loop, ir_loop *son)
 {

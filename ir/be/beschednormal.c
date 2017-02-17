@@ -8,21 +8,19 @@
  *          hold)
  * @author  Christoph Mallon
  */
-#include <stdlib.h>
-
-#include "besched.h"
+#include "array.h"
 #include "belistsched.h"
 #include "belive.h"
+#include "bemodule.h"
+#include "benode.h"
+#include "besched.h"
 #include "debug.h"
 #include "heights.h"
 #include "irgwalk.h"
-#include "benode.h"
-#include "bemodule.h"
-#include "util.h"
-#include "array.h"
-
 #include "irprintf.h"
 #include "irtools.h"
+#include "util.h"
+#include <stdlib.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

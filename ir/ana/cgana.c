@@ -17,25 +17,23 @@
  *  the program directly, or they are visible external.
  */
 #include "cgana.h"
-#include "xmalloc.h"
-#include "irnode_t.h"
-#include "irmode_t.h"
-#include "irprog_t.h"
-#include "irgwalk.h"
-#include "ircons.h"
-#include "irgmod.h"
-#include "iropt.h"
-#include "irtools.h"
 
-#include "irflag_t.h"
-#include "dbginfo_t.h"
-#include "iropt_dbg.h"
-
-#include "pmap.h"
 #include "array.h"
-#include "panic.h"
-
+#include "dbginfo_t.h"
+#include "ircons.h"
 #include "irdump.h"
+#include "irflag_t.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "iropt.h"
+#include "iropt_dbg.h"
+#include "irprog_t.h"
+#include "irtools.h"
+#include "panic.h"
+#include "pmap.h"
+#include "xmalloc.h"
 
 /* unambiguous address used as a mark. */
 static void *MARK = &MARK;

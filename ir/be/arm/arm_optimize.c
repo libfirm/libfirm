@@ -8,20 +8,19 @@
  * @brief       Implements several optimizations for ARM.
  * @author      Michael Beck
  */
-#include "irgmod.h"
-#include "ircons.h"
-#include "iredges_t.h"
+#include "arm_optimize.h"
 
+#include "arm_new_nodes.h"
+#include "arm_nodes_attr.h"
 #include "bediagnostic.h"
 #include "benode.h"
 #include "bepeephole.h"
 #include "besched.h"
-
-#include "arm_optimize.h"
-#include "gen_arm_regalloc_if.h"
 #include "gen_arm_new_nodes.h"
-#include "arm_nodes_attr.h"
-#include "arm_new_nodes.h"
+#include "gen_arm_regalloc_if.h"
+#include "ircons.h"
+#include "iredges_t.h"
+#include "irgmod.h"
 
 static uint32_t arm_ror(uint32_t v, uint32_t ror)
 {

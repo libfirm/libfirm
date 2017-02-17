@@ -9,14 +9,13 @@
  * @author      Sebastian Hack
  * @date        29.08.2006
  */
-#include <stdlib.h>
-
 #include "belistsched.h"
 #include "bemodule.h"
 #include "besched.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irnodeset.h"
+#include <stdlib.h>
 
 /**
  * The trivial selector: select first node

@@ -8,15 +8,15 @@
  * @brief    Removal of unreachable methods.
  * @author   Matthias Braun
  */
-#include "iroptimize.h"
-#include "typerep.h"
-#include "type_t.h"
-#include "entity_t.h"
-#include "irprog_t.h"
-#include "irnode_t.h"
-#include "irgwalk.h"
-#include "panic.h"
 #include "debug.h"
+#include "entity_t.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "iroptimize.h"
+#include "irprog_t.h"
+#include "panic.h"
+#include "type_t.h"
+#include "typerep.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

@@ -2,11 +2,11 @@
  * This file is part of libFirm.
  * Copyright (C) 2012 Karlsruhe Institute of Technology.
  */
+#include "obstack.h"
+#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
-#include "obstack.h"
 
 int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap) FIRM_NOTHROW
 {

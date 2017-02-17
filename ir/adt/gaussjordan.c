@@ -27,9 +27,9 @@
 /*------------------------------------------------------*/
 #include "gaussjordan.h"
 
+#include "xmalloc.h"
 #include <math.h>
 #include <stdlib.h>
-#include "xmalloc.h"
 
 #define SMALL 0.00001
 

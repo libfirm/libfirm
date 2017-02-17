@@ -2,13 +2,13 @@
  * This file is part of libFirm.
  * Copyright (C) 2012 Universitaet Karlsruhe
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include "lc_opts_enum.h"
 
 #include "lc_opts_t.h"
-#include "lc_opts_enum.h"
 #include "util.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define DECL_CB(N, op) \
 bool lc_opt_enum_##N##_cb(void *const data, size_t const len, char const *const arg) \

@@ -9,10 +9,10 @@
  * @date    02.10.2008
  * @author  Sebastian Buchwald
  */
+#include "kaps.h"
+
 #include "adt/array.h"
 #include "adt/xmalloc.h"
-
-#include "kaps.h"
 #include "matrix.h"
 #include "pbqp_edge.h"
 #include "pbqp_edge_t.h"

@@ -12,6 +12,7 @@
 #ifndef FIRM_BE_BESPILLSLOTS_H
 #define FIRM_BE_BESPILLSLOTS_H
 
+#include "firm_types.h"
 #include <stdbool.h>
 
 typedef struct be_fec_env_t be_fec_env_t;

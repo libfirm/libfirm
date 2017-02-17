@@ -9,20 +9,21 @@
  * @author   Christian Schaefer, Goetz Lindenmaier, Till Riedel, Michael Beck,
  *           Matthias Braun
  */
-#include "irnode_t.h"
-#include "irprog.h"
-#include "irop_t.h"
-#include "irgraph_t.h"
 #include "irverify_t.h"
-#include "irgwalk.h"
-#include "irdump.h"
-#include "irdom_t.h"
-#include "iredges_t.h"
-#include "irprintf.h"
-#include "irouts.h"
-#include "irflag_t.h"
-#include "irnodeset.h"
+
 #include "ircons.h"
+#include "irdom_t.h"
+#include "irdump.h"
+#include "iredges_t.h"
+#include "irflag_t.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irnodeset.h"
+#include "irop_t.h"
+#include "irouts.h"
+#include "irprintf.h"
+#include "irprog.h"
 
 static void warn(const ir_node *n, const char *format, ...)
 {

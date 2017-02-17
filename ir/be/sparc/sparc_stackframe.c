@@ -24,21 +24,20 @@
  *                     |    low end of stackframe    |
  *        low address  |-----------------------------|
  */
-#include "sparc_bearch_t.h"
-
 #include "beirg.h"
-#include "betranshlp.h"
-#include "bevarargs.h"
-#include "panic.h"
-#include "firm_types.h"
-#include "iredges_t.h"
-#include "irnode_t.h"
-#include "sparc_new_nodes.h"
-#include "sparc_cconv.h"
-#include "bitfiddle.h"
 #include "benode.h"
 #include "besched.h"
 #include "bestack.h"
+#include "betranshlp.h"
+#include "bevarargs.h"
+#include "bitfiddle.h"
+#include "firm_types.h"
+#include "iredges_t.h"
+#include "irnode_t.h"
+#include "panic.h"
+#include "sparc_bearch_t.h"
+#include "sparc_cconv.h"
+#include "sparc_new_nodes.h"
 
 ir_entity *sparc_get_frame_entity(const ir_node *node)
 {

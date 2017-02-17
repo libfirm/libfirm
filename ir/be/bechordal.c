@@ -9,25 +9,22 @@
  * @author      Sebastian Hack
  * @date        08.12.2004
  */
-#include "bechordal_common.h"
 #include "bechordal_t.h"
+
+#include "bechordal_common.h"
 #include "beinsn_t.h"
-#include "belive.h"
-#include "besched.h"
 #include "beirg.h"
+#include "belive.h"
 #include "bemodule.h"
+#include "besched.h"
+#include "bipartite.h"
 #include "debug.h"
+#include "hungarian.h"
 #include "irdump.h"
 #include "iredges_t.h"
 #include "util.h"
 
 #define USE_HUNGARIAN 0
-
-#if USE_HUNGARIAN
-#include "hungarian.h"
-#else
-#include "bipartite.h"
-#endif
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

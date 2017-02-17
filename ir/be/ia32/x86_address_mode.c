@@ -11,7 +11,6 @@
  */
 #include "x86_address_mode.h"
 
-#include <inttypes.h>
 #include "bearch.h"
 #include "bediagnostic.h"
 #include "beemitter.h"
@@ -24,6 +23,7 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irprintf.h"
+#include <inttypes.h>
 
 static bitset_t *non_address_mode_nodes;
 

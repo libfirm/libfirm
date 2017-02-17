@@ -9,14 +9,15 @@
  * @author   Goetz Lindenmaier, Michael Beck
  * @date     2000
  */
-#include "ident_t.h"
 #include "irprog_t.h"
-#include "irgraph_t.h"
+
 #include "array.h"
-#include "obst.h"
-#include "irop_t.h"
-#include "irmemory.h"
+#include "ident_t.h"
 #include "ircons.h"
+#include "irgraph_t.h"
+#include "irmemory.h"
+#include "irop_t.h"
+#include "obst.h"
 
 /** The initial name of the irp program. */
 #define INITAL_PROG_NAME "no_name_set"

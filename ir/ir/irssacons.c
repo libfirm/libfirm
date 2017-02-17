@@ -10,8 +10,8 @@
  */
 #include "ircons_t.h"
 #include "irgraph_t.h"
-#include "irnode_t.h"
 #include "irgwalk.h"
+#include "irnode_t.h"
 
 /** Note: start and finish must use the same kind of walker */
 static void (*ssa_cons_walker)(ir_graph *, irg_walk_func *, irg_walk_func *, void *)

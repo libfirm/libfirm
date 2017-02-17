@@ -10,24 +10,23 @@
  *         assembler irg.
  * @author Oliver Richter, Tobias Gneist
  */
-#include <stdlib.h>
-#include <stdbool.h>
-
-#include "irprog_t.h"
-#include "irgraph_t.h"
-#include "irnode_t.h"
-#include "irmode_t.h"
-#include "ircons_t.h"
-#include "iropt_t.h"
-#include "irop_t.h"
-#include "irprintf.h"
-#include "xmalloc.h"
+#include "arm_new_nodes_t.h"
 
 #include "arm_bearch_t.h"
-#include "arm_new_nodes_t.h"
 #include "arm_nodes_attr.h"
 #include "arm_optimize.h"
 #include "bedump.h"
+#include "ircons_t.h"
+#include "irgraph_t.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "irop_t.h"
+#include "iropt_t.h"
+#include "irprintf.h"
+#include "irprog_t.h"
+#include "xmalloc.h"
+#include <stdbool.h>
+#include <stdlib.h>
 
 static bool arm_has_address_attr(const ir_node *node)
 {

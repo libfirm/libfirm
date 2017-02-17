@@ -1,9 +1,9 @@
-#include <float.h>
-#include <assert.h>
-#include <math.h>
 #include "firm.h"
-#include "tv_t.h"
 #include "irmode.h"
+#include "tv_t.h"
+#include <assert.h>
+#include <float.h>
+#include <math.h>
 
 static void test_float(float v, ir_tarval *known)
 {

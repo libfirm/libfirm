@@ -17,13 +17,13 @@
 #include "bearch.h"
 #include "benode.h"
 #include "besched.h"
-#include "panic.h"
 #include "gen_amd64_new_nodes.h"
 #include "gen_amd64_regalloc_if.h"
 #include "iredges_t.h"
-#include "irgwalk.h"
-#include "util.h"
 #include "irgmod.h"
+#include "irgwalk.h"
+#include "panic.h"
+#include "util.h"
 
 static bool is_commutative(const ir_node *node)
 {

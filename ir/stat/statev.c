@@ -9,17 +9,17 @@
  * @author      Sebastian Hack
  * @date        17.06.2007
  */
+#include "statev_t.h"
+
+#include "irprintf.h"
+#include "stat_timing.h"
+#include "util.h"
 #include <assert.h>
 #include <regex.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "stat_timing.h"
-#include "irprintf.h"
-#include "statev_t.h"
-#include "util.h"
 
 #define MAX_TIMER 256
 

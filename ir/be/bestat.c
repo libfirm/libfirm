@@ -8,23 +8,22 @@
  * @brief       Provides several statistic functions for the backend.
  * @author      Christian Wuerdig, Matthias Braun
  */
-#include <time.h>
-
-#include "panic.h"
-#include "execfreq.h"
-#include "irgwalk.h"
-#include "irhooks.h"
-#include "irnode_t.h"
-#include "iredges_t.h"
-#include "statev_t.h"
-#include "util.h"
+#include "bestat.h"
 
 #include "bearch.h"
 #include "beirg.h"
-#include "bestat.h"
 #include "belive.h"
-#include "besched.h"
 #include "benode.h"
+#include "besched.h"
+#include "execfreq.h"
+#include "iredges_t.h"
+#include "irgwalk.h"
+#include "irhooks.h"
+#include "irnode_t.h"
+#include "panic.h"
+#include "statev_t.h"
+#include "util.h"
+#include <time.h>
 
 typedef struct pressure_walker_env_t pressure_walker_env_t;
 struct pressure_walker_env_t {
