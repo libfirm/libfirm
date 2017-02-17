@@ -458,7 +458,8 @@ class Div(Node):
         Attribute("resmode", type="ir_mode*",
                   init="get_irn_mode(irn_left)",
                   comment="mode of the result value"),
-        Attribute("no_remainder", type="int", init="0"),
+        Attribute("no_remainder", type="int", init="0",
+                  comment="Set when devision remainder is known to be zero"),
     ]
     attr_struct = "div_attr"
     pinned = "exception"
