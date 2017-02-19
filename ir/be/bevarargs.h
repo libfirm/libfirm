@@ -33,8 +33,6 @@
 void be_default_lower_va_arg(ir_node *node, bool compound_is_ptr,
                              unsigned stack_param_align);
 
-void be_set_va_list_type_pointer(backend_params *p);
-
 ir_entity *be_make_va_start_entity(ir_type *frame_type, int offset);
 
 void be_set_va_list_type_pointer(backend_params *p);
