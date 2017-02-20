@@ -8,7 +8,7 @@
  * @brief   emit assembler for a backend graph
  * @author  Hannes Rapp, Matthias Braun
  */
-#include <inttypes.h>
+#include "sparc_emitter.h"
 
 #include "beasm.h"
 #include "beblocksched.h"
@@ -32,9 +32,9 @@
 #include "panic.h"
 #include "pmap.h"
 #include "sparc_bearch_t.h"
-#include "sparc_emitter.h"
 #include "sparc_new_nodes.h"
 #include "util.h"
+#include <inttypes.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

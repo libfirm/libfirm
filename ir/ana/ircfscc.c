@@ -11,15 +11,15 @@
  * @author    Goetz Lindenmaier
  * @date      7.2002
  */
+#include "array.h"
+#include "ircons_t.h"
+#include "irdump.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
 #include "irloop_t.h"
 #include "irnode_t.h"
-#include "irgraph_t.h"
-#include "array.h"
-#include "pmap.h"
-#include "irgwalk.h"
 #include "irprog_t.h"
-#include "irdump.h"
-#include "ircons_t.h"
+#include "pmap.h"
 
 /** The outermost graph the scc is computed for */
 static ir_graph *outermost_ir_graph;

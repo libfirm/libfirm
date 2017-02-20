@@ -9,12 +9,12 @@
  * @date    29.1.2003
  * @author  Michael Beck, Goetz Lindenmaier
  */
-#include "irgraph_t.h"
-#include "irflag_t.h"
-#include "irprintf.h"
-#include "irgwalk.h"
-#include "tv.h"
 #include "ircons.h"
+#include "irflag_t.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irprintf.h"
+#include "tv.h"
 
 static void report_error(const char *fmt, ...)
 {

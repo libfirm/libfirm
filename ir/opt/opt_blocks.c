@@ -11,16 +11,16 @@
  * This phase find congruent blocks.
  * Two block are congruent, if they contains only equal calculations.
  */
-#include "iroptimize.h"
+#include "array.h"
+#include "debug.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgraph_t.h"
+#include "irgwalk.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
-#include "array.h"
-#include "irgwalk.h"
+#include "iroptimize.h"
 #include "set.h"
-#include "debug.h"
 #include "util.h"
 
 /* define this for general block shaping: congruent blocks

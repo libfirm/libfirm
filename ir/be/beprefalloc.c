@@ -22,31 +22,8 @@
  * TODO:
  *  - make use of free registers in the permute_values code
  */
-#include <float.h>
-#include <stdbool.h>
-#include <math.h>
-#include "lpp.h"
-
-#include "debug.h"
-#include "panic.h"
-#include "execfreq.h"
-#include "ircons.h"
-#include "irdom.h"
-#include "iredges_t.h"
-#include "irgraph_t.h"
-#include "irgwalk.h"
-#include "irnode_t.h"
-#include "irdump.h"
-#include "irtools.h"
-#include "util.h"
-#include "obst.h"
-#include "raw_bitset.h"
-#include "unionfind.h"
-#include "pdeq.h"
-#include "hungarian.h"
-#include "statev.h"
-#include "bechordal_t.h"
 #include "be.h"
+#include "bechordal_t.h"
 #include "beirg.h"
 #include "belive.h"
 #include "bemodule.h"
@@ -55,9 +32,31 @@
 #include "besched.h"
 #include "bespill.h"
 #include "bespillutil.h"
-#include "beverify.h"
-#include "beutil.h"
 #include "bestack.h"
+#include "beutil.h"
+#include "beverify.h"
+#include "debug.h"
+#include "execfreq.h"
+#include "hungarian.h"
+#include "ircons.h"
+#include "irdom.h"
+#include "irdump.h"
+#include "iredges_t.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irtools.h"
+#include "lpp.h"
+#include "obst.h"
+#include "panic.h"
+#include "pdeq.h"
+#include "raw_bitset.h"
+#include "statev.h"
+#include "unionfind.h"
+#include "util.h"
+#include <float.h>
+#include <math.h>
+#include <stdbool.h>
 
 #define USE_FACTOR                     1.0f
 #define DEF_FACTOR                     1.0f

@@ -14,10 +14,10 @@
 #include "becconv.h"
 #include "beirg.h"
 #include "irmode_t.h"
-#include "typerep.h"
-#include "xmalloc.h"
 #include "panic.h"
+#include "typerep.h"
 #include "util.h"
+#include "xmalloc.h"
 
 static const unsigned ignore_regs[] = {
 	REG_R12,

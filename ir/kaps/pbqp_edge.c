@@ -9,18 +9,17 @@
  * @date    02.10.2008
  * @author  Sebastian Buchwald
  */
-#include <assert.h>
+#include "pbqp_edge.h"
 
 #include "adt/array.h"
-
 #include "kaps.h"
 #include "matrix.h"
 #include "optimal.h"
-#include "pbqp_edge.h"
 #include "pbqp_edge_t.h"
 #include "pbqp_node.h"
 #include "pbqp_node_t.h"
 #include "pbqp_t.h"
+#include <assert.h>
 
 pbqp_edge_t *alloc_edge(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index,
                         pbqp_matrix_t *costs)

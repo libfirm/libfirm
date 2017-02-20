@@ -7,25 +7,22 @@
  * @brief   optimize nodes to const, where non-const bits are irrelevant
  * @author  Andreas Seltenreich, Andreas Zwinkau
  */
-
-// TODO might make sense to merge this optimization with fp-vrp
-
-#include "iroptimize.h"
-
-#include <stdbool.h>
+/* TODO might make sense to merge this optimization with fp-vrp */
+#include "constbits.h"
+#include "dca.h"
 #include "debug.h"
 #include "ircons.h"
-#include "irgmod.h"
-#include "irgopt.h"
-#include "irnode_t.h"
-#include "iropt_t.h"
 #include "irdump_t.h"
 #include "iredges_t.h"
+#include "irgmod.h"
+#include "irgopt.h"
 #include "irgwalk.h"
-#include "tv.h"
+#include "irnode_t.h"
 #include "irnodemap.h"
-#include "dca.h"
-#include "constbits.h"
+#include "iropt_t.h"
+#include "iroptimize.h"
+#include "tv.h"
+#include <stdbool.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

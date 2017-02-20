@@ -21,31 +21,29 @@
  * Firm tarval/entity, nevertheless we call it type here for "maximum
  * compatibility".
  */
-#include <assert.h>
-
-#include "iroptimize.h"
-#include "irflag.h"
-#include "ircons.h"
-#include "list.h"
-#include "set.h"
-#include "pmap.h"
-#include "obstack.h"
-#include "irgraph_t.h"
-#include "irnode_t.h"
-#include "iropt_t.h"
-#include "irgwalk.h"
-#include "irop_t.h"
-#include "irouts_t.h"
-#include "irgmod.h"
-#include "iropt_dbg.h"
-#include "debug.h"
 #include "array.h"
-#include "panic.h"
-#include "irnodeset.h"
-#include "tv_t.h"
-
-#include "irprintf.h"
+#include "debug.h"
+#include "ircons.h"
 #include "irdump.h"
+#include "irflag.h"
+#include "irgmod.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irnodeset.h"
+#include "irop_t.h"
+#include "iropt_dbg.h"
+#include "iropt_t.h"
+#include "iroptimize.h"
+#include "irouts_t.h"
+#include "irprintf.h"
+#include "list.h"
+#include "obstack.h"
+#include "panic.h"
+#include "pmap.h"
+#include "set.h"
+#include "tv_t.h"
+#include <assert.h>
 
 /* define this to check that all type translations are monotone */
 #define VERIFY_MONOTONE

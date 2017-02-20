@@ -15,6 +15,7 @@
 #include "be_types.h"
 #include "bechordal.h"
 #include "irnodeset.h"
+#include "obstack.h"
 #include "pset.h"
 
 struct be_ifg_t {

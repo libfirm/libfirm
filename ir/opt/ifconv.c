@@ -8,9 +8,6 @@
  * @brief   If conversion
  * @author  Christoph Mallon
  */
-#include <assert.h>
-#include <stdbool.h>
-
 #include "be.h"
 #include "cdep_t.h"
 #include "debug.h"
@@ -22,6 +19,8 @@
 #include "iroptimize.h"
 #include "irtools.h"
 #include "pdeq.h"
+#include <assert.h>
+#include <stdbool.h>
 
 /**
  * Environment for if-conversion.

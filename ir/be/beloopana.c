@@ -9,18 +9,18 @@
  * @author      Christian Wuerdig
  * @date        19.02.2007
  */
-#include "set.h"
-#include "irnode_t.h"
-#include "util.h"
-#include "irloop_t.h"
-#include "debug.h"
+#include "beloopana.h"
 
 #include "bearch.h"
 #include "beirg.h"
 #include "belive.h"
-#include "besched.h"
-#include "beloopana.h"
 #include "bemodule.h"
+#include "besched.h"
+#include "debug.h"
+#include "irloop_t.h"
+#include "irnode_t.h"
+#include "set.h"
+#include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

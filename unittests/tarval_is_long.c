@@ -1,10 +1,9 @@
-#include <limits.h>
-#include <assert.h>
-
 #include "firm.h"
-#include "panic.h"
 #include "irmode.h"
+#include "panic.h"
 #include "tv.h"
+#include <assert.h>
+#include <limits.h>
 
 int main(void)
 {

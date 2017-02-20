@@ -11,31 +11,29 @@
  * This file implements the creation of the architecture specific firm opcodes
  * and the corresponding node constructors for the ia32 assembler irg.
  */
-#include <stdlib.h>
-#include <stdbool.h>
-#include <inttypes.h>
-
-#include "irprog_t.h"
-#include "irgraph_t.h"
-#include "irnode_t.h"
-#include "irmode_t.h"
-#include "ircons_t.h"
-#include "iropt_t.h"
-#include "irop_t.h"
-#include "irverify_t.h"
-#include "irprintf.h"
-#include "iredges_t.h"
-#include "xmalloc.h"
+#include "ia32_new_nodes_t.h"
 
 #include "bearch.h"
 #include "bedump.h"
 #include "beinfo.h"
-
+#include "gen_ia32_regalloc_if.h"
 #include "ia32_bearch_t.h"
 #include "ia32_nodes_attr.h"
-#include "ia32_new_nodes_t.h"
-#include "gen_ia32_regalloc_if.h"
+#include "ircons_t.h"
+#include "iredges_t.h"
+#include "irgraph_t.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "irop_t.h"
+#include "iropt_t.h"
+#include "irprintf.h"
+#include "irprog_t.h"
+#include "irverify_t.h"
 #include "x86_x87.h"
+#include "xmalloc.h"
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
 struct obstack opcodes_obst;
 

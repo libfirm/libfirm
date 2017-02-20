@@ -11,19 +11,19 @@
  *
  * Simple depth first search on CFGs.
  */
-#include <stdlib.h>
+#include "dfs_t.h"
 
 #define DISABLE_STATEV
 
-#include <assert.h>
+#include "irdom_t.h"
 #include "iredges_t.h"
 #include "irgraph_t.h"
 #include "irprintf.h"
-#include "irdom_t.h"
 #include "set.h"
 #include "statev_t.h"
-#include "dfs_t.h"
 #include "util.h"
+#include <assert.h>
+#include <stdlib.h>
 
 static int cmp_edge(const void *a, const void *b, size_t sz)
 {

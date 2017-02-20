@@ -15,9 +15,6 @@
  */
 #include "irarch.h"
 
-#include <stdlib.h>
-#include <assert.h>
-
 #include "be.h"
 #include "dbginfo_t.h"
 #include "ircons.h"
@@ -25,10 +22,10 @@
 #include "irflag.h"
 #include "irflag_t.h"
 #include "irgmod.h"
+#include "irgopt.h"
 #include "irgraph_t.h"
 #include "irhooks.h"
 #include "irmode_t.h"
-#include "irgopt.h"
 #include "irnode_t.h"
 #include "iropt_dbg.h"
 #include "iropt_t.h"
@@ -36,6 +33,8 @@
 #include "irverify.h"
 #include "panic.h"
 #include "tv_t.h"
+#include <assert.h>
+#include <stdlib.h>
 
 static ir_settings_arch_dep_t settings;
 

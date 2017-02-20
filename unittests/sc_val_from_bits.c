@@ -1,9 +1,9 @@
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <inttypes.h>
 #include "strcalc.h"
 #include "util.h"
+#include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 bool fine = true;
 

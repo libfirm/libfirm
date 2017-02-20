@@ -1,8 +1,8 @@
-#include "panic.h"
+#include "../ia32/x86_x87.h"
 #include "amd64_bearch_t.h"
 #include "amd64_new_nodes.h"
 #include "gen_amd64_regalloc_if.h"
-#include "../ia32/x86_x87.h"
+#include "panic.h"
 
 static void sim_amd64_fst(x87_state *const state, ir_node *const node)
 {

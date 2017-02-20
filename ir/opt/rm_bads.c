@@ -10,15 +10,12 @@
  * The idea behind this pass is that Bad nodes may only be present as block
  * or phi inputs (inputs that are now unreachable).
  */
-#include <assert.h>
-
-#include "irnode_t.h"
-
-#include "irgopt.h"
 #include "irgmod.h"
+#include "irgopt.h"
 #include "irgwalk.h"
-
+#include "irnode_t.h"
 #include "irtools.h"
+#include <assert.h>
 
 /**
  * Block-walker, remove Bad block predecessors and shorten Phis.

@@ -21,21 +21,19 @@
  * TODO: * try to optimize cmp modes
  *       * decide when it is useful to move the convs through phis
  */
-#include <stdbool.h>
-
-#include "util.h"
-#include "iroptimize.h"
-
 #include "debug.h"
 #include "ircons.h"
+#include "iredges_t.h"
 #include "irgmod.h"
 #include "irgopt.h"
+#include "irgwalk.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
-#include "iredges_t.h"
-#include "irgwalk.h"
+#include "iroptimize.h"
 #include "tv.h"
+#include "util.h"
 #include "vrp.h"
+#include <stdbool.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

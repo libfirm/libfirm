@@ -9,22 +9,21 @@
  *          opcodes and the coresponding node constructors for the TEMPLATE
  *          assembler irg.
  */
-#include <stdlib.h>
-
-#include "irprog_t.h"
-#include "irgraph_t.h"
-#include "irnode_t.h"
-#include "irmode_t.h"
-#include "ircons_t.h"
-#include "iropt_t.h"
-#include "irop_t.h"
-#include "irprintf.h"
-#include "xmalloc.h"
-#include "bedump.h"
+#include "TEMPLATE_new_nodes_t.h"
 
 #include "TEMPLATE_nodes_attr.h"
-#include "TEMPLATE_new_nodes_t.h"
+#include "bedump.h"
 #include "gen_TEMPLATE_regalloc_if.h"
+#include "ircons_t.h"
+#include "irgraph_t.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "irop_t.h"
+#include "iropt_t.h"
+#include "irprintf.h"
+#include "irprog_t.h"
+#include "xmalloc.h"
+#include <stdlib.h>
 
 void TEMPLATE_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 {

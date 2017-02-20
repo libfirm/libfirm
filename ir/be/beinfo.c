@@ -7,20 +7,20 @@
  * @file
  * @author      Matthias Braun
  */
-#include <stdbool.h>
-
 #include "beinfo.h"
+
+#include "bedump.h"
 #include "beirg.h"
+#include "belive.h"
 #include "benode.h"
 #include "besched.h"
-#include "bedump.h"
-#include "belive.h"
-#include "irgwalk.h"
-#include "irnode_t.h"
 #include "irdump_t.h"
+#include "irgwalk.h"
 #include "irhooks.h"
+#include "irnode_t.h"
 #include "panic.h"
 #include "util.h"
+#include <stdbool.h>
 
 static copy_attr_func old_phi_copy_attr;
 

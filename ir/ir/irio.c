@@ -8,12 +8,7 @@
  * @brief   Write textual representation of firm to file.
  * @author  Moritz Kroll, Matthias Braun
  */
-#include "irio.h"
-
-#include <string.h>
-#include <ctype.h>
-#include <stdbool.h>
-#include <stdarg.h>
+#include "irio_t.h"
 
 #include "array.h"
 #include "ircons_t.h"
@@ -21,7 +16,6 @@
 #include "irgmod.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
-#include "irio_t.h"
 #include "irprintf.h"
 #include "irprog_t.h"
 #include "obst.h"
@@ -29,6 +23,10 @@
 #include "pmap.h"
 #include "tv_t.h"
 #include "util.h"
+#include <ctype.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <string.h>
 
 #define SYMERROR ((unsigned) ~0)
 
@@ -2102,6 +2100,7 @@ static void read_modes(read_env_t *env)
 			const char *name = read_string(env);
 			ir_mode_arithmetic arith = read_mode_arithmetic(env);
 			assert(arith == irma_twos_complement);
+			(void)arith;
 			int size = read_long(env);
 			int sign = read_long(env);
 			unsigned modulo_shift = read_long(env);
@@ -2112,6 +2111,7 @@ static void read_modes(read_env_t *env)
 			const char *name = read_string(env);
 			ir_mode_arithmetic arith = read_mode_arithmetic(env);
 			assert(arith == irma_twos_complement);
+			(void)arith;
 			int size = read_long(env);
 			unsigned modulo_shift = read_long(env);
 			ir_mode *mode = new_reference_mode(name, size, modulo_shift);

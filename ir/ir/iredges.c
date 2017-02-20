@@ -12,20 +12,20 @@
  *   These are out-edges (also called def-use edges) that are dynamically
  *   updated as the graph changes.
  */
-#include "irnode_t.h"
-#include "iropt_t.h"
-#include "iredgekinds.h"
 #include "iredges_t.h"
-#include "irgwalk.h"
-#include "irnodemap.h"
-#include "irdump_t.h"
-#include "irprintf.h"
-#include "debug.h"
-#include "set.h"
-#include "bitset.h"
 
-#include "iredgeset.h"
+#include "bitset.h"
+#include "debug.h"
 #include "hashptr.h"
+#include "irdump_t.h"
+#include "iredgekinds.h"
+#include "iredgeset.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irnodemap.h"
+#include "iropt_t.h"
+#include "irprintf.h"
+#include "set.h"
 
 #define DO_REHASH
 #define SCALAR_RETURN

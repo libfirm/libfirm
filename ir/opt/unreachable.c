@@ -10,14 +10,12 @@
  * This is done by eliminating all edges into the unreachable code. So that
  * after that the unreachable code should be dead.
  */
-#include "irgopt.h"
-
-#include <stdbool.h>
-
-#include "irnode_t.h"
-#include "irgopt.h"
 #include "irgmod.h"
+#include "irgopt.h"
+#include "irgopt.h"
 #include "irgwalk.h"
+#include "irnode_t.h"
+#include <stdbool.h>
 
 static bool is_block_unreachable(ir_node *block)
 {

@@ -9,12 +9,11 @@
  * @author      Matthias Braun
  * @date        29.08.2006
  */
-#include <stdlib.h>
-
-#include "besched.h"
 #include "belistsched.h"
 #include "bemodule.h"
+#include "besched.h"
 #include "irgwalk.h"
+#include <stdlib.h>
 
 /**
  * The random selector:

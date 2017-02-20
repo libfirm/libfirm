@@ -9,26 +9,25 @@
  * @date    28.12.2009
  * @author  Sebastian Buchwald
  */
-#include <assert.h>
-#include <stdbool.h>
+#include "kaps.h"
 
 #include "adt/array.h"
-#include "panic.h"
-
 #include "bucket.h"
-#if KAPS_DUMP
-#include "html_dumper.h"
-#endif
-#include "kaps.h"
 #include "matrix.h"
 #include "optimal.h"
+#include "panic.h"
 #include "pbqp_edge.h"
 #include "pbqp_edge_t.h"
 #include "pbqp_node.h"
 #include "pbqp_node_t.h"
-#include "vector.h"
-
 #include "timing.h"
+#include "vector.h"
+#include <assert.h>
+#include <stdbool.h>
+
+#if KAPS_DUMP
+#include "html_dumper.h"
+#endif
 
 pbqp_edge_t **edge_bucket;
 static pbqp_edge_t **rm_bucket;

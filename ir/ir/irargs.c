@@ -10,18 +10,17 @@
  */
 #include "irargs_t.h"
 
-#include <ctype.h>
-
 #include "bitset.h"
-#include "lc_printf.h"
-#include "firm_common.h"
-#include "irnode_t.h"
-#include "entity_t.h"
-#include "irloop_t.h"
-#include "irprintf.h"
-#include "tv_t.h"
 #include "dbginfo_t.h"
+#include "entity_t.h"
+#include "firm_common.h"
+#include "irloop_t.h"
+#include "irnode_t.h"
+#include "irprintf.h"
+#include "lc_printf.h"
+#include "tv_t.h"
 #include "util.h"
+#include <ctype.h>
 
 /**
  * identify a firm object type

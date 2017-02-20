@@ -9,19 +9,18 @@
  * @author    Goetz Lindenmaier, Michael Beck, Rubino Geiss
  * @date      2.2002
  */
-#include <string.h>
-
-#include "util.h"
-#include "irouts_t.h"
-
-#include "xmalloc.h"
-#include "irgwalk.h"
 #include "irdom_t.h"
-#include "irgraph_t.h"
-#include "irnode_t.h"
-#include "ircons_t.h"
+
 #include "array.h"
+#include "ircons_t.h"
 #include "iredges_t.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irouts_t.h"
+#include "util.h"
+#include "xmalloc.h"
+#include <string.h>
 
 static inline ir_dom_info *get_dom_info(ir_node *block)
 {

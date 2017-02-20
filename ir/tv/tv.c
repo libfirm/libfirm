@@ -16,27 +16,27 @@
  * This implementation assumes:
  *  - target has IEEE-754 floating-point arithmetic.
  */
+#include "tv_t.h"
+
+#include "bitfiddle.h"
+#include "entity_t.h"
+#include "firm_common.h"
+#include "fltcalc.h"
+#include "hashptr.h"
+#include "hashptr.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "irprintf.h"
+#include "panic.h"
+#include "set.h"
+#include "strcalc.h"
+#include "util.h"
+#include "xmalloc.h"
 #include <assert.h>
 #include <limits.h>
 #include <stdlib.h>
-#include <string.h>
 #include <stdlib.h>
-
-#include "bitfiddle.h"
-#include "hashptr.h"
-#include "tv_t.h"
-#include "set.h"
-#include "entity_t.h"
-#include "hashptr.h"
-#include "irmode_t.h"
-#include "irprintf.h"
-#include "irnode_t.h"
-#include "strcalc.h"
-#include "fltcalc.h"
-#include "util.h"
-#include "xmalloc.h"
-#include "firm_common.h"
-#include "panic.h"
+#include <string.h>
 
 /** Size of hash tables.  Should correspond to average number of distinct
  * constant target values */

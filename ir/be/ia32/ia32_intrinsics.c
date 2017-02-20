@@ -9,25 +9,23 @@
  *              functions to code or library calls.
  * @author      Michael Beck
  */
+#include "array.h"
+#include "begnuas.h"
+#include "constbits.h"
+#include "gen_ia32_regalloc_if.h"
 #include "ia32_bearch_t.h"
-
+#include "ia32_new_nodes.h"
+#include "ircons_t.h"
 #include "iredges_t.h"
 #include "irgmod.h"
-#include "irop_t.h"
 #include "irnode_t.h"
-#include "ircons_t.h"
-#include "irprog_t.h"
+#include "irop_t.h"
 #include "iroptimize.h"
+#include "irprog_t.h"
 #include "lower_dw.h"
-#include "array.h"
 #include "panic.h"
-#include "util.h"
-#include "constbits.h"
 #include "tv.h"
-
-#include "ia32_new_nodes.h"
-#include "gen_ia32_regalloc_if.h"
-#include "begnuas.h"
+#include "util.h"
 #include "x86_x87.h"
 
 typedef enum {

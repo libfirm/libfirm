@@ -12,6 +12,8 @@
 #define FIRM_BE_BEFLAGS_H
 
 #include "be_types.h"
+#include "firm_types.h"
+#include <stdbool.h>
 
 /**
  * Callback which rematerializes (=duplicates) a machine node.

@@ -9,10 +9,10 @@
  * @author      Daniel Grund, Sebastian Hack, Matthias Braun
  * @date        29.09.2005
  */
-#include <stdlib.h>
-#include <stdbool.h>
+#include "bespillutil.h"
 
 #include "array.h"
+#include "be_t.h"
 #include "bearch.h"
 #include "bechordal_t.h"
 #include "beirg.h"
@@ -21,9 +21,7 @@
 #include "benode.h"
 #include "besched.h"
 #include "bespill.h"
-#include "bespillutil.h"
 #include "bessaconstr.h"
-#include "be_t.h"
 #include "beutil.h"
 #include "debug.h"
 #include "execfreq.h"
@@ -33,11 +31,13 @@
 #include "iredges_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"
-#include "irnodehashmap.h"
 #include "irnode_t.h"
+#include "irnodehashmap.h"
 #include "statev_t.h"
 #include "type_t.h"
 #include "util.h"
+#include <stdbool.h>
+#include <stdlib.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg_constr;)

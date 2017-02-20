@@ -16,22 +16,22 @@
  * aren't be constant. The constant parameters of the function are placed
  * in the function graph. They aren't be passed as parameters.
  */
-#include "debug.h"
-#include "iroptimize.h"
-#include "tv.h"
-#include "set.h"
-#include "irprog_t.h"
-#include "hashptr.h"
-#include "irgwalk.h"
 #include "analyze_irg_args.h"
-#include "irprintf.h"
-#include "ircons.h"
-#include "irouts_t.h"
-#include "irnode_t.h"
-#include "irtools.h"
-#include "irgmod.h"
 #include "array.h"
+#include "debug.h"
+#include "hashptr.h"
+#include "ircons.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "iroptimize.h"
+#include "irouts_t.h"
+#include "irprintf.h"
+#include "irprog_t.h"
+#include "irtools.h"
 #include "panic.h"
+#include "set.h"
+#include "tv.h"
 
 /**
  * This struct contains the information quadruple for a Call, which we need to

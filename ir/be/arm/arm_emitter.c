@@ -8,11 +8,10 @@
  * @brief   arm emitter
  * @author  Oliver Richter, Tobias Gneist, Michael Beck, Matthias Braun
  */
-#include <inttypes.h>
+#include "arm_emitter.h"
 
 #include "arm_bearch_t.h"
 #include "arm_cconv.h"
-#include "arm_emitter.h"
 #include "arm_new_nodes.h"
 #include "be_t.h"
 #include "beasm.h"
@@ -31,6 +30,7 @@
 #include "panic.h"
 #include "pmap.h"
 #include "util.h"
+#include <inttypes.h>
 
 /** An entry in the ent_or_tv set. */
 typedef struct ent_or_tv_t ent_or_tv_t;

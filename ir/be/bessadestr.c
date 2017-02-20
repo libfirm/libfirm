@@ -11,11 +11,6 @@
  */
 #include "bessadestr.h"
 
-#include "debug.h"
-#include "bitset.h"
-#include "irnode_t.h"
-#include "irgwalk.h"
-#include "irgmod.h"
 #include "be_types.h"
 #include "bearch.h"
 #include "beirg.h"
@@ -23,6 +18,11 @@
 #include "benode.h"
 #include "besched.h"
 #include "bespillutil.h"
+#include "bitset.h"
+#include "debug.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
 #include "statev_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)

@@ -9,28 +9,27 @@
  * @author      Matthias Braun
  * @date        26.07.2006
  */
-#include <stdlib.h>
+#include "bespillslots.h"
 
-#include "debug.h"
-#include "util.h"
-#include "set.h"
 #include "array.h"
-#include "irgwalk.h"
-#include "ircons.h"
-#include "execfreq.h"
-#include "unionfind.h"
-#include "irdump_t.h"
-
+#include "bechordal_t.h"
+#include "beirg.h"
+#include "belive.h"
+#include "bemodule.h"
 #include "benode.h"
 #include "besched.h"
 #include "bespill.h"
-#include "bespillslots.h"
-#include "bechordal_t.h"
-#include "statev_t.h"
-#include "bemodule.h"
-#include "belive.h"
-#include "beirg.h"
 #include "bespillutil.h"
+#include "debug.h"
+#include "execfreq.h"
+#include "ircons.h"
+#include "irdump_t.h"
+#include "irgwalk.h"
+#include "set.h"
+#include "statev_t.h"
+#include "unionfind.h"
+#include "util.h"
+#include <stdlib.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

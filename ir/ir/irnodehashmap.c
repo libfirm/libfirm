@@ -12,8 +12,9 @@
  *            hashmap
  */
 #include "irnodehashmap.h"
-#include "irnode_t.h"
+
 #include "hashptr.h"
+#include "irnode_t.h"
 
 static ir_nodehashmap_entry_t null_nodehashmap_entry = { NULL, NULL };
 

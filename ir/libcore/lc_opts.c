@@ -2,19 +2,19 @@
  * This file is part of libFirm.
  * Copyright (C) 2012 IPD Goos, Universit"at Karlsruhe, Germany
  */
+#include "lc_opts_t.h"
+
+#include "hashptr.h"
+#include "lc_opts_enum.h"
+#include "lc_printf.h"
+#include "obst.h"
+#include "util.h"
+#include "xmalloc.h"
+#include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <ctype.h>
-
-#include "lc_opts_t.h"
-#include "lc_opts_enum.h"
-#include "hashptr.h"
-#include "lc_printf.h"
-#include "util.h"
-#include "xmalloc.h"
-#include "obst.h"
 
 #define OPT_DELIM '-'
 

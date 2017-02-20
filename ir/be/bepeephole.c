@@ -8,21 +8,21 @@
  * @brief       Peephole optimization framework keeps track of which registers contain which values
  * @author      Matthias Braun
  */
-#include "array.h"
 #include "bepeephole.h"
-#include "debug.h"
-#include "iredges_t.h"
-#include "irgwalk.h"
-#include "ircons.h"
-#include "irgmod.h"
-#include "heights.h"
-#include "panic.h"
 
+#include "array.h"
 #include "beirg.h"
 #include "belive.h"
+#include "bemodule.h"
 #include "benode.h"
 #include "besched.h"
-#include "bemodule.h"
+#include "debug.h"
+#include "heights.h"
+#include "ircons.h"
+#include "iredges_t.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+#include "panic.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

@@ -8,14 +8,13 @@
  * @brief       Contains some useful function for the backend.
  * @author      Sebastian Hack
  */
-#include <stdio.h>
+#include "beutil.h"
 
 #include "beirg.h"
 #include "belive.h"
 #include "benode.h"
 #include "besched.h"
 #include "bessaconstr.h"
-#include "beutil.h"
 #include "ircons.h"
 #include "irdom_t.h"
 #include "iredges_t.h"
@@ -26,6 +25,7 @@
 #include "iropt.h"
 #include "irtools.h"
 #include "util.h"
+#include <stdio.h>
 
 /**
  * Block-walker: adds the visited block to a flexible array.

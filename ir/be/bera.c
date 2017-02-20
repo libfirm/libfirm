@@ -9,8 +9,9 @@
  * @author      Sebastian Hack
  * @date        22.11.2004
  */
-#include "bemodule.h"
 #include "bera.h"
+
+#include "bemodule.h"
 #include "irtools.h"
 
 /** The list of register allocators */

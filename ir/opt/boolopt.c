@@ -8,17 +8,16 @@
  * @brief   boolean condition/control flow optimizations
  * @author  Matthias Braun, Christoph Mallon, Michael Beck
  */
-#include <assert.h>
-
-#include "adt/obst.h"
 #include "../adt/array.h"
-#include "iroptimize.h"
+#include "adt/obst.h"
+#include "debug.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
+#include "iroptimize.h"
 #include "tv.h"
-#include "debug.h"
+#include <assert.h>
 
 /** Describes a pair of relative conditions lo < hi, lo rel_lo x, hi rel_hi x */
 typedef struct cond_pair {

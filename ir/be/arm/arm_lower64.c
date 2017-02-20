@@ -9,7 +9,6 @@
  * @author   Matthias Braun
  */
 #include "arm_bearch_t.h"
-
 #include "arm_nodes_attr.h"
 #include "benode.h"
 #include "gen_arm_new_nodes.h"

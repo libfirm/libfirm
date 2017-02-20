@@ -8,21 +8,19 @@
  * @brief       Scheduling utilities for nodes in Blocks and Blocks.
  * @author      Sebastian Hack
  */
-#include <stdlib.h>
-
-#include "firm_types.h"
-#include "iredges_t.h"
-#include "ircons.h"
-#include "irgmod.h"
-
-#include "bemodule.h"
 #include "besched.h"
+
 #include "belistsched.h"
 #include "belive.h"
-
+#include "bemodule.h"
+#include "firm_types.h"
+#include "ircons.h"
+#include "iredges_t.h"
+#include "irgmod.h"
+#include "irtools.h"
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
-#include "irtools.h"
+#include <stdlib.h>
 
 #define SCHED_INITIAL_GRANULARITY (1 << 14)
 

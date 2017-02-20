@@ -8,12 +8,12 @@
  * @brief   Specialized implementation for perfect bipartite matching.
  * @author  Sebastian Hack
  */
-#include <stdio.h>
-#include <assert.h>
+#include "bipartite.h"
 
 #include "bitset.h"
-#include "bipartite.h"
 #include "xmalloc.h"
+#include <assert.h>
+#include <stdio.h>
 
 struct bipartite_t {
 	unsigned  n_left;

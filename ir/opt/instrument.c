@@ -9,12 +9,12 @@
  * @date    14.4.2008
  * @author  Michael Beck
  */
-#include <stdbool.h>
-
 #include "instrument.h"
+
 #include "ircons.h"
 #include "iredges_t.h"
 #include "irgraph_t.h"
+#include <stdbool.h>
 
 void instrument_initcall(ir_graph *irg, ir_entity *ent)
 {

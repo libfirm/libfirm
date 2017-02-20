@@ -8,43 +8,38 @@
  * @brief    Dead node elimination and Procedure Inlining.
  * @author   Michael Beck, Goetz Lindenmaier
  */
-#include <limits.h>
-#include <stdbool.h>
-#include <assert.h>
-
-#include "debug.h"
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irprog_t.h"
-#include "entity_t.h"
-
-#include "iroptimize.h"
-#include "ircons_t.h"
-#include "iropt_t.h"
-#include "irgopt.h"
-#include "irgmod.h"
-#include "irgwalk.h"
-
-#include "array.h"
-#include "list.h"
-#include "pmap.h"
-#include "xmalloc.h"
-#include "pqueue.h"
-
-#include "irouts_t.h"
-#include "irloop_t.h"
-#include "irbackedge_t.h"
-#include "opt_init.h"
-#include "cgana.h"
-#include "irmemory_t.h"
-
 #include "analyze_irg_args.h"
+#include "array.h"
+#include "cgana.h"
+#include "debug.h"
+#include "entity_t.h"
+#include "irbackedge_t.h"
+#include "ircons_t.h"
 #include "iredges_t.h"
 #include "irflag_t.h"
+#include "irgmod.h"
+#include "irgopt.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
 #include "irhooks.h"
-#include "irtools.h"
-#include "iropt_dbg.h"
+#include "irloop_t.h"
+#include "irmemory_t.h"
+#include "irnode_t.h"
 #include "irnodemap.h"
+#include "iropt_dbg.h"
+#include "iropt_t.h"
+#include "iroptimize.h"
+#include "irouts_t.h"
+#include "irprog_t.h"
+#include "irtools.h"
+#include "list.h"
+#include "opt_init.h"
+#include "pmap.h"
+#include "pqueue.h"
+#include "xmalloc.h"
+#include <assert.h>
+#include <limits.h>
+#include <stdbool.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

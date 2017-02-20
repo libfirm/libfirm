@@ -1,15 +1,15 @@
-#include <assert.h>
-#include <stdio.h>
-#include <limits.h>
-#include "xmalloc.h"
-#include "util.h"
+#include "ident_t.h"
 #include "irmode_t.h"
 #include "irnode.h"
 #include "irprintf.h"
-#include "tv_t.h"
-#include "ident_t.h"
 #include "irprog_t.h"
+#include "tv_t.h"
 #include "type_t.h"
+#include "util.h"
+#include "xmalloc.h"
+#include <assert.h>
+#include <limits.h>
+#include <stdio.h>
 
 static int result = 0;
 static unsigned n_modes;

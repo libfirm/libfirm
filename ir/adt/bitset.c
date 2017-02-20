@@ -2,8 +2,8 @@
  * This file is part of libFirm.
  * Copyright (C) 2015 University of Karlsruhe.
  */
-
 #include "bitset.h"
+
 #include "irprintf.h"
 
 void bitset_fprint(FILE *const file, bitset_t const *const bs)

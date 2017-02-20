@@ -9,10 +9,11 @@
  * @author  Matthias Braun
  */
 #include "lower_alloc.h"
-#include "irgwalk.h"
-#include "irnode_t.h"
+
 #include "ircons.h"
 #include "irgmod.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
 #include "irnodeset.h"
 
 static unsigned po2_stack_alignment;

@@ -7,20 +7,18 @@
  * @file
  * @author  Daniel Grund
  */
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include "obst.h"
-#include "hashptr.h"
 #include "debug.h"
-#include "set.h"
-#include "panic.h"
-
-#include "sp_matrix.h"
-#include "mps.h"
+#include "hashptr.h"
 #include "lpp_solvers.h"
+#include "mps.h"
+#include "obst.h"
+#include "panic.h"
+#include "set.h"
+#include "sp_matrix.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define HASH_NAME_T(n) hash_str((n)->name)
 

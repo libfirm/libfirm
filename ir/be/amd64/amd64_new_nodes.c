@@ -9,25 +9,24 @@
  *          opcodes and the coresponding node constructors for the amd64
  *          assembler irg.
  */
-#include <stdlib.h>
-#include <inttypes.h>
-
-#include "panic.h"
-#include "irprog_t.h"
-#include "irgraph_t.h"
-#include "irnode_t.h"
-#include "irmode_t.h"
-#include "ircons_t.h"
-#include "iropt_t.h"
-#include "irprintf.h"
-#include "xmalloc.h"
-#include "bedump.h"
+#include "amd64_new_nodes.h"
 
 #include "amd64_bearch_t.h"
-#include "amd64_nodes_attr.h"
-#include "amd64_new_nodes.h"
 #include "amd64_new_nodes_t.h"
+#include "amd64_nodes_attr.h"
+#include "bedump.h"
 #include "gen_amd64_regalloc_if.h"
+#include "ircons_t.h"
+#include "irgraph_t.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "iropt_t.h"
+#include "irprintf.h"
+#include "irprog_t.h"
+#include "panic.h"
+#include "xmalloc.h"
+#include <inttypes.h>
+#include <stdlib.h>
 
 x87_attr_t *amd64_get_x87_attr(ir_node *const node)
 {

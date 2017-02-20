@@ -8,18 +8,18 @@
  * @brief   Representation of all program known entities.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
  */
-#include <stdlib.h>
-
-#include "xmalloc.h"
 #include "entity_t.h"
+
 #include "array.h"
-#include "util.h"
-#include "irhooks.h"
-#include "irprog_t.h"
+#include "callgraph.h"
 #include "irdump.h"
 #include "irgraph_t.h"
-#include "callgraph.h"
+#include "irhooks.h"
+#include "irprog_t.h"
 #include "panic.h"
+#include "util.h"
+#include "xmalloc.h"
+#include <stdlib.h>
 
 /** The name of the unknown entity. */
 #define UNKNOWN_ENTITY_NAME "unknown_entity"

@@ -11,9 +11,6 @@
  */
 #include "begnuas.h"
 
-#include <assert.h>
-#include <ctype.h>
-
 #include "be_t.h"
 #include "bearch.h"
 #include "beemithlp.h"
@@ -29,6 +26,8 @@
 #include "lc_opts_enum.h"
 #include "panic.h"
 #include "util.h"
+#include <assert.h>
+#include <ctype.h>
 
 typedef enum object_file_format_t {
 	OBJECT_FILE_FORMAT_ELF,    /**< Executable and Linkable Format (unixes) */

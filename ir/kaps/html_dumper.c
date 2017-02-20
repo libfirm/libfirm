@@ -9,15 +9,14 @@
  * @date    03.10.2008
  * @author  Sebastian Buchwald
  */
-#include <assert.h>
+#include "html_dumper.h"
 
 #include "adt/array.h"
-
+#include "kaps.h"
+#include "optimal.h"
 #include "pbqp_edge_t.h"
 #include "pbqp_node_t.h"
-#include "optimal.h"
-#include "html_dumper.h"
-#include "kaps.h"
+#include <assert.h>
 
 /* Caution: Due to static buffer use only once per statement */
 static const char *cost2a(num const cost)

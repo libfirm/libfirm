@@ -8,14 +8,13 @@
  * @brief       position independent code adjustments
  * @author      Matthias Braun
  */
-#include "ia32_bearch_t.h"
-
 #include "adt/pmap.h"
 #include "be_t.h"
 #include "begnuas.h"
 #include "beirg.h"
 #include "beutil.h"
 #include "entity_t.h"
+#include "ia32_bearch_t.h"
 #include "ia32_new_nodes.h"
 #include "ident_t.h"
 #include "ircons_t.h"

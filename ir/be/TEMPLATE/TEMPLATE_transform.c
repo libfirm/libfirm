@@ -7,26 +7,24 @@
  * @file
  * @brief   code selection (transform FIRM into TEMPLATE FIRM)
  */
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irmode_t.h"
-#include "irgmod.h"
-#include "iredges_t.h"
-#include "ircons.h"
-#include "iropt_t.h"
-#include "debug.h"
-#include "panic.h"
-#include "util.h"
+#include "TEMPLATE_transform.h"
 
+#include "TEMPLATE_new_nodes.h"
+#include "TEMPLATE_nodes_attr.h"
+#include "beirg.h"
 #include "benode.h"
 #include "betranshlp.h"
-#include "beirg.h"
-
-#include "TEMPLATE_nodes_attr.h"
-#include "TEMPLATE_transform.h"
-#include "TEMPLATE_new_nodes.h"
-
+#include "debug.h"
 #include "gen_TEMPLATE_regalloc_if.h"
+#include "ircons.h"
+#include "iredges_t.h"
+#include "irgmod.h"
+#include "irgraph_t.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
+#include "iropt_t.h"
+#include "panic.h"
+#include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

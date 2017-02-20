@@ -9,12 +9,12 @@
  * @date    02.10.2008
  * @author  Sebastian Buchwald
  */
-#include <assert.h>
-#include <string.h>
+#include "matrix.h"
 
 #include "pbqp_t.h"
 #include "vector.h"
-#include "matrix.h"
+#include <assert.h>
+#include <string.h>
 
 pbqp_matrix_t *pbqp_matrix_alloc(pbqp_t *pbqp, unsigned rows, unsigned cols)
 {

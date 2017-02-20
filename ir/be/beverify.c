@@ -9,24 +9,22 @@
  * @author      Matthias Braun
  * @date        05.05.2006
  */
-#include <stdbool.h>
-
-#include "bitset.h"
-#include "set.h"
-#include "array.h"
-
-#include "irnode_t.h"
-#include "irgwalk.h"
-#include "irprintf.h"
-#include "irdump_t.h"
-#include "iredges_t.h"
-
 #include "beverify.h"
-#include "belive.h"
-#include "besched.h"
-#include "benode.h"
+
+#include "array.h"
 #include "beirg.h"
 #include "belistsched.h"
+#include "belive.h"
+#include "benode.h"
+#include "besched.h"
+#include "bitset.h"
+#include "irdump_t.h"
+#include "iredges_t.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irprintf.h"
+#include "set.h"
+#include <stdbool.h>
 
 typedef struct be_verify_register_pressure_env_t_ {
 	be_lv_t                     *lv;                  /**< Liveness information. */

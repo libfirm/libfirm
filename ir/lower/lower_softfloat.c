@@ -8,26 +8,26 @@
  * @brief   Lower floating point operations to function calls
  * @author  Sebastian Buchwald
  */
-#include <stdbool.h>
+#include "lower_softfloat.h"
 
 #include "be.h"
 #include "dbginfo_t.h"
-#include "panic.h"
 #include "ircons_t.h"
 #include "iredges_t.h"
 #include "irgmod.h"
-#include "irnodeset.h"
 #include "irgwalk.h"
 #include "irmode_t.h"
+#include "irnodeset.h"
 #include "irop_t.h"
 #include "iropt_dbg.h"
 #include "iroptimize.h"
 #include "irprog_t.h"
-#include "lower_softfloat.h"
 #include "lowering.h"
+#include "panic.h"
 #include "pmap.h"
-#include "type_t.h"
 #include "tv_t.h"
+#include "type_t.h"
+#include <stdbool.h>
 
 typedef bool (*lower_softfloat_func)(ir_node *node);
 

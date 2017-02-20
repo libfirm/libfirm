@@ -6,11 +6,11 @@
 
 #include "strcalc.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <limits.h>
-#include "xmalloc.h"
 #include "util.h"
+#include "xmalloc.h"
+#include <assert.h>
+#include <limits.h>
+#include <stdio.h>
 
 static const unsigned precision = 72; /* some random non-po2 number (but a multiple of SC_BITS),
                                          as strcalc rounds up to multiple of SC_BITS anyway */

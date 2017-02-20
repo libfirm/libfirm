@@ -14,18 +14,16 @@
  * - execute the pre function before recursion
  * - execute the post function after recursion
  */
-#include <stdlib.h>
-#include <stdio.h>
-
 #include "entity_t.h"
-#include "type_t.h"
-
-#include "irprog_t.h"
-#include "irgraph_t.h"
-#include "irnode_t.h"
-#include "irgwalk.h"
-#include "panic.h"
 #include "ircons.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irprog_t.h"
+#include "panic.h"
+#include "type_t.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 /**
  * The walker environment

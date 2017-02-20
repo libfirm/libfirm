@@ -8,16 +8,15 @@
  * @brief   Replaces Mux nodes with control-flow
  * @author  Olaf Liebe
  */
-#include <assert.h>
-
-#include "lowering.h"
 #include "array.h"
-#include "irnode_t.h"
+#include "ircons.h"
+#include "irgmod.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
-#include "irgmod.h"
-#include "ircons.h"
+#include "irnode_t.h"
+#include "lowering.h"
 #include "util.h"
+#include <assert.h>
 
 typedef struct walk_env {
 	lower_mux_callback *cb_func;

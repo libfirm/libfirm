@@ -17,19 +17,18 @@
 #include "irflag.h"
 #include "irgmod.h"
 #include "irgopt.h"
+#include "irgraph_t.h"
 #include "irgwalk.h"
+#include "irloop.h"
+#include "irnode_t.h"
 #include "irnodehashmap.h"
 #include "irnodeset.h"
 #include "iropt_dbg.h"
+#include "iropt_t.h"
 #include "iroptimize.h"
 #include "irouts.h"
 #include "tv_t.h"
 #include "valueset.h"
-#include "irloop.h"
-
-#include "irgraph_t.h"
-#include "irnode_t.h"
-#include "iropt_t.h"
 
 /* suggested by GVN-PRE authors */
 #define MAX_ANTIC_ITER 10

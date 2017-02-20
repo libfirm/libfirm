@@ -8,12 +8,13 @@
  * @brief       Processor architecture specification.
  * @author      Sebastian Hack
  */
-#include "be_t.h"
 #include "bearch.h"
-#include "benode.h"
+
+#include "be_t.h"
 #include "beinfo.h"
 #include "beirg.h"
 #include "bemodule.h"
+#include "benode.h"
 #include "ircons_t.h"
 #include "irnode_t.h"
 #include "irop_t.h"

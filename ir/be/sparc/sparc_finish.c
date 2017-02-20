@@ -22,26 +22,25 @@
  * of the stack frame. The code here among other things adjusts these offsets
  * accordingly.
  */
-#include "sparc_bearch_t.h"
-
 #include "be2addr.h"
-#include "gen_sparc_regalloc_if.h"
-#include "sparc_new_nodes.h"
-#include "sparc_transform.h"
-#include "irprog.h"
-#include "irgmod.h"
-#include "ircons.h"
-#include "iredges_t.h"
-#include "irgwalk.h"
-#include "heights.h"
 #include "beirg.h"
-#include "bepeephole.h"
 #include "benode.h"
+#include "bepeephole.h"
 #include "besched.h"
 #include "bespillslots.h"
 #include "bestack.h"
 #include "beutil.h"
+#include "gen_sparc_regalloc_if.h"
+#include "heights.h"
+#include "ircons.h"
+#include "iredges_t.h"
+#include "irgmod.h"
+#include "irgwalk.h"
+#include "irprog.h"
 #include "panic.h"
+#include "sparc_bearch_t.h"
+#include "sparc_new_nodes.h"
+#include "sparc_transform.h"
 #include "util.h"
 
 static ir_heights_t *heights;

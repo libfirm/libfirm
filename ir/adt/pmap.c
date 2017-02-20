@@ -11,8 +11,8 @@
  */
 #include "pmap.h"
 
-#include "set.h"
 #include "hashptr.h"
+#include "set.h"
 
 #define INITIAL_SLOTS 64
 

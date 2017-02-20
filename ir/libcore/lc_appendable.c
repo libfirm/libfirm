@@ -2,12 +2,11 @@
  * This file is part of libFirm.
  * Copyright (C) 2012 IPD Goos, Universit"at Karlsruhe, Germany
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include "util.h"
 #include "lc_printf.h"
+#include "util.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* Default appendable implementations */
 

@@ -10,14 +10,13 @@
  */
 #include "constbits.h"
 
-#include <assert.h>
-
 #include "debug.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irnodemap.h"
 #include "iropt.h"
+#include <assert.h>
 
 #ifndef VERIFY_CONSTBITS
 #	ifdef DEBUG_libfirm

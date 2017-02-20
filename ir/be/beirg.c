@@ -9,9 +9,10 @@
  * @author      Matthias Braun
  * @date        13.12.2006
  */
-#include "execfreq.h"
 #include "beirg.h"
+
 #include "belive.h"
+#include "execfreq.h"
 
 void be_invalidate_live_sets(ir_graph *irg)
 {

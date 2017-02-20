@@ -11,18 +11,18 @@
  */
 #include "irconsconfirm.h"
 
-#include "irgraph_t.h"
-#include "irnode_t.h"
-#include "ircons_t.h"
-#include "irgmod.h"
-#include "iropt_dbg.h"
-#include "iredges_t.h"
-#include "irgwalk.h"
-#include "irgopt.h"
-#include "irtools.h"
 #include "array.h"
 #include "debug.h"
+#include "ircons_t.h"
+#include "iredges_t.h"
 #include "irflag.h"
+#include "irgmod.h"
+#include "irgopt.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "iropt_dbg.h"
+#include "irtools.h"
 
 /**
  * Walker environment.

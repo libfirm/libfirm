@@ -9,39 +9,35 @@
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt,
  *          Matthias Braun
  */
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <errno.h>
-
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "irprog_t.h"
-#include "entity_t.h"
-#include "irop_t.h"
-
 #include "irdump_t.h"
 
-#include "irgwalk.h"
-#include "tv_t.h"
-#include "irouts_t.h"
-#include "iredges_t.h"
-#include "irdom.h"
-#include "irloop_t.h"
-#include "callgraph.h"
-#include "irhooks.h"
-#include "dbginfo_t.h"
-#include "irprintf.h"
-
-#include "irverify.h"
-
 #include "array.h"
-#include "pmap.h"
+#include "callgraph.h"
+#include "dbginfo_t.h"
+#include "entity_t.h"
+#include "irdom.h"
+#include "iredges_t.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irhooks.h"
+#include "irloop_t.h"
+#include "irnode_t.h"
+#include "irop_t.h"
+#include "irouts_t.h"
+#include "irprintf.h"
+#include "irprog_t.h"
+#include "irverify.h"
 #include "obst.h"
 #include "panic.h"
+#include "pmap.h"
 #include "pset.h"
+#include "tv_t.h"
 #include "util.h"
+#include <errno.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 /**
  * Symbolic names for the different dumping colors.

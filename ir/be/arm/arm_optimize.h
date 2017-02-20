@@ -12,6 +12,8 @@
 #define FIRM_BE_ARM_ARM_OPTIMIZE_H
 
 #include "firm_types.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 /**
  * Performs Peephole Optimizations an a graph.

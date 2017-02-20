@@ -8,13 +8,13 @@
  * @brief   Optimizations regarding Confirm nodes.
  * @author  Michael Beck
  */
-#include "tv_t.h"
-#include "irnode_t.h"
-#include "iropt_t.h"
-#include "iropt_dbg.h"
-#include "iroptimize.h"
 #include "irflag_t.h"
+#include "irnode_t.h"
+#include "iropt_dbg.h"
+#include "iropt_t.h"
+#include "iroptimize.h"
 #include "irprintf.h"
+#include "tv_t.h"
 
 enum range_tags {
 	MIN_INCLUDED = 0x00,  /**< [min, ... */

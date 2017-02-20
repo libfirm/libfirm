@@ -8,14 +8,14 @@
  * @brief       A data structure to treat nodes and node-proj collections uniformly.
  * @author      Sebastian Hack
  */
-#include "irgraph_t.h"
-#include "irmode_t.h"
-#include "irnode_t.h"
-#include "iredges_t.h"
+#include "beinsn_t.h"
 
 #include "bearch.h"
 #include "bechordal_t.h"
-#include "beinsn_t.h"
+#include "iredges_t.h"
+#include "irgraph_t.h"
+#include "irmode_t.h"
+#include "irnode_t.h"
 
 be_insn_t *be_scan_insn(be_chordal_env_t *const env, ir_node *const irn)
 {

@@ -1,7 +1,7 @@
 #ifndef FIRM_IR_IRIO_T_H
 #define FIRM_IR_IRIO_T_H
 
-#include <stdio.h>
+#include "irio.h"
 
 #include "irnode_t.h"
 #include "obst.h"
@@ -9,6 +9,7 @@
 #include "set.h"
 #include "type_t.h"
 #include "typerep.h"
+#include <stdio.h>
 
 typedef struct delayed_initializer_t {
 	ir_initializer_t *initializer;

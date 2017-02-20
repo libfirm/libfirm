@@ -8,15 +8,14 @@
  * @brief   Normalize returns.
  * @author  Michael Beck
  */
-#include <stdbool.h>
-
-#include "iroptimize.h"
-#include "irgraph_t.h"
 #include "ircons_t.h"
-#include "irnode_t.h"
 #include "irgmod.h"
-#include "util.h"
+#include "irgraph_t.h"
+#include "irnode_t.h"
+#include "iroptimize.h"
 #include "raw_bitset.h"
+#include "util.h"
+#include <stdbool.h>
 
 /*
  * Normalize the Returns of a graph by creating a new End block

@@ -8,27 +8,27 @@
  * @brief    Entry point to the representation of procedure code.
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
  */
-
-#include "xmalloc.h"
-#include "ircons_t.h"
 #include "irgraph_t.h"
-#include "irprog_t.h"
+
+#include "array.h"
+#include "irbackedge_t.h"
+#include "ircons_t.h"
+#include "iredges_t.h"
+#include "irflag_t.h"
+#include "irgmod.h"
+#include "irgopt.h"
+#include "irgwalk.h"
+#include "irhooks.h"
+#include "irmemory.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
-#include "irflag_t.h"
-#include "array.h"
-#include "irgmod.h"
-#include "irouts.h"
-#include "irhooks.h"
-#include "irtools.h"
-#include "util.h"
-#include "irgwalk.h"
-#include "irbackedge_t.h"
-#include "iredges_t.h"
-#include "type_t.h"
-#include "irmemory.h"
 #include "iroptimize.h"
-#include "irgopt.h"
+#include "irouts.h"
+#include "irprog_t.h"
+#include "irtools.h"
+#include "type_t.h"
+#include "util.h"
+#include "xmalloc.h"
 
 #define INITIAL_IDX_IRN_MAP_SIZE 1024
 

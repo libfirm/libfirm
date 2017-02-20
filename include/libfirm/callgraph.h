@@ -13,6 +13,7 @@
 #ifndef FIRM_ANA_CALLGRAPH_H
 #define FIRM_ANA_CALLGRAPH_H
 
+#include <stddef.h>
 #include "firm_types.h"
 #include "begin.h"
 

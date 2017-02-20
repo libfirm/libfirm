@@ -26,7 +26,7 @@
  *   pnc_Uge => P || AE
  *   pnc_Ne  => P || NE
  */
-#include <inttypes.h>
+#include "ia32_emitter.h"
 
 #include "be_t.h"
 #include "beasm.h"
@@ -45,7 +45,6 @@
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_architecture.h"
 #include "ia32_bearch_t.h"
-#include "ia32_emitter.h"
 #include "ia32_encode.h"
 #include "ia32_new_nodes.h"
 #include "irgwalk.h"
@@ -54,6 +53,7 @@
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 #include "panic.h"
+#include <inttypes.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

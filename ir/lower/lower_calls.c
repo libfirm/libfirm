@@ -8,11 +8,10 @@
  * @brief   Lowering of Calls with compound parameters and return types.
  * @author  Michael Beck, Matthias Braun
  */
-#include <stdbool.h>
+#include "lower_calls.h"
 
 #include "array.h"
 #include "be.h"
-#include "panic.h"
 #include "firm_types.h"
 #include "heights.h"
 #include "ircons.h"
@@ -26,11 +25,12 @@
 #include "iroptimize.h"
 #include "irprog_t.h"
 #include "irtools.h"
-#include "lower_calls.h"
 #include "lowering.h"
+#include "panic.h"
 #include "pmap.h"
 #include "type_t.h"
 #include "util.h"
+#include <stdbool.h>
 
 static pmap    *pointer_types;
 static pmap    *lowered_mtps;

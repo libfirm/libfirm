@@ -14,8 +14,17 @@
  * - Register-constrained nodes
  * - Two-address code instructions
  */
+#include "becopyopt_t.h"
+
+#include "bearch.h"
+#include "bedump.h"
+#include "beifg.h"
+#include "beinsn_t.h"
+#include "beirg.h"
+#include "belive.h"
+#include "bemodule.h"
+#include "benode.h"
 #include "debug.h"
-#include "panic.h"
 #include "execfreq_t.h"
 #include "irdump_t.h"
 #include "iredges_t.h"
@@ -25,24 +34,14 @@
 #include "irprintf.h"
 #include "irprog.h"
 #include "irtools.h"
-#include "pmap.h"
-#include "raw_bitset.h"
-#include "util.h"
-#include "xmalloc.h"
-
-#include "bearch.h"
-#include "becopyopt_t.h"
-#include "bedump.h"
-#include "beifg.h"
-#include "beinsn_t.h"
-#include "beirg.h"
-#include "belive.h"
-#include "bemodule.h"
-#include "benode.h"
-#include "statev_t.h"
-
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
+#include "panic.h"
+#include "pmap.h"
+#include "raw_bitset.h"
+#include "statev_t.h"
+#include "util.h"
+#include "xmalloc.h"
 
 #define MIS_HEUR_TRIGGER 8
 

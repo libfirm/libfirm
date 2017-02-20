@@ -1,10 +1,10 @@
 #include "gaussseidel.h"
 
+#include "util.h"
+#include "xmalloc.h"
 #include <assert.h>
 #include <math.h>
 #include <string.h>
-#include "xmalloc.h"
-#include "util.h"
 
 typedef struct {
 	double   v;

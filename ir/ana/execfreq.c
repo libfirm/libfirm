@@ -25,30 +25,27 @@
  * execution frequencies). We alleviate that by adding artificial edges from
  * kept blocks with a path to end.
  */
+#include "execfreq_t.h"
+
+#include "dfs_t.h"
+#include "gaussjordan.h"
+#include "hashptr.h"
+#include "iredges_t.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irhooks.h"
+#include "irloop.h"
+#include "irnode_t.h"
+#include "irnodehashmap.h"
+#include "irouts.h"
+#include "irprog_t.h"
+#include "panic.h"
+#include "set.h"
+#include "util.h"
+#include "xmalloc.h"
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
-
-#include "gaussjordan.h"
-
-#include "set.h"
-#include "hashptr.h"
-#include "dfs_t.h"
-#include "panic.h"
-#include "xmalloc.h"
-
-#include "irprog_t.h"
-#include "irgraph_t.h"
-#include "irnode_t.h"
-#include "irloop.h"
-#include "irgwalk.h"
-#include "iredges_t.h"
-#include "irouts.h"
-#include "util.h"
-#include "irhooks.h"
-#include "irnodehashmap.h"
-
-#include "execfreq_t.h"
 
 #define EPSILON          1e-5
 #define UNDEF(x)         (fabs(x) < EPSILON)

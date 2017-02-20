@@ -8,19 +8,19 @@
  * @brief    Data modes of operations.
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Mathias Heil
  */
-#include <stdlib.h>
-#include <stdbool.h>
-
-#include "irprog_t.h"
 #include "irmode_t.h"
-#include "ident.h"
-#include "tv_t.h"
-#include "obst.h"
-#include "irhooks.h"
+
 #include "array.h"
+#include "ident.h"
+#include "irhooks.h"
+#include "irprog_t.h"
+#include "obst.h"
 #include "panic.h"
 #include "strcalc.h"
+#include "tv_t.h"
 #include "util.h"
+#include <stdbool.h>
+#include <stdlib.h>
 
 /** Obstack to hold all modes. */
 static struct obstack modes;

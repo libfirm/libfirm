@@ -12,13 +12,12 @@
 
 #ifdef WITH_CPLEX
 
+#include "obst.h"
+#include "sp_matrix.h"
+#include "stat_timing.h"
+#include <ilcplex/cplex.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ilcplex/cplex.h>
-
-#include "obst.h"
-#include "stat_timing.h"
-#include "sp_matrix.h"
 
 static char cpx_cst_encoding[4] = "?ELG";
 static char cpx_var_encoding[4] = "??CB";

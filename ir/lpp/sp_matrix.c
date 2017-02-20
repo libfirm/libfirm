@@ -13,17 +13,16 @@
  * Complexity is O(1) then.
  * Random access or right-to-left and bottom-to-top is O(m*n).
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <math.h>
-
 #include "sp_matrix.h"
 
-#include "util.h"
 #include "bitset.h"
-#include "xmalloc.h"
 #include "panic.h"
+#include "util.h"
+#include "xmalloc.h"
+#include <assert.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 typedef enum iter_direction_t {
 	down, right, all

@@ -2,12 +2,10 @@
  * This file is part of libFirm.
  * Copyright (C) 2015 University of Karlsruhe.
  */
-
-#include <ctype.h>
+#include "beasm.h"
 
 #include "be_t.h"
 #include "bearch.h"
-#include "beasm.h"
 #include "bediagnostic.h"
 #include "beemitter.h"
 #include "begnuas.h"
@@ -17,6 +15,7 @@
 #include "panic.h"
 #include "util.h"
 #include "xmalloc.h"
+#include <ctype.h>
 
 arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_constraint_t const *const c, int const n_outs, arch_register_req_t const **const out_reqs, int const pos)
 {

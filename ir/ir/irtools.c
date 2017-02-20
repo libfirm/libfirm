@@ -8,12 +8,13 @@
  * @brief     Some often needed tool-functions
  * @author    Michael Beck
  */
-#include <stdlib.h>
-#include "irnode_t.h"
-#include "irbackedge_t.h"
 #include "irtools.h"
-#include "irprintf.h"
+
+#include "irbackedge_t.h"
+#include "irnode_t.h"
 #include "iropt_t.h"
+#include "irprintf.h"
+#include <stdlib.h>
 
 void firm_clear_link(ir_node *n, void *env)
 {

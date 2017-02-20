@@ -9,26 +9,24 @@
  * @author      Sebastian Hack, Matthias Braun
  * @date        27.06.2005
  */
-#include <limits.h>
-#include <stdlib.h>
-
-#include "obst.h"
-#include "pmap.h"
-#include "debug.h"
-
-#include "irgwalk.h"
-#include "irnode_t.h"
-#include "ircons_t.h"
-#include "irgraph_t.h"
-#include "iredges_t.h"
-#include "irdom_t.h"
-#include "util.h"
+#include "beuses.h"
 
 #include "be_t.h"
 #include "belive.h"
 #include "benode.h"
 #include "besched.h"
-#include "beuses.h"
+#include "debug.h"
+#include "ircons_t.h"
+#include "irdom_t.h"
+#include "iredges_t.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "obst.h"
+#include "pmap.h"
+#include "util.h"
+#include <limits.h>
+#include <stdlib.h>
 
 #define UNKNOWN_OUTERMOST_LOOP  ((unsigned)-1)
 

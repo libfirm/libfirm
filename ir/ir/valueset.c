@@ -9,9 +9,10 @@
  * @brief     A value set, containing expression for values.
  */
 #include "valueset.h"
+
+#include "hashptr.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
-#include "hashptr.h"
 
 static ir_valueset_entry_t null_valueset_entry;
 

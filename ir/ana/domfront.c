@@ -9,11 +9,11 @@
  * @author      Sebastian Hack, Daniel Grund
  * @date        04.05.2005
  */
+#include "array.h"
+#include "irdom.h"
+#include "iredges_t.h"
 #include "obst.h"
 #include "pmap.h"
-#include "irdom.h"
-#include "array.h"
-#include "iredges_t.h"
 
 /**
  * A wrapper for get_Block_idom.

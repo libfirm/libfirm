@@ -10,51 +10,46 @@
  * @author      Sebastian Hack
  * @date        29.11.2005
  */
-#include <stdlib.h>
-#include <time.h>
+#include "bechordal_t.h"
 
-#include "obst.h"
+#include "be_t.h"
+#include "becopyopt.h"
+#include "beifg.h"
+#include "beirg.h"
+#include "belive.h"
+#include "belower.h"
+#include "bemodule.h"
+#include "benode.h"
+#include "benode.h"
+#include "bepbqpcoloring.h"
+#include "bera.h"
+#include "bespill.h"
+#include "bespillslots.h"
+#include "bespillutil.h"
+#include "bessadestr.h"
+#include "bestack.h"
+#include "bestat.h"
+#include "beverify.h"
 #include "bitset.h"
-
-#include "lc_opts.h"
-#include "lc_opts_enum.h"
-
+#include "execfreq.h"
+#include "ircons.h"
+#include "ircons.h"
+#include "ircons.h"
 #include "ircons_t.h"
-#include "irmode_t.h"
+#include "irdom.h"
+#include "irdump.h"
+#include "iredges_t.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
-#include "ircons.h"
-#include "irdump.h"
-#include "irdom.h"
-#include "ircons.h"
+#include "irmode_t.h"
 #include "irnode_t.h"
-#include "ircons.h"
 #include "irtools.h"
-#include "execfreq.h"
-#include "iredges_t.h"
-
-#include "bechordal_t.h"
-#include "belive.h"
-#include "beifg.h"
-#include "benode.h"
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
+#include "obst.h"
 #include "statev_t.h"
-#include "bestat.h"
-#include "bemodule.h"
-#include "be_t.h"
-#include "bera.h"
-#include "beirg.h"
-#include "bestack.h"
-
-#include "bespillslots.h"
-#include "bespill.h"
-#include "bespillutil.h"
-#include "belower.h"
-#include "becopyopt.h"
-#include "bessadestr.h"
-#include "beverify.h"
-#include "benode.h"
-
-#include "bepbqpcoloring.h"
+#include <stdlib.h>
+#include <time.h>
 
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,

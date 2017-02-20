@@ -3,9 +3,9 @@
  * Copyright (C) 2017 University of Karlsruhe.
  */
 
-#include <panic.h>
-
 #include "mips_nodes_attr.h"
+
+#include <panic.h>
 
 char const *mips_get_cond_name(mips_cond_t const cond)
 {

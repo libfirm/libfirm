@@ -1,5 +1,7 @@
-#ifndef DCA_H
-#define DCA_H
+#ifndef IR_ANA_DCA_H
+#define IR_ANA_DCA_H
+
+#include "firm_types.h"
 
 /**
  * Compute don't care bits.

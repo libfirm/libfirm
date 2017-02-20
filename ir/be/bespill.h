@@ -13,6 +13,7 @@
 #define FIRM_BE_BESPILL_H
 
 #include "bera.h"
+#include <stdbool.h>
 
 extern bool be_coalesce_spill_slots;
 extern bool be_do_remats;

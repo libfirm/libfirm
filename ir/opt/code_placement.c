@@ -14,13 +14,12 @@
  * dependencies allow. After pushing them back up out of as many loops as
  * possible.
  */
-#include <stdbool.h>
-
 #include "iredges_t.h"
 #include "irgopt.h"
 #include "irnode_t.h"
 #include "iroptimize.h"
 #include "pdeq.h"
+#include <stdbool.h>
 
 #ifndef NDEBUG
 static bool is_block_reachable(ir_node *block)

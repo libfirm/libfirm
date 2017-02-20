@@ -8,18 +8,17 @@
  * @brief   Lowering of Switches if necessary or advantageous.
  * @author  Moritz Kroll
  */
-#include <stdbool.h>
-
 #include "array.h"
 #include "ircons.h"
 #include "irgopt.h"
 #include "irgwalk.h"
-#include "irnodeset.h"
 #include "irnode_t.h"
+#include "irnodeset.h"
 #include "irouts_t.h"
 #include "lowering.h"
 #include "panic.h"
 #include "util.h"
+#include <stdbool.h>
 
 typedef struct walk_env_t {
 	ir_nodeset_t  processed;

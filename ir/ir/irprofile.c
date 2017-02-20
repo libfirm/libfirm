@@ -9,8 +9,8 @@
  * @author      Adam M. Szalkowski, Steven Schaefer
  * @date        06.04.2006, 11.11.2010
  */
+#include "irprofile.h"
 
-#include "util.h"
 #include "debug.h"
 #include "execfreq_t.h"
 #include "hashptr.h"
@@ -19,11 +19,11 @@
 #include "irdump_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
-#include "irprofile.h"
 #include "irprog_t.h"
 #include "obst.h"
 #include "set.h"
 #include "typerep.h"
+#include "util.h"
 #include "xmalloc.h"
 
 /* Instrument blocks walker. */

@@ -9,15 +9,15 @@
  * @author  Michael Beck, Matthias Braun, Manuel Mohr
  */
 #include "adt/list.h"
+#include "be.h"
 #include "ircons.h"
-#include "lowering.h"
-#include "irprog_t.h"
+#include "irgmod.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
-#include "type_t.h"
-#include "irgmod.h"
+#include "irprog_t.h"
+#include "lowering.h"
 #include "panic.h"
-#include "be.h"
+#include "type_t.h"
 #include "util.h"
 
 static unsigned max_small_size; /**< The maximum size of a CopyB node

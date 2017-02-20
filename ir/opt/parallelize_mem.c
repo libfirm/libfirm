@@ -8,21 +8,20 @@
  * @brief   parallelizing Load/Store optimization
  * @author  Christoph Mallon
  */
-#include "iroptimize.h"
-
 #include "array.h"
 #include "ircons.h"
-#include "irgraph_t.h"
+#include "irdump.h"
+#include "iredges_t.h"
+#include "irflag_t.h"
 #include "irgmod.h"
 #include "irgopt.h"
+#include "irgraph_t.h"
 #include "irgwalk.h"
 #include "irmemory.h"
 #include "irnode_t.h"
 #include "irnodeset.h"
+#include "iroptimize.h"
 #include "obst.h"
-#include "irdump.h"
-#include "irflag_t.h"
-#include "iredges_t.h"
 #include "type_t.h"
 
 typedef struct parallelize_info

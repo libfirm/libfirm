@@ -10,13 +10,8 @@
  *
  */
 
-#include <math.h>
-#include <stdbool.h>
-
-#include "util.h"
 #include "array.h"
 #include "debug.h"
-#include "panic.h"
 #include "irbackedge_t.h"
 #include "ircons_t.h"
 #include "irdom.h"
@@ -31,6 +26,10 @@
 #include "irouts.h"
 #include "irtools.h"
 #include "opt_init.h"
+#include "panic.h"
+#include "util.h"
+#include <math.h>
+#include <stdbool.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

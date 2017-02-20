@@ -8,7 +8,6 @@
  * @brief   Helper for handling 2-address code instructions
  * @author  Christoph Mallon
  */
-
 #include "be2addr.h"
 
 #include "bearch.h"

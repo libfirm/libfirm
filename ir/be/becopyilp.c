@@ -9,11 +9,9 @@
  * @author      Daniel Grund
  * @date        28.02.2006
  */
-#include <stdbool.h>
-#include <stdio.h>
+#include "becopyilp_t.h"
 
 #include "be_t.h"
-#include "becopyilp_t.h"
 #include "becopyopt_t.h"
 #include "beifg.h"
 #include "belive.h"
@@ -23,6 +21,8 @@
 #include "lc_opts_enum.h"
 #include "panic.h"
 #include "statev_t.h"
+#include <stdbool.h>
+#include <stdio.h>
 
 #define DUMP_ILP 1
 

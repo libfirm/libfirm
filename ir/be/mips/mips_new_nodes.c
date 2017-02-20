@@ -5,11 +5,10 @@
 
 #include "mips_new_nodes_t.h"
 
-#include <inttypes.h>
-
 #include "bearch.h"
 #include "gen_mips_new_nodes.h"
 #include "ircons_t.h"
+#include <inttypes.h>
 
 static int mips_attrs_equal_(mips_attr_t const *const a_attr, mips_attr_t const *const b_attr)
 {

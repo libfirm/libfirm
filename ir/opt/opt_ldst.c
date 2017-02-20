@@ -10,24 +10,24 @@
  * @author  Michael Beck
  */
 
-#include "util.h"
-#include "irnode_t.h"
-#include "irflag_t.h"
 #include "array.h"
+#include "debug.h"
 #include "ircons.h"
 #include "irdom.h"
+#include "irflag_t.h"
 #include "irgmod.h"
-#include "irgwalk.h"
-#include "irouts_t.h"
 #include "irgopt.h"
+#include "irgwalk.h"
+#include "irmemory.h"
+#include "irnode_t.h"
+#include "irnodehashmap.h"
 #include "iropt.h"
 #include "iroptimize.h"
-#include "irnodehashmap.h"
-#include "irmemory.h"
-#include "raw_bitset.h"
-#include "debug.h"
+#include "irouts_t.h"
 #include "panic.h"
+#include "raw_bitset.h"
 #include "type_t.h"
+#include "util.h"
 
 /* maximum number of output Proj's */
 #define MAX_PROJ MAX((unsigned)pn_Load_max, (unsigned)pn_Store_max)

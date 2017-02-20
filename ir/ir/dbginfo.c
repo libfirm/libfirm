@@ -10,10 +10,11 @@
  * @date     2001
  */
 #include "dbginfo_t.h"
-#include "irnode_t.h"
-#include "type_t.h"
+
 #include "entity_t.h"
+#include "irnode_t.h"
 #include "panic.h"
+#include "type_t.h"
 
 merge_pair_func *__dbg_info_merge_pair = default_dbg_info_merge_pair;
 merge_sets_func *__dbg_info_merge_sets = default_dbg_info_merge_sets;

@@ -8,6 +8,7 @@
  * @brief   emit assembler for a backend graph
  */
 #include "TEMPLATE_emitter.h"
+
 #include "TEMPLATE_new_nodes.h"
 #include "bearch.h"
 #include "beblocksched.h"

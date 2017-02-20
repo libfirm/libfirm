@@ -8,25 +8,24 @@
  * @brief   lowering of Calls of intrinsic functions
  * @author  Michael Beck
  */
-#include <stdbool.h>
-
-#include "lowering.h"
-#include "irop_t.h"
-#include "irprog_t.h"
-#include "irnode_t.h"
-#include "irprog_t.h"
-#include "irgwalk.h"
+#include "array.h"
+#include "be.h"
 #include "ircons_t.h"
 #include "irgmod.h"
 #include "irgopt.h"
-#include "irverify.h"
-#include "pmap.h"
-#include "array.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irop_t.h"
 #include "iropt_dbg.h"
+#include "irprog_t.h"
+#include "irprog_t.h"
+#include "irverify.h"
+#include "lowering.h"
 #include "panic.h"
-#include "be.h"
-#include "util.h"
+#include "pmap.h"
 #include "tv_t.h"
+#include "util.h"
+#include <stdbool.h>
 
 /** Walker environment. */
 struct ir_intrinsics_map {

@@ -9,16 +9,15 @@
  * @author  Matthias Braun
  */
 #include "arm_bearch_t.h"
-
 #include "arm_new_nodes.h"
 #include "arm_optimize.h"
 #include "be2addr.h"
+#include "be_types.h"
 #include "beirg.h"
 #include "benode.h"
 #include "besched.h"
 #include "bespillslots.h"
 #include "bestack.h"
-#include "be_types.h"
 #include "firm_types.h"
 #include "gen_arm_regalloc_if.h"
 #include "iredges_t.h"

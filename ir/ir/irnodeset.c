@@ -11,8 +11,9 @@
               tries to guarantee deterministic behavior.
  */
 #include "irnodeset.h"
-#include "irnode_t.h"
+
 #include "hashptr.h"
+#include "irnode_t.h"
 
 #define DO_REHASH
 #define ID_HASH

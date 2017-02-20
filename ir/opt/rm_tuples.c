@@ -7,11 +7,11 @@
  * @brief    Remove all Tuple nodes from ir graph
  * @author   Andreas Zwinkau
  */
-#include "irnode_t.h"
-#include "irgopt.h"
 #include "irgmod.h"
-#include "irgwalk.h"
 #include "irgopt.h"
+#include "irgopt.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
 
 /** Transforms:
  *    a

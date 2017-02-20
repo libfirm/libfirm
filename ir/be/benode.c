@@ -10,7 +10,7 @@
  *
  * Backend node support for generic backend nodes.
  */
-#include <stdlib.h>
+#include "benode.h"
 
 #include "array.h"
 #include "be_t.h"
@@ -18,7 +18,6 @@
 #include "bedump.h"
 #include "beirg.h"
 #include "belive.h"
-#include "benode.h"
 #include "besched.h"
 #include "bitfiddle.h"
 #include "fourcc.h"
@@ -38,6 +37,7 @@
 #include "raw_bitset.h"
 #include "set.h"
 #include "util.h"
+#include <stdlib.h>
 
 /** The be_IncSP attribute type. */
 typedef struct {

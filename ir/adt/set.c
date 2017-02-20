@@ -42,9 +42,9 @@
 #endif
 
 #ifdef PSET
-# include "pset.h"
+#include "pset.h"
 #else
-# include "set.h"
+#include "set.h"
 #endif
 
 #include <assert.h>

@@ -7,10 +7,9 @@
  * @file
  * @brief   emit assembler for a backend graph
  */
-#include <inttypes.h>
+#include "amd64_emitter.h"
 
 #include "amd64_bearch_t.h"
-#include "amd64_emitter.h"
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
 #include "be_t.h"
@@ -28,6 +27,7 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "panic.h"
+#include <inttypes.h>
 
 static bool omit_fp;
 static int  frame_type_size;

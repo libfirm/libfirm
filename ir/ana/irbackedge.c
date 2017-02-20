@@ -9,10 +9,11 @@
  * @author    Goetz Lindenmaier
  * @date      7.2002
  */
-#include "irnode_t.h"
-#include "irgraph_t.h"
-#include "array.h"
 #include "irbackedge_t.h"
+
+#include "array.h"
+#include "irgraph_t.h"
+#include "irnode_t.h"
 
 /*--------------------------------------------------------------------*/
 /* Backedge information.                                              */

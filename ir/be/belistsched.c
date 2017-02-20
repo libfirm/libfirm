@@ -9,31 +9,28 @@
  * @author      Sebastian Hack, Matthias Braun
  * @date        20.10.2004
  */
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
+#include "belistsched.h"
 
-#include "benode.h"
+#include "array.h"
 #include "be_t.h"
-
-#include "obst.h"
-#include "list.h"
-
+#include "belive.h"
+#include "bemodule.h"
+#include "benode.h"
+#include "besched.h"
+#include "bestat.h"
+#include "debug.h"
+#include "irdump.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
-#include "irnode_t.h"
 #include "irmode_t.h"
-#include "irdump.h"
-#include "array.h"
-#include "debug.h"
-#include "bemodule.h"
-#include "besched.h"
-#include "belive.h"
-#include "belistsched.h"
-#include "bestat.h"
-
+#include "irnode_t.h"
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
+#include "list.h"
+#include "obst.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
