@@ -263,6 +263,15 @@ static void arm_init_asm_constraints(void)
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "IJKLMin");
 }
 
+static int arm_ifconv(ir_node const *const sel, ir_node const *const mux_false,
+                      ir_node const *mux_true)
+{
+	(void)sel;
+	(void)mux_false;
+	(void)mux_true;
+	return false;
+}
+
 static void arm_init(void)
 {
 	arm_mode_gp    = new_int_mode("arm_gp", ARM_MACHINE_SIZE, 0,
@@ -276,6 +285,7 @@ static void arm_init(void)
 	ir_target.experimental
 		= "the arm backend is highly experimental and unfinished";
 	ir_target.fast_unaligned_memaccess = false;
+	ir_target.allow_ifconv             = arm_ifconv;
 	ir_target.float_int_overflow       = ir_overflow_min_max;
 }
 

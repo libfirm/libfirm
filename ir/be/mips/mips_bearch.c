@@ -50,6 +50,15 @@ static void mips_init_asm_constraints(void)
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE, "IJKLMNOPin");
 }
 
+static int mips_ifconv(ir_node const *const sel, ir_node const *const mux_false,
+                       ir_node const *mux_true)
+{
+	(void)sel;
+	(void)mux_false;
+	(void)mux_true;
+	return false;
+}
+
 static void mips_init(void)
 {
 	mips_init_asm_constraints();
@@ -58,6 +67,7 @@ static void mips_init(void)
 
 	ir_target.experimental
 		= "the MIPS backend is highly experimental and unfinished";
+	ir_target.allow_ifconv       = mips_ifconv;
 	ir_target.float_int_overflow = ir_overflow_indefinite;
 }
 
