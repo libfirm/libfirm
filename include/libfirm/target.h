@@ -91,6 +91,13 @@ FIRM_API int ir_target_fast_unaligned_memaccess(void);
 FIRM_API ir_mode *ir_target_float_arithmetic_mode(void);
 
 /**
+ * Returns a \see float_int_conversion_overflow_style_t that specifies
+ * what happens when a float value is converted to an integer and
+ * overflow occurs.
+ */
+FIRM_API float_int_conversion_overflow_style_t ir_target_float_int_overflow_style(void);
+
+/**
  * @}
  */
 
