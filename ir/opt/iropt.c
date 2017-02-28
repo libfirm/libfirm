@@ -11,7 +11,6 @@
 #include "iropt_t.h"
 
 #include "array.h"
-#include "be.h"
 #include "bitfiddle.h"
 #include "constbits.h"
 #include "dbginfo_t.h"
@@ -34,6 +33,7 @@
 #include "irtools.h"
 #include "irverify.h"
 #include "panic.h"
+#include "target_t.h"
 #include "tv_t.h"
 #include "vrp.h"
 #include <stdbool.h>
@@ -4987,7 +4987,7 @@ restart:
 	 */
 
 	/* Remove unnecessary conversions */
-	if (!mode_is_float(mode) || be_get_backend_param()->mode_float_arithmetic == NULL) {
+	if (!mode_is_float(mode) || ir_target.mode_float_arithmetic == NULL) {
 		if (is_Conv(left) && is_Conv(right)) {
 			ir_node *op_left    = get_Conv_op(left);
 			ir_node *op_right   = get_Conv_op(right);
@@ -5188,8 +5188,7 @@ cmp_x_eq_0:
 
 	/* Remove unnecessary conversions */
 	if (is_Conv(left) && is_Const(right)
-	    && (!mode_is_float(mode)
-	        || be_get_backend_param()->mode_float_arithmetic == NULL)) {
+	    && (!mode_is_float(mode) || ir_target.mode_float_arithmetic == NULL)) {
 		ir_node *op_left   = get_Conv_op(left);
 		ir_mode *mode_left = get_irn_mode(op_left);
 		if (smaller_mode(mode_left, mode)) {
@@ -6574,8 +6573,8 @@ static bool ir_is_optimizable_mux_set(const ir_node *cond, ir_relation relation,
 	}
 }
 
-bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
-                           const ir_node *mux_true)
+int ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
+                          const ir_node *mux_true)
 {
 	/* this code should return true each time transform_node_Mux would
 	 * optimize the Mux completely away */
@@ -7137,7 +7136,8 @@ static bool sim_store_bitfield(unsigned char *buf, ir_mode *mode, long offset,
 	for (unsigned b = (unsigned)MAX(0, offset); b < initializer_size; ++b) {
 		if (b > (unsigned)offset + mode_size)
 			continue;
-		unsigned      idx      = be_is_big_endian() ? (initializer_size - 1 - b) : b;
+		unsigned      idx      = ir_target_big_endian()
+		                         ? (initializer_size - 1 - b) : b;
 		unsigned char prev     = buf[b-offset];
 		unsigned char maskbits = get_tarval_sub_bits(mask, idx);
 		unsigned char val      = get_tarval_sub_bits(masked_value, idx);
@@ -7172,7 +7172,8 @@ handle_tv:
 		     b < initializer_size; ++b) {
 			if (b > (unsigned)offset + mode_size)
 				continue;
-			unsigned      idx = be_is_big_endian() ? (initializer_size - 1 - b) : b;
+			unsigned      idx = ir_target_big_endian()
+			                    ? (initializer_size - 1 - b) : b;
 			unsigned char v   = get_tarval_sub_bits(tv, idx);
 			buf[b-offset] = v;
 		}
@@ -7265,7 +7266,7 @@ static ir_node *sim_store_load(const ir_type *type,
 	unsigned char *storage      = ALLOCANZ(unsigned char, storage_size);
 	if (!sim_store(storage, mode, offset, type, initializer))
 		return NULL;
-	if (be_is_big_endian())
+	if (ir_target_big_endian())
 		reverse_bytes(storage, storage_size);
 	ir_tarval *tv = new_tarval_from_bytes(storage, mode);
 	if (tv == tarval_unknown)

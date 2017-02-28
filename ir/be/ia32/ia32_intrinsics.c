@@ -452,7 +452,7 @@ static ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 	} else {
 		panic("unexpected lowering of 64bit op %s", get_op_name(op));
 	}
-	return create_compilerlib_entity(new_id_from_str(name), method);
+	return create_compilerlib_entity(name, method);
 }
 
 void ia32_lower64(void)

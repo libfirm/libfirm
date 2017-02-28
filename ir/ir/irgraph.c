@@ -141,6 +141,9 @@ static ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 
 ir_graph *new_ir_graph(ir_entity *ent, int n_loc)
 {
+	/* We cannot create graphs before setting mode_P. */
+	assert(mode_P != NULL && "mode_P is not set (target not initialized?)");
+
 	ir_graph *res = new_r_ir_graph(ent, n_loc);
 
 	ir_node *const start = new_r_Start(res);

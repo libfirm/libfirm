@@ -159,11 +159,6 @@ static inline unsigned arch_get_irn_n_outs(const ir_node *node)
 	for (unsigned i = 0, i##__n = arch_get_irn_n_outs(node); i != i##__n; ++i)
 
 /**
- * Register an instruction set architecture
- */
-void be_register_isa_if(const char *name, const arch_isa_if_t *isa);
-
-/**
  * A register.
  */
 struct arch_register_t {
@@ -262,6 +257,15 @@ static inline bool reg_req_has_constraint(const arch_register_req_t *req)
  * Architecture interface.
  */
 struct arch_isa_if_t {
+	char const *name;
+	uint8_t     pointer_size;           /**< Pointer size in bytes */
+	uint16_t    modulo_shift;           /**< Target modulo shift value */
+	bool        big_endian;             /**< Target is big endian */
+	uint8_t     po2_biggest_alignment;  /**< power of 2 of biggest alignment
+	                                         necessary/recommended for any data
+	                                         type on the target. */
+	bool        pic_supported;
+
 	unsigned                     n_registers;        /**< number of registers */
 	arch_register_t       const *registers;          /**< register array */
 	unsigned                     n_register_classes; /**< number of register classes */
@@ -269,7 +273,8 @@ struct arch_isa_if_t {
 
 	/**
 	 * Initializes the isa interface. This is necessary before calling any
-	 * other functions from this interface.
+	 * other functions from this interface. Also initializes the target
+	 * information in ir_target.
 	 */
 	void (*init)(void);
 
@@ -277,11 +282,6 @@ struct arch_isa_if_t {
 	 * Fress resources allocated by this isa interface.
 	 */
 	void (*finish)(void);
-
-	/**
-	 * Returns the frontend settings needed for this backend.
-	 */
-	const backend_params *(*get_params)(void);
 
 	/**
 	 * Generate code for the current firm program.

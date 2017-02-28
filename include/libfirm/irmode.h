@@ -47,18 +47,6 @@ typedef enum ir_mode_arithmetic {
 } ir_mode_arithmetic;
 
 /**
- * Specifies what happens when a float value is converted to an integer and
- * overflow happens.
- */
-typedef enum float_int_conversion_overflow_style_t {
-	ir_overflow_indefinite,  /**< the integer indefinite value (=INT_MIN) is
-	                              returned. (e.g. x86 does this) */
-	ir_overflow_min_max,     /**< INT_MIN/INT_MAX is returned depending on the
-	                              sign of the floatingpoint number. (e.g. sparc
-	                              does this). */
-} float_int_conversion_overflow_style_t;
-
-/**
  * Creates a new mode.
  *
  * @param name          the name of the mode to be created

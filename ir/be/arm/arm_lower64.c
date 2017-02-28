@@ -115,8 +115,7 @@ static ir_entity *make_divmod(char const *const name, ir_type *const even, ir_ty
 	set_method_res_type(mtp, 2, even);
 	set_method_res_type(mtp, 3, odd);
 
-	ident *const id = new_id_from_str(name);
-	return create_compilerlib_entity(id, mtp);
+	return create_compilerlib_entity(name, mtp);
 }
 
 static void create_divmod_intrinsics(ir_mode *mode_unsigned,

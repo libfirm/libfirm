@@ -22,6 +22,7 @@
 #include "irgwalk.h"
 #include "irmode_t.h"
 #include "panic.h"
+#include "platform_t.h"
 #include "typerep.h"
 #include "util.h"
 #include "xmalloc.h"
@@ -30,7 +31,6 @@
  * Note: "X64 ABI" refers to the Windows ABI for x86_64 (the SysV ABI
  * calls itself "AMD64 ABI").
  */
-bool amd64_use_x64_abi  = false;
 bool amd64_use_red_zone = true;
 
 static const unsigned ignore_regs[] = {
@@ -105,6 +105,7 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 	                                                   n_params);
 	/* x64 always reserves space to spill the first 4 arguments to have it
 	 * easy in case of variadic functions. */
+	bool amd64_use_x64_abi = ir_platform.amd64_x64abi;
 	unsigned stack_offset = amd64_use_x64_abi ? 32 : 0;
 	for (size_t i = 0; i < n_params; ++i) {
 		ir_type *param_type = get_method_param_type(function_type,i);
@@ -139,9 +140,8 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 	 * passing registers to the end of the params array, first GP,
 	 * then XMM. */
 	if (irg && is_method_variadic(function_type)) {
-		if (amd64_use_x64_abi) {
+		if (amd64_use_x64_abi)
 			panic("Variadic functions on Windows ABI not supported");
-		}
 
 		int params_remaining = (n_param_regs - param_regnum) +
 			(n_float_param_regs - float_param_regnum);
@@ -257,6 +257,7 @@ void amd64_cconv_init(void)
 	};
 	static unsigned const x64_callee_saves[] = { REG_RSI, REG_RDI };
 
+	bool amd64_use_x64_abi = ir_platform.amd64_x64abi;
 	be_cconv_add_regs(default_caller_saves, common_caller_saves, ARRAY_SIZE(common_caller_saves));
 	if (!amd64_use_x64_abi)
 		be_cconv_add_regs(default_caller_saves, x64_callee_saves, ARRAY_SIZE(x64_callee_saves));

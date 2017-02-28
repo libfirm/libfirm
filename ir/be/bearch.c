@@ -19,6 +19,7 @@
 #include "irnode_t.h"
 #include "irop_t.h"
 #include "raw_bitset.h"
+#include "target_t.h"
 #include "util.h"
 
 static arch_register_class_t arch_exec_cls = {
@@ -115,8 +116,8 @@ bool arch_reg_is_allocatable(const arch_register_req_t *req,
 
 arch_register_t const *arch_find_register(char const *const name)
 {
-	arch_register_t const *const regs = isa_if->registers;
-	for (size_t i = 0, n = isa_if->n_registers; i < n; ++i) {
+	arch_register_t const *const regs = ir_target.isa->registers;
+	for (size_t i = 0, n = ir_target.isa->n_registers; i < n; ++i) {
 		arch_register_t const *const reg = &regs[i];
 		if (streq(reg->name, name))
 			return reg;

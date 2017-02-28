@@ -10,13 +10,13 @@
  */
 #include "amd64_bearch_t.h"
 #include "amd64_new_nodes.h"
-#include "be_t.h"
 #include "beutil.h"
 #include "entity_t.h"
 #include "ircons_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "panic.h"
+#include "platform_t.h"
 #include "x86_node.h"
 
 static bool is_externally_visible(ir_entity const *const entity)
@@ -104,7 +104,7 @@ static void fix_address_pic_elf(ir_node *const node, void *const data)
 
 void amd64_adjust_pic(ir_graph *irg)
 {
-	switch (be_options.pic_style) {
+	switch (ir_platform.pic_style) {
 	case BE_PIC_NONE:
 		return;
 	case BE_PIC_ELF_PLT:

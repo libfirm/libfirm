@@ -22,9 +22,24 @@
  */
 
 /**
- * Initializes the firm library.  Allocates default data structures.
+ * Initializes the firm library and prepares code generation for the host.
+ *
+ * This is a convenince function that does:
+ *
+ *     ir_init_library();
+ *     ir_target_set_triple(ir_get_host_machine_triple());
+ *     ir_target_init();
  */
 FIRM_API void ir_init(void);
+
+/**
+ * Initializes the firm library but does not prepare for any code generation.
+ * This is typically followed by target initialization (\see target,
+ * ir_target_set(), ir_target_set_triple(), ir_target_init()) to get mode_P
+ * defined, a number of transformations also depend on target information being
+ * available.
+ */
+FIRM_API void ir_init_library(void);
 
 /**
  * Frees all memory occupied by the firm library.

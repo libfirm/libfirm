@@ -18,6 +18,7 @@
 #include "betranshlp.h"
 #include "gen_ia32_regalloc_if.h"
 #include "panic.h"
+#include "target_t.h"
 #include <assert.h>
 
 arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *const additional_clobber_names, char const *const clobber)
@@ -27,7 +28,7 @@ arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *const additio
 		return reg;
 	for (x86_clobber_name_t const *i = additional_clobber_names; i->name; ++i) {
 		if (streq(i->name, clobber))
-			return &isa_if->registers[i->index];
+			return &ir_target.isa->registers[i->index];
 	}
 	return NULL;
 }
@@ -123,7 +124,7 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 	}
 
 	/* parse clobbers */
-	unsigned clobber_bits[isa_if->n_register_classes];
+	unsigned clobber_bits[ir_target.isa->n_register_classes];
 	memset(&clobber_bits, 0, sizeof(clobber_bits));
 	ident **const clobbers = get_ASM_clobbers(node);
 	for (size_t c = 0; c < n_clobbers; ++c) {

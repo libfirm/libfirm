@@ -105,8 +105,9 @@ FIRM_API void do_gvn_pre(ir_graph *irg);
  * @param i          First data predecessor involved in if conversion
  * @param j          Second data predecessor involved in if conversion
  */
-typedef int (*arch_allow_ifconv_func)(ir_node *sel, ir_node *mux_false,
-                                      ir_node *mux_true);
+typedef int (*arch_allow_ifconv_func)(ir_node const *sel,
+                                      ir_node const *mux_false,
+                                      ir_node const *mux_true);
 
 /**
  * Perform If conversion on a graph.
@@ -510,28 +511,11 @@ FIRM_API int value_not_null(const ir_node *n, const ir_node **confirm);
 FIRM_API ir_tarval *computed_value_Cmp_Confirm(ir_node *left, ir_node *right,
                                                ir_relation relation);
 
-/** Type of callbacks for creating entities of the compiler library */
-typedef ident *(*compilerlib_name_mangle_t)(ident *id, ir_type *mt);
-
-/**
- * Sets the compilerlib entity creation callback that is used to create
- * compilerlib function entities.
- *
- * @param cb  the new compilerlib entity creation callback
- */
-FIRM_API void set_compilerlib_name_mangle(compilerlib_name_mangle_t cb);
-
-/** Returns the compilerlib entity creation callback. */
-FIRM_API compilerlib_name_mangle_t get_compilerlib_name_mangle(void);
-
 /**
  * Constructs the entity for a given function using the current compilerlib
  * entity creation callback.
- *
- * @param id  the identifier of the compilerlib function
- * @param mt  the method type of the compilerlib function
  */
-FIRM_API ir_entity *create_compilerlib_entity(ident *id, ir_type *mt);
+FIRM_API ir_entity *create_compilerlib_entity(char const *name, ir_type *mt);
 
 /** @} */
 

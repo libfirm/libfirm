@@ -11,7 +11,6 @@
 #include "lower_calls.h"
 
 #include "array.h"
-#include "be.h"
 #include "firm_types.h"
 #include "heights.h"
 #include "ircons.h"

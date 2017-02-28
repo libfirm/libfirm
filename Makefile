@@ -26,7 +26,13 @@ CC ?= cc
 DOXYGEN ?= doxygen
 LINK ?= $(CC)
 AR ?= ar
+ifeq ("$(shell uname)", "Darwin")
+DLLEXT ?= .dylib
+LINKDLLFLAGS = -dynamiclib -install_name $(abspath $@)
+else
 DLLEXT ?= .so
+LINKDLLFLAGS = -shared
+endif
 
 # Variants
 CFLAGS_debug       = -O0 -g3 -DDEBUG_libfirm
@@ -140,7 +146,7 @@ $(libfirm_a): $(libfirm_OBJECTS)
 
 $(libfirm_dll): $(libfirm_OBJECTS)
 	@echo LINK $@
-	$(Q)$(LINK) -shared $^ -o $@ $(LINKFLAGS)
+	$(Q)$(LINK) $(LINKDLLFLAGS) $^ -o $@ $(LINKFLAGS)
 
 # Determine if we can use cparser-beta for quickcheck
 QUICKCHECK_DEFAULT := $(shell which cparser-beta 2> /dev/null || echo true) -fsyntax-only

@@ -12,7 +12,6 @@
 #include "ia32_transform.h"
 
 #include "array.h"
-#include "be_t.h"
 #include "bediagnostic.h"
 #include "benode.h"
 #include "betranshlp.h"
@@ -40,6 +39,7 @@
 #include "irprintf.h"
 #include "irprog_t.h"
 #include "panic.h"
+#include "platform_t.h"
 #include "tv_t.h"
 #include "util.h"
 #include "x86_address_mode.h"
@@ -216,7 +216,7 @@ ir_node *ia32_get_pic_base(ir_graph *irg)
  */
 static ir_node *get_global_base(ir_graph *const irg)
 {
-	if (be_options.pic_style != BE_PIC_NONE)
+	if (ir_platform.pic_style != BE_PIC_NONE)
 		return ia32_get_pic_base(irg);
 	return noreg_GP;
 }
@@ -2799,7 +2799,7 @@ static ir_node *gen_Switch(ir_node *node)
 
 	ir_node *switchjmp;
 	ir_node *table_am;
-	be_pic_style_t const pic_style = be_options.pic_style;
+	be_pic_style_t const pic_style = ir_platform.pic_style;
 	if (pic_style == BE_PIC_NONE) {
 		switchjmp = new_bd_ia32_SwitchJmp(dbgi, block, base, new_sel, n_outs,
 		                                  table, entity);
@@ -2823,7 +2823,7 @@ static ir_node *gen_Switch(ir_node *node)
 			.entity = entity,
 		},
 		.log_scale = 2,
-		.variant   = be_options.pic_style != BE_PIC_NONE
+		.variant   = ir_platform.pic_style != BE_PIC_NONE
 		           ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
 	};
 	set_ia32_op_type(table_am, ia32_AddrModeS);
@@ -3456,7 +3456,7 @@ static ir_node *gen_Mux(ir_node *node)
 						.kind   = lconst_imm_kind,
 						.entity = array,
 					},
-					.variant = be_options.pic_style != BE_PIC_NONE
+					.variant = ir_platform.pic_style != BE_PIC_NONE
 					           ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
 					.base    = get_global_base(irg),
 					.index   = new_node,
@@ -4367,7 +4367,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 
 		ia32_address_mode_t am = {
 			.addr = {
-				.variant = be_options.pic_style != BE_PIC_NONE
+				.variant = ir_platform.pic_style != BE_PIC_NONE
 				           ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
 				.base    = get_global_base(irg),
 				.index   = new_bd_ia32_Shr(dbgi, block, new_val_high, count,
@@ -5585,7 +5585,7 @@ void ia32_transform_graph(ir_graph *irg)
 	                         | IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
-	switch (be_options.pic_style) {
+	switch (ir_platform.pic_style) {
 	case BE_PIC_NONE:
 		lconst_variant  = X86_ADDR_JUST_IMM;
 		lconst_imm_kind = X86_IMM_ADDR;

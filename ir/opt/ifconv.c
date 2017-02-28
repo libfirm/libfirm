@@ -8,7 +8,6 @@
  * @brief   If conversion
  * @author  Christoph Mallon
  */
-#include "be.h"
 #include "cdep_t.h"
 #include "debug.h"
 #include "ircons.h"
@@ -19,6 +18,7 @@
 #include "iroptimize.h"
 #include "irtools.h"
 #include "pdeq.h"
+#include "target_t.h"
 #include <assert.h>
 #include <stdbool.h>
 
@@ -481,7 +481,5 @@ void opt_if_conv_cb(ir_graph *irg, arch_allow_ifconv_func callback)
 
 void opt_if_conv(ir_graph *irg)
 {
-	const backend_params *be_params = be_get_backend_param();
-	/* get the parameters */
-	opt_if_conv_cb(irg, be_params->allow_ifconv);
+	opt_if_conv_cb(irg, ir_target.allow_ifconv);
 }

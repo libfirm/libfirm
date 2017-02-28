@@ -87,6 +87,9 @@ typedef struct ir_cdep              ir_cdep;
 /** @ingroup ir_initializer
  * Initializer (for entities) */
 typedef union  ir_initializer_t     ir_initializer_t;
+/** @ingroup machine_triple
+ * Machine triple */
+typedef struct ir_machine_triple_t  ir_machine_triple_t;
 
 /**
  * @ingroup irgwalk
@@ -313,6 +316,18 @@ typedef enum {
 	align_is_aligned = 0, /**< The entity is aligned. Default */
 	align_non_aligned,    /**< The entity is not aligned. */
 } ir_align;
+
+/**
+ * Specifies what happens when a float value is converted to an integer and
+ * overflow happens.
+ */
+typedef enum float_int_conversion_overflow_style_t {
+	ir_overflow_indefinite,  /**< the integer indefinite value (=INT_MIN) is
+	                              returned. (e.g. x86 does this) */
+	ir_overflow_min_max,     /**< INT_MIN/INT_MAX is returned depending on the
+	                              sign of the floatingpoint number. (e.g. sparc
+	                              does this). */
+} float_int_conversion_overflow_style_t;
 
 typedef struct hook_entry hook_entry_t;
 

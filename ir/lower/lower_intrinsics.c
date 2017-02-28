@@ -9,7 +9,6 @@
  * @author  Michael Beck
  */
 #include "array.h"
-#include "be.h"
 #include "ircons_t.h"
 #include "irgmod.h"
 #include "irgopt.h"
@@ -23,6 +22,7 @@
 #include "lowering.h"
 #include "panic.h"
 #include "pmap.h"
+#include "target_t.h"
 #include "tv_t.h"
 #include "util.h"
 #include <stdbool.h>
@@ -174,7 +174,7 @@ int i_mapper_abs(ir_node *call)
 	ir_node  *cmp      = new_rd_Cmp(dbg, block, op, zero, ir_relation_less);
 	ir_node  *minus_op = new_rd_Minus(dbg, block, op);
 	ir_node  *mux;
-	arch_allow_ifconv_func allow_ifconv = be_get_backend_param()->allow_ifconv;
+	arch_allow_ifconv_func allow_ifconv = ir_target.allow_ifconv;
 
 	/* mux allowed by backend? */
 	if (!allow_ifconv(cmp, op, minus_op))
@@ -271,7 +271,7 @@ int i_mapper_pow(ir_node *call)
 		ir_node *div;
 
 		ir_mode *mode             = result_mode;
-		ir_mode *float_arithmetic = be_get_backend_param()->mode_float_arithmetic;
+		ir_mode *float_arithmetic = ir_target.mode_float_arithmetic;
 		if (float_arithmetic != NULL) {
 			left = new_r_Conv(block, left, float_arithmetic);
 			mode = float_arithmetic;

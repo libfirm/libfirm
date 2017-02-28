@@ -32,11 +32,14 @@
 #include "irtools.h"
 #include "lc_opts.h"
 #include "opt_init.h"
+#include "target_t.h"
 #include "tv_t.h"
 #include "type_t.h"
 #include "version.h"
 #include <stdio.h>
 #include <stdio.h>
+
+static bool initialized;
 
 /* returns the firm root */
 lc_opt_entry_t *firm_opt_get_root(void)
@@ -47,8 +50,12 @@ lc_opt_entry_t *firm_opt_get_root(void)
 	return grp;
 }
 
-void ir_init(void)
+void ir_init_library(void)
 {
+	if (initialized)
+		panic("Double initialization");
+	initialized = true;
+
 	firm_init_flags();
 	init_ident();
 	init_edges();
@@ -89,6 +96,8 @@ void ir_finish(void)
 	finish_tarval();
 	finish_mode();
 	finish_ident();
+	finish_target();
+	initialized = false;
 }
 
 unsigned ir_get_version_major(void)

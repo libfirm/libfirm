@@ -52,6 +52,7 @@
 #include "pdeq.h"
 #include "raw_bitset.h"
 #include "statev.h"
+#include "target_t.h"
 #include "unionfind.h"
 #include "util.h"
 #include <float.h>
@@ -1788,8 +1789,9 @@ static void be_pref_alloc(ir_graph *new_irg, const regalloc_if_t *regif)
 	/* determine a good coloring order */
 	determine_block_order();
 
-	arch_register_class_t const *const reg_classes = isa_if->register_classes;
-	for (int c = 0, n_cls = isa_if->n_register_classes; c < n_cls; ++c) {
+	arch_register_class_t const *const reg_classes
+		= ir_target.isa->register_classes;
+	for (int c = 0, n_cls = ir_target.isa->n_register_classes; c < n_cls; ++c) {
 		cls = &reg_classes[c];
 		if (cls->manual_ra)
 			continue;

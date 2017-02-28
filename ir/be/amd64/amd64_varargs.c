@@ -289,7 +289,8 @@ void amd64_lower_va_arg(ir_node *const node)
 	ir_node  *const block = get_nodes_block(node);
 	ir_node  *const ap    = get_irn_n(node, pn_Builtin_max + 1);
 	ir_node        *mem   = get_Builtin_mem(node);
-	if (resmode == get_type_mode(be_get_backend_param()->type_long_double)) {
+	if (get_mode_arithmetic(resmode) == irma_x86_extended_float) {
+		assert(get_mode_size_bytes(resmode) == 10);
 		result = load_va_from_stack(dbgi, block, resmode, restype, ap, &mem);
 	} else {
 		ir_entity *offset_entity;

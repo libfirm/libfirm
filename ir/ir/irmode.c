@@ -162,8 +162,8 @@ ir_mode *new_reference_mode(const char *name, unsigned bit_size,
 
 	/* Construct offset mode if none is set yet. */
 	if (res->offset_mode == NULL) {
-		char buf[64];
-		snprintf(buf, sizeof(buf), "%s_i", name);
+		char buf[16];
+		snprintf(buf, sizeof(buf), "I%u", bit_size);
 		ir_mode *offset_mode = new_int_mode(buf, bit_size, 1, modulo_shift);
 		res->offset_mode = offset_mode;
 	}
