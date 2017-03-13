@@ -1060,8 +1060,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	DB((dbg, LEVEL_2, "\n"));
 
 	/* check which color is the "best" for the given chunk.
-	 * if we found a color which was ok for all nodes, we take it
-	 * and do not look further. (see did_all flag usage below.)
+	 * If we found a color which was ok for all nodes, we take it
+	 * and do not look further. (see n_succeeded usage below.)
 	 * If we have many colors which fit all nodes it is hard to decide
 	 * which one to take anyway.
 	 * TODO Sebastian: Perhaps we should at all nodes and figure out
