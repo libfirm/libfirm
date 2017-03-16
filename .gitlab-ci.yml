@@ -1,0 +1,8 @@
+image: ubuntu:16.04
+
+before_script:
+	- apt-get install build-essential python3 perl
+
+test:
+	script:
+	- make test -j
