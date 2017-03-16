@@ -1,8 +1,9 @@
 image: ubuntu:16.04
 
 before_script:
-	- apt-get install build-essential python3 perl
+    - apt-get update
+    - apt-get -y install gcc make python perl git
 
-test:
-	script:
-	- make test -j
+unittests:
+    script:
+        - make test -j

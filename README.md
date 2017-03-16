@@ -20,6 +20,7 @@ Prerequisites for the build:
 * Python (2.7.x or >=3.3 are supported)
 * Perl
 * an ANSI C99 compiler (gcc, clang, icc are known to work)
+* Git
 
 ### Building with make
 
