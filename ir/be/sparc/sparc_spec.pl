@@ -640,10 +640,8 @@ Cas => {
 	ins      => [ "ptr", "old", "new", "mem" ],
 	outs     => [ "res", "M" ],
 	in_reqs  => [ "gp", "gp", "gp", "mem" ],
-	out_reqs => [ "in_r2", "mem" ],
+	out_reqs => [ "in_r2 !in_r0 !in_r1", "mem" ],
 	# TODO: we need a must-be-same constraint for the CAS
-	# for now we use a custom emitter which at least panics if constraints
-	# are not fulfilled
 },
 
 fcmp => {

@@ -310,7 +310,7 @@ OrrPl => {
 	emit      => 'orrpl %D0, %S2, %O',
 	attr_type => "arm_shifter_operand_t",
 	in_reqs   => [ "gp", "flags", "gp", "gp" ],
-	out_reqs  => [ "in_r2" ],
+	out_reqs  => [ "in_r2 !in_r0 !in_r3" ],
 	ins       => [ "falseval", "flags", "left", "right" ],
 	init      => "init_arm_shifter_operand(res, 3, 0, ARM_SHF_REG, 0);",
 },
