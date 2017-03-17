@@ -53,8 +53,8 @@
 #include <time.h>
 
 static be_ra_chordal_opts_t options = {
-	BE_CH_DUMP_NONE,
-	BE_CH_LOWER_PERM_SWAP,
+	.dump_flags     = BE_CH_DUMP_NONE,
+	.lower_perm_opt = BE_CH_LOWER_PERM_COPY,
 };
 
 static const lc_opt_enum_int_items_t lower_perm_items[] = {

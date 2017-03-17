@@ -49,6 +49,7 @@ libFirm 1.22.1 (2016-01-07)
 * sparc: More strict checking of modifiers of placeholders in asm templates
 * arm: Support inline asm with with constraints `I`, `J`, `K`, `L`, `M`, `Q`, `g`, `i`, `l`, `m`, `n` and `r` as well as modifiers `B`, `C` and `c`
 * mips: Add new backend
+* be: By default permutation lowering now uses copy instead swap
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
