@@ -489,7 +489,7 @@ static const ir_settings_arch_dep_t sparc_arch_dep = {
 	.allow_mulhu          = true,
 	.also_use_subs        = true,
 	.maximum_shifts       = 1,
-	.highest_shift_amount = 31,
+	.highest_shift_amount = 63,
 	.evaluate             = NULL,
 	.max_bits_for_mulh    = 32,
 };
