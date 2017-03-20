@@ -670,8 +670,8 @@ static void emit_amd64_mov_gp(const ir_node *node)
 {
 	amd64_attr_t const *const attr = get_amd64_attr_const(node);
 	switch (attr->size) {
-	case X86_SIZE_8:  amd64_emitf(node, "movzbq %AM, %^D0"); return;
-	case X86_SIZE_16: amd64_emitf(node, "movzwq %AM, %^D0"); return;
+	case X86_SIZE_8:  amd64_emitf(node, "movzbl %AM, %3D0"); return;
+	case X86_SIZE_16: amd64_emitf(node, "movzwl %AM, %3D0"); return;
 	case X86_SIZE_32: amd64_emitf(node, "movl %AM, %3D0");   return;
 	case X86_SIZE_64: amd64_emitf(node, "movq %AM, %^D0");   return;
 	case X86_SIZE_80:
