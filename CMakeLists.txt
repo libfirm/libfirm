@@ -99,6 +99,9 @@ set(SOURCES
 	ir/be/beutil.c
 	ir/be/bevarargs.c
 	ir/be/beverify.c
+	ir/be/machine_triple.c
+	ir/be/platform.c
+	ir/be/target.c
 	ir/common/debug.c
 	ir/common/debugger.c
 	ir/common/firm.c
