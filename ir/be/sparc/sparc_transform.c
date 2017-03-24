@@ -2450,7 +2450,11 @@ void sparc_transform_graph(ir_graph *irg)
 	be_stack_init(&stack_env);
 	current_cconv = sparc_prepare_calling_convention(irg);
 
+#if defined(_WIN32)
+	ir_entity **need_stores = ALLOCAN(ir_entity *, current_cconv->n_param_regs);
+#else
 	ir_entity *need_stores[current_cconv->n_param_regs];
+#endif
 	unsigned   n_stores = 0;
 	for (size_t i = 0, n = current_cconv->n_parameters; i < n; ++i) {
 		reg_or_stackslot_t const *const param  = &current_cconv->parameters[i];

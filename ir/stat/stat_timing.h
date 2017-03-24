@@ -12,7 +12,10 @@
 #define FIRM_STAT_TIMING_H
 
 #include <stddef.h>
-#include <sys/time.h>
+
+#ifdef __linux__
+# include <sys/time.h>
+#endif
 
 typedef unsigned long long timing_ticks_t;
 

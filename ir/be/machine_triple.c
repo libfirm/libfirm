@@ -113,15 +113,15 @@ ir_machine_triple_t *ir_get_host_machine_triple(void)
 	return triple;
 #else
 	const char *cpu =
-#if defined(__x86_64__) || defined(__amd64__)
+#if defined(__x86_64__) || defined(__amd64__) || defined(_M_X64) || defined(_M_AMD64)
 		"x86_64";
 #elif defined(__i686__)
 		"i686";
-#elif defined(__i386__)
+#elif defined(__i386__) || defined(_M_I86) || defined(_M_IX86)
 		"i386";
 #elif defined(__sparc__)
 		"sparc";
-#elif defined(__arm__)
+#elif defined(__arm__) || defined(__TARGET_ARCH_ARM) || defined(_ARM) || defined(_M_ARM) || defined(__arm)
 		"arm";
 #else
 #error Could not determine host CPU. Consider defining HOST_TRIPLE.

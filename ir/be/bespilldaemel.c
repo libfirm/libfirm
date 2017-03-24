@@ -219,7 +219,7 @@ static void add_uses(ir_node *node, ir_nodeset_t *nodeset)
 	}
 }
 
-static __attribute__((unused))
+static FIRM_UNUSED
 void print_nodeset(ir_nodeset_t *nodeset)
 {
 	foreach_ir_nodeset(nodeset, node, iter) {
