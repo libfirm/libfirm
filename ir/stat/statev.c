@@ -15,11 +15,16 @@
 #include "stat_timing.h"
 #include "util.h"
 #include <assert.h>
-#include <regex.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef __GNUC__
+# include <regex.h>
+#else
+# include "regex.h"
+#endif
 
 #define MAX_TIMER 256
 
