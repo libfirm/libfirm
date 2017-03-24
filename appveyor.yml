@@ -30,7 +30,7 @@ before_build:
   - cmd: cd C:\projects\firm
   - cmd: md build
   - cmd: cd build
-  - cmd: cmake ..
+  - cmd: cmake -G "NMake Makefiles" ..
 
 build:
   project: C:\projects\firm\build\libfirm.sln
