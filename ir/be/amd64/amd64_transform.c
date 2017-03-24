@@ -1064,10 +1064,37 @@ static ir_node *gen_Sub(ir_node *const node)
 	}
 }
 
+typedef ir_node* (*create_mov_func)(dbg_info *dbgi, ir_node *block, int arity,
+	ir_node *const *in, arch_register_req_t const **in_reqs,
+	x86_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr);
+
+static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value, x86_insn_size_t size, create_mov_func create_mov, unsigned pn_res);
+
 static ir_node *gen_And(ir_node *const node)
 {
 	ir_node *const op1 = get_And_left(node);
 	ir_node *const op2 = get_And_right(node);
+
+	/* Is it a zero extension? */
+	if (is_Const(op2)) {
+		x86_insn_size_t size;
+		ir_tarval *const tv = get_Const_tarval(op2);
+		uint64_t   const v  = get_tarval_uint64(tv);
+		if (v == 0xFF) {
+			size = X86_SIZE_8;
+			goto movzx;
+		} else if (v == 0xFFFF) {
+			size = X86_SIZE_16;
+			goto movzx;
+		} else if (v == 0xFFFFFFFF) {
+			size = X86_SIZE_32;
+movzx:;
+			dbg_info *const dbgi  = get_irn_dbg_info(node);
+			ir_node  *const block = get_nodes_block(node);
+			return match_mov(dbgi, block, op1, size, &new_bd_amd64_mov_gp, pn_amd64_mov_gp_res);
+		}
+	}
+
 	return gen_binop_am(node, op1, op2, new_bd_amd64_and, pn_amd64_and_res,
 	                    match_immediate | match_am | match_mode_neutral
 	                    | match_commutative);
@@ -2095,10 +2122,6 @@ static ir_node *gen_Phi(ir_node *const node)
 
 	return be_transform_phi(node, req);
 }
-
-typedef ir_node* (*create_mov_func)(dbg_info *dbgi, ir_node *block, int arity,
-	ir_node *const *in, arch_register_req_t const **in_reqs,
-	x86_insn_size_t size, amd64_op_mode_t op_mode, x86_addr_t addr);
 
 static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
                           x86_insn_size_t size, create_mov_func create_mov,

@@ -39,7 +39,6 @@
 #include "becopyopt_t.h"
 #include "bemodule.h"
 
-
 #ifdef DEBUG_libfirm
 
 #define DBG_AFF_CHUNK(env, level, chunk) do { if (firm_dbg_get_mask(dbg) & (level)) dbg_aff_chunk((env), (chunk)); } while (0)
@@ -70,15 +69,15 @@ typedef struct col_cost_t {
  * An affinity chunk.
  */
 typedef struct aff_chunk_t {
-	const ir_node **n;                    /**< An ARR_F containing all nodes of the chunk. */
-	const ir_node **interfere;            /**< An ARR_F containing all inference. */
-	int             weight;               /**< Weight of this chunk */
-	unsigned        id;                   /**< An id of this chunk. */
+	const ir_node **n;                     /**< An ARR_F containing all nodes of the chunk. */
+	const ir_node **interfere;             /**< An ARR_F containing all inference. */
+	int             weight;                /**< Weight of this chunk */
+	unsigned        id;                    /**< An id of this chunk. */
 	unsigned        visited;
 	list_head       list;
-	bool            weight_consistent: 1; /**< Set if the weight is consistent. */
+	bool            weight_consistent : 1; /**< Set if the weight is consistent. */
 #ifndef NDEBUG
-	bool            deleted          : 1; /**< For debugging: Set if the was deleted. */
+	bool            deleted           : 1; /**< For debugging: Set if the was deleted. */
 #endif
 	col_cost_t      color_affinity[];
 } aff_chunk_t;
@@ -87,39 +86,39 @@ typedef struct aff_chunk_t {
  * An affinity edge.
  */
 typedef struct aff_edge_t {
-	const ir_node *src;     /**< Source node. */
-	const ir_node *tgt;     /**< Target node. */
-	int            weight;  /**< The weight of this edge. */
+	const ir_node *src;    /**< Source node. */
+	const ir_node *tgt;    /**< Target node. */
+	int            weight; /**< The weight of this edge. */
 } aff_edge_t;
 
 /* main coalescing environment */
 typedef struct co_mst_env_t {
-	bitset_t const   *allocatable_regs; /**< set containing all global ignore registers */
-	ir_nodemap        map;           /**< phase object holding data for nodes */
-	struct obstack    obst;
-	pqueue_t         *chunks;        /**< priority queue for chunks */
-	list_head         chunklist;     /**< list holding all chunks */
-	be_ifg_t         *ifg;           /**< the interference graph */
-	copy_opt_t       *co;            /**< the copy opt object */
-	col_cost_t      **single_cols;
-	unsigned          n_regs;         /**< number of regs in class */
-	unsigned          chunk_visited;
+	bitset_t const  *allocatable_regs; /**< set containing all global ignore registers */
+	ir_nodemap       map;              /**< phase object holding data for nodes */
+	struct obstack   obst;
+	pqueue_t        *chunks;           /**< priority queue for chunks */
+	list_head        chunklist;        /**< list holding all chunks */
+	be_ifg_t        *ifg;              /**< the interference graph */
+	copy_opt_t      *co;               /**< the copy opt object */
+	col_cost_t     **single_cols;
+	unsigned         n_regs;           /**< number of regs in class */
+	unsigned         chunk_visited;
 } co_mst_env_t;
 
 /* stores coalescing related information for a node */
 typedef struct co_mst_irn_t {
-	const ir_node   *irn;           /**< the irn this information belongs to */
-	aff_chunk_t     *chunk;         /**< the chunk this irn belongs to */
-	bitset_t        *adm_colors;    /**< set of admissible colors for this irn */
-	ir_node        **int_neighs;    /**< array of all interfering neighbours (cached for speed reasons) */
-	unsigned         n_neighs;      /**< length of the interfering neighbours array. */
-	int              int_aff_neigh; /**< number of interfering affinity neighbours */
-	unsigned         col;           /**< color currently assigned */
-	unsigned         init_col;      /**< the initial color */
-	int              tmp_col;       /**< a temporary assigned color */
-	struct list_head list;          /**< Queue for coloring undo. */
-	real_t           constr_factor;
-	bool             fixed:1;       /**< the color is fixed */
+	const ir_node     *irn;           /**< the irn this information belongs to */
+	aff_chunk_t       *chunk;         /**< the chunk this irn belongs to */
+	bitset_t          *adm_colors;    /**< set of admissible colors for this irn */
+	ir_node          **int_neighs;    /**< array of all interfering neighbours (cached for speed reasons) */
+	unsigned           n_neighs;      /**< length of the interfering neighbours array. */
+	int                int_aff_neigh; /**< number of interfering affinity neighbours */
+	unsigned           col;           /**< color currently assigned */
+	unsigned           init_col;      /**< the initial color */
+	int                tmp_col;       /**< a temporary assigned color */
+	struct list_head   list;          /**< Queue for coloring undo. */
+	real_t             constr_factor;
+	bool               fixed:1;       /**< the color is fixed */
 } co_mst_irn_t;
 
 /**
@@ -575,7 +574,6 @@ static unsigned count_interfering_aff_neighs(co_mst_env_t *env,
 	return res;
 }
 
-
 /**
  * Build chunks of nodes connected by affinity edges.
  * We start at the heaviest affinity edge.
@@ -823,11 +821,11 @@ static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node,
 
 	for (unsigned i = 0; i < n_regs; ++i) {
 		neigh_cols[i] = 0;
-		costs[i].col = i;
+		costs[i].col  = i;
 		costs[i].cost = bitset_is_set(node->adm_colors, i) ? node->constr_factor : REAL(0.0);
 	}
 
-	for (unsigned i = 0, n = node->n_neighs; i < n; ++i) {
+	for (unsigned i = node->n_neighs; i-- != 0;) {
 		co_mst_irn_t *n = get_co_mst_irn(env, node->int_neighs[i]);
 		unsigned col = get_mst_irn_col(n);
 		assert(col < n_regs);
@@ -883,9 +881,9 @@ static bool change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node,
 
 		/* Try recoloring the node using the color list. */
 		return recolor_nodes(env, node, costs, changed, depth + 1, max_depth, trip);
-	} else {
-		return false;
 	}
+
+	return false;
 }
 
 /**
@@ -929,7 +927,7 @@ static bool recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node,
 
 		/* try to color all interfering neighbours with current color forbidden */
 		bool neigh_ok = true;
-		for (unsigned j = 0, nj = node->n_neighs; j < nj; ++j) {
+		for (unsigned j = node->n_neighs; j-- != 0;) {
 			ir_node      *neigh = node->int_neighs[j];
 			co_mst_irn_t *nn    = get_co_mst_irn(env, neigh);
 			DB((dbg, LEVEL_4, "\tHandling neighbour %+F, at position %d (fixed: %d, tmp_col: %d, col: %d)\n",
@@ -999,18 +997,17 @@ static bool change_node_color(co_mst_env_t *env, co_mst_irn_t *node,
 		stat_ev_int("heur4_recolor_depth_max", max_depth);
 		stat_ev_int("heur4_recolor_trip", trip);
 
-
 		return res;
 	}
 
 #ifdef DEBUG_libfirm
 	if (firm_dbg_get_mask(dbg) & LEVEL_4) {
-		if (!is_loose(node)) {
-			DB((dbg, LEVEL_4, "\t\tCNC: %+F has already fixed color %d\n", node->irn, col));
-		} else {
+		if (is_loose(node)) {
 			DB((dbg, LEVEL_4, "\t\tCNC: color %d not admissible for %+F (", tgt_col, node->irn));
 			dbg_admissible_colors(env, node);
 			DB((dbg, LEVEL_4, ")\n"));
+		} else {
+			DB((dbg, LEVEL_4, "\t\tCNC: %+F has already fixed color %d\n", node->irn, col));
 		}
 	}
 #endif
@@ -1196,7 +1193,6 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	}
 	ARR_SHRINKLEN(c->n, nidx);
 
-
 	/* we have to get the nodes back into the original chunk because they are scattered over temporary chunks */
 	for (size_t idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
 		const ir_node *n  = c->n[idx];
@@ -1297,8 +1293,8 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 		if (mirn->init_col == mirn->col)
 			continue;
 
-		const arch_register_t *reg = arch_register_for_index(co->cls, mirn->col);
-		ir_node *const irn = get_idx_irn(co->irg, pn);
+		const arch_register_t *const reg = arch_register_for_index(co->cls, mirn->col);
+		ir_node               *const irn = get_idx_irn(co->irg, pn);
 		arch_set_irn_register(irn, reg);
 		DB((dbg, LEVEL_1, "%+F set color from %d to %d\n", irn, mirn->init_col, mirn->col));
 	}
