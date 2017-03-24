@@ -215,6 +215,9 @@ EOF
 			my $reqstruct = generate_requirements($req, $n, "${arch}_$op", $idx++, 1);
 			$temp .= "\t\t&$reqstruct,\n";
 		}
+		if ($idx <= 0) {
+		  $temp .= "0";
+		}
 		$temp .= "\t};\n";
 	} elsif ($arity == 0) {
 		$temp .= "\tarch_register_req_t const **const in_reqs = NULL;\n";
@@ -242,9 +245,13 @@ EOF
 	if ($arity > 0) {
 		$temp .= "\t/* construct in array */\n";
 		$temp .= "\tir_node *const in[] = {\n";
-		for (my $i = 0; $i < $arity; $i++) {
+		my $i = 0;
+		for ($i = 0; $i < $arity; $i++) {
 			my $opname = $ins ? $$ins[$i] : "op$i";
 			$temp .= "\t\t$opname,\n";
+		}
+		if ($i <= 0) {
+		  $temp .= "0";
 		}
 		$temp .= "\t};\n";
 	}
@@ -846,7 +853,8 @@ CHECK_REQS: foreach (split(/ /, $regs)) {
 		my $sep            = "";
 		my $limitbitsetlen = $regclass2len{$class};
 		my $limitarraylen  = ($limitbitsetlen+31) / 32;
-		for (my $i = 0; $i < $limitarraylen; $i++) {
+		my $i = 0;
+		for ($i = 0; $i < $limitarraylen; $i++) {
 			$obst_limit_func .= $sep;
 			$sep              = ", ";
 			my $temp = $neg ? "0xFFFFFFFF" : undef;
@@ -861,6 +869,9 @@ CHECK_REQS: foreach (split(/ /, $regs)) {
 				$temp .= "BIT(REG_${classuc}_$reguc)";
 			}
 			$obst_limit_func .= $temp // "0";
+		}
+		if ($i <= 0) {
+		  $obst_limit_func .= "0";
 		}
 		$obst_limit_func .= " };\n";
 	}
