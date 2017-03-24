@@ -104,7 +104,11 @@ static void impl_parcopy(const arch_register_class_t *cls,
 
 	/* Step 2: Build Perm node and Proj node(s). */
 	unsigned  perm_size = 0;
+#if defined(_WIN32)
+	ir_node **perm_ins = ALLOCAN(ir_node *, n_regs);
+#else
 	ir_node  *perm_ins[n_regs];
+#endif
 	for (unsigned dst = 0; dst < n_regs; ++dst) {
 		const unsigned src = parcopy[dst];
 		if (src != n_regs && src != dst) {
