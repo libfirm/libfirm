@@ -34,8 +34,10 @@
 	#define  FIRM_API extern
 #endif
 
-#pragma warning(error:4028)
-#pragma warning(error:4029)
+#ifdef _WIN32
+#pragma warning(disable:4028)
+#pragma warning(disable:4029)
+#endif
 
 #endif
 
