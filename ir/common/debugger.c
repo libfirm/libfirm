@@ -1170,8 +1170,10 @@ const char *gdb_out_edge_helper(const ir_node *node)
 
 #else
 
+#include "funcattr.h"
+
 /* some picky compiler do not allow empty files */
-static int __attribute__((unused)) _firm_only_that_you_can_compile_with_NDEBUG_defined;
+static int FIRM_UNUSED _firm_only_that_you_can_compile_with_NDEBUG_defined;
 
 #endif /* NDEBUG */
 

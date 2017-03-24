@@ -62,4 +62,14 @@
 # define FIRM_NORETURN_FUNCPTR void
 #endif
 
+/**
+ * @def FIRM_UNUSED
+ * Attribute to mark a function which is unused.
+ */
+#if defined(__GNUC__) && __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 4)
+# define FIRM_UNUSED __attribute__((unused))
+#else
+# define FIRM_UNUSED
+#endif
+
 #endif
