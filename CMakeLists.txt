@@ -427,25 +427,23 @@ add_library(firm ${SOURCES})
 if(UNIX)
 	target_link_libraries(firm LINK_PUBLIC m)
 elseif(WIN32)
-	target_link_libraries(firm LINK_PUBLIC gnurx winmm)
+	target_link_libraries(firm LINK_PUBLIC winmm)
 endif()
 
-if(UNIX)
-	enable_testing()
-	add_custom_target(
-			check
-			${CMAKE_CTEST_COMMAND} -C $<CONFIG>
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-	)
-	foreach(test ${TESTS})
-		# Replace `/` with a `.` so cmake accepts the target name
-		string(REPLACE "/" "." test-id ${test})
-		add_executable(${test-id} ${test}.c)
-		target_link_libraries(${test-id} LINK_PRIVATE firm)
-		add_test(test-${test-id} ${test-id})
-		add_dependencies(check ${test-id})
-	endforeach(test)
-endif()
+enable_testing()
+add_custom_target(
+	check
+	${CMAKE_CTEST_COMMAND} -C $<CONFIG>
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+foreach(test ${TESTS})
+	# Replace `/` with a `.` so cmake accepts the target name
+	string(REPLACE "/" "." test-id ${test})
+	add_executable(${test-id} ${test}.c)
+	target_link_libraries(${test-id} LINK_PRIVATE firm)
+	add_test(test-${test-id} ${test-id})
+	add_dependencies(check ${test-id})
+endforeach(test)
 
 # Create install target
 set(INSTALL_HEADERS
