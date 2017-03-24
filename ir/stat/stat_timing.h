@@ -17,6 +17,8 @@
 # include <sys/time.h>
 #elif defined(_WIN32)
 # include <windows.h>
+# include <ctime.h>
+# include <time.h>
 int gettimeofday(struct timeval *tv, struct timezone *tz)
 {
 	time_t rawtime;
