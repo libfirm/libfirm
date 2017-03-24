@@ -15,7 +15,7 @@
 
 #ifdef __linux__
 # include <sys/time.h>
-#elif defined(_WIN32)
+#elif defined(_WIN32) && !defined(gettimeofday)
 # include <windows.h>
 # include <time.h>
 int gettimeofday(struct timeval *tv, struct timezone *tz)
