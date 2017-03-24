@@ -15,6 +15,21 @@
 
 #ifdef __linux__
 # include <sys/time.h>
+#elif defined(_WIN32)
+# include <windows.h>
+int gettimeofday(struct timeval *tv, struct timezone *tz)
+{
+	time_t rawtime;
+	LARGE_INTEGER tickPerSecond;
+	LARGE_INTEGER tick;
+
+	time(&rawtime);
+	tv->tv_sec = (long)rawtime;
+	QueryPerformanceFrequency(&tickPerSecond);
+	QueryPerformanceCounter(&tick);
+	tv->tv_usec = (tick.QuadPart % tickPerSecond.QuadPart);
+	return 0;
+}
 #endif
 
 typedef unsigned long long timing_ticks_t;
@@ -26,7 +41,7 @@ typedef unsigned long long timing_ticks_t;
  */
 static inline timing_ticks_t timing_ticks(void)
 {
-#if defined(__i386__) || defined(_M_IX86) || defined(_M_X64)
+#if defined(__i386__) && defined(__GNUC__)
 	unsigned h;
 	unsigned l;
 	__asm__ volatile("rdtsc" : "=a" (l), "=d" (h));
