@@ -34,14 +34,6 @@
 	#define  FIRM_API extern
 #endif
 
-#ifdef _WIN32
-#pragma warning(disable:4028)
-#pragma warning(disable:4029)
-#pragma warning(disable:4101)
-#pragma warning(disable:4996)
-#pragma warning(disable:4090)
-#endif
-
 #endif
 
 /* mark declarations as C function (note that we always need this,

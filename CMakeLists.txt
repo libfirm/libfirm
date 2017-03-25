@@ -418,6 +418,9 @@ if(CMAKE_VERSION VERSION_LESS "3.1")
 else()
 	set(CMAKE_C_STANDARD 99)
 endif()
+if(MSVC)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W2")
+endif()
 # Indicate that we build a shared library
 add_definitions(-DFIRM_BUILD -DFIRM_DLL)
 
