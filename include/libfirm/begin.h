@@ -34,7 +34,7 @@
 	#define  FIRM_API extern
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER <= 1700
+#if defined(_MSC_VER)
 # define inline __inline
 #endif
 
