@@ -13,7 +13,7 @@
 
 #include <stddef.h>
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 # include <sys/time.h>
 #elif defined(_WIN32) && !defined(gettimeofday)
 # include <windows.h>
@@ -31,6 +31,8 @@ int gettimeofday(struct timeval *tv, struct timezone *tz)
 	tv->tv_usec = (tick.QuadPart % tickPerSecond.QuadPart);
 	return 0;
 }
+#else
+# error Cannot find any system time file
 #endif
 
 typedef unsigned long long timing_ticks_t;
@@ -46,11 +48,11 @@ static inline timing_ticks_t timing_ticks(void)
 	unsigned h;
 	unsigned l;
 	__asm__ volatile("rdtsc" : "=a" (l), "=d" (h));
-	return (timing_ticks_t)h << 32 | l;
+	return (timing_ticks_t) h << 32 | l;
 #else
 	struct timeval tval;
 	gettimeofday(&tval, NULL);
-	return (unsigned long) (tval.tv_usec + 1000000 * tval.tv_sec);
+	return (timing_ticks_t) (tval.tv_usec + 1000000 * tval.tv_sec);
 #endif
 }
 
