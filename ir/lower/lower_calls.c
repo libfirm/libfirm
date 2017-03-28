@@ -29,7 +29,7 @@
 #include "pmap.h"
 #include "type_t.h"
 #include "util.h"
-#include <stdbool.h>
+#include "bool.h"
 
 static pmap    *pointer_types;
 static pmap    *lowered_mtps;

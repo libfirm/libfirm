@@ -11,8 +11,7 @@
 #ifndef FIRM_BE_IA32_ARCHITECTURE_H
 #define FIRM_BE_IA32_ARCHITECTURE_H
 
-#include <stdbool.h>
-
+#include "bool.h"
 #include "firm_types.h"
 #include "irarch.h"
 

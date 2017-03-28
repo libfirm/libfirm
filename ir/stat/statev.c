@@ -11,14 +11,15 @@
  */
 #include "statev_t.h"
 
+#include <assert.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "irprintf.h"
 #include "stat_timing.h"
 #include "util.h"
-#include <assert.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "bool.h"
 
 #ifdef __GNUC__
 # include <regex.h>

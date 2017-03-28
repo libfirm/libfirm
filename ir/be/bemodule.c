@@ -11,11 +11,12 @@
  */
 #include "bemodule.h"
 
+#include <stdlib.h>
+
 #include "isas.h"
 #include "util.h"
 #include "xmalloc.h"
-#include <stdbool.h>
-#include <stdlib.h>
+#include "bool.h"
 
 /**
  * A module list entry.

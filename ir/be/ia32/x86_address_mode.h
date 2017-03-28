@@ -12,8 +12,9 @@
 #ifndef X86_ADDRESS_MODE_H
 #define X86_ADDRESS_MODE_H
 
-#include <stdbool.h>
 #include <stdint.h>
+
+#include "bool.h"
 #include "x86_node.h"
 
 typedef enum x86_addr_variant_t {

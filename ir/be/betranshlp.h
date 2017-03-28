@@ -12,9 +12,9 @@
 #ifndef FIRM_BE_BETRANSHLP_H
 #define FIRM_BE_BETRANSHLP_H
 
-#include <stdbool.h>
 #include <stdint.h>
 
+#include "bool.h"
 #include "be_types.h"
 #include "firm_types.h"
 #include "irmode_t.h"

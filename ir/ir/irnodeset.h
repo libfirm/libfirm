@@ -15,7 +15,7 @@
 #ifndef _FIRM_IRNODESET_H_
 #define _FIRM_IRNODESET_H_
 
-#include <stdbool.h>
+#include "bool.h"
 #include "firm_types.h"
 #include "xmalloc.h"
 

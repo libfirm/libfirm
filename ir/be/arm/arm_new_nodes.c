@@ -12,6 +12,8 @@
  */
 #include "arm_new_nodes_t.h"
 
+#include <stdlib.h>
+
 #include "arm_bearch_t.h"
 #include "arm_nodes_attr.h"
 #include "arm_optimize.h"
@@ -25,8 +27,7 @@
 #include "irprintf.h"
 #include "irprog_t.h"
 #include "xmalloc.h"
-#include <stdbool.h>
-#include <stdlib.h>
+#include "bool.h"
 
 static bool arm_has_address_attr(const ir_node *node)
 {

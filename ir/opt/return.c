@@ -15,7 +15,7 @@
 #include "iroptimize.h"
 #include "raw_bitset.h"
 #include "util.h"
-#include <stdbool.h>
+#include "bool.h"
 
 /*
  * Normalize the Returns of a graph by creating a new End block

@@ -13,9 +13,9 @@
 #define FIRM_ADT_BITFIDDLE_H
 
 #include <assert.h>
-#include <stdbool.h>
 #include <stdint.h>
 
+#include "bool.h"
 #include "compiler.h"
 
 /**

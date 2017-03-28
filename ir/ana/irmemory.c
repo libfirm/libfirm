@@ -11,6 +11,8 @@
  */
 #include "irmemory_t.h"
 
+#include <stdlib.h>
+
 #include "adt/pmap.h"
 #include "debug.h"
 #include "hashptr.h"
@@ -26,8 +28,7 @@
 #include "type_t.h"
 #include "typerep.h"
 #include "util.h"
-#include <stdbool.h>
-#include <stdlib.h>
+#include "bool.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)

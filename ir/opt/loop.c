@@ -9,6 +9,7 @@
  * @brief    loop inversion and loop unrolling
  *
  */
+#include <math.h>
 
 #include "array.h"
 #include "debug.h"
@@ -28,8 +29,7 @@
 #include "opt_init.h"
 #include "panic.h"
 #include "util.h"
-#include <math.h>
-#include <stdbool.h>
+#include "bool.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

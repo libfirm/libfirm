@@ -11,8 +11,9 @@
 #define FIRM_ADT_DEQ_H
 
 #include <assert.h>
-#include <stdbool.h>
 #include <stddef.h>
+
+#include "bool.h"
 
 /**
  * @ingroup adt

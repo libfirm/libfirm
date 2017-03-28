@@ -11,7 +11,7 @@
 #ifndef FIRM_LOWER_ALLOC_H
 #define FIRM_LOWER_ALLOC_H
 
-#include <stdbool.h>
+#include "bool.h"
 #include "firm_types.h"
 
 /**

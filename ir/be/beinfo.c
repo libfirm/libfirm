@@ -20,7 +20,7 @@
 #include "irnode_t.h"
 #include "panic.h"
 #include "util.h"
-#include <stdbool.h>
+#include "bool.h"
 
 static copy_attr_func old_phi_copy_attr;
 

@@ -5,7 +5,8 @@
 #include "target.h"
 
 #include <assert.h>
-#include <stdbool.h>
+
+#include "bool.h"
 #include "xmalloc.h"
 #include "util.h"
 

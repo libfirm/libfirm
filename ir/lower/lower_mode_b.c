@@ -10,6 +10,8 @@
  */
 #include "lower_mode_b.h"
 
+#include <stdlib.h>
+
 #include "array.h"
 #include "ircons_t.h"
 #include "iredges_t.h"
@@ -24,8 +26,7 @@
 #include "panic.h"
 #include "tv.h"
 #include "util.h"
-#include <stdbool.h>
-#include <stdlib.h>
+#include "bool.h"
 
 typedef struct needs_lowering_t {
 	ir_node *node;

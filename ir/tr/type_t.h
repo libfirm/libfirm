@@ -12,8 +12,7 @@
 #ifndef FIRM_TR_TYPE_T_H
 #define FIRM_TR_TYPE_T_H
 
-#include <stdbool.h>
-
+#include "bool.h"
 #include "array.h"
 #include "firm_common.h"
 #include "typerep.h"

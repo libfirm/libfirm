@@ -22,7 +22,7 @@
 #include "iropt_t.h"
 #include "iroptimize.h"
 #include "tv.h"
-#include <stdbool.h>
+#include "bool.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

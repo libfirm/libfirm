@@ -11,11 +11,12 @@
 #ifndef FIRM_BE_IA32_X86_NODES_ATTR_H
 #define FIRM_BE_IA32_X86_NODES_ATTR_H
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
+
 #include "irmode_t.h"
 #include "panic.h"
+#include "bool.h"
 
 /** x86 condition codes (the numbers correspond to the real encoding order) */
 typedef enum x86_condition_code_t {

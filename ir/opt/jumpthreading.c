@@ -9,6 +9,8 @@
  * @date    10. Sep. 2006
  * @author  Christoph Mallon, Matthias Braun
  */
+#include <assert.h>
+
 #include "array.h"
 #include "debug.h"
 #include "ircons.h"
@@ -23,8 +25,7 @@
 #include "irtools.h"
 #include "tv.h"
 #include "vrp.h"
-#include <assert.h>
-#include <stdbool.h>
+#include "bool.h"
 
 #undef AVOID_PHIB
 

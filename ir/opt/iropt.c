@@ -10,6 +10,8 @@
  */
 #include "iropt_t.h"
 
+#include <string.h>
+
 #include "array.h"
 #include "bitfiddle.h"
 #include "constbits.h"
@@ -36,8 +38,7 @@
 #include "target_t.h"
 #include "tv_t.h"
 #include "vrp.h"
-#include <stdbool.h>
-#include <string.h>
+#include "bool.h"
 
 static bool imprecise_float_transforms_allowed;
 

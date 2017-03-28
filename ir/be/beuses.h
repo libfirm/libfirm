@@ -12,7 +12,7 @@
 #ifndef FIRM_BE_BEUSES_H
 #define FIRM_BE_BEUSES_H
 
-#include <stdbool.h>
+#include "bool.h"
 #include "firm_types.h"
 #include "belive.h"
 

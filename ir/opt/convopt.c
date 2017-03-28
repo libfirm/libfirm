@@ -33,7 +33,7 @@
 #include "tv.h"
 #include "util.h"
 #include "vrp.h"
-#include <stdbool.h>
+#include "bool.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

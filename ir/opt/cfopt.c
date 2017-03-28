@@ -11,6 +11,8 @@
  * Removes Bad control flow predecessors, merges blocks with jumps and
  * transforms pointless conditional jumps into undonciditonal ones.
  */
+#include <assert.h>
+
 #include "debug.h"
 #include "iredges_t.h"
 #include "irgmod.h"
@@ -21,8 +23,7 @@
 #include "irverify.h"
 #include "util.h"
 #include "xmalloc.h"
-#include <assert.h>
-#include <stdbool.h>
+#include "bool.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

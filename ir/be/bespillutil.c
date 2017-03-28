@@ -11,6 +11,8 @@
  */
 #include "bespillutil.h"
 
+#include <stdlib.h>
+
 #include "array.h"
 #include "be_t.h"
 #include "bearch.h"
@@ -37,8 +39,7 @@
 #include "target_t.h"
 #include "type_t.h"
 #include "util.h"
-#include <stdbool.h>
-#include <stdlib.h>
+#include "bool.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg_constr;)

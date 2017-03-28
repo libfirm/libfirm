@@ -1,7 +1,7 @@
 #ifndef CONSTBITS_H
 #define CONSTBITS_H
 
-#include <stdbool.h>
+#include "bool.h"
 #include "tv.h"
 
 typedef enum bitinfo_state {

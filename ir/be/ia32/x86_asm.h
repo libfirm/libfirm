@@ -12,14 +12,15 @@
 #ifndef FIRM_BE_IA32_X86_ASM_H
 #define FIRM_BE_IA32_X86_ASM_H
 
-#include <stdbool.h>
 #include <stdint.h>
+
 #include "be_types.h"
 #include "beasm.h"
 #include "compiler.h"
 #include "firm_types.h"
 #include "util.h"
 #include "x86_node.h"
+#include "bool.h"
 
 typedef struct x86_asm_operand_t {
 	ENUMBF(be_asm_operand_kind_t) kind : 3;

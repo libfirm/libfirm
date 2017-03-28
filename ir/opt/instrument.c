@@ -14,7 +14,7 @@
 #include "ircons.h"
 #include "iredges_t.h"
 #include "irgraph_t.h"
-#include <stdbool.h>
+#include "bool.h"
 
 void instrument_initcall(ir_graph *irg, ir_entity *ent)
 {

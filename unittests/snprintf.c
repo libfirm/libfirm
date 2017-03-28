@@ -1,10 +1,11 @@
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "firm.h"
 #include "irprintf.h"
 #include "util.h"
-#include <assert.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
+#include "bool.h"
 
 int main(void)
 {

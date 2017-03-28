@@ -10,6 +10,8 @@
  */
 #include "irmode_t.h"
 
+#include <stdlib.h>
+
 #include "array.h"
 #include "ident.h"
 #include "irhooks.h"
@@ -19,8 +21,7 @@
 #include "strcalc.h"
 #include "tv_t.h"
 #include "util.h"
-#include <stdbool.h>
-#include <stdlib.h>
+#include "bool.h"
 
 /** Obstack to hold all modes. */
 static struct obstack modes;

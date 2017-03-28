@@ -11,12 +11,12 @@
 #ifndef FIRM_BE_SPARC_SPARC_BEARCH_T_H
 #define FIRM_BE_SPARC_SPARC_BEARCH_T_H
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #include "beirg.h"
 #include "firm_types.h"
 #include "pmap.h"
+#include "bool.h"
 
 typedef struct calling_convention_t calling_convention_t;
 

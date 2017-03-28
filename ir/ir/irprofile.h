@@ -12,10 +12,10 @@
 #ifndef FIRM_BE_BEPROFILE_H
 #define FIRM_BE_BEPROFILE_H
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #include "firm_types.h"
+#include "bool.h"
 
 /**
  * Instruments all irgs in the program with profile code.

@@ -11,8 +11,7 @@
 #ifndef FIRM_BE_BE2ADDR_H
 #define FIRM_BE_BE2ADDR_H
 
-#include <stdbool.h>
-
+#include "bool.h"
 #include "be_types.h"
 
 /**

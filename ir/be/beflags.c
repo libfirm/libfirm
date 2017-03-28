@@ -34,7 +34,7 @@
 #include "irnode_t.h"
 #include "irouts_t.h"
 #include "irtools.h"
-#include <stdbool.h>
+#include "bool.h"
 
 static const arch_register_class_t *flag_class;
 static const arch_register_t       *flags_reg;

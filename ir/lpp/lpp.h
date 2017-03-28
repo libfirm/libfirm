@@ -13,10 +13,9 @@
 
 #include <stdio.h>
 #include <obstack.h>
-#include <stdbool.h>
 
 #include "set.h"
-
+#include "bool.h"
 #include "sp_matrix.h"
 
 typedef enum _lpp_opt_t {

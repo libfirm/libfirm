@@ -3,7 +3,6 @@
  * Copyright (C) 2012 Karlsruhe Institute of Technology.
  */
 #include <assert.h>
-#include <stdbool.h>
 
 #include "adt/array.h"
 
@@ -23,6 +22,7 @@
 
 #include "pdeq.h"
 #include "timing.h"
+#include "bool.h"
 
 static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 {

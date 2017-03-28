@@ -12,7 +12,7 @@
 #define FIRM_BE_SPARC_SPARC_TRANSFORM_H
 
 #include "firm_types.h"
-#include <stdbool.h>
+#include "bool.h"
 
 void sparc_init_transform(void);
 

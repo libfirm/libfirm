@@ -11,6 +11,9 @@
  */
 #include "belistsched.h"
 
+#include <stdio.h>
+#include <string.h>
+
 #include "array.h"
 #include "be_t.h"
 #include "belive.h"
@@ -28,9 +31,7 @@
 #include "lc_opts_enum.h"
 #include "list.h"
 #include "obst.h"
-#include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
+#include "bool.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

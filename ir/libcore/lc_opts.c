@@ -4,17 +4,18 @@
  */
 #include "lc_opts_t.h"
 
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "hashptr.h"
 #include "lc_opts_enum.h"
 #include "lc_printf.h"
 #include "obst.h"
 #include "util.h"
 #include "xmalloc.h"
-#include <ctype.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "bool.h"
 
 #define OPT_DELIM '-'
 

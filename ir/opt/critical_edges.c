@@ -14,7 +14,7 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irop_t.h"
-#include <stdbool.h>
+#include "bool.h"
 
 typedef struct cf_env {
 	bool ignore_exc_edges; /**< set if exception edges should be ignored. */

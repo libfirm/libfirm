@@ -11,14 +11,15 @@
  */
 #include "pbqp_node.h"
 
+#include <assert.h>
+
 #include "adt/array.h"
 #include "bucket.h"
 #include "pbqp_edge.h"
 #include "pbqp_edge_t.h"
 #include "pbqp_node_t.h"
 #include "vector.h"
-#include <assert.h>
-#include <stdbool.h>
+#include "bool.h"
 
 pbqp_node_t *alloc_node(pbqp_t *pbqp, unsigned node_index, vector_t *costs)
 {

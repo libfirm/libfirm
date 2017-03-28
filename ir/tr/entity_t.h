@@ -12,7 +12,6 @@
 #define FIRM_TR_ENTITY_T_H
 
 #include <assert.h>
-#include <stdbool.h>
 #include <stdint.h>
 #include <limits.h>
 
@@ -21,6 +20,7 @@
 #include "panic.h"
 #include "type_t.h"
 #include "typerep.h"
+#include "bool.h"
 
 #define get_entity_name(ent)                 _get_entity_name(ent)
 #define get_entity_ident(ent)                _get_entity_ident(ent)

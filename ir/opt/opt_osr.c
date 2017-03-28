@@ -34,7 +34,7 @@
 #include "set.h"
 #include "tv.h"
 #include "util.h"
-#include <stdbool.h>
+#include "bool.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)

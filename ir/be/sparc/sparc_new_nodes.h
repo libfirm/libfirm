@@ -11,7 +11,7 @@
 #ifndef FIRM_BE_SPARC_SPARC_NEW_NODES_H
 #define FIRM_BE_SPARC_SPARC_NEW_NODES_H
 
-#include <stdbool.h>
+#include "bool.h"
 #include "sparc_nodes_attr.h"
 
 /**

@@ -25,7 +25,8 @@
 #define FIRM_ADT_RAW_BITSET_H
 
 #include <assert.h>
-#include <stdbool.h>
+
+#include "bool.h"
 #include "bitfiddle.h"
 #include "obst.h"
 

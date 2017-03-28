@@ -19,7 +19,7 @@
 #include "irnode_t.h"
 #include "iroptimize.h"
 #include "pdeq.h"
-#include <stdbool.h>
+#include "bool.h"
 
 #ifndef NDEBUG
 static bool is_block_reachable(ir_node *block)

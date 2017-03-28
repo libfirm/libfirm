@@ -11,6 +11,11 @@
  */
 #include "irdump_t.h"
 
+#include <errno.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "array.h"
 #include "callgraph.h"
 #include "dbginfo_t.h"
@@ -33,11 +38,7 @@
 #include "pset.h"
 #include "tv_t.h"
 #include "util.h"
-#include <errno.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#include "bool.h"
 
 /**
  * Symbolic names for the different dumping colors.

@@ -10,6 +10,8 @@
  */
 #include "sparc_transform.h"
 
+#include <stdint.h>
+
 #include "beasm.h"
 #include "beirg.h"
 #include "benode.h"
@@ -33,8 +35,7 @@
 #include "sparc_new_nodes.h"
 #include "sparc_nodes_attr.h"
 #include "util.h"
-#include <stdbool.h>
-#include <stdint.h>
+#include "bool.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

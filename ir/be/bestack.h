@@ -13,8 +13,8 @@
 #define FIRM_BE_BESTACK_H
 
 #include <limits.h>
-#include <stdbool.h>
 
+#include "bool.h"
 #include "be_types.h"
 #include "firm_types.h"
 

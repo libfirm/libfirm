@@ -17,8 +17,7 @@
 #ifndef FIRM_BE_BECOPYOPT_H
 #define FIRM_BE_BECOPYOPT_H
 
-#include <stdbool.h>
-
+#include "bool.h"
 #include "firm_types.h"
 #include "bechordal.h"
 

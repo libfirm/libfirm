@@ -15,7 +15,7 @@
 #include "irgopt.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
-#include <stdbool.h>
+#include "bool.h"
 
 static bool is_block_unreachable(ir_node *block)
 {
