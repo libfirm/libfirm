@@ -418,9 +418,18 @@ if(CMAKE_VERSION VERSION_LESS "3.1")
 else()
 	set(CMAKE_C_STANDARD 99)
 endif()
+
+# C flags
 if(MSVC)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W2")
+else()
+	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -g3 -DDEBUG_libfirm")
+	else()
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -fomit-frame-pointer -DNDEBUG")
+	endif()
 endif()
+
 # Indicate that we build a shared library
 add_definitions(-DFIRM_BUILD -DFIRM_DLL)
 
