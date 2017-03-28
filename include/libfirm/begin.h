@@ -36,7 +36,7 @@
 
 #if defined(_MSC_VER)
 # define inline __inline
-# define register __register
+# define restrict __restrict
 # if _MSC_VER < 1900
 #   ifdef __FUNCTION__
 #     define __func__ __FUNCTION__
