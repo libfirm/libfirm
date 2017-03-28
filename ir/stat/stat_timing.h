@@ -42,7 +42,11 @@ typedef unsigned long long timing_ticks_t;
  * The time is relative to an unspecified start, so it can only be used to
  * measure relative time/timespans.
  */
+#if defined(_MSC_VER)
+static __inline timing_ticks_t timing_ticks(void)
+#else
 static inline timing_ticks_t timing_ticks(void)
+#endif
 {
 #if defined(__i386__) && defined(__GNUC__)
 	unsigned h;
