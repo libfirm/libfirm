@@ -293,14 +293,13 @@ static mtp_additional_properties follow_mem(ir_node *node,
                                             mtp_additional_properties max_prop)
 {
 	for (;;) {
-next_no_change:
 		if (irn_visited_else_mark(node))
 			return max_prop;
 
 		switch (get_irn_opcode(node)) {
 		case iro_Proj:
 			node = get_Proj_pred(node);
-			goto next_no_change;
+			continue;
 
 		case iro_Start:
 		case iro_NoMem:
@@ -351,7 +350,7 @@ next_no_change:
 			case ir_bk_saturating_increment:
 			case ir_bk_may_alias:
 				/* just arithmetic/no semantic change => no problem */
-				goto next_no_change;
+				continue;
 			case ir_bk_compare_swap:
 				/* write access */
 				max_prop &= ~(mtp_property_pure | mtp_property_no_write);
@@ -403,13 +402,13 @@ call_next:
 		default:
 			if (is_irn_const_memory(node)) {
 				node = get_memop_mem(node);
-				goto next_no_change;
+				continue;
 			}
 			return mtp_no_property;
 		}
 
 		if ((max_prop & ~min_prop) == mtp_no_property)
-			goto finish;
+			break;
 	}
 finish:
 	return max_prop;
