@@ -360,9 +360,8 @@ static void get_base_and_offset(ir_node *ptr, base_offset_t *base_offset)
  * Checks whether the memory of the first access
  * is contained within the second one.
  */
-static bool is_contained_in(
-	ir_mode *const load_mode, const base_offset_t *const load_bo,
-	ir_mode *const prev_mode, const base_offset_t *const prev_bo)
+static bool is_contained_in(ir_mode *const load_mode, const base_offset_t *const load_bo,
+                            ir_mode *const prev_mode, const base_offset_t *const prev_bo)
 {
 	if (load_bo->base != prev_bo->base)
 		return false;
@@ -396,9 +395,9 @@ static bool is_contained_in(
  * value.
  */
 static ir_node *transform_previous_value(ir_mode *const load_mode,
-	const long load_offset, ir_mode *const prev_mode,
-	const long prev_offset, ir_node *const prev_value,
-	ir_node *const block, ir_node *const load)
+                                         const long load_offset, ir_mode *const prev_mode,
+                                         const long prev_offset, ir_node *const prev_value,
+                                         ir_node *const block, ir_node *const load)
 {
 	/* simple case: previous value has the same mode */
 	if (load_mode == prev_mode)

@@ -149,7 +149,10 @@ static inline void m_alloc_col(sp_matrix_t *m, int start, int count)
  *         @p prev_prev always points to the previous element of @p prev
  */
 static inline matrix_elem_t *m_search_in_row_from(const sp_matrix_t *m,
-			int row, int col, sp_matrix_list_head_t *start, sp_matrix_list_head_t **prev, sp_matrix_list_head_t **prev_prev)
+                                                  int row, int col,
+                                                  sp_matrix_list_head_t *start,
+                                                  sp_matrix_list_head_t **prev,
+                                                  sp_matrix_list_head_t **prev_prev)
 {
 	sp_matrix_list_head_t *row_start;
 	matrix_elem_t         *res = NULL;
@@ -184,7 +187,9 @@ static inline matrix_elem_t *m_search_in_row_from(const sp_matrix_t *m,
  *         @p prev_prev always points to the previous element of @p prev
  */
 static inline matrix_elem_t *m_search_in_row(const sp_matrix_t *m,
-			int row, int col, sp_matrix_list_head_t **prev, sp_matrix_list_head_t **prev_prev)
+                                             int row, int col,
+                                             sp_matrix_list_head_t **prev,
+                                             sp_matrix_list_head_t **prev_prev)
 {
 	sp_matrix_list_head_t *start = m->rows[row];
 
@@ -208,7 +213,10 @@ static inline matrix_elem_t *m_search_in_row(const sp_matrix_t *m,
  *         @p prev_prev always points to the previous element of @p prev
  */
 static inline matrix_elem_t *m_search_in_col_from(const sp_matrix_t *m,
-			int row, int col, sp_matrix_list_head_t *start, sp_matrix_list_head_t **prev, sp_matrix_list_head_t **prev_prev)
+                                                  int row, int col,
+                                                  sp_matrix_list_head_t *start,
+                                                  sp_matrix_list_head_t **prev,
+                                                  sp_matrix_list_head_t **prev_prev)
 {
 	sp_matrix_list_head_t *col_start;
 	matrix_elem_t         *res = NULL;
@@ -243,7 +251,9 @@ static inline matrix_elem_t *m_search_in_col_from(const sp_matrix_t *m,
  *         @p prev_prev always points to the previous element of @p prev
  */
 static inline matrix_elem_t *m_search_in_col(const sp_matrix_t *m,
-			int row, int col, sp_matrix_list_head_t **prev, sp_matrix_list_head_t **prev_prev)
+                                             int row, int col,
+                                             sp_matrix_list_head_t **prev,
+                                             sp_matrix_list_head_t **prev_prev)
 {
 	sp_matrix_list_head_t *start = m->cols[col];
 

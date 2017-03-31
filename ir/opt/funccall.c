@@ -289,8 +289,8 @@ static mtp_additional_properties check_termination(ir_graph *irg)
  *         mtp_no_property    otherwise
  */
 static mtp_additional_properties follow_mem(ir_node *node,
-	const mtp_additional_properties min_prop,
-	mtp_additional_properties max_prop)
+                                            const mtp_additional_properties min_prop,
+                                            mtp_additional_properties max_prop)
 {
 	for (;;) {
 next_no_change:
@@ -588,9 +588,8 @@ static bool is_malloc_call_result(const ir_node *node)
 /**
  * Update a property depending on a call property.
  */
-static mtp_additional_properties update_property(
-		mtp_additional_properties orig_prop,
-		mtp_additional_properties call_prop)
+static mtp_additional_properties update_property(mtp_additional_properties orig_prop,
+                                                 mtp_additional_properties call_prop)
 {
 	mtp_additional_properties t = (orig_prop | call_prop) & mtp_temporary;
 	mtp_additional_properties r = orig_prop & call_prop;

@@ -11,7 +11,7 @@
 /* Default appendable implementations */
 
 int lc_appendable_snwadd(lc_appendable_t *app, const char *str, size_t len,
-		unsigned int width, int left_just, char pad)
+                         unsigned int width, int left_just, char pad)
 {
 	int res = 0;
 	size_t i;
@@ -33,7 +33,7 @@ int lc_appendable_snwadd(lc_appendable_t *app, const char *str, size_t len,
 
 
 void lc_appendable_init(lc_appendable_t *env, const lc_appendable_funcs_t *app,
-		void *obj, size_t limit)
+                        void *obj, size_t limit)
 {
 	env->obj = obj;
 	env->limit = limit;

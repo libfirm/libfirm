@@ -294,9 +294,8 @@ follow_ptr:
 	}
 }
 
-static ir_alias_relation _get_alias_relation(
-	const ir_node *addr1, const ir_type *const objt1, unsigned size1,
-	const ir_node *addr2, const ir_type *const objt2, unsigned size2)
+static ir_alias_relation _get_alias_relation(const ir_node *addr1, const ir_type *const objt1, unsigned size1,
+                                             const ir_node *addr2, const ir_type *const objt2, unsigned size2)
 {
 	if (addr1 == addr2)
 		return ir_sure_alias;
@@ -475,9 +474,8 @@ leave_type_based_alias:;
 	return ir_may_alias;
 }
 
-ir_alias_relation get_alias_relation(
-	const ir_node *const addr1, const ir_type *const type1, unsigned size1,
-	const ir_node *const addr2, const ir_type *const type2, unsigned size2)
+ir_alias_relation get_alias_relation(const ir_node *const addr1, const ir_type *const type1, unsigned size1,
+                                     const ir_node *const addr2, const ir_type *const type2, unsigned size2)
 {
 	ir_alias_relation rel = _get_alias_relation(addr1, type1, size1, addr2, type2, size2);
 	DB((dbg, LEVEL_1, "alias(%+F, %+F) = %s\n", addr1, addr2,

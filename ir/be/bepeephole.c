@@ -213,8 +213,9 @@ bool be_has_only_one_user(ir_node *node)
 }
 
 static inline bool overlapping_regs(const arch_register_t *reg0,
-	const arch_register_req_t *req0, const arch_register_t *reg1,
-	const arch_register_req_t *req1)
+                                    const arch_register_req_t *req0,
+                                    const arch_register_t *reg1,
+                                    const arch_register_req_t *req1)
 {
 	if (reg0 == NULL || reg1 == NULL)
 		return false;

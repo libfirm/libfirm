@@ -393,9 +393,9 @@ static bool is_init_string(ir_initializer_t const* const init,
 /**
  * Dump initializers.
  */
-static void dump_ir_initializers_to_file(FILE *const F,
-		const char *const prefix, const ir_initializer_t *const initializer,
-		const ir_type *const type)
+static void dump_ir_initializers_to_file(FILE *const F, const char *const prefix,
+                                         const ir_initializer_t *const initializer,
+                                         const ir_type *const type)
 {
 	if (need_nl) {
 		fprintf(F, "\n%s    ", prefix);

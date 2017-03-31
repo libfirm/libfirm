@@ -43,7 +43,7 @@ ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg, ir_mode *mode,
 ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
                     int arity, ir_node *in[], ir_asm_constraint *inputs,
                     size_t n_outs, ir_asm_constraint *outputs, size_t n_clobber,
-	                ident *clobber[], ident *text)
+                    ident *clobber[], ident *text)
 {
 	ir_graph *const irg = get_irn_irg(block);
 

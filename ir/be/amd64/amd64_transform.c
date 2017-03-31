@@ -2618,10 +2618,10 @@ ir_node *amd64_new_spill(ir_node *const value, ir_node *const after)
 }
 
 static ir_node *create_sse_spill(dbg_info *const dbgi, ir_node *const block,
-		int const arity, ir_node *const *const in,
-		arch_register_req_t const **const in_reqs,
-		x86_insn_size_t const size, amd64_op_mode_t const op_mode,
-		x86_addr_t const addr)
+                                 int const arity, ir_node *const *const in,
+                                 arch_register_req_t const **const in_reqs,
+                                 x86_insn_size_t const size, amd64_op_mode_t const op_mode,
+                                 x86_addr_t const addr)
 {
 	(void)size; /* TODO */
 	return new_bd_amd64_movdqu(dbgi, block, arity, in, in_reqs, op_mode, addr);

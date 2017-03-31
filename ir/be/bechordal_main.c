@@ -169,7 +169,7 @@ static void pre_spill(be_chordal_env_t *const chordal_env,
  * Perform things which need to be done per register class after spilling.
  */
 static void post_spill(be_chordal_env_t *const chordal_env, ir_graph *const irg,
-					   const regalloc_if_t *regif)
+                       const regalloc_if_t *regif)
 {
 	/* If we have a backend provided spiller, post spill is
 	 * called in a loop after spilling for each register class.

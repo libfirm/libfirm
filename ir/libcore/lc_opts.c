@@ -60,11 +60,11 @@ static lc_opt_entry_t *init_grp(lc_opt_entry_t *ent)
 }
 
 static lc_opt_entry_t *init_opt(lc_opt_entry_t *ent,
-								lc_opt_type_t type,
-								void *val, size_t length,
-								lc_opt_callback_t *cb,
-								lc_opt_dump_t *dump,
-								lc_opt_dump_vals_t *dump_vals)
+                                lc_opt_type_t type,
+                                void *val, size_t length,
+                                lc_opt_callback_t *cb,
+                                lc_opt_dump_t *dump,
+                                lc_opt_dump_vals_t *dump_vals)
 {
 	lc_opt_special_t *s = lc_get_opt_special(ent);
 
@@ -140,10 +140,10 @@ lc_opt_entry_t *lc_opt_get_grp(lc_opt_entry_t *parent, const char *name)
 }
 
 lc_opt_entry_t *lc_opt_add_opt(lc_opt_entry_t *parent,
-							   const char *name, const char *desc,
-							   lc_opt_type_t type, void *value, size_t length,
-							   lc_opt_callback_t *cb, lc_opt_dump_t *dump,
-							   lc_opt_dump_vals_t *dump_vals)
+                               const char *name, const char *desc,
+                               lc_opt_type_t type, void *value, size_t length,
+                               lc_opt_callback_t *cb, lc_opt_dump_t *dump,
+                               lc_opt_dump_vals_t *dump_vals)
 {
 	if (!parent->is_grp)
 		return NULL;

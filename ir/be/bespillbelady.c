@@ -830,7 +830,7 @@ static void fix_block_borders(ir_node *block, void *data)
 }
 
 static void be_spill_belady(ir_graph *irg, const arch_register_class_t *rcls,
-							const regalloc_if_t *regif)
+                            const regalloc_if_t *regif)
 {
 	be_assure_live_sets(irg);
 

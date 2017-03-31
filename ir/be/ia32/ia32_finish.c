@@ -159,7 +159,7 @@ carry:;
 }
 
 static bool ia32_transform_ShlD_to_ShrD_imm(ir_node *const irn,
-		arch_register_t const *const out_reg)
+                                            arch_register_t const *const out_reg)
 {
 	ir_node *const in1 = get_irn_n(irn, n_ia32_ShlD_val_low);
 	if (arch_get_irn_register(in1) != out_reg)
