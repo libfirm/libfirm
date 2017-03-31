@@ -504,25 +504,26 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 		return;
 	}
 
-	/* calculate sum of execution frequencies of individual spills */
-	assert(spillinfo->spills);
-	double spills_execfreq = 0;
-	for (spill_t *s = spillinfo->spills; s != NULL; s = s->next) {
-		ir_node *spill_block = get_block(s->after);
-		double   freq        = get_block_execfreq(spill_block);
+	if (spillinfo->spills) {
+		/* calculate sum of execution frequencies of individual spills */
+		double spills_execfreq = 0;
+		for (spill_t *s = spillinfo->spills; s != NULL; s = s->next) {
+			ir_node *spill_block = get_block(s->after);
+			double   freq        = get_block_execfreq(spill_block);
 
-		spills_execfreq += freq;
-	}
+			spills_execfreq += freq;
+		}
 
-	DB((dbg, LEVEL_1, "%+F: latespillcosts %f after def: %f\n", to_spill,
-	    spills_execfreq * env->regif.spill_cost,
-	    spill_execfreq * env->regif.spill_cost));
+		DB((dbg, LEVEL_1, "%+F: latespillcosts %f after def: %f\n", to_spill,
+				spills_execfreq * env->regif.spill_cost,
+				spill_execfreq * env->regif.spill_cost));
 
-	/* multi-/latespill is advantageous -> return*/
-	if (spills_execfreq < spill_execfreq) {
-		DB((dbg, LEVEL_1, "use latespills for %+F\n", to_spill));
-		spillinfo->spill_costs = spills_execfreq * env->regif.spill_cost;
-		return;
+		/* multi-/latespill is advantageous -> return*/
+		if (spills_execfreq < spill_execfreq) {
+			DB((dbg, LEVEL_1, "use latespills for %+F\n", to_spill));
+			spillinfo->spill_costs = spills_execfreq * env->regif.spill_cost;
+			return;
+		}
 	}
 
 	/* override spillinfos or create a new one */
