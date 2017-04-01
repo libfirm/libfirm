@@ -1173,6 +1173,18 @@ static ir_node *gen_Shl(ir_node *const node)
 {
 	ir_node *const op1 = get_Shl_left(node);
 	ir_node *const op2 = get_Shl_right(node);
+
+	/* shl $1, x -> lea (x,x)
+	 * lea provides a copy for free. */
+	if (is_irn_one(op2)) {
+		dbg_info       *const dbgi    = get_irn_dbg_info(node);
+		ir_node        *const block   = be_transform_nodes_block(node);
+		ir_mode        *const mode    = get_irn_mode(node);
+		x86_insn_size_t const size    = get_size_32_64_from_mode(mode);
+		ir_node        *const new_op1 = be_transform_node(op1);
+		return create_add_lea(dbgi, block, size, new_op1, new_op1);
+	}
+
 	return gen_shift_binop(node, op1, op2, new_bd_amd64_shl, pn_amd64_shl_res,
 	                       match_immediate | match_mode_neutral);
 }
