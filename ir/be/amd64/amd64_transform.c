@@ -1004,6 +1004,11 @@ static ir_node *create_add_lea(dbg_info *dbgi, ir_node *new_block,
 	                        amd64_reg_reg_reqs, size, addr);
 }
 
+static x86_insn_size_t get_size_32_64_from_mode(ir_mode *const mode)
+{
+	return get_mode_size_bits(mode) <= 32 ? X86_SIZE_32 : X86_SIZE_64;
+}
+
 static ir_node *gen_Add(ir_node *const node)
 {
 	ir_node *const op1   = get_Add_left(node);
@@ -1037,7 +1042,7 @@ static ir_node *gen_Add(ir_node *const node)
 
 		dbg_info       *const dbgi      = get_irn_dbg_info(node);
 		ir_node        *const new_block = be_transform_node(block);
-		x86_insn_size_t const size      = get_mode_size_bits(mode) <= 32 ? X86_SIZE_32 : X86_SIZE_64;
+		x86_insn_size_t const size      = get_size_32_64_from_mode(mode);
 		res = new_bd_amd64_lea(dbgi, new_block, arity, in, amd64_reg_reg_reqs, size, addr);
 	}
 
@@ -1192,10 +1197,9 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
                            ir_node *const op1, ir_node *const op2,
                            ir_node *const mem)
 {
-	dbg_info *const dbgi      = get_irn_dbg_info(node);
-	ir_node  *const new_block = be_transform_nodes_block(node);
-	x86_insn_size_t size
-		= get_mode_size_bits(mode) > 32 ? X86_SIZE_64 : X86_SIZE_32;
+	dbg_info       *const dbgi      = get_irn_dbg_info(node);
+	ir_node        *const new_block = be_transform_nodes_block(node);
+	x86_insn_size_t const size      = get_size_32_64_from_mode(mode);
 
 	ir_node *const new_op1 = be_transform_node(op1);
 	ir_node *const new_op2 = be_transform_node(op2);
@@ -1356,9 +1360,8 @@ static ir_node *gen_unop(ir_node *const node, int op_pos, unop_constructor gen,
 	ir_node  *const new_op = be_transform_node(op);
 	ir_mode  *const mode   = get_irn_mode(node);
 
-	x86_insn_size_t size
-		= get_mode_size_bits(mode) > 32 ? X86_SIZE_64 : X86_SIZE_32;
-	ir_node *new_node = gen(dbgi, block, new_op, size);
+	x86_insn_size_t const size     = get_size_32_64_from_mode(mode);
+	ir_node        *const new_node = gen(dbgi, block, new_op, size);
 	return be_new_Proj(new_node, pn_res);
 }
 
@@ -1879,10 +1882,8 @@ no_call_mem:;
 			in_req[in_arity] = param->reg->single_req;
 			++in_arity;
 		} else {
-			ir_mode *mode = get_type_mode(get_method_param_type(type, p));
-			x86_insn_size_t size = x86_size_from_mode(mode);
-			if (size < X86_SIZE_32)
-				size = X86_SIZE_32;
+			ir_mode        *const mode = get_type_mode(get_method_param_type(type, p));
+			x86_insn_size_t const size = get_size_32_64_from_mode(mode);
 
 			amd64_binop_addr_attr_t attr = {
 				.base = {
@@ -2312,10 +2313,7 @@ static ir_node *conv_int_to_x87(dbg_info *dbgi, ir_node *block, ir_node *val)
 {
 	ir_mode        *const mode    = get_irn_mode(val);
 	ir_node        *const new_val = extend_if_necessary(dbgi, block, val);
-	x86_insn_size_t       size    = x86_size_from_mode(mode);
-	if (size < X86_SIZE_32)
-		size = X86_SIZE_32;
-	assert(size == X86_SIZE_32 || size == X86_SIZE_64);
+	x86_insn_size_t const size    = get_size_32_64_from_mode(mode);
 	if (!mode_is_signed(mode))
 		panic("unsigned int -> x87 NIY");
 
