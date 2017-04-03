@@ -1895,7 +1895,9 @@ no_call_mem:;
 			++in_arity;
 		} else {
 			ir_mode        *const mode = get_type_mode(get_method_param_type(type, p));
-			x86_insn_size_t const size = get_size_32_64_from_mode(mode);
+			x86_insn_size_t       size = x86_size_from_mode(mode);
+			if (size < X86_SIZE_32)
+				size = X86_SIZE_32;
 
 			amd64_binop_addr_attr_t attr = {
 				.base = {
