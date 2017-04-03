@@ -641,7 +641,7 @@ static bool use_address_matching(ir_mode *mode, match_flags_t flags,
 		return false;
 
 	ir_node *load2 = source_am_possible(block, op2);
-	if (load2 != NULL && !input_depends_on_load(load2, op1)) {
+	if (load2 != NULL && (op1 == NULL || !input_depends_on_load(load2, op1))) {
 		(*out_load) = load2;
 		(*out_op)   = op1;
 		return true;
