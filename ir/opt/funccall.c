@@ -292,7 +292,7 @@ static mtp_additional_properties follow_mem(ir_node *node,
                                             const mtp_additional_properties min_prop,
                                             mtp_additional_properties max_prop)
 {
-	for (;;) {
+	do {
 		if (irn_visited_else_mark(node))
 			return max_prop;
 
@@ -303,7 +303,7 @@ static mtp_additional_properties follow_mem(ir_node *node,
 
 		case iro_Start:
 		case iro_NoMem:
-			goto finish;
+			return max_prop;
 
 		case iro_Phi:
 		case iro_Sync:
@@ -311,9 +311,9 @@ static mtp_additional_properties follow_mem(ir_node *node,
 			foreach_irn_in_r(node, i, pred) {
 				max_prop &= follow_mem(pred, min_prop, max_prop);
 				if ((max_prop & ~min_prop) == mtp_no_property)
-					goto finish;
+					return max_prop;
 			}
-			goto finish;
+			return max_prop;
 
 		case iro_Store:
 			max_prop &= ~(mtp_property_no_write | mtp_property_pure);
@@ -372,29 +372,28 @@ static mtp_additional_properties follow_mem(ir_node *node,
 			mtp_additional_properties callprops
 				= get_method_additional_properties(type);
 			/* shortcut */
-			if ((max_prop & callprops) == max_prop)
-				goto call_next;
-			ir_entity *callee = get_Call_callee(node);
-			if (callee == NULL)
-				return mtp_no_property;
-			ir_graph *irg = get_entity_linktime_irg(callee);
-			if (irg == NULL)
-				return mtp_no_property;
-			/* recursively analyze graph, unless we found a loop in which case
-			 * we can't guarantee termination and have to live with the
-			 * currently set flags */
-			if (IS_IRG_BUSY(irg)) {
-				mtp_additional_properties entprops
-					= get_entity_additional_properties(callee);
-				if (entprops & mtp_property_terminates) {
-					entprops &= ~mtp_property_terminates;
-					set_entity_additional_properties(callee, entprops);
+			if ((max_prop & callprops) != max_prop) {
+				ir_entity *callee = get_Call_callee(node);
+				if (callee == NULL)
+					return mtp_no_property;
+				ir_graph *irg = get_entity_linktime_irg(callee);
+				if (irg == NULL)
+					return mtp_no_property;
+				/* recursively analyze graph, unless we found a loop in which case
+				 * we can't guarantee termination and have to live with the
+				 * currently set flags */
+				if (IS_IRG_BUSY(irg)) {
+					mtp_additional_properties entprops
+						= get_entity_additional_properties(callee);
+					if (entprops & mtp_property_terminates) {
+						entprops &= ~mtp_property_terminates;
+						set_entity_additional_properties(callee, entprops);
+					}
+					max_prop &= entprops;
+				} else {
+					max_prop &= analyze_irg(irg);
 				}
-				max_prop &= entprops;
-			} else {
-				max_prop &= analyze_irg(irg);
 			}
-call_next:
 			node = get_Call_mem(node);
 			break;
 		}
@@ -406,11 +405,7 @@ call_next:
 			}
 			return mtp_no_property;
 		}
-
-		if ((max_prop & ~min_prop) == mtp_no_property)
-			break;
-	}
-finish:
+	} while ((max_prop & ~min_prop) != mtp_no_property);
 	return max_prop;
 }
 
