@@ -3318,8 +3318,8 @@ static void find_const_transform(x86_condition_code_t cc,
 		case 2:
 			if (step > 0 && res->steps[step - 1].transform == SETCC_TR_ADD)
 				--step;
-			res->steps[step].transform = res->steps[step].val == 0 ? SETCC_TR_SHL : SETCC_TR_LEA;
-			res->steps[step].log_scale = 1; /* (a << 1) */
+			res->steps[step].transform = SETCC_TR_LEAxx;
+			res->steps[step].log_scale = 0; /* (a << 0) + a */
 			break;
 		case 1:
 			res->num_steps = step;
