@@ -141,14 +141,6 @@ static arch_register_t const *get_free_register(ir_node *const perm, lower_env_t
 	return NULL;
 }
 
-static bool is_same_value(const ir_node *a, const ir_node *b)
-{
-	return (be_is_Copy(a) && be_get_Copy_op(a) == b)
-	    || (be_is_CopyKeep(a) && be_get_CopyKeep_op(a) == b)
-	    || (be_is_Copy(b) && be_get_Copy_op(b) == a)
-	    || (be_is_CopyKeep(b) && be_get_CopyKeep_op(b) == a);
-}
-
 /**
  * Lowers a perm node.  Resolves cycles and creates a bunch of
  * copy and swap operations to permute registers.
@@ -298,23 +290,15 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 				rbitset_clear(inregs, q->out_reg->index);
 				p->in_reg = q->in_reg;
 
-				ir_node *new_p;
-				ir_node *new_q;
-				if (is_same_value(p->in_node, q->in_node)) {
-					new_p = q->in_node;
-					new_q = p->in_node;
-				} else {
-					ir_node *const in[] = { p->in_node, q->in_node };
-					ir_node *const xchg = be_new_Perm(block, ARRAY_SIZE(in), in);
-					DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F (%s) and %+F (%s)\n", perm, xchg, in[0], arch_get_irn_register(in[0]), in[1], arch_get_irn_register(in[1])));
-					new_p = be_new_Proj_reg(xchg, 0, q->in_reg);
-					new_q = be_new_Proj_reg(xchg, 1, q->out_reg);
-					sched_add_before(perm, xchg);
-					/* Prevent that the broken down Perm is visited by the walker. */
-					mark_irn_visited(xchg);
-				}
-				p->in_node = new_p;
+				ir_node *const in[] = { p->in_node, q->in_node };
+				ir_node *const xchg = be_new_Perm(block, ARRAY_SIZE(in), in);
+				DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F (%s) and %+F (%s)\n", perm, xchg, in[0], arch_get_irn_register(in[0]), in[1], arch_get_irn_register(in[1])));
+				p->in_node           = be_new_Proj_reg(xchg, 0, q->in_reg);
+				ir_node *const new_q = be_new_Proj_reg(xchg, 1, q->out_reg);
 				exchange(q->out_node, new_q);
+				sched_add_before(perm, xchg);
+				/* Prevent that the broken down Perm is visited by the walker. */
+				mark_irn_visited(xchg);
 
 				p = oregmap[q->in_reg->index];
 				if (p == start) {
@@ -368,12 +352,62 @@ static bool push_through_perm(ir_node *const perm, arch_register_class_t const *
 		/* Remove Copy with src-reg = dst-reg, which would otherwise block moving
 		 * the Perm. */
 		if (be_is_Copy(node)) {
-			ir_node *const op = get_irn_n(node, n_be_Copy_op);
-			if (arch_get_irn_register_out(node, 0) == arch_get_irn_register(op)) {
+			ir_node               *const op       = get_irn_n(node, n_be_Copy_op);
+			arch_register_t const *const reg_op   = arch_get_irn_register(op);
+			arch_register_t const *const reg_copy = arch_get_irn_register_out(node, 0);
+			if (reg_copy == reg_op) {
 				DB((dbg_permmove, LEVEL_2, "\tremoving nop %+F\n", node));
 				sched_remove(node);
 				exchange(node, op);
 				continue;
+			}
+
+			/* Swap, if at least one side will not change the register anymore.
+			 * This avoids copying the value forth and back.
+			 *
+			 * a           a           a           a
+			 * |\          |\          |\          |\
+			 * | \         | \         | \         | \
+			 * | Copy    Copy |        | Perm      |  |
+			 * |  |b       |b |        |  |a       |b |
+			 * Perm   ->   Perm   -> Copy |   -> Copy |
+			 * |b |a swap  |b |a push  |b |a lower |b |a
+			 *
+			 * a           a           a           a
+			 * |\          |\          |\          |\
+			 * | \         | \         | \         | \
+			 * | Copy    Copy |        | Perm      |  |
+			 * |  |b       |b |        |  |a       |  |
+			 * Perm   ->   Perm   -> Copy |   -> Copy |
+			 * |c |a swap  |c |a push  |c |a lower |c |a
+			 *
+			 * a           a           a           a
+			 * |\          |\          |\          |\
+			 * | \         | \         | \         | \
+			 * | Copy    Copy |        | Perm      | Copy
+			 * |  |b       |b |        |  |c       |  |
+			 * Perm   ->   Perm   -> Copy |   -> Copy |
+			 * |b |c swap  |b |c push  |b |c lower |b |c
+			 */
+			int pos_copy = -1;
+			int pos_op   = -1;
+			foreach_irn_in(perm, i, in) {
+				if (in == node) {
+					pos_copy = i;
+					if (pos_op >= 0)
+						goto check_swap;
+				} else if (in == op) {
+					pos_op = i;
+					if (pos_copy >= 0) {
+check_swap:
+						if (arch_get_irn_register_out(perm, pos_copy) == reg_op ||
+						    arch_get_irn_register_out(perm, pos_op)   == reg_copy) {
+							set_irn_n(perm, pos_copy, op);
+							set_irn_n(perm, pos_op, node);
+						}
+						break;
+					}
+				}
 			}
 		}
 
