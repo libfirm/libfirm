@@ -8,7 +8,23 @@ endif()
 
 project(libfirm C)
 set(libfirm_VERSION "1.22.1")
+set(libfirm_VERSION_MAJOR "1")
+set(libfirm_VERSION_MINOR "22")
+set(libfirm_VERSION_PATCH "1")
 set(PROJECT_DESCRIPTION "library implementing the intermediate representation Firm")
+
+set(CPACK_PACKAGE_NAME "Libfirm")
+set(CPACK_PACKAGE_VENDOR "Firm Team")
+set(CPACK_PACKAGE_CONTACT "Firm Team")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION})
+set(CPACK_PACKAGE_VERSION ${libfirm_VERSION})
+set(CPACK_PACKAGE_VERSION_MAJOR ${libfirm_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${libfirm_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${libfirm_VERSION_PATCH})
+set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/COPYING)
+set(CPACK_RESOURCE_FILE_README ${CMAKE_SOURCE_DIR}/README.md)
+SET(CPACK_GENERATOR "DEB;RPM;TGZ;ZIP")
+include(CPack)
 
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 
@@ -491,7 +507,6 @@ set(INSTALL_HEADERS
 	include/libfirm/firm_types.h
 	include/libfirm/heights.h
 	include/libfirm/ident.h
-	include/libfirm/irarch.h
 	include/libfirm/ircgopt.h
 	include/libfirm/ircons.h
 	include/libfirm/irconsconfirm.h
