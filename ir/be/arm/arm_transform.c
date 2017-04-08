@@ -962,7 +962,7 @@ static bool can_use_shift_constant(unsigned int val,
  * @param shift_modifier  initial encoding of the desired shift operation
  */
 static ir_node *make_shift(ir_node *node, match_flags_t flags,
-		arm_shift_modifier_t shift_modifier)
+                           arm_shift_modifier_t shift_modifier)
 {
 	ir_node  *block = be_transform_nodes_block(node);
 	ir_node  *op1   = get_binop_left(node);

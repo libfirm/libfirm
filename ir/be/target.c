@@ -158,3 +158,9 @@ ir_mode *ir_target_float_arithmetic_mode(void)
 	assert(ir_target.isa_initialized);
 	return ir_target.mode_float_arithmetic;
 }
+
+float_int_conversion_overflow_style_t ir_target_float_int_overflow_style(void)
+{
+	assert(ir_target.isa_initialized);
+	return ir_target.float_int_overflow;
+}

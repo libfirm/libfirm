@@ -237,8 +237,7 @@ void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 			fprintf(F, "latency = %u\n", get_ia32_latency(n));
 
 			/* dump modes */
-			fprintf(F, "size = %u", x86_bytes_from_size(attr->size) * 8);
-			fprintf(F, "\n");
+			fprintf(F, "size = %u\n", x86_bytes_from_size(attr->size) * 8);
 
 #ifndef NDEBUG
 			/* dump frame entity */
@@ -259,7 +258,6 @@ void ia32_dump_node(FILE *F, const ir_node *n, dump_reason_t reason)
 }
 
 
-
 ia32_attr_t *get_ia32_attr(ir_node *node)
 {
 	assert(is_ia32_irn(node) && "need ia32 node to get ia32 attributes");
@@ -269,115 +267,93 @@ ia32_attr_t *get_ia32_attr(ir_node *node)
 const ia32_attr_t *get_ia32_attr_const(const ir_node *node)
 {
 	assert(is_ia32_irn(node) && "need ia32 node to get ia32 attributes");
-	return (const ia32_attr_t*) get_irn_generic_attr_const(node);
+	return (ia32_attr_t const*)get_irn_generic_attr_const(node);
 }
 
 ia32_x87_attr_t *get_ia32_x87_attr(ir_node *node)
 {
-	ia32_attr_t     *attr     = get_ia32_attr(node);
-	ia32_x87_attr_t *x87_attr = CAST_IA32_ATTR(ia32_x87_attr_t, attr);
-	return x87_attr;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	return CAST_IA32_ATTR(ia32_x87_attr_t, attr);
 }
 
 const ia32_x87_attr_t *get_ia32_x87_attr_const(const ir_node *node)
 {
-	const ia32_attr_t     *attr     = get_ia32_attr_const(node);
-	const ia32_x87_attr_t *x87_attr = CONST_CAST_IA32_ATTR(ia32_x87_attr_t, attr);
-	return x87_attr;
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	return CONST_CAST_IA32_ATTR(ia32_x87_attr_t, attr);
 }
 
 ia32_immediate_attr_t *get_ia32_immediate_attr(ir_node *node)
 {
-	ia32_attr_t           *attr      = get_ia32_attr(node);
-	ia32_immediate_attr_t *imm_attr  = CAST_IA32_ATTR(ia32_immediate_attr_t, attr);
-
-	return imm_attr;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	return CAST_IA32_ATTR(ia32_immediate_attr_t, attr);
 }
 
 const ia32_immediate_attr_t *get_ia32_immediate_attr_const(const ir_node *node)
 {
-	const ia32_attr_t           *attr     = get_ia32_attr_const(node);
-	const ia32_immediate_attr_t *imm_attr = CONST_CAST_IA32_ATTR(ia32_immediate_attr_t, attr);
-
-	return imm_attr;
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	return CONST_CAST_IA32_ATTR(ia32_immediate_attr_t, attr);
 }
 
 ia32_condcode_attr_t *get_ia32_condcode_attr(ir_node *node)
 {
 	assert(has_ia32_condcode_attr(node));
-	ia32_attr_t          *attr    = get_ia32_attr(node);
-	ia32_condcode_attr_t *cc_attr = CAST_IA32_ATTR(ia32_condcode_attr_t, attr);
-
-	return cc_attr;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	return CAST_IA32_ATTR(ia32_condcode_attr_t, attr);
 }
 
 const ia32_condcode_attr_t *get_ia32_condcode_attr_const(const ir_node *node)
 {
 	assert(has_ia32_condcode_attr(node));
-	const ia32_attr_t          *attr    = get_ia32_attr_const(node);
-	const ia32_condcode_attr_t *cc_attr = CONST_CAST_IA32_ATTR(ia32_condcode_attr_t, attr);
-
-	return cc_attr;
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	return CONST_CAST_IA32_ATTR(ia32_condcode_attr_t, attr);
 }
 
 ia32_switch_attr_t *get_ia32_switch_attr(ir_node *node)
 {
-	ia32_attr_t        *attr        = get_ia32_attr(node);
-	ia32_switch_attr_t *switch_attr = CAST_IA32_ATTR(ia32_switch_attr_t, attr);
-	return switch_attr;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	return CAST_IA32_ATTR(ia32_switch_attr_t, attr);
 }
 
 const ia32_switch_attr_t *get_ia32_switch_attr_const(const ir_node *node)
 {
-	const ia32_attr_t        *attr        = get_ia32_attr_const(node);
-	const ia32_switch_attr_t *switch_attr = CONST_CAST_IA32_ATTR(ia32_switch_attr_t, attr);
-	return switch_attr;
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	return CONST_CAST_IA32_ATTR(ia32_switch_attr_t, attr);
 }
 
 ia32_return_attr_t *get_ia32_return_attr(ir_node *node)
 {
-	ia32_attr_t        *attr        = get_ia32_attr(node);
-	ia32_return_attr_t *return_attr = CAST_IA32_ATTR(ia32_return_attr_t, attr);
-	return return_attr;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	return CAST_IA32_ATTR(ia32_return_attr_t, attr);
 }
 
 const ia32_return_attr_t *get_ia32_return_attr_const(const ir_node *node)
 {
-	const ia32_attr_t        *attr        = get_ia32_attr_const(node);
-	const ia32_return_attr_t *return_attr = CONST_CAST_IA32_ATTR(ia32_return_attr_t, attr);
-	return return_attr;
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	return CONST_CAST_IA32_ATTR(ia32_return_attr_t, attr);
 }
 
 ia32_call_attr_t *get_ia32_call_attr(ir_node *node)
 {
-	ia32_attr_t      *attr      = get_ia32_attr(node);
-	ia32_call_attr_t *call_attr = CAST_IA32_ATTR(ia32_call_attr_t, attr);
-
-	return call_attr;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	return CAST_IA32_ATTR(ia32_call_attr_t, attr);
 }
 
 const ia32_call_attr_t *get_ia32_call_attr_const(const ir_node *node)
 {
-	const ia32_attr_t      *attr      = get_ia32_attr_const(node);
-	const ia32_call_attr_t *call_attr = CONST_CAST_IA32_ATTR(ia32_call_attr_t, attr);
-
-	return call_attr;
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	return CONST_CAST_IA32_ATTR(ia32_call_attr_t, attr);
 }
 
 ia32_copyb_attr_t *get_ia32_copyb_attr(ir_node *node)
 {
-	ia32_attr_t       *attr       = get_ia32_attr(node);
-	ia32_copyb_attr_t *copyb_attr = CAST_IA32_ATTR(ia32_copyb_attr_t, attr);
-
-	return copyb_attr;
+	ia32_attr_t *const attr = get_ia32_attr(node);
+	return CAST_IA32_ATTR(ia32_copyb_attr_t, attr);
 }
 
 const ia32_copyb_attr_t *get_ia32_copyb_attr_const(const ir_node *node)
 {
-	const ia32_attr_t       *attr       = get_ia32_attr_const(node);
-	const ia32_copyb_attr_t *copyb_attr = CONST_CAST_IA32_ATTR(ia32_copyb_attr_t, attr);
-
-	return copyb_attr;
+	ia32_attr_t const *const attr = get_ia32_attr_const(node);
+	return CONST_CAST_IA32_ATTR(ia32_copyb_attr_t, attr);
 }
 
 ia32_op_type_t get_ia32_op_type(const ir_node *node)
@@ -554,7 +530,7 @@ void init_ia32_x87_attributes(ir_node *res)
 {
 #ifndef NDEBUG
 	ia32_attr_t *attr = get_ia32_attr(res);
-	attr->attr_type  |= IA32_ATTR_ia32_x87_attr_t;
+	attr->attr_type |= IA32_ATTR_ia32_x87_attr_t;
 #endif
 	ir_graph *const irg = get_irn_irg(res);
 	ia32_request_x87_sim(irg);

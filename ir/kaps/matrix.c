@@ -158,7 +158,7 @@ unsigned pbqp_matrix_get_col_min_index(pbqp_matrix_t *matrix, unsigned col_index
 }
 
 void pbqp_matrix_sub_col_value(pbqp_matrix_t *matrix, unsigned col_index,
-		vector_t *flags, num value)
+                               vector_t *flags, num value)
 {
 	unsigned col_len = matrix->cols;
 	unsigned row_len = matrix->rows;
@@ -223,7 +223,7 @@ unsigned pbqp_matrix_get_row_min_index(pbqp_matrix_t *matrix, unsigned row_index
 }
 
 void pbqp_matrix_sub_row_value(pbqp_matrix_t *matrix, unsigned row_index,
-		vector_t *flags, num value)
+                               vector_t *flags, num value)
 {
 	unsigned col_len = matrix->cols;
 

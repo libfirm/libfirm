@@ -394,9 +394,9 @@ static bool is_init_string(ir_initializer_t const* const init,
 /**
  * Dump initializers.
  */
-static void dump_ir_initializers_to_file(FILE *const F,
-		const char *const prefix, const ir_initializer_t *const initializer,
-		const ir_type *const type)
+static void dump_ir_initializers_to_file(FILE *const F, const char *const prefix,
+                                         const ir_initializer_t *const initializer,
+                                         const ir_type *const type)
 {
 	if (need_nl) {
 		fprintf(F, "\n%s    ", prefix);
@@ -756,18 +756,19 @@ static void dump_type_details(FILE *const F, ir_type const *const tp)
 void dump_type_to_file(FILE *const F, const ir_type *const tp)
 {
 	ir_fprintf(F, "%+F", tp);
-	if (verbosity & dump_verbosity_onlynames) { fprintf(F, "\n"); return; }
+	if (!(verbosity & dump_verbosity_onlynames)) {
+		dump_type_details(F, tp);
 
-	dump_type_details(F, tp);
+		fprintf(F, "  state:      %s,\n", get_type_state_name(get_type_state(tp)));
+		fprintf(F, "  size:       %2u Bytes,\n", get_type_size(tp));
+		fprintf(F, "  alignment:  %2u Bytes,\n", get_type_alignment(tp));
+		ir_mode *const mode = get_type_mode(tp);
+		if (mode)
+			fprintf(F, "  mode:       %s,\n",  get_mode_name(mode));
 
-	fprintf(F, "  state:      %s,\n", get_type_state_name(get_type_state(tp)));
-	fprintf(F, "  size:       %2u Bytes,\n", get_type_size(tp));
-	fprintf(F, "  alignment:  %2u Bytes,\n", get_type_alignment(tp));
-	ir_mode *const mode = get_type_mode(tp);
-	if (mode)
-		fprintf(F, "  mode:       %s,\n",  get_mode_name(mode));
-
-	fprintf(F, "\n\n");
+		fprintf(F, "\n");
+	}
+	fprintf(F, "\n");
 }
 
 void dump_types_as_text(FILE *const out)

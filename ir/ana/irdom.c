@@ -248,7 +248,7 @@ void dom_tree_walk(ir_node *block, irg_walk_func *pre, irg_walk_func *post,
 }
 
 void postdom_tree_walk(ir_node *block, irg_walk_func *pre,
-		irg_walk_func *post, void *env)
+                       irg_walk_func *post, void *env)
 {
 	assert(irg_has_properties(get_irn_irg(block), IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE));
 

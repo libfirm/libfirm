@@ -641,7 +641,7 @@ static bool use_address_matching(ir_mode *mode, match_flags_t flags,
 		return false;
 
 	ir_node *load2 = source_am_possible(block, op2);
-	if (load2 != NULL && !input_depends_on_load(load2, op1)) {
+	if (load2 != NULL && (op1 == NULL || !input_depends_on_load(load2, op1))) {
 		(*out_load) = load2;
 		(*out_op)   = op1;
 		return true;
@@ -1004,6 +1004,11 @@ static ir_node *create_add_lea(dbg_info *dbgi, ir_node *new_block,
 	                        amd64_reg_reg_reqs, size, addr);
 }
 
+static x86_insn_size_t get_size_32_64_from_mode(ir_mode *const mode)
+{
+	return get_mode_size_bits(mode) <= 32 ? X86_SIZE_32 : X86_SIZE_64;
+}
+
 static ir_node *gen_Add(ir_node *const node)
 {
 	ir_node *const op1   = get_Add_left(node);
@@ -1037,7 +1042,7 @@ static ir_node *gen_Add(ir_node *const node)
 
 		dbg_info       *const dbgi      = get_irn_dbg_info(node);
 		ir_node        *const new_block = be_transform_node(block);
-		x86_insn_size_t const size      = get_mode_size_bits(mode) <= 32 ? X86_SIZE_32 : X86_SIZE_64;
+		x86_insn_size_t const size      = get_size_32_64_from_mode(mode);
 		res = new_bd_amd64_lea(dbgi, new_block, arity, in, amd64_reg_reg_reqs, size, addr);
 	}
 
@@ -1168,6 +1173,18 @@ static ir_node *gen_Shl(ir_node *const node)
 {
 	ir_node *const op1 = get_Shl_left(node);
 	ir_node *const op2 = get_Shl_right(node);
+
+	/* shl $1, x -> lea (x,x)
+	 * lea provides a copy for free. */
+	if (is_irn_one(op2)) {
+		dbg_info       *const dbgi    = get_irn_dbg_info(node);
+		ir_node        *const block   = be_transform_nodes_block(node);
+		ir_mode        *const mode    = get_irn_mode(node);
+		x86_insn_size_t const size    = get_size_32_64_from_mode(mode);
+		ir_node        *const new_op1 = be_transform_node(op1);
+		return create_add_lea(dbgi, block, size, new_op1, new_op1);
+	}
+
 	return gen_shift_binop(node, op1, op2, new_bd_amd64_shl, pn_amd64_shl_res,
 	                       match_immediate | match_mode_neutral);
 }
@@ -1192,10 +1209,9 @@ static ir_node *create_div(ir_node *const node, ir_mode *const mode,
                            ir_node *const op1, ir_node *const op2,
                            ir_node *const mem)
 {
-	dbg_info *const dbgi      = get_irn_dbg_info(node);
-	ir_node  *const new_block = be_transform_nodes_block(node);
-	x86_insn_size_t size
-		= get_mode_size_bits(mode) > 32 ? X86_SIZE_64 : X86_SIZE_32;
+	dbg_info       *const dbgi      = get_irn_dbg_info(node);
+	ir_node        *const new_block = be_transform_nodes_block(node);
+	x86_insn_size_t const size      = get_size_32_64_from_mode(mode);
 
 	ir_node *const new_op1 = be_transform_node(op1);
 	ir_node *const new_op2 = be_transform_node(op2);
@@ -1356,9 +1372,8 @@ static ir_node *gen_unop(ir_node *const node, int op_pos, unop_constructor gen,
 	ir_node  *const new_op = be_transform_node(op);
 	ir_mode  *const mode   = get_irn_mode(node);
 
-	x86_insn_size_t size
-		= get_mode_size_bits(mode) > 32 ? X86_SIZE_64 : X86_SIZE_32;
-	ir_node *new_node = gen(dbgi, block, new_op, size);
+	x86_insn_size_t const size     = get_size_32_64_from_mode(mode);
+	ir_node        *const new_node = gen(dbgi, block, new_op, size);
 	return be_new_Proj(new_node, pn_res);
 }
 
@@ -1879,8 +1894,8 @@ no_call_mem:;
 			in_req[in_arity] = param->reg->single_req;
 			++in_arity;
 		} else {
-			ir_mode *mode = get_type_mode(get_method_param_type(type, p));
-			x86_insn_size_t size = x86_size_from_mode(mode);
+			ir_mode        *const mode = get_type_mode(get_method_param_type(type, p));
+			x86_insn_size_t       size = x86_size_from_mode(mode);
 			if (size < X86_SIZE_32)
 				size = X86_SIZE_32;
 
@@ -2312,10 +2327,7 @@ static ir_node *conv_int_to_x87(dbg_info *dbgi, ir_node *block, ir_node *val)
 {
 	ir_mode        *const mode    = get_irn_mode(val);
 	ir_node        *const new_val = extend_if_necessary(dbgi, block, val);
-	x86_insn_size_t       size    = x86_size_from_mode(mode);
-	if (size < X86_SIZE_32)
-		size = X86_SIZE_32;
-	assert(size == X86_SIZE_32 || size == X86_SIZE_64);
+	x86_insn_size_t const size    = get_size_32_64_from_mode(mode);
 	if (!mode_is_signed(mode))
 		panic("unsigned int -> x87 NIY");
 
@@ -2618,10 +2630,10 @@ ir_node *amd64_new_spill(ir_node *const value, ir_node *const after)
 }
 
 static ir_node *create_sse_spill(dbg_info *const dbgi, ir_node *const block,
-		int const arity, ir_node *const *const in,
-		arch_register_req_t const **const in_reqs,
-		x86_insn_size_t const size, amd64_op_mode_t const op_mode,
-		x86_addr_t const addr)
+                                 int const arity, ir_node *const *const in,
+                                 arch_register_req_t const **const in_reqs,
+                                 x86_insn_size_t const size, amd64_op_mode_t const op_mode,
+                                 x86_addr_t const addr)
 {
 	(void)size; /* TODO */
 	return new_bd_amd64_movdqu(dbgi, block, arity, in, in_reqs, op_mode, addr);

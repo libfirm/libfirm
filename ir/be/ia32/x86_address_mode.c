@@ -265,7 +265,15 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 		/* We don't want to eat add x, x as shl here, so only test for real Shl
 		 * instructions, because we want the former as Lea x, x, not Shl x, 1 */
 		if (eat_shl(addr, node)) {
-			addr->variant = X86_ADDR_INDEX;
+			if (addr->scale == 1) {
+				/* c(,x,2) -> c(x,x,1)
+				 * The latter has no mandatory 4 byte offset. */
+				addr->variant = X86_ADDR_BASE_INDEX;
+				addr->scale   = 0;
+				addr->base    = addr->index;
+			} else {
+				addr->variant = X86_ADDR_INDEX;
+			}
 			return;
 		}
 	} else if (eat_immediate(addr, node, true)) {

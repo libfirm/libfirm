@@ -105,7 +105,7 @@ int lc_arg_append(lc_appendable_t *app, const lc_arg_occ_t *occ, const char *str
 
 
 static int dispatch_snprintf(char *buf, size_t len, const char *fmt,
-		int lc_arg_type, const lc_arg_value_t *val)
+                             int lc_arg_type, const lc_arg_value_t *val)
 {
 	int res = 0;
 

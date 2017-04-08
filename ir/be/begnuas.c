@@ -517,7 +517,7 @@ static be_gas_section_t determine_section(be_main_env_t const *const main_env, i
 }
 
 static void emit_symbol_directive(const char *directive,
-								  const ir_entity *entity)
+                                  const ir_entity *entity)
 {
 	be_emit_irprintf("\t%s ", directive);
 	be_gas_emit_entity(entity);
@@ -535,7 +535,7 @@ static void emit_weak(const ir_entity *entity)
 }
 
 static const char *get_visibility_directive(const ir_entity *entity,
-											bool *output_global)
+                                            bool *output_global)
 {
 	switch (get_entity_visibility(entity)) {
 	case ir_visibility_external: return NULL;

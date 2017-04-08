@@ -391,9 +391,9 @@ static void dfs_step(ir_node *irn, dfs_env_t *env) {
  * WARNING: Because this particular use of DFS needs it, the search
  * stops at Phi nodes.
  */
-static void dfs_by_edges_from(ir_node *irn,
-			      irg_walk_func *pre, irg_walk_func *post, irg_walk_func *again,
-			      void *env)
+static void dfs_by_edges_from(ir_node *irn, irg_walk_func *pre,
+                              irg_walk_func *post, irg_walk_func *again,
+                              void *env)
 {
 	ir_nodeset_t visited;
 	ir_nodeset_init(&visited);

@@ -61,7 +61,7 @@ static int cmp_use(const void *a, const void *b, size_t n)
 }
 
 static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
-								  const ir_node *def, bool skip_from_uses);
+                                  const ir_node *def, bool skip_from_uses);
 
 /**
  * Return the use for the given definition in the given block if exists,
@@ -165,7 +165,7 @@ static inline void set_step(ir_node *node, unsigned step)
  * @param skip_from_uses  if non-zero, ignore from uses
  */
 static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
-								  const ir_node *def, bool skip_from_uses)
+                                  const ir_node *def, bool skip_from_uses)
 {
 	if (skip_from_uses) {
 		from = sched_next(from);

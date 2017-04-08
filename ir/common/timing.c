@@ -101,7 +101,8 @@ static inline double _time_to_sec(const ir_timer_val_t *elapsed)
 }
 
 static inline ir_timer_val_t *_time_add(ir_timer_val_t *res,
-		const ir_timer_val_t *lhs, const ir_timer_val_t *rhs)
+                                        const ir_timer_val_t *lhs,
+                                        const ir_timer_val_t *rhs)
 {
 	res->tv_sec  = lhs->tv_sec + rhs->tv_sec;
 	res->tv_usec = lhs->tv_usec + rhs->tv_usec;
@@ -113,7 +114,8 @@ static inline ir_timer_val_t *_time_add(ir_timer_val_t *res,
 }
 
 static inline ir_timer_val_t *_time_sub(ir_timer_val_t *res,
-		const ir_timer_val_t *lhs, const ir_timer_val_t *rhs)
+                                        const ir_timer_val_t *lhs,
+                                        const ir_timer_val_t *rhs)
 {
 	res->tv_sec  = lhs->tv_sec - rhs->tv_sec;
 	res->tv_usec = lhs->tv_usec - rhs->tv_usec;

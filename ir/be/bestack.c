@@ -29,7 +29,8 @@
 #include "util.h"
 
 static unsigned round_up2_misaligned(unsigned const offset,
-		unsigned const alignment, unsigned const misalign)
+                                     unsigned const alignment,
+                                     unsigned const misalign)
 {
 	return round_up2(offset + misalign, alignment) - misalign;
 }
