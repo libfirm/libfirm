@@ -4121,7 +4121,12 @@ static ir_node *transform_node_Cond(ir_node *n)
 		};
 		turn_into_tuple(n, ARRAY_SIZE(in), in);
 
-		clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		                        | IR_GRAPH_PROPERTY_NO_BADS
+		                        | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		                        | IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE
+		                        | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS
+		                        | IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	}
 	return n;
 }
