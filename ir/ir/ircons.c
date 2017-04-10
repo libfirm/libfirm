@@ -177,6 +177,7 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 	if (mode == mode_M && !is_Id(phi)) {
 		phi->attr.phi.loop = true;
 		keep_alive(phi);
+		keep_alive(get_nodes_block(phi));
 	}
 
 	return phi;
