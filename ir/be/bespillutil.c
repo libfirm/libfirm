@@ -732,22 +732,16 @@ static void prepare_constr_insn(ir_node *const node)
 		const arch_register_req_t *const in_req = arch_get_irn_register_req(in);
 		if (in_req->ignore)
 			continue;
-		arch_register_class_t const *const cls = req->cls;
 		for (int i2 = i + 1; i2 < arity; ++i2) {
-			const arch_register_req_t *const req2
-				= arch_get_irn_register_req_in(node, i2);
-			if (req2->cls != cls)
-				continue;
-			if (req2->limited == NULL)
-				continue;
-
 			ir_node *in2 = get_irn_n(node, i2);
 			if (in2 != in)
 				continue;
 
-			/* if the constraint is the same, no copy is necessary
+			/* If the constraint has no register limits or is the same, no copy is
+			 * necessary.
 			 * TODO generalise to unequal but overlapping constraints */
-			if (rbitsets_equal(req->limited, req2->limited, cls->n_regs))
+			arch_register_req_t const *const req2 = arch_get_irn_register_req_in(node, i2);
+			if (!req2->limited || rbitsets_equal(req->limited, req2->limited, req->cls->n_regs))
 				continue;
 
 			be_new_Copy_for_input(in, node, i2);
