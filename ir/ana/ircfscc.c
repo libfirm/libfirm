@@ -610,6 +610,8 @@ void construct_cf_backedges(ir_graph *irg)
 		ir_node *el = get_End_keepalive(end, i);
 		if (is_Block(el))
 			cfscc(el);
+		else
+			cfscc(get_nodes_block(el));
 	}
 	finish_scc();
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);

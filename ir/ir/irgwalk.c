@@ -323,9 +323,10 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 	/* Some blocks might be only reachable through keep-alive edges */
 	if (is_End(node)) {
 		foreach_irn_in(node, i, pred) {
-			if (!is_Block(pred))
-				continue;
-			irg_block_walk_2(pred, pre, post, env);
+			if (is_Block(pred))
+				irg_block_walk_2(pred, pre, post, env);
+			else
+				irg_block_walk_2(get_nodes_block(pred), pre, post, env);
 		}
 	}
 
