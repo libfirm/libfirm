@@ -16,7 +16,6 @@
 #include "bearch.h"
 #include "bechordal_t.h"
 #include "beirg.h"
-#include "belive.h"
 #include "bemodule.h"
 #include "benode.h"
 #include "besched.h"
@@ -688,7 +687,6 @@ static void be_new_Copy_for_input(ir_node *const val, ir_node *const before, int
 }
 
 static be_irg_t      *birg;
-static be_lv_t       *lv;
 static unsigned long  precol_copies;
 static unsigned long  multi_precol_copies;
 static unsigned long  constrained_livethrough_copies;
@@ -815,7 +813,6 @@ static void prepare_constr_insn(ir_node *const node)
 		be_new_Copy_for_input(in, node, i);
 		++constrained_livethrough_copies;
 		DBG((dbg_constr, LEVEL_3, "inserting constr copy for %+F pos %d\n", node, i));
-		be_liveness_update(lv, in);
 	}
 }
 
@@ -1193,7 +1190,6 @@ void be_spill_prepare_for_constraints(ir_graph *irg)
 	constrained_livethrough_copies = 0;
 	be_assure_live_sets(irg);
 	birg = be_birg_from_irg(irg);
-	lv   = be_get_irg_liveness(irg);
 	irg_block_walk_graph(irg, add_missing_copies_in_block, NULL, NULL);
 
 	stat_ev_ull("ra_precol_copies", precol_copies);
