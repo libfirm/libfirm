@@ -52,6 +52,7 @@ libFirm 1.22.1 (2016-01-07)
 * be: By default permutation lowering now uses copy instead swap
 * amd64: Improve code generation for `v & 0xFF/0xFFFF/0xFFFFFFFF`
 * amd64, ia32: Always use potentially smaller address mode c(x,x,1) instead of c(,x,2)
+* opt: Add local optimization `a >>s b >>u (n - 1) -> a >>u (n - 1)`
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)

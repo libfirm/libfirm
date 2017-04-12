@@ -6148,6 +6148,16 @@ static ir_node *transform_node_Shr(ir_node *n)
 	ir_node *right = get_Shr_right(n);
 	ir_mode *mode  = get_irn_mode(n);
 
+	/* a >>s b >>u (n - 1) -> a >>u (n - 1)
+	 * This is a common pattern when replacing division with constant by
+	 * multiplication. */
+	if (is_Shrs(left) && is_size_minus_1(right, mode)) {
+		dbg_info *const dbgi  = get_irn_dbg_info(n);
+		ir_node  *const block = get_nodes_block(n);
+		ir_node  *const new_l = get_Shrs_left(left);
+		return new_rd_Shr(dbgi, block, new_l, right);
+	}
+
 	ir_node *c;
 	HANDLE_BINOP_CHOICE(tarval_shr, left, right, c, mode);
 	n = transform_node_shift(n);
