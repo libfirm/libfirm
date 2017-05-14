@@ -369,7 +369,7 @@ static bool push_through_perm(ir_node *const perm, arch_register_class_t const *
 			 * |\          |\          |\          |\
 			 * | \         | \         | \         | \
 			 * | Copy    Copy |        | Perm      |  |
-			 * |  |b       |b |        |  |a       |b |
+			 * |  |b       |b |        |  |a       |  |
 			 * Perm   ->   Perm   -> Copy |   -> Copy |
 			 * |b |a swap  |b |a push  |b |a lower |b |a
 			 *
@@ -385,7 +385,7 @@ static bool push_through_perm(ir_node *const perm, arch_register_class_t const *
 			 * |\          |\          |\          |\
 			 * | \         | \         | \         | \
 			 * | Copy    Copy |        | Perm      | Copy
-			 * |  |b       |b |        |  |c       |  |
+			 * |  |b       |b |        |  |c       |  |c
 			 * Perm   ->   Perm   -> Copy |   -> Copy |
 			 * |b |c swap  |b |c push  |b |c lower |b |c
 			 */

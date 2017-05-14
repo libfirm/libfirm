@@ -459,7 +459,7 @@ class Div(Node):
                   init="get_irn_mode(irn_left)",
                   comment="mode of the result value"),
         Attribute("no_remainder", type="int", init="0",
-                  comment="Set when devision remainder is known to be zero"),
+                  comment="Set when division remainder is known to be zero"),
     ]
     attr_struct = "div_attr"
     pinned = "exception"
