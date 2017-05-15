@@ -310,11 +310,19 @@ static void ia32_lower_mul64(ir_node *node, ir_mode *mode)
 		ir_node *const ll_rh     = new_rd_Mul(dbg, block, left_lowc, right_high);
 		h_res = new_rd_Add(dbg, block, h_res, ll_rh);
 
-		ir_node *const ll_rl = new_bd_ia32_l_Mul(dbg, block, left_low, right_low);
-		ir_node *const hi    = new_rd_Proj(dbg, ll_rl, mode,         pn_ia32_l_Mul_res_high);
-		ir_node *const lo    = new_rd_Proj(dbg, ll_rl, ia32_mode_gp, pn_ia32_l_Mul_res_low);
-		h_res = new_rd_Add(dbg, block, h_res, hi);
-		l_res = lo;
+		if (is_irn_null(left_low) || is_irn_one(right_low)) {
+			/* 0 * right_low, left_low * 1 -> left_low */
+			l_res = left_low;
+		} else if (is_irn_null(right_low) || is_irn_one(left_low)) {
+			/* left_low * 0, 1 * right_low -> right_low */
+			l_res = right_low;
+		} else {
+			ir_node *const ll_rl = new_bd_ia32_l_Mul(dbg, block, left_low, right_low);
+			ir_node *const hi    = new_rd_Proj(dbg, ll_rl, mode,         pn_ia32_l_Mul_res_high);
+			ir_node *const lo    = new_rd_Proj(dbg, ll_rl, ia32_mode_gp, pn_ia32_l_Mul_res_low);
+			h_res = new_rd_Add(dbg, block, h_res, hi);
+			l_res = lo;
+		}
 	}
 	ir_set_dw_lowered(node, l_res, h_res);
 }
