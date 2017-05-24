@@ -18,7 +18,6 @@
 #include "bearch.h"
 #include "bechordal_t.h"
 #include "beirg.h"
-#include "belive.h"
 #include "bemodule.h"
 #include "benode.h"
 #include "besched.h"
@@ -505,25 +504,26 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 		return;
 	}
 
-	/* calculate sum of execution frequencies of individual spills */
-	assert(spillinfo->spills);
-	double spills_execfreq = 0;
-	for (spill_t *s = spillinfo->spills; s != NULL; s = s->next) {
-		ir_node *spill_block = get_block(s->after);
-		double   freq        = get_block_execfreq(spill_block);
+	if (spillinfo->spills) {
+		/* calculate sum of execution frequencies of individual spills */
+		double spills_execfreq = 0;
+		for (spill_t *s = spillinfo->spills; s != NULL; s = s->next) {
+			ir_node *spill_block = get_block(s->after);
+			double   freq        = get_block_execfreq(spill_block);
 
-		spills_execfreq += freq;
-	}
+			spills_execfreq += freq;
+		}
 
-	DB((dbg, LEVEL_1, "%+F: latespillcosts %f after def: %f\n", to_spill,
-	    spills_execfreq * env->regif.spill_cost,
-	    spill_execfreq * env->regif.spill_cost));
+		DB((dbg, LEVEL_1, "%+F: latespillcosts %f after def: %f\n", to_spill,
+				spills_execfreq * env->regif.spill_cost,
+				spill_execfreq * env->regif.spill_cost));
 
-	/* multi-/latespill is advantageous -> return*/
-	if (spills_execfreq < spill_execfreq) {
-		DB((dbg, LEVEL_1, "use latespills for %+F\n", to_spill));
-		spillinfo->spill_costs = spills_execfreq * env->regif.spill_cost;
-		return;
+		/* multi-/latespill is advantageous -> return*/
+		if (spills_execfreq < spill_execfreq) {
+			DB((dbg, LEVEL_1, "use latespills for %+F\n", to_spill));
+			spillinfo->spill_costs = spills_execfreq * env->regif.spill_cost;
+			return;
+		}
 	}
 
 	/* override spillinfos or create a new one */
@@ -688,7 +688,6 @@ static void be_new_Copy_for_input(ir_node *const val, ir_node *const before, int
 }
 
 static be_irg_t      *birg;
-static be_lv_t       *lv;
 static unsigned long  precol_copies;
 static unsigned long  multi_precol_copies;
 static unsigned long  constrained_livethrough_copies;
@@ -732,22 +731,16 @@ static void prepare_constr_insn(ir_node *const node)
 		const arch_register_req_t *const in_req = arch_get_irn_register_req(in);
 		if (in_req->ignore)
 			continue;
-		arch_register_class_t const *const cls = req->cls;
 		for (int i2 = i + 1; i2 < arity; ++i2) {
-			const arch_register_req_t *const req2
-				= arch_get_irn_register_req_in(node, i2);
-			if (req2->cls != cls)
-				continue;
-			if (req2->limited == NULL)
-				continue;
-
 			ir_node *in2 = get_irn_n(node, i2);
 			if (in2 != in)
 				continue;
 
-			/* if the constraint is the same, no copy is necessary
+			/* If the constraint has no register limits or is the same, no copy is
+			 * necessary.
 			 * TODO generalise to unequal but overlapping constraints */
-			if (rbitsets_equal(req->limited, req2->limited, cls->n_regs))
+			arch_register_req_t const *const req2 = arch_get_irn_register_req_in(node, i2);
+			if (!req2->limited || rbitsets_equal(req->limited, req2->limited, req->cls->n_regs))
 				continue;
 
 			be_new_Copy_for_input(in, node, i2);
@@ -821,7 +814,6 @@ static void prepare_constr_insn(ir_node *const node)
 		be_new_Copy_for_input(in, node, i);
 		++constrained_livethrough_copies;
 		DBG((dbg_constr, LEVEL_3, "inserting constr copy for %+F pos %d\n", node, i));
-		be_liveness_update(lv, in);
 	}
 }
 
@@ -1199,7 +1191,6 @@ void be_spill_prepare_for_constraints(ir_graph *irg)
 	constrained_livethrough_copies = 0;
 	be_assure_live_sets(irg);
 	birg = be_birg_from_irg(irg);
-	lv   = be_get_irg_liveness(irg);
 	irg_block_walk_graph(irg, add_missing_copies_in_block, NULL, NULL);
 
 	stat_ev_ull("ra_precol_copies", precol_copies);

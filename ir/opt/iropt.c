@@ -117,6 +117,16 @@ static ir_tarval *is_shl_const_like(const ir_node *node)
 	return NULL;
 }
 
+static bool is_size_minus_1(ir_node const *const irn, ir_mode *const mode)
+{
+	if (is_Const(irn)) {
+		ir_tarval *const tv = get_Const_tarval(irn);
+		if (tarval_is_long(tv) && get_tarval_long(tv) == (long)get_mode_size_bits(mode) - 1)
+			return true;
+	}
+	return false;
+}
+
 /**
  * Returns the tarval of a Const node or tarval_unknown for all other nodes.
  */
@@ -3631,26 +3641,18 @@ static ir_node *can_negate_cheaply(dbg_info *const dbgi, ir_node *const node)
 	if (is_Shr(node)) {
 		assert(get_mode_arithmetic(mode) == irma_twos_complement);
 		ir_node *right = get_Shr_right(node);
-		if (is_Const(right)) {
-			ir_tarval *tv = get_Const_tarval(right);
-			if (tarval_is_long(tv)
-			    && get_tarval_long(tv) == (int)get_mode_size_bits(mode)-1) {
-			    ir_node  *left  = get_Shr_left(node);
-			    ir_node  *block = get_nodes_block(node);
-			    return new_rd_Shrs(dbgi, block, left, right);
-			}
+		if (is_size_minus_1(right, mode)) {
+			ir_node *const left  = get_Shr_left(node);
+			ir_node *const block = get_nodes_block(node);
+			return new_rd_Shrs(dbgi, block, left, right);
 		}
 	} else if (is_Shrs(node)) {
 		assert(get_mode_arithmetic(mode) == irma_twos_complement);
 		ir_node *right = get_Shrs_right(node);
-		if (is_Const(right)) {
-			ir_tarval *tv = get_Const_tarval(right);
-			if (tarval_is_long(tv)
-			    && get_tarval_long(tv) == (int)get_mode_size_bits(mode)-1) {
-			    ir_node  *left  = get_Shrs_left(node);
-			    ir_node  *block = get_nodes_block(node);
-			    return new_rd_Shr(dbgi, block, left, right);
-			}
+		if (is_size_minus_1(right, mode)) {
+			ir_node *const left  = get_Shrs_left(node);
+			ir_node *const block = get_nodes_block(node);
+			return new_rd_Shr(dbgi, block, left, right);
 		}
 	}
 
@@ -3662,11 +3664,8 @@ static bool is_zero_or_all_one(ir_node const *const n)
 {
 	if (is_Shrs(n)) {
 		ir_node *const r = get_Shrs_right(n);
-		if (is_Const(r)) {
-			long const v = get_Const_long(r);
-			if (v == (long)get_mode_size_bits(get_irn_mode(n)) - 1)
-				return true;
-		}
+		if (is_size_minus_1(r, get_irn_mode(n)))
+			return true;
 	}
 	return false;
 }
@@ -4122,7 +4121,12 @@ static ir_node *transform_node_Cond(ir_node *n)
 		};
 		turn_into_tuple(n, ARRAY_SIZE(in), in);
 
-		clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		                        | IR_GRAPH_PROPERTY_NO_BADS
+		                        | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE
+		                        | IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE
+		                        | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS
+		                        | IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	}
 	return n;
 }
@@ -6144,6 +6148,16 @@ static ir_node *transform_node_Shr(ir_node *n)
 	ir_node *left  = get_Shr_left(n);
 	ir_node *right = get_Shr_right(n);
 	ir_mode *mode  = get_irn_mode(n);
+
+	/* a >>s b >>u (n - 1) -> a >>u (n - 1)
+	 * This is a common pattern when replacing division with constant by
+	 * multiplication. */
+	if (is_Shrs(left) && is_size_minus_1(right, mode)) {
+		dbg_info *const dbgi  = get_irn_dbg_info(n);
+		ir_node  *const block = get_nodes_block(n);
+		ir_node  *const new_l = get_Shrs_left(left);
+		return new_rd_Shr(dbgi, block, new_l, right);
+	}
 
 	ir_node *c;
 	HANDLE_BINOP_CHOICE(tarval_shr, left, right, c, mode);
