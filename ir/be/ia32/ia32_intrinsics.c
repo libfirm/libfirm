@@ -24,7 +24,7 @@
 #include "irprog_t.h"
 #include "lower_dw.h"
 #include "panic.h"
-#include "tv.h"
+#include "tv_t.h"
 #include "util.h"
 #include "x86_x87.h"
 
@@ -261,12 +261,10 @@ static bool is_sign_extend(ir_node *low, ir_node *high)
 		ir_tarval *tl = get_Const_tarval(low);
 		ir_tarval *th = get_Const_tarval(high);
 
-		if (tarval_is_long(th) && tarval_is_long(tl)) {
-			long l = get_tarval_long(tl);
-			long h = get_tarval_long(th);
+		bool tl_signed_negative = get_tarval_highest_bit(tl) + 1U == get_mode_size_bits(get_tarval_mode(tl));
 
-			return (h == 0  && l >= 0) || (h == -1 && l <  0);
-		}
+		return (tarval_is_null(th) && !tl_signed_negative) ||
+			(tarval_is_all_one(th) && tl_signed_negative);
 	}
 
 	return false;
