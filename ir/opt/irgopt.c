@@ -189,12 +189,14 @@ void optimize_graph_df(ir_graph *irg)
 			set_irn_link(n, NULL);
 			opt_walker(n, &waitq);
 		}
-		/* Calculate dominance so we can kill unreachable code
-		 * We want this intertwined with localopts for better optimization
-		 * (phase coupling) */
-		compute_doms(irg);
-		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
-		irg_block_walk_graph(irg, NULL, find_unreachable_blocks, &waitq);
+		if (irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_OPTIMIZE_UNREACHABLE_CODE)) {
+			/* Calculate dominance so we can kill unreachable code
+			 * We want this intertwined with localopts for better optimization
+			 * (phase coupling) */
+			compute_doms(irg);
+			assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+			irg_block_walk_graph(irg, NULL, find_unreachable_blocks, &waitq);
+		}
 	}
 	deq_free(&waitq);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
