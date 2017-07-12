@@ -18,7 +18,7 @@ our $target_dir = $ARGV[1];
 our $arch;
 our %nodes;
 
-unless (my $return = do $specfile) {
+unless (my $return = do "./${specfile}") {
 	die "Fatal error: couldn't parse $specfile: $@" if $@;
 	die "Fatal error: couldn't do $specfile: $!"    unless defined $return;
 	die "Fatal error: couldn't run $specfile"       unless $return;
