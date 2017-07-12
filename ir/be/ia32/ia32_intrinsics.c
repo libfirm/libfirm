@@ -261,10 +261,10 @@ static bool is_sign_extend(ir_node *low, ir_node *high)
 		ir_tarval *tl = get_Const_tarval(low);
 		ir_tarval *th = get_Const_tarval(high);
 
-		bool tl_signed_negative = get_tarval_highest_bit(tl) + 1U == get_mode_size_bits(get_tarval_mode(tl));
-
-		return (tarval_is_null(th) && !tl_signed_negative) ||
-			(tarval_is_all_one(th) && tl_signed_negative);
+		ir_mode *const tl_mode            = get_tarval_mode(tl);
+		unsigned const tl_size            = get_mode_size_bits(tl_mode);
+		bool     const tl_signed_negative = tarval_get_bit(tl, tl_size - 1);
+		return tl_signed_negative ? tarval_is_all_one(th) : tarval_is_null(th);
 	}
 
 	return false;
