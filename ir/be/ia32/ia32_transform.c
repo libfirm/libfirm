@@ -5015,8 +5015,8 @@ static ir_node *gen_prefetch(ir_node *node)
 		return be_transform_node(get_Builtin_mem(node));
 	}
 
-	ir_node *const param = get_Builtin_param(node, 1);
-	long     const rw    = get_Const_long(param);
+	size_t const n_params = get_Builtin_n_params(node);
+	long   const rw       = n_params > 1 ? get_Const_long(get_Builtin_param(node, 1)) : 0;
 
 	/* construct load address */
 	ir_node      *const ptr     = get_Builtin_param(node, 0);
@@ -5035,8 +5035,7 @@ static ir_node *gen_prefetch(ir_node *node)
 		new_node = new_bd_ia32_PrefetchW(dbgi, block, base, idx, mem);
 	} else if (ia32_cg_config.use_sse_prefetch) {
 		/* note: rw == 1 is IGNORED in that case */
-		ir_node *const param    = get_Builtin_param(node, 2);
-		long     const locality = get_Const_long(param);
+		long const locality = n_params > 2 ? get_Const_long(get_Builtin_param(node, 2)) : 3;
 
 		/* SSE style prefetch */
 		switch (locality) {
