@@ -72,7 +72,9 @@ void stat_ev_tim_push(void)
 	stat_ev_timer_elapsed[sp] = 0;
 	stat_ev_timer_start[sp]   = temp;
 	if (sp == 0) {
-		timing_enter_max_prio();
+		if (stat_ev_enabled) {
+			timing_enter_max_prio();
+		}
 	} else {
 		temp -= stat_ev_timer_start[sp-1];
 		stat_ev_timer_elapsed[sp-1] += temp;
@@ -90,7 +92,9 @@ void stat_ev_tim_pop(const char *name)
 		stat_ev_ull(name, stat_ev_timer_elapsed[sp]);
 
 	if (sp == 0) {
-		timing_leave_max_prio();
+		if (stat_ev_enabled) {
+			timing_leave_max_prio();
+		}
 	} else {
 		stat_ev_timer_start[sp-1] = timing_ticks();
 	}
