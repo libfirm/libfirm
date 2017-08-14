@@ -73,7 +73,7 @@ void ir_platform_set(ir_machine_triple_t const *machine,
 	ir_platform.intptr_type         = IR_TYPE_LONG;
 	ir_platform.wchar_is_signed     = true;
 	ir_platform.wchar_type          = IR_TYPE_INT;
-	ir_platform.ia32_po2_stackalign = 2;
+	ir_platform.ia32_po2_stackalign = 4;
 
 	const char *const cpu          = ir_triple_get_cpu_type(machine);
 	const char *const manufacturer = ir_triple_get_manufacturer(machine);
@@ -182,7 +182,6 @@ BSD:
 		ir_platform.long_double_size              = 16;
 		ir_platform.long_double_align             = 16;
 		ir_platform.pic_is_default                = true;
-		ir_platform.ia32_po2_stackalign           = 4;
 		ir_platform.ia32_struct_in_regs           = true;
 		ir_platform.supports_thread_local_storage = false;
 
