@@ -312,8 +312,8 @@ static void coalesce_blocks(blocksched_env_t *env)
 		if (!edge->highest_execfreq)
 			continue;
 
-		ir_node *const block = edge->block;
 		/* the block might have been removed already... */
+		ir_node *const block = edge->block;
 		if (is_Bad(get_Block_cfgpred(block, 0)))
 			continue;
 
@@ -321,6 +321,7 @@ static void coalesce_blocks(blocksched_env_t *env)
 		blocksched_entry_t *entry      = get_blocksched_entry(block);
 		blocksched_entry_t *pred_entry = get_blocksched_entry(pred_block);
 
+		/* is one of the blocks already attached to another block? */
 		if (pred_entry->next != NULL || entry->prev != NULL)
 			continue;
 
@@ -328,7 +329,7 @@ static void coalesce_blocks(blocksched_env_t *env)
 		if (get_block_succ_next(pred_block, get_block_succ_first(pred_block)) != NULL)
 			continue;
 
-		/* schedule the 2 blocks behind each other */
+		/* schedule the two blocks behind each other */
 		DB((dbg, LEVEL_1, "Coalesce (Jump) %+F -> %+F (%.3g)\n",
 		           pred_entry->block, entry->block, edge->execfreq));
 		pred_entry->next = entry;
@@ -395,11 +396,11 @@ static void coalesce_blocks(blocksched_env_t *env)
 		blocksched_entry_t *const entry      = get_blocksched_entry(block);
 		blocksched_entry_t *const pred_entry = get_blocksched_entry(pred_block);
 
-		/* is 1 of the blocks already attached to another block? */
+		/* is one of the blocks already attached to another block? */
 		if (pred_entry->next != NULL || entry->prev != NULL)
 			continue;
 
-		/* schedule the 2 blocks behind each other */
+		/* schedule the two blocks behind each other */
 		DB((dbg, LEVEL_1, "Coalesce (CondJump) %+F -> %+F (%.3g)\n",
 		           pred_entry->block, entry->block, edge->execfreq));
 		pred_entry->next = entry;
