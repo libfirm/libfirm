@@ -14,6 +14,7 @@
 #include "firm_types.h"
 #include "x86_asm.h"
 #include "x86_node.h"
+#include "x86_cconv.h"
 
 extern const x86_clobber_name_t        ia32_additional_clobber_names[];
 extern const x86_asm_constraint_list_t ia32_asm_constraints;
