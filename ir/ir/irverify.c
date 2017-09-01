@@ -80,7 +80,7 @@ static bool check_input_mode(const ir_node *n, int input, const char *inputname,
 	ir_node *in      = get_irn_n(n, input);
 	ir_mode *in_mode = get_irn_mode(in);
 	if (in_mode != mode) {
-		char num[16];
+		char num[17];
 		if (inputname == NULL) {
 			snprintf(num, sizeof(num), "input %d", input);
 			inputname = num;
@@ -121,7 +121,7 @@ static bool check_mode_same_input(const ir_node *n, int input,
 	ir_node *in      = get_irn_n(n, input);
 	ir_mode *in_mode = get_irn_mode(in);
 	if (mode != in_mode) {
-		char num[16];
+		char num[17];
 		if (inputname == NULL) {
 			snprintf(num, sizeof(num), "input %d", input);
 			inputname = num;
