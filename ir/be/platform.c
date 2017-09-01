@@ -270,10 +270,8 @@ BSD:
 void ir_platform_init(void)
 {
 	/* Decide PIC style */
-	be_pic_style_t style;
-	if (!option_pic) {
-		style = BE_PIC_NONE;
-	} else {
+	be_pic_style_t style = BE_PIC_NONE;
+	if (option_pic) {
 		ppdef("__PIC__", "2");
 		ppdef("__pic__", "2");
 		switch (ir_platform.object_format) {
