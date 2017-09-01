@@ -99,7 +99,7 @@ static ir_mode *classify_slice_for_amd64(ir_type const *const tp, unsigned min, 
 		 * check whether the class "has either a non-trivial
 		 * copy constructor or a non-trivial destructor" (ABI
 		 * sect. 3.2.3). */
-		panic("classes not supported");
+		/* For now, we treat them as such though to get X10 to work. */
 
 	case tpo_struct:
 	case tpo_union:
