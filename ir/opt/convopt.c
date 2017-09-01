@@ -59,8 +59,7 @@ static bool is_optimizable_node(const ir_node *node, ir_mode *dest_mode)
 		int size      = get_mode_size_bits(get_irn_mode(node));
 		if (dest_size != size)
 			return false;
-		/* FALLTHROUGH */
-	}
+	} /* FALLTHROUGH */
 	case iro_Shl: {
 		int modulo_shift = get_mode_modulo_shift(dest_mode);
 		int old_shift    = get_mode_modulo_shift(get_irn_mode(node));

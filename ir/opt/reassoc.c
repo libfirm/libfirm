@@ -908,8 +908,7 @@ static match_result_t replace_until_other_user(ir_node *node, ir_node *a, ir_nod
 				ir_node *t  = a;
 				a = b;
 				b = t;
-				/* fall through */
-			}
+			} /* fall through */
 			case FOUND_FIRST:
 				if (!replace)
 					ret = res;

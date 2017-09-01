@@ -1151,7 +1151,7 @@ static void do_lftr(ir_node *cmp, void *ctx)
 					if (incr_relation == ir_relation_less)
 						/* Prevent: for (i = 42; i <= 42; i--) -> for (i = 43; i >= 43; i--) */
 						return;
-
+					/* FALLTHROUGH */
 				case ir_relation_greater:
 				case ir_relation_greater_equal:
 					if (incr_relation == ir_relation_greater)

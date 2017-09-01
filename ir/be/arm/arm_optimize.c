@@ -193,9 +193,11 @@ bool arm_is_valid_offset(int32_t const v, ir_mode *const mode, bool const is_sto
 	switch (get_mode_size_bits(mode)) {
 	case  8:
 		if (is_store || !mode_is_signed(mode)) {
+			/* FALLTHROUGH */
 	case 32:
 			return arm_is_offset12(v);
 		} else {
+			/* FALLTHROUGH */
 	default:
 			return arm_is_offset8(v);
 		}
