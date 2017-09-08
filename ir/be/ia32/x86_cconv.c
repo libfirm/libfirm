@@ -34,6 +34,13 @@ void x86_create_parameter_loads(ir_graph *irg, const x86_cconv_t *cconv)
 	ir_node *nomem       = get_irg_no_mem(irg);
 	ir_node *frame       = get_irg_frame(irg);
 	ir_node *proj_args   = get_Proj_for_pn(start, pn_Start_T_args);
+
+	ir_node *start_mem   = be_get_Start_mem(irg);
+	ir_node *mem_dummy   = new_r_Dummy(irg, mode_M);
+	edges_reroute_except(start_mem, mem_dummy, get_irg_anchor(irg));
+	ir_node **syncs       = NEW_ARR_F(ir_node*, 1);
+	syncs[0] = start_mem;
+
 	foreach_out_edge_safe(proj_args, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		if (!is_Proj(proj))
@@ -51,8 +58,13 @@ void x86_create_parameter_loads(ir_graph *irg, const x86_cconv_t *cconv)
 		ir_node  *const add    = new_rd_Add(dbgi, start_block, frame, c);
 		ir_node  *const load   = new_rd_Load(dbgi, start_block, nomem, add, mode, type, cons_none);
 		ir_node  *const res    = new_r_Proj(load, mode, pn_Load_res);
+		ir_node  *const mem    = new_r_Proj(load, mode_M, pn_Load_M);
+		ARR_APP1(ir_node *, syncs, mem);
 		exchange(proj, res);
 	}
+	ir_node *sync = new_r_Sync(start_block, ARR_LEN(syncs), syncs);
+	edges_reroute(mem_dummy, sync);
+	DEL_ARR_F(syncs);
 }
 
 void x86_layout_param_entities(ir_graph *const irg, x86_cconv_t *const cconv,
