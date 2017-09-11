@@ -922,11 +922,11 @@ ir_node *be_skip_downconv(ir_node *node, bool const single_user)
 	return node;
 }
 
-ir_node *be_skip_sameconv(ir_node *node)
+ir_node *be_skip_sameconv(ir_node *node, bool const single_user)
 {
 	assert(be_mode_needs_gp_reg(get_irn_mode(node)));
 	for (;;) {
-		if (get_irn_n_edges(node) > 1) {
+		if (single_user && get_irn_n_edges(node) > 1) {
 			/* we only want to skip the conv when we're the only user
 			 * (because this test is used in the context of address-mode selection
 			 *  and we don't want to use address mode for multiple users) */

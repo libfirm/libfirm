@@ -367,8 +367,8 @@ static ir_node *gen_int_binop_ops(ir_node *node, ir_node *op1, ir_node *op2,
 		op2 = be_skip_downconv(op2, true);
 	} else {
 		assert(get_mode_size_bits(get_irn_mode(node)) == 32);
-		op1 = be_skip_sameconv(op1);
-		op2 = be_skip_sameconv(op2);
+		op1 = be_skip_sameconv(op1, true);
+		op2 = be_skip_sameconv(op2, true);
 	}
 
 	arm_immediate_t imm;

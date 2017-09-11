@@ -952,7 +952,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 		in[arity++] = be_transform_node(op1);
 		mode = get_mode_size_bits(mode) > 32 ? mode_Lu : mode_Iu;
 	} else {
-		op1 = be_skip_sameconv(op1);
+		op1 = be_skip_sameconv(op1, true);
 
 		/* Use 8/16bit operations instead of doing zext/upconv */
 		in[arity++] = be_transform_node(op1);

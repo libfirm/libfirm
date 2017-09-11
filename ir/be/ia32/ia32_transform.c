@@ -934,9 +934,9 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 				op1 = be_skip_downconv(op1, true);
 			}
 		} else {
-			op2 = be_skip_sameconv(op2);
+			op2 = be_skip_sameconv(op2, true);
 			if (op1 != NULL) {
-				op1 = be_skip_sameconv(op1);
+				op1 = be_skip_sameconv(op1, true);
 			}
 		}
 	}
@@ -1238,7 +1238,7 @@ static ir_node *gen_shift_binop(ir_node *const node, ir_node *op1, ir_node *op2,
 		new_op1 = be_transform_node(op1);
 		size    = X86_SIZE_32;
 	} else {
-		op1 = be_skip_sameconv(op1);
+		op1 = be_skip_sameconv(op1, true);
 		if (size == X86_SIZE_32) {
 			new_op1 = be_transform_node(op1);
 		} else if (flags & match_sign_ext) {
@@ -1757,7 +1757,7 @@ static ir_node *create_Div(ir_node *const node, ir_node *const op1, ir_node *con
 	/* Beware: We don't need a Sync, if the memory predecessor of the Div node
 	 * is the memory of the consumed address. We can have only the second op as
 	 * address in Div nodes, so check only op2. */
-	ir_node       *const op2_skip = be_skip_sameconv(op2);
+	ir_node       *const op2_skip = be_skip_sameconv(op2, true);
 	ir_node       *const block    = be_transform_node(old_block);
 	x86_address_t *const addr     = &am.addr;
 	ir_node       *const new_mem  = transform_AM_mem(block, op2_skip, mem_pin_skip, addr->mem);
@@ -1855,7 +1855,7 @@ static ir_node *gen_Shr(ir_node *node)
  */
 static ir_node *gen_Shrs(ir_node *node)
 {
-	ir_node *left  = be_skip_sameconv(get_Shrs_left(node));
+	ir_node *left  = be_skip_sameconv(get_Shrs_left(node), true);
 	ir_node *right = get_Shrs_right(node);
 
 	if (is_Const(right)) {
@@ -2783,7 +2783,7 @@ static ir_node *gen_Switch(ir_node *node)
 
 	assert(get_mode_size_bits(sel_mode) <= 32);
 	assert(!mode_is_signed(sel_mode));
-	sel = be_skip_sameconv(sel);
+	sel = be_skip_sameconv(sel, true);
 	if (get_mode_size_bits(sel_mode) < 32)
 		new_sel = transform_zext(sel);
 
