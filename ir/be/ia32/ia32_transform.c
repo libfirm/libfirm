@@ -5602,7 +5602,7 @@ static void insn_count_walker(ir_node *irn, void *data)
 
 static unsigned count_relevant_nodes(ir_graph *irg)
 {
-	unsigned cnt;
+	unsigned cnt = 0;
 	irg_walk_graph(irg, insn_count_walker, NULL, &cnt);
 	return cnt;
 }
