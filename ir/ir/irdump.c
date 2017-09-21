@@ -203,10 +203,10 @@ const char *ir_get_dump_filter(void)
 	return dump_filter;
 }
 
-/** Returns true if dump file filter is not set, or if it is a prefix of name. */
+/** Returns true if dump file filter is not set, or if it is a substring of name. */
 static int ir_should_dump(const char *name)
 {
-	return !dump_filter || strstart(name, dump_filter);
+	return !dump_filter || strstr(name, dump_filter);
 }
 
 /* -------------- some extended helper functions ----------------- */

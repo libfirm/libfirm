@@ -99,14 +99,14 @@ FIRM_API void ir_set_dump_path(const char *path);
  * Sets a prefix filter for output functions.
  *
  * All graph dumpers check this name.  If the name is != "" and
- * not a prefix of the graph to be dumped, the dumper does not
+ * not a substring of the graph to be dumped, the dumper does not
  * dump the graph.
  *
  * @param name The prefix of the name of the method entity to be dumped.
  */
 FIRM_API void ir_set_dump_filter(const char *name);
 
-/** Returns the prefix filter set with #ir_set_dump_filter */
+/** Returns the substring filter set with #ir_set_dump_filter */
 FIRM_API const char *ir_get_dump_filter(void);
 
 /*@}*/
