@@ -803,11 +803,8 @@ static void do_shannon(ir_graph *irg)
 		ir_node *const base_node   = optimization->base_node;
 		ir_node *const other_node  = optimization->other_node;
 
-		DBG((dbg, LEVEL_4, "base_node: %li, middle_node: %li, top_node: %li, other_node: %li\n",
-		     get_irn_node_nr(base_node),
-		     middle_node ? get_irn_node_nr(middle_node) : 0,
-		     get_irn_node_nr(top_node),
-		     get_irn_node_nr(other_node)));
+		DBG((dbg, LEVEL_4, "base_node: %+F, middle_node: %+F, top_node: %+F, other_node: %+F\n",
+		     base_node, middle_node, top_node, other_node));
 
 		/* This case can be handled by local optimizations.
 		 * We skip the case, because we would otherwise
@@ -887,7 +884,7 @@ static match_result_t replace_until_other_user(ir_node *node, ir_node *a, ir_nod
 				if (need_not) {
 					op = new_rd_Not(get_irn_dbg_info(op), get_nodes_block(op), op);
 				}
-				DBG((dbg, LEVEL_4, "replace %li @ %li with %li\n", get_irn_node_nr(t), get_irn_node_nr(node), get_irn_node_nr(op)));
+				DBG((dbg, LEVEL_4, "replace %+F @ %+F with %+F\n", t, node, op));
 				set_irn_n(node, i, op);
 			} else {
 				replace = true;
@@ -1427,7 +1424,7 @@ static void walk_sets(ir_node *node, void *env)
 		return;
 	}
 
-	DBG((dbg, LEVEL_5, "%li %s %s\n", get_irn_node_nr(node), get_irn_opname(node), get_mode_name(get_irn_mode(node))));
+	DBG((dbg, LEVEL_5, "%+F\n", node));
 
 	multi_op_env *multi_env = (multi_op_env *)env;
 	pmap         *set_map   = multi_env->set_map;
@@ -1470,7 +1467,7 @@ static void walk_sets(ir_node *node, void *env)
 
 		foreach_irn_in(node, i, n) {
 			if (pset_find_ptr(multi_env->walkhistory, n)) {
-				DBG((dbg, LEVEL_5, "%li already visited!\n", get_irn_node_nr(n)));
+				DBG((dbg, LEVEL_5, "%+F already visited!\n", n));
 				second_walk(multi_env, n, node);
 			}
 		}
@@ -1497,7 +1494,7 @@ static void merge(multi_op_env *multi_env, multi_op *a, multi_op *b)
 	assert(!a->other_op);
 	assert(pset_count(a->multi_users) == 1);
 
-	DBG((dbg, LEVEL_4, "merge %i in %i...\n", get_irn_node_nr(a->base_node), get_irn_node_nr(b->base_node)));
+	DBG((dbg, LEVEL_4, "merge %+F in %+F...\n", a->base_node, b->base_node));
 
 	if (get_multi_op_op(b) == op_Add) {
 		ir_tarval *a_val = pmap_get(ir_tarval, b->multiplier, a);
@@ -1602,7 +1599,7 @@ static void merge_trivial_multi_op(multi_op_env *multi_env, multi_op *a, multi_o
 {
 	assert(is_trivial_multi_op(a));
 
-	DBG((dbg, LEVEL_4, "merge trivial multiop %li in %li...\n", get_irn_node_nr(a->base_node), get_irn_node_nr(b->base_node)));
+	DBG((dbg, LEVEL_4, "merge trivial multiop %+F in %+F...\n", a->base_node, b->base_node));
 
 	foreach_pset(a->operands, ir_node, n) {
 		if (get_multi_op_op(b) == op_Add) {
@@ -1702,7 +1699,7 @@ static void rebuild(multi_op_env *multi_env)
 			continue;
 		}
 
-		DBG((dbg, LEVEL_5, "rebuild %li\n", get_irn_node_nr(o->base_node)));
+		DBG((dbg, LEVEL_5, "rebuild %+F\n", o->base_node));
 
 		ir_node  *block = get_nodes_block(o->base_node);
 		dbg_info *dbgi  = get_irn_dbg_info(o->base_node);
@@ -1885,7 +1882,7 @@ static void rebuild(multi_op_env *multi_env)
 		assert(curr);
 
 		if (o->base_node != curr) {
-			DBG((dbg, LEVEL_4, "exchanging... %li with %li\n", get_irn_node_nr(o->base_node), get_irn_node_nr(curr)));
+			DBG((dbg, LEVEL_4, "exchanging... %+F with %+F\n", o->base_node, curr));
 
 			exchange(o->base_node, curr);
 			assert(get_irn_mode(o->base_node) == get_irn_mode(curr));
@@ -1955,7 +1952,7 @@ static bool walk_chains(ir_node *node)
 	ir_op *node_op = get_irn_op(node);
 	bool   changed = false;
 
-	DBG((dbg, LEVEL_5, "%li\n", get_irn_node_nr(node)));
+	DBG((dbg, LEVEL_5, "%+F\n", node));
 
 	if (node_op == op_Or || node_op == op_And || node_op == op_Eor) {
 		ir_node *a = get_binop_left(node);
@@ -1967,9 +1964,8 @@ static bool walk_chains(ir_node *node)
 
 			if (!is_bitop(l)) {
 				/* (l .op. r) .op. b -> (b .op. r) .op. l */
-				DBG((dbg, LEVEL_4, "(%li .op. %li) .op. %li -> (%li .op. %li) .op. %li\n",
-				     get_irn_node_nr(l), get_irn_node_nr(r), get_irn_node_nr(b),
-				     get_irn_node_nr(b), get_irn_node_nr(r), get_irn_node_nr(l)));
+				DBG((dbg, LEVEL_4, "(%+F .op. %+F) .op. %+F -> (%+F .op. %+F) .op. %+F\n",
+				     l, r, b, b, r, l));
 
 				if (get_nodes_block(l) == get_nodes_block(b)) {
 					set_irn_n(node, 1, l);
@@ -1978,9 +1974,8 @@ static bool walk_chains(ir_node *node)
 				}
 			} else if (!is_bitop(r)) {
 				/* (l .op. r) .op. b -> (l .op. b) .op. r */
-				DBG((dbg, LEVEL_4, "(%li .op. %li) .op. %li -> (%li .op. %li) .op. %li\n",
-				     get_irn_node_nr(l), get_irn_node_nr(r), get_irn_node_nr(b),
-				     get_irn_node_nr(l), get_irn_node_nr(b), get_irn_node_nr(r)));
+				DBG((dbg, LEVEL_4, "(%+F .op. %+F) .op. %+F -> (%+F .op. %+F) .op. %+F\n",
+				     l, r, b, l, b, r));
 
 				if (get_nodes_block(r) == get_nodes_block(b)) {
 					set_irn_n(node, 1, r);
@@ -1996,9 +1991,8 @@ static bool walk_chains(ir_node *node)
 
 			if (!is_bitop(l)) {
 				/* a .op. (l .op. r) -> l .op. (a .op. r) */
-				DBG((dbg, LEVEL_4, "%li .op. (%li .op. %li) -> %li .op. (%li .op. %li)\n",
-				     get_irn_node_nr(a), get_irn_node_nr(l), get_irn_node_nr(r),
-				     get_irn_node_nr(l), get_irn_node_nr(a), get_irn_node_nr(r)));
+				DBG((dbg, LEVEL_4, "%+F .op. (%+F .op. %+F) -> %+F .op. (%+F .op. %+F)\n",
+				     a, l, r, l, a, r));
 
 				if (get_nodes_block(l) == get_nodes_block(a)) {
 					set_irn_n(node, 0, l);
@@ -2007,9 +2001,8 @@ static bool walk_chains(ir_node *node)
 				}
 			} else if (!is_bitop(r)) {
 				/* a .op. (l .op. r) -> r .op. (l .op. a) */
-				DBG((dbg, LEVEL_4, "%li .op. (%li .op. %li) -> %li .op. (%li .op. %li)\n",
-				     get_irn_node_nr(a), get_irn_node_nr(l), get_irn_node_nr(r),
-				     get_irn_node_nr(r), get_irn_node_nr(l), get_irn_node_nr(a)));
+				DBG((dbg, LEVEL_4, "%+F .op. (%+F .op. %+F) -> %+F .op. (%+F .op. %+F)\n",
+				     a, l, r, r, l, a));
 
 				if (get_nodes_block(r) == get_nodes_block(a)) {
 					set_irn_n(node, 0, r);
