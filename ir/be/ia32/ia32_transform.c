@@ -1681,7 +1681,7 @@ static ir_node *transform_AM_mem(ir_node *const block,
 	} else if (is_Proj(src_val) && is_Sync(src_mem)) {
 		int const arity = get_Sync_n_preds(src_mem);
 
-		ir_node **ins = ALLOCAN(ir_node*, arity+1);
+		ir_node **ins = ALLOCAN(ir_node*, arity + 1);
 
 		/* NOTE: This sometimes produces dead-code because the old sync in
 		 * src_mem might not be used anymore, we should detect this case
@@ -5427,7 +5427,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	case ir_bk_popcount:
 	case ir_bk_bswap:
 	case ir_bk_saturating_increment:
-		assert(get_Proj_num(proj) == pn_Builtin_max+1);
+		assert(get_Proj_num(proj) == pn_Builtin_max + 1);
 		return new_node;
 	case ir_bk_trap:
 	case ir_bk_debugbreak:
@@ -5436,7 +5436,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 		assert(get_Proj_num(proj) == pn_Builtin_M);
 		return new_node;
 	case ir_bk_inport:
-		if (get_Proj_num(proj) == pn_Builtin_max+1) {
+		if (get_Proj_num(proj) == pn_Builtin_max + 1) {
 			return be_new_Proj(new_node, pn_ia32_Inport_res);
 		} else {
 			assert(get_Proj_num(proj) == pn_Builtin_M);
@@ -5447,7 +5447,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 		if (get_Proj_num(proj) == pn_Builtin_M) {
 			return be_new_Proj(new_node, pn_ia32_CmpXChgMem_M);
 		} else {
-			assert(get_Proj_num(proj) == pn_Builtin_max+1);
+			assert(get_Proj_num(proj) == pn_Builtin_max + 1);
 			return be_new_Proj(new_node, pn_ia32_CmpXChgMem_res);
 		}
 	case ir_bk_va_start:
