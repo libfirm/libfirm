@@ -1686,12 +1686,12 @@ static ir_node *transform_AM_mem(ir_node *const block,
 		/* NOTE: This sometimes produces dead-code because the old sync in
 		 * src_mem might not be used anymore, we should detect this case
 		 * and kill the sync... */
-		int n = 0;
+		ir_node *const ptr_pred = get_Proj_pred(src_val);
+		int            n        = 0;
 		for (int i = arity - 1; i >= 0; --i) {
 			ir_node *const pred = get_Sync_pred(src_mem, i);
 
 			/* avoid memory loop */
-			ir_node *const ptr_pred = get_Proj_pred(src_val);
 			if (is_Proj(pred) && get_Proj_pred(pred) == ptr_pred)
 				continue;
 
