@@ -683,7 +683,6 @@ static ir_node *get_topnode_from_middlenode(ir_node *node)
 		ir_node *l = get_Eor_left(node);
 		ir_node *r = get_Eor_right(node);
 		if (is_Const(r)) {
-			assert(!is_Const(l));
 			return l;
 		}
 		if (is_Const(l)) {
