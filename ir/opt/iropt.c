@@ -3039,6 +3039,19 @@ static ir_node *transform_node_Add(ir_node *n)
 			dbg_info *dbg = get_irn_dbg_info(n);
 			return new_rd_Conv(dbg, get_nodes_block(n), a, mode);
 		}
+		if (is_Const(b) && is_Add(a)) {
+			ir_node *ab = get_Add_right(a);
+			if (is_Address(ab)) {
+				/* (aa + Address) + Const -> aa + (Address + Const) */
+				ir_node *aa = get_Add_left(a);
+				dbg_info *const dbgi  = get_irn_dbg_info(n);
+				ir_node  *const block = get_nodes_block(n);
+				n = new_rd_Add(dbgi, block, ab, b);
+				n = new_rd_Add(dbgi, block, aa, n);
+				DBG_OPT_ALGSIM0(oldn, n);
+				return n;
+			}
+		}
 	}
 
 	if (is_Const(b) && is_Sub(a)) {
