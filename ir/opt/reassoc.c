@@ -1879,7 +1879,12 @@ static void rebuild(multi_op_env *multi_env)
 			}
 		}
 
-		assert(curr);
+		if (!curr) {
+			ir_node  *base      = o->base_node;
+			ir_graph *irg       = get_irn_irg(base);
+			ir_mode  *base_mode = get_irn_mode(base);
+			curr = new_rd_Const_null(dbgi, irg, base_mode);
+		}
 
 		if (o->base_node != curr) {
 			DBG((dbg, LEVEL_4, "exchanging... %+F with %+F\n", o->base_node, curr));
