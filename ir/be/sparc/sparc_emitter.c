@@ -783,9 +783,9 @@ static void emit_be_Perm(const ir_node *irn)
 		arch_register_t const *r0 = arch_get_irn_register_out(irn, 0);
 		arch_register_t const *r1 = arch_get_irn_register_out(irn, 1);
 		for (unsigned i = 0, width = req->width; i < width; ++r0, ++r1, ++i) {
-			sparc_emitf(irn, "fmovs %R, %%f30", r0);
+			sparc_emitf(irn, "fmovs %R, %%f31", r0);
 			sparc_emitf(irn, "fmovs %R, %R", r1, r0);
-			sparc_emitf(irn, "fmovs %%f30, %R", r1);
+			sparc_emitf(irn, "fmovs %%f31, %R", r1);
 		}
 	} else if (req->cls == &sparc_reg_classes[CLASS_sparc_gp]) {
 		sparc_emitf(irn, "xor %D1, %D0, %D0");

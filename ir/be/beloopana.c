@@ -60,19 +60,30 @@ static unsigned be_compute_block_pressure(ir_node *const block, arch_register_cl
 	ir_nodeset_init(&live_nodes);
 	be_lv_t *const lv = be_get_irg_liveness(get_irn_irg(block));
 	be_liveness_end_of_block(lv, cls, block, &live_nodes);
-	unsigned max_live = (unsigned)ir_nodeset_size(&live_nodes);
+
+	unsigned max_pressure = 0;
+
+	// use iterator to sum up register widths
+	ir_nodeset_iterator_t iterator;
+	ir_nodeset_iterator_init(&iterator, &live_nodes);
+	for (ir_node *next = ir_nodeset_iterator_next(&iterator); next != NULL; next = ir_nodeset_iterator_next(&iterator)) {
+		max_pressure += arch_get_irn_register_req(next)->width;
+	}
 
 	sched_foreach_non_phi_reverse(block, irn) {
 		be_liveness_transfer(cls, irn, &live_nodes);
-		unsigned cnt = (unsigned)ir_nodeset_size(&live_nodes);
-		max_live = MAX(cnt, max_live);
+		unsigned cnt = 0;
+		ir_nodeset_iterator_init(&iterator, &live_nodes);
+		for (ir_node *next = ir_nodeset_iterator_next(&iterator); next != NULL; next = ir_nodeset_iterator_next(&iterator)) {
+			cnt += arch_get_irn_register_req(next)->width;
+		}
+		max_pressure = MAX(cnt, max_pressure);
 	}
-
 	DBG((dbg, LEVEL_1, "Finished with Block %+F (%s %zu)\n", block, cls->name,
-	     max_live));
+	     max_pressure));
 
 	ir_nodeset_destroy(&live_nodes);
-	return max_live;
+	return max_pressure;
 }
 
 /**

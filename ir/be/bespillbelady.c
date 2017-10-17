@@ -27,7 +27,9 @@
 #include "irgwalk.h"
 #include "irloop.h"
 #include "irmode_t.h"
+#include "irmode.h"
 #include "irnode_t.h"
+#include "irnode.h"
 #include "irtools.h"
 #include "obst.h"
 #include "statev_t.h"
@@ -96,6 +98,40 @@ static workset_t *new_workset(void)
 }
 
 /**
+ * Get the required register width (number of single registers) of @param node
+ */
+static unsigned char get_register_req_width(ir_node *node)
+{
+	const arch_register_req_t *req =  arch_get_irn_register_req(node);
+	return req->width;
+}
+
+/**
+ * Compute the actual number of registers used by @param ws
+ * taking into account the register widths of all contained nodes
+ */
+static unsigned workset_used_length(const workset_t *ws)
+{
+	unsigned used_length = 0;
+	for (unsigned i = 0, len = ws->len; i < len; ++i) {
+		used_length += get_register_req_width(ws->vals[i].node);
+	}
+	return used_length;
+}
+
+/**
+ * Compute the actual number of registers used by the nodes contained in @param locs
+ */
+static unsigned loc_get_used_len(const loc_t *locs)
+{
+	unsigned used_length = 0;
+	for (unsigned i = 0; i < ARR_LEN(locs); ++i) {
+		used_length += get_register_req_width(locs[i].node);
+	}
+	return used_length;
+}
+
+/**
  * Copy workset @param src to @param tgt
  */
 static void workset_copy(workset_t *dest, const workset_t *src)
@@ -154,7 +190,7 @@ static void workset_insert(workset_t *workset, ir_node *val, bool spilled)
 	}
 
 	/* insert val */
-	assert(workset->len < n_regs && "Workset already full!");
+	assert(workset_used_length(workset) < n_regs && "Workset already full!");
 	loc_t *loc   = &workset->vals[workset->len];
 	loc->node    = val;
 	loc->spilled = spilled;
@@ -314,24 +350,35 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 			 * spilled */
 			workset_remove(ws, val);
 		}
-		spilled[demand]   = reloaded;
-		to_insert[demand] = val;
-		++demand;
+		spilled[iter]   = reloaded;
+		to_insert[iter] = val;
+
+		demand += get_register_req_width(val);
+		// debug output:
+		if (get_register_req_width(val) == 2) {
+			printf("Add demand for double register\n");
+		}
+
 	}
 	demand += add_pressure;
 
 	/* 2. Make room for at least 'demand' slots */
 	unsigned len           = workset_get_length(ws);
-	int      spills_needed = len + demand - n_regs;
-	assert(spills_needed <= (int)len);
+	printf("len: %d\tused len:%d\n", len, workset_used_length(ws));
+	int single_regs_needed = workset_used_length(ws) + demand - n_regs;
+	assert(single_regs_needed <= (int)workset_used_length(ws));
+
+
 
 	/* Only make more free room if we do not have enough */
-	if (spills_needed > 0) {
-		DB((dbg, DBG_DECIDE, "    disposing %d values\n", spills_needed));
+	printf("single regs needed: %d (demand: %d)\n", single_regs_needed, demand);
+	if (single_regs_needed > 0) {
 
 		/* calculate current next-use distance for live values */
 		for (unsigned i = 0; i < len; ++i) {
+			//printf("loop over workset: %d | ", i);
 			ir_node  *val  = workset_get_val(ws, i);
+			//printf("val: %ld\n", val->node_nr);
 			unsigned  dist = get_distance(instr, val, !is_usage);
 			workset_set_time(ws, i, dist);
 		}
@@ -339,9 +386,16 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 		/* sort entries by increasing nextuse-distance*/
 		workset_sort(ws);
 
+		/* calculate actual spills needed */
+		int spills_needed = 0;
+		for (int i = len - 1; i >= 0 && single_regs_needed > 0; --i) {
+			single_regs_needed -= get_register_req_width(ws->vals[i].node);
+			spills_needed++;
+		}
+		DB((dbg, DBG_DECIDE, "    disposing %d values\n", spills_needed));
+
 		for (int i = len - spills_needed; i < (int)len; ++i) {
 			ir_node *val = ws->vals[i].node;
-
 			DB((dbg, DBG_DECIDE, "    disposing node %+F (%u)\n", val,
 			    workset_get_time(ws, i)));
 
@@ -354,15 +408,25 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 			}
 		}
 
-		/* kill the last 'demand' entries in the array */
+		/* kill the last 'spills_needed' entries in the array */
 		workset_set_length(ws, len - spills_needed);
 	}
 
 	/* 3. Insert the new values into the workset */
-	for (unsigned i = 0; i < demand - add_pressure; ++i) {
+	for (unsigned i = 0; i < new_vals->len; ++i) {
 		ir_node *val = to_insert[i];
 		workset_insert(ws, val, spilled[i]);
 	}
+	// debug output
+	printf("end of displace(): ws: [");
+	for (unsigned i = 0; i < workset_get_length(ws); ++i) {
+		if (i == 0) {
+			printf("%ld", ws->vals[i].node->node_nr);
+			continue;
+		}
+		printf(",%ld", ws->vals[i].node->node_nr);
+    }
+	printf("]\n");
 }
 
 typedef enum available_t {
@@ -522,9 +586,12 @@ static void decide_start_workset(ir_node *const block)
 	}
 
 	unsigned pressure = be_get_loop_pressure(loop_ana, cls, loop);
-	assert(ARR_LEN(delayed) <= pressure);
-	int free_slots          = n_regs - ARR_LEN(starters);
-	int free_pressure_slots = n_regs - (pressure - ARR_LEN(delayed));
+	//assert(ARR_LEN(delayed) <= pressure);
+	assert(loc_get_used_len(delayed) <= pressure);
+	//int free_slots          = n_regs - ARR_LEN(starters);
+	int free_slots          = n_regs - loc_get_used_len(starters);
+	//int free_pressure_slots = n_regs - (pressure - ARR_LEN(delayed));
+	int free_pressure_slots = n_regs - (pressure - loc_get_used_len(delayed));
 	free_slots              = MIN(free_slots, free_pressure_slots);
 
 	/* so far we only put nodes into the starters list that are used inside
@@ -537,6 +604,10 @@ static void decide_start_workset(ir_node *const block)
 
 		for (size_t i = 0; i < ARR_LEN(delayed) && free_slots > 0; ++i) {
 			loc_t *loc = & delayed[i];
+			// skip if we don't have enough free slots for this delayed node
+			if ((free_slots - get_register_req_width(loc->node)) < 0) {
+				continue;
+			}
 			if (!is_Phi(loc->node)) {
 				/* don't use values which are dead in a known predecessors
 				 * to not induce unnecessary reloads */
@@ -555,11 +626,10 @@ static void decide_start_workset(ir_node *const block)
 					}
 				}
 			}
-
 			DB((dbg, DBG_START, "    delayed %+F taken\n", loc->node));
 			ARR_APP1(loc_t, starters, *loc);
+			free_slots -= get_register_req_width(loc->node);
 			loc->node = NULL;
-			--free_slots;
 		skip_delayed:
 			;
 		}
@@ -580,8 +650,20 @@ static void decide_start_workset(ir_node *const block)
 	/* Sort start values by first use */
 	QSORT_ARR(starters, loc_compare);
 
+
 	/* Copy the best ones from starters to start workset */
-	unsigned ws_count = MIN((unsigned) ARR_LEN(starters), n_regs);
+	unsigned ws_count;
+	if (loc_get_used_len(starters) <= n_regs) {
+		ws_count = MIN((unsigned) ARR_LEN(starters), n_regs);
+	} else {
+		ws_count = ARR_LEN(starters);
+		unsigned used_len = loc_get_used_len(starters);
+		for (int i = ws_count - 1; i >= 0 && used_len > n_regs; --i) {
+			used_len -= get_register_req_width(starters[i].node);
+			ws_count -= 1;
+		}
+	}
+	assert(ws_count <= n_regs);
 	workset_clear(ws);
 	workset_bulk_fill(ws, ws_count, starters);
 
@@ -677,7 +759,7 @@ static void process_block(ir_node *block)
 	sched_foreach_non_phi(block, irn) {
 		/* Phis are no real instr (see insert_starters()) */
 
-		assert(workset_get_length(ws) <= n_regs);
+		assert(workset_used_length(ws) <= n_regs);
 		DB((dbg, DBG_DECIDE, "  ...%+F\n", irn));
 
 		/* allocate all values _used_ by this instruction */
@@ -809,6 +891,7 @@ static void be_spill_belady(ir_graph *irg, const arch_register_class_t *rcls,
 	cls          = rcls;
 	lv           = be_get_irg_liveness(irg);
 	n_regs       = be_get_n_allocatable_regs(irg, cls);
+	printf("\n\n%d allocatable registers in class %s\n", n_regs, cls->name);
 	ws           = new_workset();
 	uses         = be_begin_uses(irg, lv);
 	loop_ana     = be_new_loop_pressure(irg, cls);
