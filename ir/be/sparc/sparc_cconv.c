@@ -40,7 +40,7 @@ static const unsigned ignore_regs[] = {
 	REG_FSR,
 	REG_Y,
 
-	REG_F30,
+	REG_F31,
 };
 
 static const arch_register_t* const param_regs[] = {
@@ -77,36 +77,36 @@ static const unsigned caller_saves[] = {
 	REG_O4,
 	REG_O5,
 	REG_F0,
-//      REG_F1,
+	REG_F1,
 	REG_F2,
-//      REG_F3,
+	REG_F3,
 	REG_F4,
-//      REG_F5,
+	REG_F5,
 	REG_F6,
-//      REG_F7,
+	REG_F7,
 	REG_F8,
-//      REG_F9,
+	REG_F9,
 	REG_F10,
-//      REG_F11,
+	REG_F11,
 	REG_F12,
-//      REG_F13,
+	REG_F13,
 	REG_F14,
-//      REG_F15,
+	REG_F15,
 	REG_F16,
-//      REG_F17,
+	REG_F17,
 	REG_F18,
-//      REG_F19,
+	REG_F19,
 	REG_F20,
-//      REG_F21,
+	REG_F21,
 	REG_F22,
-//      REG_F23,
+	REG_F23,
 	REG_F24,
-//      REG_F25,
+	REG_F25,
 	REG_F26,
-//      REG_F27,
+	REG_F27,
 	REG_F28,
-//      REG_F29,
-//      REG_F30,
+	REG_F29,
+	REG_F30,
 	REG_PSR,
 	REG_FSR,
 	REG_Y,
@@ -363,7 +363,7 @@ void sparc_cconv_init(void)
 	for (size_t i = 0; i < ARRAY_SIZE(float_result_reqs_double); i += 2) {
 		arch_register_req_t *req = &float_result_reqs_double[i];
 		*req = *float_result_regs[i]->single_req;
-		req->width = 1;
+		req->width = 2;
 	}
 	for (size_t i = 0; i < ARRAY_SIZE(float_result_reqs_quad); i += 4) {
 		arch_register_req_t *req = &float_result_reqs_quad[i];
