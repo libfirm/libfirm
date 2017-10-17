@@ -55,16 +55,16 @@ COMPILETIME_ASSERT(ARRAY_SIZE(param_regs) == SPARC_N_PARAM_REGS, sparcparamregs)
 
 static const arch_register_t* const float_result_regs[] = {
 	&sparc_registers[REG_F0],
-//      &sparc_registers[REG_F1],
+	&sparc_registers[REG_F1],
 	&sparc_registers[REG_F2],
-//      &sparc_registers[REG_F3],
+	&sparc_registers[REG_F3],
 	&sparc_registers[REG_F4],
-//      &sparc_registers[REG_F5],
+	&sparc_registers[REG_F5],
 	&sparc_registers[REG_F6],
-//      &sparc_registers[REG_F7],
+	&sparc_registers[REG_F7],
 };
-static arch_register_req_t float_result_reqs_double[4];
-static arch_register_req_t float_result_reqs_quad[4];
+static arch_register_req_t float_result_reqs_double[8];
+static arch_register_req_t float_result_reqs_quad[8];
 
 static const unsigned caller_saves[] = {
 	REG_G1,
