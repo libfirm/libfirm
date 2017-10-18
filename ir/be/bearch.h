@@ -116,6 +116,8 @@ static inline const arch_register_req_t *arch_get_irn_register_req(const ir_node
 	return out->req;
 }
 
+
+
 /**
  * Get the flags of a node.
  * @param irn The node.
@@ -328,6 +330,15 @@ static inline bool arch_irn_is_ignore(const ir_node *irn)
 {
 	const arch_register_req_t *req = arch_get_irn_register_req(irn);
 	return req->ignore;
+}
+
+/**
+ * Get the required register width (number of single registers) of @param node
+ */
+static inline unsigned char arch_get_irn_register_req_width(const ir_node *node)
+{
+	reg_out_info_t *out = get_out_info(node);
+	return out->req->width;
 }
 
 static inline bool arch_irn_consider_in_reg_alloc(

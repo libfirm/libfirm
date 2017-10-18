@@ -98,15 +98,6 @@ static workset_t *new_workset(void)
 }
 
 /**
- * Get the required register width (number of single registers) of @param node
- */
-static unsigned char get_register_req_width(ir_node *node)
-{
-	const arch_register_req_t *req =  arch_get_irn_register_req(node);
-	return req->width;
-}
-
-/**
  * Compute the actual number of registers used by @param ws
  * taking into account the register widths of all contained nodes
  */
@@ -114,7 +105,7 @@ static unsigned workset_used_length(const workset_t *ws)
 {
 	unsigned used_length = 0;
 	for (unsigned i = 0, len = ws->len; i < len; ++i) {
-		used_length += get_register_req_width(ws->vals[i].node);
+		used_length += arch_get_irn_register_req_width(ws->vals[i].node);
 	}
 	return used_length;
 }
@@ -126,7 +117,7 @@ static unsigned loc_get_used_len(const loc_t *locs)
 {
 	unsigned used_length = 0;
 	for (unsigned i = 0; i < ARR_LEN(locs); ++i) {
-		used_length += get_register_req_width(locs[i].node);
+		used_length += arch_get_irn_register_req_width(locs[i].node);
 	}
 	return used_length;
 }
@@ -353,9 +344,9 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 		spilled[iter]   = reloaded;
 		to_insert[iter] = val;
 
-		demand += get_register_req_width(val);
+		demand += arch_get_irn_register_req_width(val);
 		// debug output:
-		if (get_register_req_width(val) == 2) {
+		if (arch_get_irn_register_req_width(val) == 2) {
 			printf("Add demand for double register\n");
 		}
 
@@ -389,7 +380,7 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 		/* calculate actual spills needed */
 		int spills_needed = 0;
 		for (int i = len - 1; i >= 0 && single_regs_needed > 0; --i) {
-			single_regs_needed -= get_register_req_width(ws->vals[i].node);
+			single_regs_needed -= arch_get_irn_register_req_width(ws->vals[i].node);
 			spills_needed++;
 		}
 		DB((dbg, DBG_DECIDE, "    disposing %d values\n", spills_needed));
@@ -605,7 +596,7 @@ static void decide_start_workset(ir_node *const block)
 		for (size_t i = 0; i < ARR_LEN(delayed) && free_slots > 0; ++i) {
 			loc_t *loc = & delayed[i];
 			// skip if we don't have enough free slots for this delayed node
-			if ((free_slots - get_register_req_width(loc->node)) < 0) {
+			if ((free_slots - arch_get_irn_register_req_width(loc->node)) < 0) {
 				continue;
 			}
 			if (!is_Phi(loc->node)) {
@@ -628,7 +619,7 @@ static void decide_start_workset(ir_node *const block)
 			}
 			DB((dbg, DBG_START, "    delayed %+F taken\n", loc->node));
 			ARR_APP1(loc_t, starters, *loc);
-			free_slots -= get_register_req_width(loc->node);
+			free_slots -= arch_get_irn_register_req_width(loc->node);
 			loc->node = NULL;
 		skip_delayed:
 			;
@@ -659,7 +650,7 @@ static void decide_start_workset(ir_node *const block)
 		ws_count = ARR_LEN(starters);
 		unsigned used_len = loc_get_used_len(starters);
 		for (int i = ws_count - 1; i >= 0 && used_len > n_regs; --i) {
-			used_len -= get_register_req_width(starters[i].node);
+			used_len -= arch_get_irn_register_req_width(starters[i].node);
 			ws_count -= 1;
 		}
 	}

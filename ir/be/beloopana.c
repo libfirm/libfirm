@@ -67,7 +67,7 @@ static unsigned be_compute_block_pressure(ir_node *const block, arch_register_cl
 	ir_nodeset_iterator_t iterator;
 	ir_nodeset_iterator_init(&iterator, &live_nodes);
 	for (ir_node *next = ir_nodeset_iterator_next(&iterator); next != NULL; next = ir_nodeset_iterator_next(&iterator)) {
-		max_pressure += arch_get_irn_register_req(next)->width;
+		max_pressure += arch_get_irn_register_req_width(next);
 	}
 
 	sched_foreach_non_phi_reverse(block, irn) {
@@ -75,7 +75,7 @@ static unsigned be_compute_block_pressure(ir_node *const block, arch_register_cl
 		unsigned cnt = 0;
 		ir_nodeset_iterator_init(&iterator, &live_nodes);
 		for (ir_node *next = ir_nodeset_iterator_next(&iterator); next != NULL; next = ir_nodeset_iterator_next(&iterator)) {
-			cnt += arch_get_irn_register_req(next)->width;
+			cnt += arch_get_irn_register_req_width(next);
 		}
 		max_pressure = MAX(cnt, max_pressure);
 	}
