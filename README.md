@@ -36,6 +36,30 @@ However it can adapt the compiler and linker flags to build shared libraries
 for a wider range of systems, provides an installation target and is often more
 familiar for people preparing packages for distribution.
 
+Repository Structure
+--------------------
+
+  include/libfirm/   # public API
+  ir/                # nearly all the code
+  ir/adt/            # containers and other generic data types
+  ir/ana/            # analysis (for optimizations)
+  ir/be/             # backends (x86, sparc, amd64, etc)
+  ir/common/         # utility stuff
+  ir/ident/          # identifier data structure
+  ir/ir/             # core data types of intermediate representation
+  ir/kaps/           # PBQP solver
+  ir/libcore/        # utility stuff
+  ir/lower/          # lowering phases from high-level to low-level mechanisms
+  ir/lpp/            # interface for external ILP solvers
+  ir/obstack/        # arena memory allocator
+  ir/opt/            # optimization phases
+  ir/stat/           # statistics
+  ir/tr/             # type representation
+  ir/tv/             # target values (architecture-independent arithmetic)
+  scripts/           # generator scripts, firm node specification
+  unittests/         # unittests
+  build/             # build system generates stuff here
+
 Further Information and Contact
 -------------------------------
 
