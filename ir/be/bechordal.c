@@ -28,9 +28,28 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static int get_next_free_reg(bitset_t *const available)
+/*
+ * Searches for consecutive free registers.
+ * When consecutive is greater 1, the returned position is even.
+ */
+static int get_next_free_reg(bitset_t *const available, unsigned consecutive)
 {
-	return bitset_next_set(available, 0);
+	int pos = 0;
+	unsigned free_length = 0;
+	while (free_length < consecutive) {
+		pos = bitset_next_set(available, pos + free_length);
+		if (consecutive > 1 && pos % 2 != 0) {
+			free_length = 0;
+			pos++;
+			continue;
+		}
+		free_length = 1; // we don't need to check the pos index again
+		while (bitset_is_set(available, pos + free_length) && free_length < consecutive) {
+			free_length++;
+		}
+	}
+	printf("[chordal] Return pos %d as result of %d-consecutive search\n", pos, consecutive);
+	return pos;
 }
 
 static unsigned const *get_decisive_partner_regs(be_operand_t const *const o1, size_t const n_regs)
@@ -339,6 +358,12 @@ static void assign(ir_node *const block, void *const env_ptr)
 	bitset_t *const available = bitset_alloca(env->allocatable_regs->size);
 	bitset_copy(available, env->allocatable_regs);
 
+	/*printf("bitset available: [");
+	for(unsigned i = 0; i < bitset_size(available); i++) {
+		printf("%d ", bitset_is_set(available, i));
+	}
+	printf("]\n");*/
+
 	/* Mind that the sequence of defs from back to front defines a perfect
 	 * elimination order. So, coloring the definitions from first to last
 	 * will work. */
@@ -351,7 +376,10 @@ static void assign(ir_node *const block, void *const env_ptr)
 			/* Make the color available upon a use. */
 			arch_register_t const *const reg = arch_get_irn_register(irn);
 			assert(reg && "Register must have been assigned");
-			bitset_set(available, reg->index);
+			for (int i = 0; i < arch_get_irn_register_req_width(irn); i++) {
+				bitset_set(available, reg->index + i);
+			}
+			//bitset_set(available, reg->index);
 		} else {
 			arch_register_t const *const reg = arch_get_irn_register(irn);
 			/* All live-ins must have a register assigned. (The dominators were
@@ -361,13 +389,17 @@ static void assign(ir_node *const block, void *const env_ptr)
 			if (reg) {
 				DBG((dbg, LEVEL_4, "%+F has reg %s\n", irn, reg->name));
 				col = reg->index;
-				assert(bitset_is_set(available, col) && "pre-colored register must be free");
+				for (int i = 0; i < arch_get_irn_register_req_width(irn); i++) {
+					//assert(bitset_is_set(available, col + i) && "pre-colored register must be free");
+				}
 			} else {
 				assert(!arch_irn_is_ignore(irn));
-				col = get_next_free_reg(available);
+				col = get_next_free_reg(available, arch_get_irn_register_req_width(irn));
 				arch_set_irn_register_idx(irn, col);
 			}
-			bitset_clear(available, col);
+			for (int i = 0; i < arch_get_irn_register_req_width(irn); i++) {
+				bitset_clear(available, col + i);
+			}
 
 			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", arch_get_irn_register(irn)->name, col, irn));
 		}

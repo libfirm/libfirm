@@ -347,7 +347,7 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 		demand += arch_get_irn_register_req_width(val);
 		// debug output:
 		if (arch_get_irn_register_req_width(val) == 2) {
-			printf("Add demand for double register\n");
+			printf("[spill] Add demand for double register\n");
 		}
 
 	}
@@ -355,14 +355,14 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 
 	/* 2. Make room for at least 'demand' slots */
 	unsigned len           = workset_get_length(ws);
-	printf("len: %d\tused len:%d\n", len, workset_used_length(ws));
+	//printf("len: %d\tused len:%d\n", len, workset_used_length(ws));
 	int single_regs_needed = workset_used_length(ws) + demand - n_regs;
 	assert(single_regs_needed <= (int)workset_used_length(ws));
 
 
 
 	/* Only make more free room if we do not have enough */
-	printf("single regs needed: %d (demand: %d)\n", single_regs_needed, demand);
+	//printf("single regs needed: %d (demand: %d)\n", single_regs_needed, demand);
 	if (single_regs_needed > 0) {
 
 		/* calculate current next-use distance for live values */
@@ -409,7 +409,7 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 		workset_insert(ws, val, spilled[i]);
 	}
 	// debug output
-	printf("end of displace(): ws: [");
+	/*printf("end of displace(): ws: [");
 	for (unsigned i = 0; i < workset_get_length(ws); ++i) {
 		if (i == 0) {
 			printf("%ld", ws->vals[i].node->node_nr);
@@ -417,7 +417,7 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 		}
 		printf(",%ld", ws->vals[i].node->node_nr);
     }
-	printf("]\n");
+	printf("]\n");*/
 }
 
 typedef enum available_t {
