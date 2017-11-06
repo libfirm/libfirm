@@ -167,7 +167,10 @@ void ir_platform_set(ir_machine_triple_t const *machine,
 		if (strstr(os, "gnu") != NULL)
 			ppdef1("__gnu_linux__");
 	} else if (strstart(os, "freebsd")) {
-		ppdef("__FreeBSD__", "");
+		ppdef1("__FreeBSD__");
+		goto BSD;
+	} else if (strstart(os, "openbsd")) {
+		ppdef1("__OpenBSD__");
 		goto BSD;
 	} else if (strstr(os, "bsd") != NULL) {
 BSD:

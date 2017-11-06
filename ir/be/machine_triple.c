@@ -143,6 +143,8 @@ ir_machine_triple_t *ir_get_host_machine_triple(void)
 		"darwin";
 #elif defined(__FreeBSD__)
 		"freebsd";
+#elif defined(__OpenBSD__)
+		"openbsd";
 #elif defined(__gnu_linux__)
 		"linux-gnu";
 #elif defined(__linux__)
