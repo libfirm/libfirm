@@ -169,6 +169,9 @@ void ir_platform_set(ir_machine_triple_t const *machine,
 	} else if (strstart(os, "freebsd")) {
 		ppdef("__FreeBSD__", "");
 		goto BSD;
+	} else if (strstart(os, "openbsd")) {
+		ppdef1("__OpenBSD__");
+		goto BSD;
 	} else if (strstr(os, "bsd") != NULL) {
 BSD:
 		object_format = OBJECT_FORMAT_ELF;

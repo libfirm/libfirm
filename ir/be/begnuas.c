@@ -30,7 +30,7 @@
 #include <assert.h>
 #include <ctype.h>
 
-/** by default, we generate assembler code for the Linux gas */
+/** by default, we generate assembler code for GNU as */
 elf_variant_t          be_gas_elf_variant   = ELF_VARIANT_NORMAL;
 bool                   be_gas_emit_types    = true;
 char                   be_gas_elf_type_char = '@';
