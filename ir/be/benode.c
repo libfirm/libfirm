@@ -535,6 +535,9 @@ ir_node *be_new_Unknown(ir_node *const block, arch_register_req_t const *const r
 
 ir_node *be_new_Proj(ir_node *const pred, unsigned const pos)
 {
+	if (is_Tuple(pred)) {
+		return get_irn_n(pred, pos);
+	}
 	arch_register_req_t const *const req = arch_get_irn_register_req_out(pred, pos);
 	return new_r_Proj(pred, req->cls->mode, pos);
 }
