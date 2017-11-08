@@ -712,7 +712,7 @@ restart:
 		ir_node *pred = get_Proj_pred(node);
 
 		if (is_Proj(pred)) { /* nested Tuple ? */
-		    pred = skip_Tuple(pred);
+			pred = skip_Tuple(pred);
 
 			if (is_Tuple(pred)) {
 				node = get_Tuple_pred(pred, get_Proj_num(node));
