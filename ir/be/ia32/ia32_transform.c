@@ -51,6 +51,7 @@
 #undef CONSTRUCT_SSE_CONST
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
+DEBUG_ONLY(static firm_dbg_module_t *auto_dbg;)
 
 x86_cconv_t          *current_cconv;
 static be_stack_env_t        stack_env;
@@ -5660,7 +5661,7 @@ void ia32_transform_graph(ir_graph *irg)
 	                         | IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
-	fprintf(stderr, "count-total %d\n", count_relevant_nodes(irg));
+	DB((auto_dbg, LEVEL_2, "count-total %d\n", count_relevant_nodes(irg)));
 
 	be_transform_graph(irg, ia32_pretransform_node);
 
@@ -5677,4 +5678,5 @@ void ia32_transform_graph(ir_graph *irg)
 void ia32_init_transform(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.transform");
+	FIRM_DBG_REGISTER(auto_dbg, "firm.be.autotransform");
 }
