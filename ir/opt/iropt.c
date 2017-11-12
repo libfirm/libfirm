@@ -3332,6 +3332,25 @@ static ir_node *transform_node_Sub(ir_node *n)
 		}
 	}
 
+	if (is_Mul(b) && only_one_user(b)) {
+		/* a - (x * C) -> a + (x * -C) */
+		ir_node *mul_right = get_Mul_right(b);
+		if (is_Const(mul_right)) {
+			ir_node *cnst = const_negate(mul_right);
+			if (cnst != NULL) {
+				ir_node  *block    = get_nodes_block(n);
+				dbg_info *dbgi     = get_irn_dbg_info(n);
+				dbg_info *mul_dbgi = get_irn_dbg_info(b);
+				ir_node  *mul_left = get_Mul_left(b);
+
+				ir_node *mul = new_rd_Mul(mul_dbgi, block, mul_left, cnst);
+				n = new_rd_Add(dbgi, block, a, mul);
+				DBG_OPT_ALGSIM0(oldn, n);
+				return n;
+			}
+		}
+	}
+
 	if (is_Const(a) && is_Add(b)) {
 		const ir_node *add_r = get_Add_right(b);
 		ir_tarval     *tr    = value_of(add_r);
