@@ -221,7 +221,14 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 
 		unsigned const *const bs = get_decisive_partner_regs(op, n_regs);
 		if (bs) {
-			DBG((dbg, LEVEL_2, "\tallowed registers for %+F: %B\n", op->carrier, bs));
+#ifdef DEBUG_libfirm
+			DBG((dbg, LEVEL_2, "\tallowed registers for %+F:", op->carrier, bs[0]));
+			rbitset_foreach(bs, n_regs, col) {
+				arch_register_t const *const reg = arch_register_for_index(env->cls, col);
+				DB((dbg, LEVEL_2, " %s", reg->name));
+			}
+			DB((dbg, LEVEL_2, "\n"));
+#endif
 
 			rbitset_foreach(bs, n_regs, col) {
 #if USE_HUNGARIAN
