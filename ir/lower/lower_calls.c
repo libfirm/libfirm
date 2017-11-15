@@ -744,6 +744,7 @@ static void get_dest_addrs(const cl_entry *entry, ir_node **ins,
 }
 
 static void fix_int_return(cl_entry const *const entry,
+                           ir_type *const type,
                            ir_node *const base_addr,
                            aggregate_spec_t const *const ret_spec,
                            long const orig_pn, long const pn)
@@ -776,27 +777,68 @@ static void fix_int_return(cl_entry const *const entry,
 	ir_node *dummy = new_r_Dummy(irg, mode_M);
 	edges_reroute(proj_mem, dummy);
 
-	unsigned  const length = ret_spec->length;
-	ir_node **const sync_in  = ALLOCAN(ir_node*, length);
-	int             offset   = 0;
+	unsigned   const length      = ret_spec->length;
+	ir_node  **const sync_in     = ALLOCAN(ir_node*, length * 3);
+	unsigned         sync_index  = 0;
+	unsigned         type_size   = get_type_size(type);
+	ir_mode  *const  mode_offset = get_reference_offset_mode(mode_ref);
+	int              offset      = 0;
+
 	for (unsigned i = 0; i < length; ++i) {
-		ir_mode *const mode = ret_spec->modes[i];
-		ir_node *      addr = base_addr;
-		if (offset > 0) {
-			ir_mode *mode_offset = get_reference_offset_mode(mode_ref);
-			ir_node *offset_cnst = new_r_Const_long(irg, mode_offset, offset);
-			addr = new_r_Add(block, addr, offset_cnst);
+		unsigned  shift_offset = 0;
+		ir_mode  *spec_mode    = ret_spec->modes[i];
+		unsigned  spec_size    = get_mode_size_bytes(spec_mode);
+		ir_node  *value        = new_r_Proj(proj_res, spec_mode, pn+i);
+
+		while (spec_size > 0 && type_size > 0) {
+			ir_mode *mode = NULL;
+			if (type_size >= 8) {
+				mode = spec_mode;
+			} else if (type_size >= 4) {
+				mode = mode_Iu;
+			} else if (type_size >= 2) {
+				mode = mode_Hu;
+			} else {
+				mode = mode_Bu;
+			}
+
+			// The value was classified as SSE, so we need a Lu bitcast before conv to the target mode
+			if (type_size < 8 && mode_is_float(spec_mode)) {
+				value = new_r_Bitcast(block, value, mode_Lu);
+			}
+
+			// shift the value node to the current offset
+			if (shift_offset > 0) {
+				ir_mode *const const_mode = get_irn_mode(value);
+				ir_node *const shr_count  = new_r_Const_long(irg, const_mode, shift_offset);
+				value = new_r_Shr(block, value, shr_count);
+			}
+
+			// type conversion
+			ir_node *node_value = value;
+			if (get_irn_mode(value) != mode) {
+				node_value = new_r_Conv(block, node_value, mode);
+			}
+
+			// calculate offset inside the target value
+			ir_node *addr = base_addr;
+			if (offset > 0) {
+				addr = new_r_Add(block, base_addr, new_r_Const_long(irg, mode_offset, offset));
+			}
+
+			ir_type *const type  = get_type_for_mode(mode);
+			ir_node *const store = new_r_Store(block, proj_mem, addr, node_value, type, cons_none);
+			sync_in[sync_index++] = new_r_Proj(store, mode_M, pn_Store_M);
+
+			unsigned size = get_mode_size_bytes(mode);
+			shift_offset  = get_mode_size_bits(mode);
+			type_size    -= size;
+			spec_size    -= size;
+			offset       += size;
 		}
-		ir_node *const value     = new_r_Proj(proj_res, mode, pn+i);
-		ir_type *const type      = get_type_for_mode(mode);
-		ir_node *const store     = new_r_Store(block, proj_mem, addr, value,
-		                                       type, cons_none);
-		ir_node *const store_mem = new_r_Proj(store, mode_M, pn_Store_M);
-		sync_in[i] = store_mem;
-		offset += get_mode_size_bytes(mode);
 	}
 
-	ir_node *const sync = new_r_Sync(block, length, sync_in);
+	ir_node *const sync = new_r_Sync(block, sync_index, sync_in);
 	edges_reroute(dummy, sync);
 }
 
@@ -834,7 +876,7 @@ static void fix_call_compound_ret(const cl_entry *entry,
 
 		switch (how_to_pass(&ret_spec)) {
 		case PASS_AS_VALUES:
-			fix_int_return(entry, dest_addr, &ret_spec, i, pn);
+			fix_int_return(entry, type, dest_addr, &ret_spec, i, pn);
 			pn += ret_spec.length;
 			break;
 
