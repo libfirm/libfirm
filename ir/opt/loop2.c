@@ -18,7 +18,24 @@ static char const *kind_get_string(firm_kind const *const kind)
 	}
 }
 
+static void print_loop(ir_loop const *const loop, int const indentation)
+{
+	size_t const n_elements = get_loop_n_elements(loop);
+	for (size_t i = 0; i < n_elements; ++i) {
+		loop_element const element = get_loop_element(loop, i);
+		for (int j = 0; j < indentation; ++j) printf("  ");
+		printf("%s\n", kind_get_string(element.kind));
+		if (*element.kind == k_ir_loop) {
+			print_loop(element.son, indentation + 1);
+		}
+	}
+}
+
 void do_loop_unrolling2(ir_graph *const irg)
 {
-	printf("test\n");
+	assure_loopinfo(irg);
+	ir_loop *loop = get_irg_loop(irg);
+	if (loop) {
+		print_loop(loop, 0);
+	}
 }
