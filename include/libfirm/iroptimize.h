@@ -435,6 +435,11 @@ FIRM_API void do_loop_inversion(ir_graph *irg);
 FIRM_API void do_loop_unrolling(ir_graph *irg);
 
 /**
+ * Perform loop unrolling on a given graph.
+ */
+FIRM_API void do_loop_unrolling2(ir_graph *irg);
+
+/**
  * Perform loop peeling on a given graph.
  */
 FIRM_API void do_loop_peeling(ir_graph *irg);
