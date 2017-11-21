@@ -1,6 +1,4 @@
-#include "iroptimize.h"
-#include "irgraph_t.h"
-#include "irloop_t.h"
+#include "firm.h"
 
 static char const *kind_get_string(firm_kind const *const kind)
 {
@@ -15,6 +13,23 @@ static char const *kind_get_string(firm_kind const *const kind)
 	case k_ir_loop: return "k_ir_loop";
 	case k_ir_max: return "k_ir_max";
 	default: return "";
+	}
+}
+
+static void insert_phis(ir_node *const node, void *const env)
+{
+	(void)env;
+	if (is_Block(node)) return;
+	ir_node *const block = get_nodes_block(node);
+	if (get_irn_arity(block) != 1) return;
+	int const arity = get_irn_arity(node);
+	for (int i = 0; i < arity; ++i) {
+		ir_node *const pred = get_irn_n(node, i);
+		if (is_Block(pred)) continue;
+		ir_printf("inserting phi for %n\n", pred);
+		ir_mode *const mode = get_irn_mode(pred);
+		ir_node *const phi = new_r_Phi(block, 1, &pred, mode);
+		set_irn_n(node, i, phi);
 	}
 }
 
@@ -34,8 +49,9 @@ static void print_loop(ir_loop const *const loop, int const indentation)
 void do_loop_unrolling2(ir_graph *const irg)
 {
 	assure_loopinfo(irg);
-	ir_loop *loop = get_irg_loop(irg);
-	if (loop) {
-		print_loop(loop, 0);
-	}
+	//ir_loop *loop = get_irg_loop(irg);
+	//if (loop) {
+	//print_loop(loop, 0);
+	//}
+	irg_walk_graph(irg, insert_phis, NULL, NULL);
 }
