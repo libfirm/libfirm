@@ -220,7 +220,7 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 	for (int i = 0; i < conv_arity; i++) {
 		ir_node *pred = get_irn_n(node, i);
 		ir_node *transformed;
-		if (get_conv_costs(pred, dest_mode) > 0) {
+		if (get_conv_costs(pred, dest_mode) > 1) {
 			transformed = place_conv(pred, dest_mode);
 		} else {
 			transformed = conv_transform(pred, dest_mode);
