@@ -320,7 +320,7 @@ static bool ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 	if (attr->size > X86_SIZE_64)
 		return false;
 	/* Don't do reload folding for x87 nodes for now, as we can't predict yet
-	 * wether the spillslot must be widened to 80bit for which no AM operations
+	 * whether the spillslot must be widened to 80bit for which no AM operations
 	 * exist. */
 	if (is_ia32_fld(load))
 		return false;

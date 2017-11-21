@@ -698,7 +698,7 @@ class Phi(Node):
     flags = []
     attrs = [
         Attribute("loop", type="int", init="0",
-                  comment="wether Phi represents the observable effect of a (possibly) nonterminating loop"),
+                  comment="whether Phi represents the observable effect of a (possibly) nonterminating loop"),
     ]
     attr_struct = "phi_attr"
     init = '''

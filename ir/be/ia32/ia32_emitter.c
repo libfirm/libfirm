@@ -453,7 +453,7 @@ destination_operand:
 					 * - The placement of %st0 selects whether the result is written to
 					 *   %st0 (right) or the other register (left).
 					 * This means that it is sufficient to test whether the operands are
-					 * permuted.  In particular it is not necessary to consider wether the
+					 * permuted.  In particular it is not necessary to consider whether the
 					 * result is to be placed into the explicit register operand. */
 					if (get_ia32_x87_attr_const(node)->x87.reverse)
 						be_emit_char('r');

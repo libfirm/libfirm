@@ -37,7 +37,7 @@ typedef enum arch_irn_flags_t {
 	 * ready. */
 	arch_irn_flag_schedule_first   = 1U << 5,
 	/** node writes to a spillslot, this means we can load from the spillslot
-	 * anytime (important when deciding wether we can rematerialize) */
+	 * anytime (important when deciding whether we can rematerialize) */
 	arch_irn_flag_spill            = 1U << 6,
 	/** node performs a reload like operation */
 	arch_irn_flag_reload           = 1U << 7,
