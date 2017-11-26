@@ -236,7 +236,7 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 
 		alloc_nodes[n_alloc] = op->carrier;
 
-		DBG((dbg, LEVEL_2, "\tassociating %+F and %+F\n", op->carrier, partner));
+		DBG((dbg, LEVEL_2, "\tassociating %+F (reg width required: %d) and %+F\n", op->carrier, arch_get_irn_register_req_width(op->carrier), partner));
 
 		unsigned const *const bs = get_decisive_partner_regs(op, n_regs);
 		if (bs) {
@@ -253,7 +253,10 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 #if USE_HUNGARIAN
 				hungarian_add(bp, n_alloc, col, 1);
 #else
-				bipartite_add(bp, n_alloc, col);
+				if (arch_get_irn_register_req_width(alloc_nodes[n_alloc]) != 2 || col % 2 == 0) {
+					bipartite_add(bp, n_alloc, col);
+					ir_printf("bipartite: add edge from %+F to reg %s\n", alloc_nodes[n_alloc], arch_register_for_index(env->cls, col)->name);
+				}
 #endif
 			}
 		} else {
@@ -283,7 +286,9 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 #if USE_HUNGARIAN
 				hungarian_add(bp, n_alloc, col, 1);
 #else
-				bipartite_add(bp, n_alloc, col);
+				if (arch_get_irn_register_req_width(alloc_nodes[n_alloc]) != 2 || col % 2 == 0) {
+					bipartite_add(bp, n_alloc, col);
+				}
 #endif
 			}
 
@@ -301,12 +306,19 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 	bipartite_matching(bp, assignment);
 #endif
 
+	printf("assignment: [");
+	for (int i = 0; i < n_alloc; ++i) {
+		printf("%d ", assignment[i]);
+	}
+	printf("]\n");
 	/* Assign colors obtained from the matching. */
 	for (int i = 0; i < n_alloc; ++i) {
 		assert(assignment[i] >= 0 && "there must have been a register assigned (node not register pressure faithful?)");
 		arch_register_t const *const reg = arch_register_for_index(env->cls, assignment[i]);
 
 		ir_node *const irn = alloc_nodes[i];
+
+		assert(((arch_get_irn_register_req_width(irn) != 2) || (reg->index % 2 == 0)) && "wrong register index assigned as double register");
 		arch_set_irn_register(irn, reg);
 		DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", irn, reg->name));
 
@@ -358,11 +370,11 @@ static void assign(ir_node *const block, void *const env_ptr)
 	bitset_t *const available = bitset_alloca(env->allocatable_regs->size);
 	bitset_copy(available, env->allocatable_regs);
 
-	/*printf("bitset available: [");
+	printf("bitset available: [");
 	for(unsigned i = 0; i < bitset_size(available); i++) {
 		printf("%d ", bitset_is_set(available, i));
 	}
-	printf("]\n");*/
+	printf("]\n");
 
 	/* Mind that the sequence of defs from back to front defines a perfect
 	 * elimination order. So, coloring the definitions from first to last
@@ -390,7 +402,10 @@ static void assign(ir_node *const block, void *const env_ptr)
 				DBG((dbg, LEVEL_4, "%+F has reg %s\n", irn, reg->name));
 				col = reg->index;
 				for (int i = 0; i < arch_get_irn_register_req_width(irn); i++) {
-					//assert(bitset_is_set(available, col + i) && "pre-colored register must be free");
+					if (!bitset_is_set(available, col + i)) {
+						ir_printf("%+F\n", irn);
+					}
+					assert(bitset_is_set(available, col + i) && "pre-colored register must be free");
 				}
 			} else {
 				assert(!arch_irn_is_ignore(irn));
@@ -416,6 +431,8 @@ static void be_ra_chordal_color(be_chordal_env_t *const chordal_env)
 	be_timer_push(T_CONSTR);
 	dom_tree_walk_irg(irg, constraints, NULL, chordal_env);
 	be_timer_pop(T_CONSTR);
+
+	dump_ir_graph(irg, "constraints");
 
 	be_chordal_dump(BE_CH_DUMP_CONSTR, irg, chordal_env->cls, "constr");
 

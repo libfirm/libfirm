@@ -333,7 +333,7 @@ static inline bool arch_irn_is_ignore(const ir_node *irn)
 }
 
 /**
- * Get the required register width (number of single registers) of @param node
+ * Get the required register width (number of single registers) of a node
  */
 static inline unsigned char arch_get_irn_register_req_width(const ir_node *node)
 {
