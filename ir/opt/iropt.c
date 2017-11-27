@@ -1407,6 +1407,8 @@ static ir_node *equivalent_node_Bitcast(ir_node *n)
  */
 static ir_node *equivalent_node_Phi(ir_node *n)
 {
+	return n;
+
 	if (!get_optimize() &&
 	    !irg_is_constrained(get_irn_irg(n), IR_GRAPH_CONSTRAINT_CONSTRUCTION))
 		return n;
