@@ -218,6 +218,13 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 #else
 	bipartite_t         *const bp          = bipartite_new(n_regs, n_regs);
 #endif
+	bool double_register_capable = (strcmp(env->cls->name, "sparc_fp") == 0);
+
+	bitset_t *const available = bitset_alloca(n_regs);
+	bitset_set_all(available);
+
+	int *const assignment = ALLOCAN(int, n_regs);
+
 	for (int i = 0, n_ops = insn->n_ops; i < n_ops; ++i) {
 		/* If the operand has no partner or the partner has not been marked
 		 * for allocation, determine the admissible registers and mark it
@@ -249,16 +256,44 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 			DB((dbg, LEVEL_2, "\n"));
 #endif
 
-			rbitset_foreach(bs, n_regs, col) {
-#if USE_HUNGARIAN
-				hungarian_add(bp, n_alloc, col, 1);
-#else
-				if (arch_get_irn_register_req_width(alloc_nodes[n_alloc]) != 2 || col % 2 == 0) {
-					bipartite_add(bp, n_alloc, col);
-					ir_printf("bipartite: add edge from %+F to reg %s\n", alloc_nodes[n_alloc], arch_register_for_index(env->cls, col)->name);
+			if (double_register_capable) {
+				bool assignment_found = false;
+				rbitset_foreach(bs, n_regs, col) {
+					if ((arch_get_irn_register_req_width(alloc_nodes[n_alloc]) != 2 || col % 2 == 0) && bitset_is_set(available, col)) {
+						bool fits = true;
+						for (int i = 1; i < arch_get_irn_register_req_width(op->carrier); i++) {
+							if (!bitset_is_set(available, col + i)) {
+								fits = false;
+							}
+						}
+						if (!fits) {
+							continue;
+						}
+						for (int i = 0; i < arch_get_irn_register_req_width(op->carrier); i++) {
+							bitset_clear(available, col + i);
+						}
+						DBG((dbg, LEVEL_2, "\tassign register %s to %+F\n", arch_register_for_index(env->cls, col)->name, op->carrier));
+						assignment[n_alloc] = col;
+						assignment_found = true;
+						break;
+					}
 				}
+				if (!assignment_found) {
+					DBG((dbg, LEVEL_2, "\tfailed to find register for %+F\n", op->carrier));
+				}
+			} else {
+				rbitset_foreach(bs, n_regs, col) {
+#if USE_HUNGARIAN
+					hungarian_add(bp, n_alloc, col, 1);
+#else
+					if (arch_get_irn_register_req_width(alloc_nodes[n_alloc]) != 2 || col % 2 == 0) {
+						bipartite_add(bp, n_alloc, col);
+						ir_printf("bipartite: add edge from %+F to reg %s\n", alloc_nodes[n_alloc], arch_register_for_index(env->cls, col)->name);
+					}
 #endif
+				}
 			}
+
 		} else {
 			DBG((dbg, LEVEL_2, "\tallowed registers for %+F: none\n", op->carrier));
 		}
@@ -282,29 +317,60 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 			alloc_nodes[n_alloc] = proj;
 			pmap_insert(partners, proj, NULL);
 
-			bitset_foreach(env->allocatable_regs, col) {
-#if USE_HUNGARIAN
-				hungarian_add(bp, n_alloc, col, 1);
-#else
-				if (arch_get_irn_register_req_width(alloc_nodes[n_alloc]) != 2 || col % 2 == 0) {
-					bipartite_add(bp, n_alloc, col);
+			if (double_register_capable) {
+				bool assignment_found = false;
+				bitset_foreach(env->allocatable_regs, col) {
+					if ((arch_get_irn_register_req_width(alloc_nodes[n_alloc]) != 2 || col % 2 == 0) && bitset_is_set(available, col)) {
+						bool fits = true;
+						for (int i = 1; i < arch_get_irn_register_req_width(alloc_nodes[n_alloc]); i++) {
+							if (!bitset_is_set(available, col + i)) {
+								fits = false;
+							}
+						}
+						if (!fits) {
+							continue;
+						}
+						for (int i = 0; i < arch_get_irn_register_req_width(alloc_nodes[n_alloc]); i++) {
+							bitset_clear(available, col + i);
+						}
+						DBG((dbg, LEVEL_2, "\tassign register %s to %+F\n", arch_register_for_index(env->cls, col)->name, alloc_nodes[n_alloc]));
+						assignment[n_alloc] = col;
+						assignment_found = true;
+						break;
+					}
 				}
+				if (!assignment_found) {
+					DBG((dbg, LEVEL_2, "\tfailed to find register for %+F\n", alloc_nodes[n_alloc]));
+				}
+			} else {
+				bitset_foreach(env->allocatable_regs, col) {
+#if USE_HUNGARIAN
+					hungarian_add(bp, n_alloc, col, 1);
+#else
+					if (arch_get_irn_register_req_width(alloc_nodes[n_alloc]) != 2 || col % 2 == 0) {
+						bipartite_add(bp, n_alloc, col);
+						ir_printf("bipartite [2]: add edge from %+F to reg %s\n", alloc_nodes[n_alloc], arch_register_for_index(env->cls, col)->name);
+					}
 #endif
+				}
 			}
 
 			n_alloc++;
 		}
 	}
+	printf("n_alloc: %d\n", n_alloc);
 
-	/* Compute a valid register allocation. */
-	int *const assignment = ALLOCAN(int, n_regs);
+	if (!double_register_capable) {
+		/* Compute a valid register allocation. */
 #if USE_HUNGARIAN
-	hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
-	int const match_res = hungarian_solve(bp, assignment, NULL, 1);
-	assert(match_res == 0 && "matching failed");
+		hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
+		int const match_res = hungarian_solve(bp, assignment, NULL, 1);
+		assert(match_res == 0 && "matching failed");
 #else
-	bipartite_matching(bp, assignment);
+		bipartite_matching(bp, assignment);
 #endif
+	}
+
 
 	printf("assignment: [");
 	for (int i = 0; i < n_alloc; ++i) {
