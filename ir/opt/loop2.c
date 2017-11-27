@@ -16,6 +16,14 @@ static char const *kind_get_string(firm_kind const *const kind)
 	}
 }
 
+static int is_inside_loop(ir_node const *const node)
+{
+	ir_graph const *const graph = get_irn_irg(node);
+	ir_node const *const block = is_Block(node) ? node : get_nodes_block(node);
+	ir_loop const *const loop = get_irn_loop(block);
+	return loop && loop != get_irg_loop(graph);
+}
+
 static void insert_phis(ir_node *const node, void *const env)
 {
 	(void)env;
