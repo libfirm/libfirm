@@ -19,17 +19,17 @@ static char const *kind_get_string(firm_kind const *const kind)
 static void insert_phis(ir_node *const node, void *const env)
 {
 	(void)env;
-	if (is_Block(node)) return;
+	if (!is_Add(node)) return; // only add phis for Add nodes for now
 	ir_node *const block = get_nodes_block(node);
 	if (get_irn_arity(block) != 1) return;
 	int const arity = get_irn_arity(node);
 	for (int i = 0; i < arity; ++i) {
 		ir_node *const pred = get_irn_n(node, i);
 		if (is_Block(pred)) continue;
-		ir_printf("inserting phi for %n\n", pred);
 		ir_mode *const mode = get_irn_mode(pred);
 		ir_node *const phi = new_r_Phi(block, 1, &pred, mode);
 		set_irn_n(node, i, phi);
+		ir_printf("inserting phi %d for %n (%d) -> %n (%d)\n", get_irn_node_nr(phi), node, get_irn_node_nr(node), pred, get_irn_node_nr(pred));
 	}
 }
 
