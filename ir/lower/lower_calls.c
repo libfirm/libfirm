@@ -753,9 +753,6 @@ static void fix_int_return(cl_entry const *const entry,
 	ir_node  *const block = get_nodes_block(call);
 	ir_graph *const irg   = get_irn_irg(base_addr);
 
-	/* we need edges activated here */
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
-
 	/* if the Call throws an exception, then we cannot add instruction
 	 * immediately behind it as the call ends the basic block */
 	assert(!ir_throws_exception(call));
@@ -1337,6 +1334,9 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 				break;
 			}
 		}
+
+		/* We need consistent out edges, again. */
+		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 	}
 
 	/* fix parameter sels */
