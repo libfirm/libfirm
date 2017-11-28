@@ -24,20 +24,51 @@ static int is_inside_loop(ir_node const *const node)
 	return loop && loop != get_irg_loop(graph);
 }
 
+// insert a phi node between node and its nth predecessor in block
+static ir_node *insert_phi(ir_node *const node, int const n, ir_node *const block)
+{
+	if (get_irn_arity(block) != 1) {
+		// TODO: figure out what to do in this case
+		return node;
+	}
+	ir_node *const pred = get_irn_n(node, n);
+	ir_mode *const mode = get_irn_mode(pred);
+	ir_node *const phi = new_r_Phi(block, 1, &pred, mode);
+	set_irn_n(node, n, phi);
+	printf("inserting phi %ld\n", get_irn_node_nr(phi));
+	return phi;
+}
+
+// insert phi nodes for the edge between node and its nth predecessor
+static void insert_phis_for_edge(ir_node *node, int n)
+{
+	ir_node *const pred = get_irn_n(node, n);
+	ir_node *const pred_block = get_nodes_block(pred);
+	if (!is_inside_loop(pred_block)) return;
+	ir_node *block = get_nodes_block(node);
+	ir_loop *loop = get_irn_loop(block);
+	// walk up the dominance tree
+	while (block != pred_block) {
+		ir_node *const idom = get_Block_idom(block);
+		// insert phi nodes whenever the loop changes
+		if (get_irn_loop(idom) != loop) {
+			node = insert_phi(node, n, block);
+			n = 1;
+			loop = get_irn_loop(idom);
+		}
+		block = idom;
+	}
+}
+
 static void insert_phis(ir_node *const node, void *const env)
 {
 	(void)env;
 	if (!is_Add(node)) return; // only add phis for Add nodes for now
-	ir_node *const block = get_nodes_block(node);
-	if (get_irn_arity(block) != 1) return;
 	int const arity = get_irn_arity(node);
 	for (int i = 0; i < arity; ++i) {
 		ir_node *const pred = get_irn_n(node, i);
 		if (is_Block(pred)) continue;
-		ir_mode *const mode = get_irn_mode(pred);
-		ir_node *const phi = new_r_Phi(block, 1, &pred, mode);
-		set_irn_n(node, i, phi);
-		ir_printf("inserting phi %d for %n (%d) -> %n (%d)\n", get_irn_node_nr(phi), node, get_irn_node_nr(node), pred, get_irn_node_nr(pred));
+		insert_phis_for_edge(node, i);
 	}
 }
 
@@ -57,9 +88,6 @@ static void print_loop(ir_loop const *const loop, int const indentation)
 void do_loop_unrolling2(ir_graph *const irg)
 {
 	assure_loopinfo(irg);
-	//ir_loop *loop = get_irg_loop(irg);
-	//if (loop) {
-	//print_loop(loop, 0);
-	//}
+	compute_doms(irg);
 	irg_walk_graph(irg, insert_phis, NULL, NULL);
 }
