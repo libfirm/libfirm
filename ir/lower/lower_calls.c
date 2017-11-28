@@ -1218,7 +1218,22 @@ static ir_node *build_compound_from_arguments(ir_node *irn, wlk_env *env, unsign
 			}
 
 			ir_mode *small_mode = reduce_mode(arg_mode, tp_size - offset);
-			value = new_rd_Conv(dbgi, block, value, small_mode);
+			if (mode_is_float(arg_mode)) {
+				switch (get_mode_size_bytes(small_mode)) {
+				case 4:
+					small_mode = mode_F;
+					break;
+				case 8:
+					small_mode = mode_D;
+					break;
+				default:
+					panic("Cannot handle float modes unequal to 4 or 8 bytes.");
+				}
+			}
+
+			if (small_mode != arg_mode) {
+				value = new_rd_Conv(dbgi, block, value, small_mode);
+			}
 
 			ir_node *store = new_rd_Store(dbgi, block, mem, ptr, value,
 			                              tp, cons_none);
