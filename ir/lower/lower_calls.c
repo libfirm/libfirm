@@ -838,7 +838,11 @@ static void fix_int_return(cl_entry const *const entry,
 		}
 	}
 
-	ir_node *const sync = new_r_Sync(block, sync_index, sync_in);
+	ir_node *sync = proj_mem;
+	if (sync_index > 0) {
+		sync = new_r_Sync(block, sync_index, sync_in);
+	}
+
 	edges_reroute(dummy, sync);
 }
 
@@ -972,7 +976,7 @@ static void fix_call_compound_params(const cl_entry *entry, const ir_type *ctp)
 
 	DEBUG_ONLY(size_t max_input = PARAM_TO_INPUT(n_params_lower));
 	for (size_t h = 0; h < n_params; ++h) {
-		assert(i < max_input);
+		assert(i <= max_input);
 
 		ir_type *arg_type = get_method_param_type(ctp, h);
 		ir_node *arg      = get_Call_param(call, h);
@@ -1092,7 +1096,10 @@ static void transform_return(ir_node *ret, size_t n_ret_com, wlk_env *env)
 					new_in[n_in++] = new_r_Proj(load, mode, pn_Load_res);
 					offset += get_mode_size_bytes(mode);
 				}
-				mem = new_r_Sync(block, length, sync_in);
+
+				if (length > 0) {
+					mem = new_r_Sync(block, length, sync_in);
+				}
 			}
 			continue;
 		}
