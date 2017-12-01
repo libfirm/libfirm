@@ -50,6 +50,7 @@ static ir_node *insert_phi(ir_node *const node, int const n, ir_node *const bloc
 static void insert_phis_for_edge(ir_node *node, int n)
 {
 	ir_node *const pred = get_irn_n(node, n);
+	if (!mode_is_data(get_irn_mode(pred))) return;
 	ir_node *const pred_block = get_nodes_block(pred);
 	if (!is_inside_loop(pred_block)) return;
 	ir_node *block = get_nodes_block(node);
@@ -60,7 +61,7 @@ static void insert_phis_for_edge(ir_node *node, int n)
 		// insert phi nodes whenever the loop changes
 		if (get_irn_loop(idom) != loop) {
 			node = insert_phi(node, n, block);
-			n = 1;
+			n = 0;
 			loop = get_irn_loop(idom);
 		}
 		block = idom;
@@ -73,8 +74,6 @@ static void insert_phis(ir_node *const node, void *const env)
 	if (!is_Add(node)) return; // only add phis for Add nodes for now
 	int const arity = get_irn_arity(node);
 	for (int i = 0; i < arity; ++i) {
-		ir_node *const pred = get_irn_n(node, i);
-		if (is_Block(pred)) continue;
 		insert_phis_for_edge(node, i);
 	}
 }
