@@ -40,7 +40,10 @@ static ir_node *insert_phi(ir_node *const node, int const n, ir_node *const bloc
 	}
 	ir_node *const pred = get_irn_n(node, n);
 	ir_mode *const mode = get_irn_mode(pred);
+	int opt = get_optimize();
+	set_optimize(0);
 	ir_node *const phi = new_r_Phi(block, 1, &pred, mode);
+	set_optimize(opt);
 	set_irn_n(node, n, phi);
 	printf("inserting phi %ld\n", get_irn_node_nr(phi));
 	return phi;
