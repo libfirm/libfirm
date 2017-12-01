@@ -75,7 +75,8 @@ static void insert_phis_for_edge(ir_node *node, int n)
 static void insert_phis(ir_node *const node, void *const env)
 {
 	(void)env;
-	if (!is_Add(node)) return; // only add phis for Add nodes for now
+	if (is_Block(node))
+		return;
 	int const arity = get_irn_arity(node);
 	for (int i = 0; i < arity; ++i) {
 		insert_phis_for_edge(node, i);
