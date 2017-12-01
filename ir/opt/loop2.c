@@ -56,6 +56,10 @@ static void insert_phis_for_edge(ir_node *node, int n)
 	ir_node *block = get_nodes_block(node);
 	ir_loop *loop = get_irn_loop(block);
 	// walk up the dominance tree
+	if (is_Phi(node)) {
+		// if node is a phi, start the walk at the nth predecessor of block
+		block = get_nodes_block(get_irn_n(block, n));
+	}
 	while (block != pred_block) {
 		ir_node *const idom = get_Block_idom(block);
 		// insert phi nodes whenever the loop changes
