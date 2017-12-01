@@ -16,6 +16,13 @@ static char const *kind_get_string(firm_kind const *const kind)
 	}
 }
 
+static void assure_dominance(ir_graph *irg)
+{
+	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE))
+		return;
+	compute_doms(irg);
+}
+
 static int is_inside_loop(ir_node const *const node)
 {
 	ir_graph const *const graph = get_irn_irg(node);
@@ -88,6 +95,6 @@ static void print_loop(ir_loop const *const loop, int const indentation)
 void do_loop_unrolling2(ir_graph *const irg)
 {
 	assure_loopinfo(irg);
-	compute_doms(irg);
+	assure_dominance(irg);
 	irg_walk_graph(irg, insert_phis, NULL, NULL);
 }
