@@ -1,4 +1,7 @@
 #include "firm.h"
+#include "debug.h"
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static char const *kind_get_string(firm_kind const *const kind)
 {
@@ -45,7 +48,7 @@ static ir_node *insert_phi(ir_node *const node, int const n, ir_node *const bloc
 	ir_node *const phi = new_r_Phi(block, 1, &pred, mode);
 	set_optimize(opt);
 	set_irn_n(node, n, phi);
-	printf("inserting phi %ld\n", get_irn_node_nr(phi));
+	DB((dbg, LEVEL_3, "inserting phi %ld\n", get_irn_node_nr(phi)));
 	return phi;
 }
 
@@ -101,6 +104,7 @@ static void print_loop(ir_loop const *const loop, int const indentation)
 
 void do_loop_unrolling2(ir_graph *const irg)
 {
+	FIRM_DBG_REGISTER(dbg, "firm.opt.lcssa");
 	assure_loopinfo(irg);
 	assure_dominance(irg);
 	irg_walk_graph(irg, insert_phis, NULL, NULL);
