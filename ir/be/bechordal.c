@@ -245,7 +245,20 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 
 		DBG((dbg, LEVEL_2, "\tassociating %+F (reg width required: %d) and %+F\n", op->carrier, arch_get_irn_register_req_width(op->carrier), partner));
 
-		unsigned const *const bs = get_decisive_partner_regs(op, n_regs);
+		// TODO this part should not be done here, instead it should be already available within the operand
+		unsigned const *const bs_orig = get_decisive_partner_regs(op, n_regs);
+		unsigned *const bs = rbitset_alloca(n_regs);
+		rbitset_copy(bs, bs_orig, n_regs);
+		if (double_register_capable && arch_get_irn_register_req_width(op->carrier) == 2) {
+			rbitset_foreach(bs_orig, n_regs, col) {
+				if (col % 2 != 0) {
+					rbitset_clear(bs, col);
+				}
+			}
+			rbitset_clear(bs, 30);
+		}
+
+
 		if (bs) {
 #ifdef DEBUG_libfirm
 			DBG((dbg, LEVEL_2, "\tallowed registers for %+F:", op->carrier, bs[0]));
