@@ -5661,7 +5661,7 @@ void ia32_transform_graph(ir_graph *irg)
 	                         | IR_GRAPH_PROPERTY_NO_TUPLES
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
-	DB((auto_dbg, LEVEL_2, "count-total %d\n", count_relevant_nodes(irg)));
+	DB((auto_dbg, LEVEL_1, "count-total %d\n", count_relevant_nodes(irg)));
 
 	be_transform_graph(irg, ia32_pretransform_node);
 
