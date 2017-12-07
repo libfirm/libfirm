@@ -51,7 +51,7 @@
 #undef CONSTRUCT_SSE_CONST
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
-DEBUG_ONLY(static firm_dbg_module_t *auto_dbg;)
+DEBUG_ONLY(firm_dbg_module_t *auto_dbg;)
 
 x86_cconv_t          *current_cconv;
 static be_stack_env_t        stack_env;

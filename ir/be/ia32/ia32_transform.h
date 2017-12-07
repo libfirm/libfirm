@@ -65,4 +65,6 @@ ir_node *nomem;
 ir_node *noreg_GP;
 x86_cconv_t *current_cconv;
 
+DEBUG_ONLY(extern firm_dbg_module_t *auto_dbg;)
+
 #endif
