@@ -390,6 +390,51 @@ static double mat_dot_vec_entry(square_matrix *mat, double *vec, int row)
 	return acc;
 }
 
+/**
+ * Fallback solution 1: Use loop weight.
+ *
+ * Returns false when this would result in an invalid frequency.
+ */
+static bool fallback_loop_weight(dfs_t *const dfs, double loop_weight) {
+	unsigned size = dfs_get_n_nodes(dfs);
+	for (int idx = size; idx-- > 0; ) {
+		ir_node       *bb    = dfs_get_post_num_node(dfs, size - idx - 1);
+		const ir_loop *loop  = get_irn_loop(bb);
+		const int      depth = get_loop_depth(loop);
+		double         freq  = 1.0;
+
+		for (int d = 0; d < depth; ++d) {
+			freq *= loop_weight;
+		}
+
+		/* Check for inf, nan and negative values. */
+		if (isinf(freq) || freq < 0) {
+			return false;
+		}
+		set_block_execfreq(bb, freq);
+	}
+	return true;
+}
+
+/**
+ * Fallback solution 2: All blocks have the same execution frequency.
+ */
+static void fallback_all_ones(dfs_t *const dfs) {
+	unsigned size = dfs_get_n_nodes(dfs);
+	for (int idx = size; idx-- > 0; ) {
+		ir_node *const bb = dfs_get_post_num_node(dfs, size - idx - 1);
+		set_block_execfreq(bb, 1.0);
+	}
+}
+
+static void free_properties_and_dfs(ir_graph *const irg, dfs_t *const dfs) {
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED
+	                       | IR_RESOURCE_IRN_VISITED
+	                       | IR_RESOURCE_IRN_LINK);
+
+	dfs_free(dfs);
+}
+
 void ir_estimate_execfreq(ir_graph *irg)
 {
 	double loop_weight = 10.0;
@@ -407,6 +452,17 @@ void ir_estimate_execfreq(ir_graph *irg)
 	dfs_t *const dfs = dfs_new(irg);
 
 	unsigned       size   = dfs_get_n_nodes(dfs);
+
+	/* It is undesirable to allocate more than 2GB for the matrix */
+	if (size*size*sizeof(double) > 1 << 30) {
+		if (!fallback_loop_weight(dfs, loop_weight)) {
+			fallback_all_ones(dfs);
+		}
+		free_properties_and_dfs(irg, dfs);
+		return;
+	}
+
+
 	square_matrix *in_fac = mat_create(size);
 	for (unsigned r = 0; r < size; r++) {
 		for (unsigned c = 0; c < size; c++) {
@@ -572,7 +628,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 			if (mat_to_lgs[idx] == -1) {
 				double freq = mat_dot_vec_entry(in_fac, freqs, idx);
 				/* Check for inf, nan and negative values. */
-				if (isinf(freq) || !(freq >= 0)) {
+				if (isinf(freq) || freq < 0) {
 					valid_freq = false;
 					break;
 				}
@@ -583,42 +639,12 @@ void ir_estimate_execfreq(ir_graph *irg)
 
 	DEL_ARR_F(freqs);
 
-	/* Fallback solution: Use loop weight. */
-	if (!valid_freq) {
-		valid_freq = true;
-
-		for (int idx = size; idx-- > 0; ) {
-			ir_node       *bb    = dfs_get_post_num_node(dfs, size - idx - 1);
-			const ir_loop *loop  = get_irn_loop(bb);
-			const int      depth = get_loop_depth(loop);
-			double         freq  = 1.0;
-
-			for (int d = 0; d < depth; ++d) {
-				freq *= loop_weight;
-			}
-
-			/* Check for inf, nan and negative values. */
-			if (isinf(freq) || !(freq >= 0)) {
-				valid_freq = false;
-				break;
-			}
-			set_block_execfreq(bb, freq);
-		}
+	/* Fallbacks in case some frequencies were invalid */
+	if (!valid_freq && !fallback_loop_weight(dfs, loop_weight)) {
+		fallback_all_ones(dfs);
 	}
 
-	/* Fallback solution: All blocks have the same execution frequency. */
-	if (!valid_freq) {
-		for (int idx = size; idx-- > 0; ) {
-			ir_node *const bb = dfs_get_post_num_node(dfs, size - idx - 1);
-			set_block_execfreq(bb, 1.0);
-		}
-	}
-
-	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED
-	                       | IR_RESOURCE_IRN_VISITED
-	                       | IR_RESOURCE_IRN_LINK);
-
-	dfs_free(dfs);
+	free_properties_and_dfs(irg, dfs);
 	DEL_ARR_F(lgs_to_mat);
 	DEL_ARR_F(mat_to_lgs);
 	free(in_fac);
