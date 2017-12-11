@@ -4,22 +4,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static char const *kind_get_string(firm_kind const *const kind)
-{
-	switch (*kind) {
-	case k_BAD: return "k_BAD";
-	case k_entity: return "k_entity";
-	case k_type: return "k_type";
-	case k_ir_graph: return "k_ir_graph";
-	case k_ir_node: return "k_ir_node";
-	case k_ir_mode: return "k_ir_mode";
-	case k_tarval: return "k_tarval";
-	case k_ir_loop: return "k_ir_loop";
-	case k_ir_max: return "k_ir_max";
-	default: return "";
-	}
-}
-
 static void assure_dominance(ir_graph *irg)
 {
 	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE))
@@ -58,9 +42,11 @@ static ir_node *insert_phi(ir_node *const node, int const n, ir_node *const bloc
 static void insert_phis_for_edge(ir_node *node, int n)
 {
 	ir_node *const pred = get_irn_n(node, n);
-	if (!mode_is_data(get_irn_mode(pred))) return;
+	if (!mode_is_data(get_irn_mode(pred)))
+		return;
 	ir_node *const pred_block = get_nodes_block(pred);
-	if (!is_inside_loop(pred_block)) return;
+	if (!is_inside_loop(pred_block))
+		return;
 	ir_node *block = get_nodes_block(node);
 	ir_loop *loop = get_irn_loop(block);
 	// walk up the dominance tree
@@ -80,7 +66,7 @@ static void insert_phis_for_edge(ir_node *node, int n)
 	}
 }
 
-static void insert_phis(ir_node *const node, void *const env)
+static void insert_phis_for_node(ir_node *const node, void *const env)
 {
 	(void)env;
 	if (is_Block(node))
@@ -91,23 +77,15 @@ static void insert_phis(ir_node *const node, void *const env)
 	}
 }
 
-static void print_loop(ir_loop const *const loop, int const indentation)
-{
-	size_t const n_elements = get_loop_n_elements(loop);
-	for (size_t i = 0; i < n_elements; ++i) {
-		loop_element const element = get_loop_element(loop, i);
-		for (int j = 0; j < indentation; ++j) printf("  ");
-		printf("%s\n", kind_get_string(element.kind));
-		if (*element.kind == k_ir_loop) {
-			print_loop(element.son, indentation + 1);
-		}
-	}
-}
-
-void do_loop_unrolling2(ir_graph *const irg)
+static void assure_lcssa(ir_graph *const irg)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.lcssa");
 	assure_loopinfo(irg);
 	assure_dominance(irg);
-	irg_walk_graph(irg, insert_phis, NULL, NULL);
+	irg_walk_graph(irg, insert_phis_for_node, NULL, NULL);
+}
+
+void do_loop_unrolling2(ir_graph *const irg)
+{
+	assure_lcssa(irg);
 }
