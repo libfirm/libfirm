@@ -892,12 +892,14 @@ static void transform_irg(lowering_env_t const *const env, ir_graph *const irg)
 			++n_param_com;
 	}
 
-	if (arg_shift > 0)
+	if (arg_shift > 0) {
 		fix_parameter_entities(irg, arg_shift);
+	}
 
 	/* much easier if we have only one return */
-	if (n_ret_com != 0)
+	if (n_ret_com > 0) {
 		assure_irg_properties(irg, IR_GRAPH_PROPERTY_ONE_RETURN);
+	}
 
 	ir_type *lowered_mtp = lower_mtp(env, mtp);
 	set_entity_type(ent, lowered_mtp);
