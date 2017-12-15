@@ -91,7 +91,7 @@ static void handle_case(ir_node *block, ir_node *switchn, unsigned pn, env_t *en
 	ir_node *c        = NULL;
 	ir_node *selector = get_Switch_selector(switchn);
 
-	/* we can't do usefull things with the default label */
+	/* we can't do useful things with the default label */
 	if (pn == pn_Switch_default)
 		return;
 

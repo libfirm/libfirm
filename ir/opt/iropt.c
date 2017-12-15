@@ -354,7 +354,7 @@ static ir_tarval *computed_value_Sub(const ir_node *n)
 }
 
 /**
- * Return the value of an unary Minus.
+ * Return the value of a unary Minus.
  */
 static ir_tarval *computed_value_Minus(const ir_node *n)
 {

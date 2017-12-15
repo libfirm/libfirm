@@ -125,7 +125,7 @@ struct ir_type {
 	ir_visited_t visit;      /**< visited counter for walks of the type information */
 	void *link;              /**< holds temporary data - like in irnode_t.h */
 	type_dbg_info *dbi;      /**< A pointer to information for debug support. */
-	long nr;                 /**< An unique number for each type. */
+	long nr;                 /**< A unique number for each type. */
 	union {
 		compound_attr compound;
 		class_attr    cls;

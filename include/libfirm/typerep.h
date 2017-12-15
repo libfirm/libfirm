@@ -702,7 +702,7 @@ ENUM_BITSET(ptr_access_kind)
 typedef enum tp_opcode {
 	tpo_uninitialized = 0,   /* not a type opcode */
 	tpo_struct,              /**< A struct type. */
-	tpo_union,               /**< An union type. */
+	tpo_union,               /**< A union type. */
 	tpo_class,               /**< A class type. */
 	tpo_segment,             /**< A segment type. */
 	tpo_method,              /**< A method type. */
