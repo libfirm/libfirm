@@ -200,7 +200,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 		for (reg_pair_t const *p; (p = oregmap[k]);) {
 			oregmap[k] = NULL;
 			ir_node *const copy = be_new_Copy_before_reg(p->in_node, perm, p->out_reg);
-			DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F from %s to %s\n", perm, copy, p->in_node, p->in_reg, p->out_reg));
+			DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F from %s to %s\n", perm, copy, p->in_node, p->in_reg->name, p->out_reg->name));
 			exchange(p->out_node, copy);
 
 			const unsigned new_k = p->in_reg->index;
@@ -295,7 +295,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 
 				ir_node *const in[] = { p->in_node, q->in_node };
 				ir_node *const xchg = be_new_Perm(block, ARRAY_SIZE(in), in);
-				DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F (%s) and %+F (%s)\n", perm, xchg, in[0], arch_get_irn_register(in[0]), in[1], arch_get_irn_register(in[1])));
+				DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F (%s) and %+F (%s)\n", perm, xchg, in[0], arch_get_irn_register(in[0])->name, in[1], arch_get_irn_register(in[1])->name));
 				p->in_node           = be_new_Proj_reg(xchg, 0, q->in_reg);
 				ir_node *const new_q = be_new_Proj_reg(xchg, 1, q->out_reg);
 				exchange(q->out_node, new_q);
