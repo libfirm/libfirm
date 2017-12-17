@@ -1186,7 +1186,7 @@ static ir_node *build_compound_from_arguments(ir_node *irn, wlk_env *env, unsign
 	ir_node   *first      = NULL;
 	unsigned   tp_size    = get_type_size(tp);
 
-	long offset = 0;
+	unsigned offset = 0;
 
 	for (unsigned i = 0; i < spec->length; i++) {
 		long reg_offset = 0;
