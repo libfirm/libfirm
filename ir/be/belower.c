@@ -200,7 +200,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 		for (reg_pair_t const *p; (p = oregmap[k]);) {
 			oregmap[k] = NULL;
 			ir_node *const copy = be_new_Copy_before_reg(p->in_node, perm, p->out_reg);
-			DBG((dbg, LEVEL_2, "%+F: inserting %+F for %+F from %s to %s\n", perm, copy, p->in_node, p->in_reg->name, p->out_reg->name));
+			//DBG((dbg, LEVEL_2, "[A] %+F: inserting %+F for %+F from %s (w: %d) to %s (w: %d)\n", perm, copy, p->in_node, p->in_reg->name, arch_get_irn_register_req_width(p->in_node), p->out_reg->name, arch_get_irn_register_req_width(p->out_node)));
 			exchange(p->out_node, copy);
 
 			const unsigned new_k = p->in_reg->index;
@@ -235,12 +235,14 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 				continue;
 			}
 			reg_pair_t *start = oregmap[i];
-
+			assert((free_reg->index % 2 == 0 || arch_get_irn_register_req_width(start->in_node) < 2) && "free_reg has to be even index for double register");
 			ir_node *const save_copy = be_new_Copy_before_reg(start->in_node, perm, free_reg);
+			DBG((dbg, LEVEL_2, "[B] %+F: inserting %+F for %+F from %s (w: %d) to %s\n", perm, save_copy, start->in_node, start->in_reg->name, start->in_reg->single_req->width, free_reg->name));
 
 			reg_pair_t *p = oregmap[start->in_reg->index];
 			do {
 				ir_node *const copy = be_new_Copy_before_reg(p->in_node, perm, p->out_reg);
+				DBG((dbg, LEVEL_2, "[C] %+F: inserting %+F for %+F from %s to %s\n", perm, copy, p->in_node, p->in_reg->name, p->out_reg->name));
 				exchange(p->out_node, copy);
 				unsigned const in_idx = p->in_reg->index;
 				rbitset_clear(inregs, in_idx);
@@ -249,6 +251,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 
 			rbitset_clear(inregs, start->in_reg->index);
 			ir_node *const restore_copy = be_new_Copy_before_reg(save_copy, perm, start->out_reg);
+			DBG((dbg, LEVEL_2, "[D] %+F: inserting %+F for %+F from %s to %s\n", perm, restore_copy, save_copy, "?", start->out_reg->name));
 			exchange(start->out_node, restore_copy);
 		}
 	} else {

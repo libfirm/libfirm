@@ -183,9 +183,10 @@ static void set_copy_info(ir_node *const irn, ir_graph *const irg, ir_node *cons
 	arch_register_req_t   const *const op_req = arch_get_irn_register_req(op);
 	arch_register_class_t const *const cls    = op_req->cls;
 
+	arch_register_req_t *const out_req = be_create_cls_req(irg, cls, op_req->width);
 	be_node_set_register_req_in(irn, 0, cls->class_req);
 
-	arch_register_req_t *const out_req = be_create_cls_req(irg, cls, op_req->width);
+
 	out_req->should_be_same = 1U << 0;
 	arch_set_irn_register_req_out(irn, 0, out_req);
 }
