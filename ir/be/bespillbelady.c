@@ -345,10 +345,6 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 		to_insert[iter] = val;
 
 		demand += arch_get_irn_register_req_width(val);
-		// debug output:
-		if (arch_get_irn_register_req_width(val) == 2) {
-			printf("[spill] Add demand for double register\n");
-		}
 
 	}
 	demand += add_pressure;
@@ -882,7 +878,6 @@ static void be_spill_belady(ir_graph *irg, const arch_register_class_t *rcls,
 	cls          = rcls;
 	lv           = be_get_irg_liveness(irg);
 	n_regs       = be_get_n_allocatable_regs(irg, cls);
-	printf("\n\n%d allocatable registers in class %s\n", n_regs, cls->name);
 	ws           = new_workset();
 	uses         = be_begin_uses(irg, lv);
 	loop_ana     = be_new_loop_pressure(irg, cls);
