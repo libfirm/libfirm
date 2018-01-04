@@ -4,13 +4,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static void assure_dominance(ir_graph *irg)
-{
-	if (irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE))
-		return;
-	compute_doms(irg);
-}
-
 static int is_inside_loop(ir_node const *const node)
 {
 	ir_graph const *const graph = get_irn_irg(node);
@@ -80,8 +73,7 @@ static void insert_phis_for_node(ir_node *const node, void *const env)
 static void assure_lcssa(ir_graph *const irg)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.lcssa");
-	assure_loopinfo(irg);
-	assure_dominance(irg);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	irg_walk_graph(irg, insert_phis_for_node, NULL, NULL);
 }
 
