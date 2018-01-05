@@ -96,6 +96,9 @@ ir_node *be_transform_phi(ir_node *node, const arch_register_req_t *req)
 	ir_node **ins   = get_irn_in(node);
 	int       arity = get_irn_arity(node);
 	ir_mode  *mode  = req->cls->mode;
+	if (mode_is_float(mode) && req->width == 2) {
+		mode = get_modeD();
+	}
 	ir_node  *phi   = new_ir_node(dbgi, irg, block, op_Phi, mode, arity, ins);
 	copy_node_attr(irg, node, phi);
 
