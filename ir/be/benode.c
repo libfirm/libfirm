@@ -184,7 +184,8 @@ static void set_copy_info(ir_node *const irn, ir_graph *const irg, ir_node *cons
 	arch_register_class_t const *const cls    = op_req->cls;
 
 	arch_register_req_t *const out_req = be_create_cls_req(irg, cls, op_req->width);
-	be_node_set_register_req_in(irn, 0, cls->class_req);
+	arch_register_req_t   const *const req = op_req->width == 1 ? cls->class_req : be_create_cls_req(irg, cls, op_req->width);
+	be_node_set_register_req_in(irn, 0, req);
 
 
 	out_req->should_be_same = 1U << 0;
@@ -391,7 +392,12 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, arch_register_req_
 ir_node *be_new_Phi0(ir_node *const block, arch_register_req_t const *const req)
 {
 	ir_graph *const irg = get_irn_irg(block);
-	ir_node  *const phi = new_ir_node(NULL, irg, block, op_Phi, req->cls->mode, 0, NULL);
+	ir_mode *mode = req->cls->mode;
+	if (mode_is_float(mode) && req->width == 2) {
+		mode = get_modeD();
+	}
+
+	ir_node  *const phi = new_ir_node(NULL, irg, block, op_Phi, mode, 0, NULL);
 	struct obstack *const obst = be_get_be_obst(irg);
 	backend_info_t *const info = be_get_info(phi);
 	info->out_infos = NEW_ARR_DZ(reg_out_info_t, obst, 1);
@@ -536,7 +542,11 @@ ir_node *be_new_Unknown(ir_node *const block, arch_register_req_t const *const r
 ir_node *be_new_Proj(ir_node *const pred, unsigned const pos)
 {
 	arch_register_req_t const *const req = arch_get_irn_register_req_out(pred, pos);
-	return new_r_Proj(pred, req->cls->mode, pos);
+	ir_mode *mode = req->cls->mode;
+	if (mode_is_float(mode) && req->width == 2) {
+		mode = get_modeD();
+	}
+	return new_r_Proj(pred, mode, pos);
 }
 
 ir_node *be_new_Proj_reg(ir_node *const pred, unsigned const pos, arch_register_t const *const reg)
