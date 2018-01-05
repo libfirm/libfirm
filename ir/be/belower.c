@@ -97,7 +97,7 @@ static void live_nodes_registers_walker(ir_node *irn, void *env)
 	mark_live_nodes_registers(irn, (lower_env_t*)env);
 }
 
-static arch_register_t const *get_free_register(ir_node *const perm, lower_env_t *env)
+static arch_register_t const *get_free_register(ir_node *const perm, lower_env_t *env, unsigned const width)
 {
 	if (!env->use_copies)
 		return NULL;
@@ -129,6 +129,8 @@ static arch_register_t const *get_free_register(ir_node *const perm, lower_env_t
 		arch_register_t const *free_reg = &regs[free_idx];
 		if (free_reg->cls != cls)
 			continue;
+		if (width == 2 && (free_reg->index % 2 > 0))
+			continue;
 
 		return free_reg;
 	}
@@ -157,6 +159,8 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 	reg_pair_t      *const pairs      = ALLOCAN(reg_pair_t, arity);
 	reg_pair_t            *pair       = pairs;
 	arch_register_t const *free_reg   = NULL;
+	/* minimum width of free register required for copying */
+	unsigned               req_width   = 1;
 
 	/* Collect all input-output pairs of the Perm. */
 	for (unsigned pos = 0; pos != arity; ++pos) {
@@ -172,6 +176,9 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 			DBG((dbg, LEVEL_2, "%+F: removing equal perm register pair (%+F, %+F, %s)\n", perm, in, out, oreg->name));
 			exchange(out, in);
 			continue;
+		}
+		if (arch_get_irn_register_req_width(in) > req_width) {
+			req_width = arch_get_irn_register_req_width(in);
 		}
 
 		pair->in_reg   = ireg;
@@ -224,7 +231,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 	}
 
 	if (use_copies && free_reg == NULL) {
-		free_reg = get_free_register(perm, env);
+		free_reg = get_free_register(perm, env, req_width);
 	}
 
 	if (use_copies && free_reg != NULL) {
@@ -237,7 +244,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 			reg_pair_t *start = oregmap[i];
 			assert((free_reg->index % 2 == 0 || arch_get_irn_register_req_width(start->in_node) < 2) && "free_reg has to be even index for double register");
 			ir_node *const save_copy = be_new_Copy_before_reg(start->in_node, perm, free_reg);
-			DBG((dbg, LEVEL_2, "[B] %+F: inserting %+F for %+F from %s (w: %d) to %s\n", perm, save_copy, start->in_node, start->in_reg->name, start->in_reg->single_req->width, free_reg->name));
+			DBG((dbg, LEVEL_2, "[B] %+F: inserting %+F for %+F from %s to %s\n", perm, save_copy, start->in_node, start->in_reg->name, free_reg->name));
 
 			reg_pair_t *p = oregmap[start->in_reg->index];
 			do {
