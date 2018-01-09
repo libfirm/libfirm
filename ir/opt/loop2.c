@@ -1,6 +1,7 @@
 #include "firm.h"
 #include "xmalloc.h"
 #include "debug.h"
+#include <assert.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -78,7 +79,45 @@ static void assure_lcssa(ir_graph *const irg)
 	irg_walk_graph(irg, insert_phis_for_node, NULL, NULL);
 }
 
+static int is_inner_loop(ir_loop *const outer_loop, ir_loop *const inner_loop)
+{
+	size_t const n_elements = get_loop_n_elements(outer_loop);
+	for (size_t i = 0; i < n_elements; ++i) {
+		loop_element const element = get_loop_element(outer_loop, i);
+		if (*element.kind == k_ir_loop) {
+			if (element.son == inner_loop || is_inner_loop(element.son, inner_loop)) {
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
+static void verify_lcssa_node(ir_node *const node, void *const env)
+{
+	(void)env;
+	if (is_Block(node))
+		return;
+	ir_loop *const loop = get_irn_loop(get_nodes_block(node));
+	int const arity = get_irn_arity(node);
+	for (int i = 0; i < arity; ++i) {
+		ir_node *const pred = get_irn_n(node, i);
+		if (!mode_is_data(get_irn_mode(pred)))
+			return;
+		ir_loop *const pred_loop = get_irn_loop(get_nodes_block(pred));
+		if (is_inner_loop(loop, pred_loop)) {
+			assert(is_Phi(node));
+		}
+	}
+}
+
+static void verify_lcssa(ir_graph *const irg)
+{
+	irg_walk_graph(irg, verify_lcssa_node, NULL, NULL);
+}
+
 void do_loop_unrolling2(ir_graph *const irg)
 {
 	assure_lcssa(irg);
+	verify_lcssa(irg);
 }
