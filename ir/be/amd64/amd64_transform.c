@@ -1359,6 +1359,15 @@ typedef ir_node* (*unop_out_constructor)(dbg_info*, ir_node *block, const int ar
                                          x86_insn_size_t size, amd64_op_mode_t opmode,
                                          x86_addr_t addr);
 
+/**
+ * Generates a back-end node with dedicated output register for a unary
+ * builtin node in the middle-end. Takes care of address modes and memory edges.
+ *
+ * @param node    The unlowered firm IR middle-end node.
+ * @param op_pos  The index of the input operand in the middle-end node.
+ * @param gen     The constructor function that actually creates the node.
+ * @param pn_res  The index where the node for the builtin stores its result.
+ */
 static ir_node *gen_unop_out(ir_node *const node, int op_pos,
                              unop_out_constructor gen, unsigned pn_res)
 {
@@ -1375,12 +1384,19 @@ static ir_node *gen_unop_out(ir_node *const node, int op_pos,
 		x86_addr_t addr;
 		ir_node   *in[5];
 		int        arity = 0;
+
 		perform_address_matching(get_Load_ptr(load), &arity, in, &addr);
-		new_node = gen(dbgi, new_block, arity, in, gp_am_reqs[arity], size, AMD64_OP_ADDR, addr);
-
+		int npred         = arity;
+		ir_node *load_mem = get_Load_mem(load);
+		ir_node *new_mem  = be_transform_node(load_mem);
+		int mem_input     = npred++;
+		in[mem_input]     = new_mem;
+		addr.mem_input    = mem_input;
+		new_node = gen(dbgi, new_block, npred, in, gp_am_reqs[arity], size, AMD64_OP_ADDR, addr);
 		ir_node *mem_proj = get_Proj_for_pn(load, pn_Load_M);
+		// Do we really need to call fix_node_mem_proj here?
+		// Why not just be_set_transformed_node(load, new_node);?
 		fix_node_mem_proj(new_node, mem_proj);
-
 	} else {
 		x86_addr_t addr = {
 			.base_input = 0,
