@@ -2884,6 +2884,7 @@ static ir_node *gen_Proj_Alloc(ir_node *const node)
 
 static ir_node *gen_clz(ir_node *const node)
 {
+	// https://fgiesen.wordpress.com/2013/10/18/bit-scanning-equivalencies/
 	ir_node         *const bsr   = gen_unop_out(node, n_Builtin_max + 1,
 	                                            new_bd_amd64_bsr, pn_amd64_bsr_res);
 	ir_node         *const real  = skip_Proj(bsr);
@@ -2912,6 +2913,9 @@ static ir_node *gen_clz(ir_node *const node)
 	};
 	ir_node *xor = new_bd_amd64_xor(dbgi, block, ARRAY_SIZE(in), in, reg_reqs,
 	                                &attr);
+
+	arch_set_irn_register_req_out(xor, 0, &amd64_requirement_gp_same_0);
+
 	return be_new_Proj(xor, pn_amd64_xor_res);
 }
 
