@@ -79,18 +79,19 @@ static void assure_lcssa(ir_graph *const irg)
 	irg_walk_graph(irg, insert_phis_for_node, NULL, NULL);
 }
 
-static int is_inner_loop(ir_loop *const outer_loop, ir_loop *const inner_loop)
+static int is_inner_loop(ir_loop *const outer_loop, ir_loop *inner_loop)
 {
-	size_t const n_elements = get_loop_n_elements(outer_loop);
-	for (size_t i = 0; i < n_elements; ++i) {
-		loop_element const element = get_loop_element(outer_loop, i);
-		if (*element.kind == k_ir_loop) {
-			if (element.son == inner_loop || is_inner_loop(element.son, inner_loop)) {
-				return 1;
-			}
+	while (1) {
+		ir_loop *const loop = get_loop_outer_loop(inner_loop);
+		if (loop == inner_loop) {
+			return 0;
+		} else {
+			inner_loop = loop;
+		}
+		if (inner_loop == outer_loop) {
+			return 1;
 		}
 	}
-	return 0;
 }
 
 static void verify_lcssa_node(ir_node *const node, void *const env)
