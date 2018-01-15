@@ -230,7 +230,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 		goto done;
 	}
 
-	if (use_copies && free_reg == NULL) {
+	if (use_copies && (free_reg == NULL || (free_reg->index % 2 != 0 && req_width == 2))) {
 		free_reg = get_free_register(perm, env, req_width);
 	}
 
