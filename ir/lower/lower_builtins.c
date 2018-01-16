@@ -11,6 +11,7 @@
 #include "lower_builtins.h"
 
 #include "adt/pmap.h"
+#include "deq.h"
 #include "ircons_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"
@@ -212,6 +213,32 @@ changed:
 	panic("unexpected builtin %+F", node);
 }
 
+static void collect_builtin(ir_node *node, void *env)
+{
+	deq_t *builtins = env;
+	if (!is_Builtin(node)) {
+		return;
+	}
+	ir_node** right_end = deq_alloc_right(builtins, sizeof(ir_node*));
+	*right_end = node;
+}
+
+static void irg_walk_builtin_nodes_post(ir_graph *irg,
+										irg_walk_func *post,
+										void *env)
+{
+	// We'll use this as a queue. Enqueue at right end, dequeue at left
+	deq_t builtin_nodes;
+	deq_init(&builtin_nodes);
+	irg_walk_graph(irg, NULL, collect_builtin, &builtin_nodes);
+	while (!deq_empty(&builtin_nodes)) {
+		ir_node** left_end = deq_left_end(&builtin_nodes);
+		post(*left_end, env);
+		deq_shrink_left(&builtin_nodes, sizeof(ir_node*));
+	}
+	deq_free(&builtin_nodes);
+}
+
 void lower_builtins(size_t n_exceptions,
                     ir_builtin_kind const *const exceptions,
                     lower_func new_lower_va_arg)
@@ -225,7 +252,7 @@ void lower_builtins(size_t n_exceptions,
 	foreach_irp_irg(i, irg) {
 		bool changed = false;
 		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
-		irg_walk_graph(irg, NULL, lower_builtin, &changed);
+		irg_walk_builtin_nodes_post(irg, lower_builtin, &changed);
 		confirm_irg_properties(irg, changed ? IR_GRAPH_PROPERTIES_CONTROL_FLOW
 		                                    : IR_GRAPH_PROPERTIES_ALL);
 	}
