@@ -467,7 +467,7 @@ static ir_mode *guess_recursively(ir_node *block, int pos)
 	if (irn_visited_else_mark(block))
 		return NULL;
 
-	/* already have a defintion -> we can simply look at its mode */
+	/* already have a definition -> we can simply look at its mode */
 	ir_node *const value = block->attr.block.graph_arr[pos];
 	if (value != NULL)
 		return get_irn_mode(value);
@@ -488,7 +488,7 @@ static ir_mode *guess_recursively(ir_node *block, int pos)
 
 ir_mode *ir_r_guess_mode(ir_graph *irg, int pos)
 {
-	/* already have a defintion -> we can simply look at its mode */
+	/* already have a definition -> we can simply look at its mode */
 	ir_node *const block = irg->current_block;
 	ir_node *const value = block->attr.block.graph_arr[pos+1];
 	if (value != NULL)
