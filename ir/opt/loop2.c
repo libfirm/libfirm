@@ -1,11 +1,12 @@
 #include "firm.h"
 #include "xmalloc.h"
 #include "debug.h"
+#include <stdbool.h>
 #include <assert.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static int is_inside_loop(ir_node const *const node)
+static bool is_inside_loop(ir_node const *const node)
 {
 	ir_graph const *const graph = get_irn_irg(node);
 	ir_node const *const block = is_Block(node) ? node : get_nodes_block(node);
@@ -79,19 +80,14 @@ static void assure_lcssa(ir_graph *const irg)
 	irg_walk_graph(irg, insert_phis_for_node, NULL, NULL);
 }
 
-static int is_inner_loop(ir_loop *const outer_loop, ir_loop *inner_loop)
+static bool is_inner_loop(ir_loop *const outer_loop, ir_loop *inner_loop)
 {
-	while (1) {
-		ir_loop *const loop = get_loop_outer_loop(inner_loop);
-		if (loop == inner_loop) {
-			return 0;
-		} else {
-			inner_loop = loop;
-		}
-		if (inner_loop == outer_loop) {
-			return 1;
-		}
-	}
+	ir_loop *old_inner_loop;
+	do {
+		old_inner_loop = inner_loop;
+		inner_loop = get_loop_outer_loop(inner_loop);
+	} while (inner_loop != old_inner_loop && inner_loop != outer_loop);
+	return inner_loop != old_inner_loop;
 }
 
 static void verify_lcssa_node(ir_node *const node, void *const env)
