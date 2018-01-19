@@ -80,6 +80,8 @@ static void assure_lcssa(ir_graph *const irg)
 	irg_walk_graph(irg, insert_phis_for_node, NULL, NULL);
 }
 
+#ifdef DEBUG_libfirm
+
 static bool is_inner_loop(ir_loop *const outer_loop, ir_loop *inner_loop)
 {
 	ir_loop *old_inner_loop;
@@ -113,8 +115,10 @@ static void verify_lcssa(ir_graph *const irg)
 	irg_walk_graph(irg, verify_lcssa_node, NULL, NULL);
 }
 
+#endif /* DEBUG_libfirm */
+
 void do_loop_unrolling2(ir_graph *const irg)
 {
 	assure_lcssa(irg);
-	verify_lcssa(irg);
+	DEBUG_ONLY(verify_lcssa(irg);)
 }
