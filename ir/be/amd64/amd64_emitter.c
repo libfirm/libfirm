@@ -840,22 +840,6 @@ static void amd64_register_emitters(void)
 }
 
 /**
- * Emits code for a node.
- */
-static void amd64_emit_node(ir_node *node)
-{
-	be_emit_node(node);
-
-	if (omit_fp) {
-		int sp_change = -amd64_get_sp_change(node);
-		if (sp_change != 0) {
-			callframe_offset += sp_change;
-			be_dwarf_callframe_offset(callframe_offset);
-		}
-	}
-}
-
-/**
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */

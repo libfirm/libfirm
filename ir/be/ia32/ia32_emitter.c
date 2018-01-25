@@ -74,11 +74,6 @@ typedef enum get_ip_style_t {
 static int get_ip_style = IA32_GET_IP_THUNK;
 
 /** Checks if the current block is a fall-through target. */
-static bool fallthrough_possible(const ir_node *source_block, const ir_node *target_block)
-{
-	return be_emit_get_prev_block(target_block) == source_block;
-}
-
 static bool is_fallthrough(const ir_node *cfgpred)
 {
 	if (!is_Proj(cfgpred))
