@@ -620,9 +620,9 @@ static void emit_amd64_call(const ir_node* node)
 		if (x_regular_proj == NULL) {
 			/* Call always throws and/or never returns. */
 		} else if (!is_fallthrough(x_regular_proj)) {
-			amd64_emitf(x_regular_proj, "jmp %L");
+			amd64_emitf(NULL, "jmp %L", x_regular_proj);
 		} else if (be_options.verbose_asm) {
-			amd64_emitf(x_regular_proj, "/* fallthrough to %L */");
+			amd64_emitf(NULL, "/* fallthrough to %L */", x_regular_proj);
 		}
 	}
 }
