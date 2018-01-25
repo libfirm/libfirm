@@ -2541,27 +2541,47 @@ static ir_node *gen_Conv(ir_node *const node)
 		/* int to float */
 		assert(!src_float && dst_float);
 
-		if (!mode_is_signed(src_mode) && src_bits <= 32) {
-			/* Conversion is signed only, therefore use up to 64-bit register
-			 * size and require that the upper bits are zero. This is done with
-			 * an explicit move instruction */
+		// Conversion is from signed Dword/Qword only.
+		// uint32_t have to be zero-extended into a int64_t,
+		// while signed ints with less than 32 bit have to be
+		// sign-extended.
+		// This is done with an explicit mov/movs instruction.
+		x86_insn_size_t move_mode = x86_size_from_mode(src_mode);
+		if (mode_is_signed(src_mode)) {
+			if (src_bits < 32) {
+				// Let's just assume there is no integer type of width
+				// between 32 and 64 bits. So we only extend to 32 bits.
+				size = X86_SIZE_32;
+				ir_node *const ext = new_bd_amd64_movs(dbgi, block, n_in, in,
+														 reg_reqs, move_mode,
+														 AMD64_OP_REG, addr);
+				in[0] = be_new_Proj(ext, pn_amd64_movs_res);
+			} else if (src_bits != 32 && src_bits != 64) {
+				panic("conversion of signed %d bit integer to "
+						"floating point not implemented", src_bits);
+			}
+		} else {
+			assert(!mode_is_signed(src_mode));
 
-			size = X86_SIZE_64;
-			x86_insn_size_t move_mode = x86_size_from_mode(src_mode);
+			if (src_bits >= 64) {
+				panic("cannot convert unsigned %d-bit to floating point",
+						src_bits);
+			}
 
+			size = src_bits >= 32 ? X86_SIZE_64 : X86_SIZE_32;
 			ir_node *const ext = new_bd_amd64_mov_gp(dbgi, block, n_in, in,
-			                                         reg_reqs, move_mode,
-			                                         AMD64_OP_REG, addr);
+														 reg_reqs, move_mode,
+														 AMD64_OP_REG, addr);
 			in[0] = be_new_Proj(ext, pn_amd64_mov_gp_res);
-		} else if (!mode_is_signed(src_mode) && src_bits == 64) {
-			panic("cannot convert 64-bit unsigned to floating point");
 		}
 
 		if (dst_bits == 32) {
+			// http://www.felixcloutier.com/x86/CVTSI2SS.html
 			conv   = new_bd_amd64_cvtsi2ss(dbgi, block, n_in, in, reg_reqs,
 			                               size, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvtsi2ss_res;
 		} else if (dst_bits == 64) {
+			// http://www.felixcloutier.com/x86/CVTSI2SD.html
 			conv   = new_bd_amd64_cvtsi2sd(dbgi, block, n_in, in, reg_reqs,
 			                               size, AMD64_OP_REG, addr);
 			pn_res = pn_amd64_cvtsi2sd_res;
