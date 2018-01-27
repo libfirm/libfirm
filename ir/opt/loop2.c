@@ -73,13 +73,6 @@ static void insert_phis_for_node(ir_node *const node, void *const env)
 	}
 }
 
-static void assure_lcssa(ir_graph *const irg)
-{
-	FIRM_DBG_REGISTER(dbg, "firm.opt.lcssa");
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
-	irg_walk_graph(irg, insert_phis_for_node, NULL, NULL);
-}
-
 #ifdef DEBUG_libfirm
 
 static bool is_inner_loop(ir_loop *const outer_loop, ir_loop *inner_loop)
@@ -117,8 +110,15 @@ static void verify_lcssa(ir_graph *const irg)
 
 #endif /* DEBUG_libfirm */
 
+static void assure_lcssa(ir_graph *const irg)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.opt.lcssa");
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+	irg_walk_graph(irg, insert_phis_for_node, NULL, NULL);
+	DEBUG_ONLY(verify_lcssa(irg);)
+}
+
 void do_loop_unrolling2(ir_graph *const irg)
 {
 	assure_lcssa(irg);
-	DEBUG_ONLY(verify_lcssa(irg);)
 }
