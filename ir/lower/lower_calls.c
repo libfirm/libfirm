@@ -24,6 +24,7 @@
 #include "irmode_t.h"
 #include "irnode_t.h"
 #include "iroptimize.h"
+#include "irouts_t.h"
 #include "irprog_t.h"
 #include "irtools.h"
 #include "lowering.h"
@@ -750,12 +751,20 @@ static void fix_int_return(cl_entry const *const entry,
                            long const orig_pn, long const pn)
 {
 	ir_node  *const call  = entry->call;
-	ir_node  *const block = get_nodes_block(call);
+	ir_node        *block = get_nodes_block(call);
 	ir_graph *const irg   = get_irn_irg(base_addr);
 
 	/* if the Call throws an exception, then we cannot add instruction
 	 * immediately behind it as the call ends the basic block */
-	assert(!is_cfop(call));
+	if (is_cfop(call)) {
+		assert(ir_throws_exception(call));
+		// Search for the x_regular nodes block and add new nodes in this block
+		foreach_irn_out(call, i, pred) {
+			if(is_x_regular_Proj(pred)) {
+				block = get_irn_out(pred, 0);
+			}
+		}
+	}
 	ir_mode *const mode_ref = get_irn_mode(base_addr);
 
 	ir_node *proj_mem = entry->proj_M;
