@@ -1173,9 +1173,9 @@ static void emit_ia32_Call(const ir_node *node)
 		} else {
 			if (is_fallthrough(x_regular_proj)) {
 				if (be_options.verbose_asm)
-					ia32_emitf(x_regular_proj, "/* fallthrough to %L */");
+					ia32_emitf(node, "/* fallthrough to %L */", x_regular_proj);
 			} else {
-				ia32_emitf(x_regular_proj, "jmp %L");
+				ia32_emitf(node, "jmp %L", x_regular_proj);
 			}
 		}
 	}
