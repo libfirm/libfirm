@@ -73,6 +73,43 @@ static void insert_phis_for_node(ir_node *const node, void *const env)
 	}
 }
 
+static void insert_phis_for_node_out(ir_node *const node)
+{
+	if (irn_visited(node))
+		return;
+	unsigned int const n_outs = get_irn_n_outs(node);
+	for (unsigned int i = 0; i < n_outs; ++i) {
+		int n;
+		ir_node *const succ = get_irn_out_ex(node, i, &n);
+		insert_phis_for_edge(succ, n);
+	}
+}
+
+static void insert_phis_for_block(ir_node *const block)
+{
+	// iterate over the nodes of the block
+	unsigned int const n_outs = get_irn_n_outs(block);
+	for (unsigned int i = 0; i < n_outs; ++i) {
+		ir_node *const node = get_irn_out(block, i);
+		assert(!is_Block(node));
+		insert_phis_for_node_out(node);
+	}
+}
+
+static void insert_phis_for_loop(ir_loop *const loop)
+{
+	size_t const n_elements = get_loop_n_elements(loop);
+	for (size_t i = 0; i < n_elements; ++i) {
+		loop_element const element = get_loop_element(loop, i);
+		if (*element.kind == k_ir_node) {
+			assert(is_Block(element.node));
+			insert_phis_for_block(element.node);
+		} else if (*element.kind == k_ir_loop) {
+			insert_phis_for_loop(element.son);
+		}
+	}
+}
+
 #ifdef DEBUG_libfirm
 
 static bool is_inner_loop(ir_loop *const outer_loop, ir_loop *inner_loop)
@@ -116,6 +153,15 @@ static void assure_lcssa(ir_graph *const irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	irg_walk_graph(irg, insert_phis_for_node, NULL, NULL);
 	DEBUG_ONLY(verify_lcssa(irg);)
+}
+
+static void assure_loop_lcssa(ir_graph *const irg, ir_loop *const loop)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.opt.lcssa");
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+	inc_irg_visited(irg);
+	insert_phis_for_loop(loop);
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 }
 
 void do_loop_unrolling2(ir_graph *const irg)
