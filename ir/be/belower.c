@@ -187,7 +187,9 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 		pair->out_node = out;
 
 		oregmap[oreg->index] = pair++;
-		rbitset_set(inregs, ireg->index);
+		for (int i = 0; i < arch_get_irn_register_req_width(in); i++) {
+			rbitset_set(inregs, ireg->index + i);
+		}
 	}
 
 	if (pair == pairs) {
@@ -207,9 +209,8 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 		for (reg_pair_t const *p; (p = oregmap[k]);) {
 			oregmap[k] = NULL;
 			ir_node *const copy = be_new_Copy_before_reg(p->in_node, perm, p->out_reg);
-			//DBG((dbg, LEVEL_2, "[A] %+F: inserting %+F for %+F from %s (w: %d) to %s (w: %d)\n", perm, copy, p->in_node, p->in_reg->name, arch_get_irn_register_req_width(p->in_node), p->out_reg->name, arch_get_irn_register_req_width(p->out_node)));
+			DBG((dbg, LEVEL_2, "[A] %+F: inserting %+F for %+F from %s to %s\n", perm, copy, p->in_node, p->in_reg->name, p->out_reg->name));
 			exchange(p->out_node, copy);
-
 			const unsigned new_k = p->in_reg->index;
 			if (!oregmap[new_k] && !free_reg) {
 				/* The invariant of Perm nodes allows us to overwrite
@@ -222,14 +223,15 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 			}
 			k = new_k;
 
-			rbitset_clear(inregs, k);
+			for (int j = 0; j < arch_get_irn_register_req_width(p->in_node); j++) {
+				rbitset_clear(inregs, k + j);
+			}
 		}
 	}
 
 	if (rbitset_is_empty(inregs, n_regs)) {
 		goto done;
 	}
-
 	if (use_copies && (free_reg == NULL || (free_reg->index % 2 != 0 && req_width == 2))) {
 		free_reg = get_free_register(perm, env, req_width);
 	}
@@ -252,13 +254,18 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 				DBG((dbg, LEVEL_2, "[C] %+F: inserting %+F for %+F from %s to %s\n", perm, copy, p->in_node, p->in_reg->name, p->out_reg->name));
 				exchange(p->out_node, copy);
 				unsigned const in_idx = p->in_reg->index;
-				rbitset_clear(inregs, in_idx);
+				for (int j = 0; j < arch_get_irn_register_req_width(p->in_node); j++) {
+					rbitset_clear(inregs, in_idx + j);
+				}
 				p = oregmap[in_idx];
 			} while (p != start);
 
-			rbitset_clear(inregs, start->in_reg->index);
+			for (int j = 0; j < arch_get_irn_register_req_width(start->in_node); j++) {
+				rbitset_clear(inregs, start->in_reg->index + j);
+			}
+
 			ir_node *const restore_copy = be_new_Copy_before_reg(save_copy, perm, start->out_reg);
-			DBG((dbg, LEVEL_2, "[D] %+F: inserting %+F for %+F from %s to %s\n", perm, restore_copy, save_copy, "?", start->out_reg->name));
+			DBG((dbg, LEVEL_2, "[D] %+F: inserting %+F for %+F from %s to %s\n", perm, restore_copy, save_copy, free_reg->name, start->out_reg->name));
 			exchange(start->out_node, restore_copy);
 		}
 	} else {
@@ -299,7 +306,6 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 				reg_pair_t const *const q = oregmap[p->in_reg->index];
 				if (q == start)
 					break;
-
 				rbitset_clear(inregs, q->out_reg->index);
 				p->in_reg = q->in_reg;
 

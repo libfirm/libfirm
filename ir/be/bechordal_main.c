@@ -296,6 +296,7 @@ static void be_ra_chordal_main(ir_graph *irg, const regalloc_if_t *regif)
 		}
 	}
 
+	be_chordal_dump(BE_CH_DUMP_LOWER, irg, NULL, "before-lower");
 	be_timer_push(T_RA_EPILOG);
 	lower_nodes_after_ra(irg, options.lower_perm_opt == BE_CH_LOWER_PERM_COPY);
 	be_chordal_dump(BE_CH_DUMP_LOWER, irg, NULL, "belower-after-ra");
