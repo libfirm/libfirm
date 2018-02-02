@@ -357,7 +357,7 @@ static void value_used(be_verify_reg_alloc_env_t *const env, ir_node const **con
 		ir_node const *const reg_node = registers[idx + i];
 		if (reg_node != NULL && reg_node != node
 			&& !ignore_error_for_reg(get_irn_irg(block), reg)) {
-			verify_warnf(block, "register %s assigned more than once (nodes %+F and %+F)", reg->name, node, reg_node);
+			verify_warnf(block, "register %s assigned more than once (nodes %+F and %+F)", arch_register_for_index(reg->cls, reg->index + i)->name, node, reg_node);
 			env->problem_found = true;
 		}
 		registers[idx + i] = node;
