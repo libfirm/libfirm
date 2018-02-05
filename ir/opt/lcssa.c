@@ -9,22 +9,22 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static bool is_inside_loop(ir_node const *const node)
 {
 	ir_graph const *const graph = get_irn_irg(node);
-	ir_node const *const block = is_Block(node) ? node : get_nodes_block(node);
-	ir_loop const *const loop = get_irn_loop(block);
+	ir_node  const *const block = is_Block(node) ? node : get_nodes_block(node);
+	ir_loop  const *const loop  = get_irn_loop(block);
 	return loop && loop != get_irg_loop(graph);
 }
 
 // insert a phi node between node and its nth predecessor in block
 static ir_node *insert_phi(ir_node *const node, int const n, ir_node *const block)
 {
-	ir_node *const pred = get_irn_n(node, n);
-	int const block_arity = get_irn_arity(block);
-	ir_node **const in = ALLOCAN(ir_node *, block_arity);
+	ir_node  *const pred        = get_irn_n(node, n);
+	int       const block_arity = get_irn_arity(block);
+	ir_node **const in          = ALLOCAN(ir_node *, block_arity);
 	for (int i = 0; i < block_arity; ++i) {
 		in[i] = pred;
 	}
 	ir_mode *const mode = get_irn_mode(pred);
-	int opt = get_optimize();
+	int      const opt  = get_optimize();
 	set_optimize(0);
 	ir_node *const phi = new_r_Phi(block, block_arity, in, mode);
 	set_optimize(opt);
@@ -44,7 +44,7 @@ static void insert_phis_for_edge(ir_node *node, int n)
 	if (!is_inside_loop(pred_block))
 		return;
 	ir_node *block = get_nodes_block(node);
-	ir_loop *loop = get_irn_loop(block);
+	ir_loop *loop  = get_irn_loop(block);
 	// walk up the dominance tree
 	if (is_Phi(node)) {
 		// if node is a phi, start the walk at the nth predecessor of block
@@ -127,8 +127,8 @@ static void verify_lcssa_node(ir_node *const node, void *const env)
 	(void)env;
 	if (is_Block(node))
 		return;
-	ir_loop *const loop = get_irn_loop(get_nodes_block(node));
-	int const arity = get_irn_arity(node);
+	ir_loop *const loop  = get_irn_loop(get_nodes_block(node));
+	int      const arity = get_irn_arity(node);
 	for (int i = 0; i < arity; ++i) {
 		ir_node *const pred = get_irn_n(node, i);
 		if (!mode_is_data(get_irn_mode(pred)))
