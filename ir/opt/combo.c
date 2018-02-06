@@ -3087,7 +3087,9 @@ static void apply_result(ir_node *irn, void *ctx)
 					}
 				}
 			}
-			if (!non_strict_phi) {
+
+			// is_Deleted check maybe should be moved somewhere else..
+			if (!is_Deleted(leader) && !non_strict_phi) {
 				DB((dbg, LEVEL_1, "%+F from part%d is replaced by %+F\n", irn, node->part->nr, leader));
 				DBG_OPT_COMBO(irn, leader);
 				exchange_leader(irn, leader);
