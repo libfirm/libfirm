@@ -161,6 +161,8 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 	arch_register_t const *free_reg   = NULL;
 	/* minimum width of free register required for copying */
 	unsigned               req_width   = 1;
+	bool                   mixed_reg_widths = false;
+	unsigned               reg_width = arch_get_irn_register_req_width(get_irn_n(perm, 0));
 
 	/* Collect all input-output pairs of the Perm. */
 	for (unsigned pos = 0; pos != arity; ++pos) {
@@ -180,23 +182,55 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 		if (arch_get_irn_register_req_width(in) > req_width) {
 			req_width = arch_get_irn_register_req_width(in);
 		}
-
+		if (!mixed_reg_widths && reg_width != arch_get_irn_register_req_width(in)) {
+			mixed_reg_widths = true;
+		}
 		pair->in_reg   = ireg;
 		pair->in_node  = in;
 		pair->out_reg  = oreg;
 		pair->out_node = out;
 
 		oregmap[oreg->index] = pair++;
-		for (int i = 0; i < arch_get_irn_register_req_width(in); i++) {
-			rbitset_set(inregs, ireg->index + i);
-		}
+		//for (int i = 0; i < arch_get_irn_register_req_width(in); i++) {
+			rbitset_set(inregs, ireg->index);
+		//}
 	}
 
 	if (pair == pairs) {
 		DBG((dbg, LEVEL_1, "%+F is identity\n", perm));
 		goto done;
 	}
+	if (mixed_reg_widths) {
+		unsigned new_arity = arity;
+		unsigned new_pos = 0;
+		ir_node  *perm_ins[n_regs];
+		DBG((dbg, LEVEL_2, "%+F has mixed register widths\n", perm));
+		for (unsigned pos = 0; pos != arity; ++pos) {
+			ir_node *const in = get_irn_n(perm, pos);
+			if (arch_get_irn_register_req_width(in) == 2) {
+				ir_node *block = get_nodes_block(in);
+				ir_node *split = be_new_RegSplit(block, in);
+				ir_node *proj1 = be_new_Proj_reg(split, 0, arch_get_irn_register(in));
+				ir_node *proj2 = be_new_Proj_reg(split, 1, arch_register_for_index(arch_get_irn_register(in)->cls, arch_get_irn_register(in)->index + 1));
+				DBG((dbg, LEVEL_2, "%+F inserted\n", split));
+				perm_ins[new_pos] = proj1;
+				new_pos++;
+				perm_ins[new_pos] = proj2;
+				new_pos++;
+				new_arity++;
+			} else {
+				perm_ins[new_pos] = in;
+				new_pos++;
+			}
+		}
+		ir_node *const new_perm = be_new_Perm(get_nodes_block(perm), new_arity, perm_ins);
+		//edges_reroute(perm, new_perm);
+		exchange(perm, new_perm);
+		sched_replace(perm, new_perm);
 
+	}
+
+	//dump_ir_graph(get_irn_irg(perm), "lower-splits-inserted");
 	DBG((dbg, LEVEL_1, "%+F has %d unresolved constraints\n", perm, (int)(pair - pairs)));
 
 	/* Build Copy chains. */
@@ -223,9 +257,9 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 			}
 			k = new_k;
 
-			for (int j = 0; j < arch_get_irn_register_req_width(p->in_node); j++) {
-				rbitset_clear(inregs, k + j);
-			}
+			//for (int j = 0; j < arch_get_irn_register_req_width(p->in_node); j++) {
+				rbitset_clear(inregs, k);
+			//}
 		}
 	}
 
@@ -254,15 +288,15 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 				DBG((dbg, LEVEL_2, "[C] %+F: inserting %+F for %+F from %s to %s\n", perm, copy, p->in_node, p->in_reg->name, p->out_reg->name));
 				exchange(p->out_node, copy);
 				unsigned const in_idx = p->in_reg->index;
-				for (int j = 0; j < arch_get_irn_register_req_width(p->in_node); j++) {
-					rbitset_clear(inregs, in_idx + j);
-				}
+				//for (int j = 0; j < arch_get_irn_register_req_width(p->in_node); j++) {
+					rbitset_clear(inregs, in_idx);
+				//}
 				p = oregmap[in_idx];
 			} while (p != start);
 
-			for (int j = 0; j < arch_get_irn_register_req_width(start->in_node); j++) {
-				rbitset_clear(inregs, start->in_reg->index + j);
-			}
+			//for (int j = 0; j < arch_get_irn_register_req_width(start->in_node); j++) {
+				rbitset_clear(inregs, start->in_reg->index);
+			//}
 
 			ir_node *const restore_copy = be_new_Copy_before_reg(save_copy, perm, start->out_reg);
 			DBG((dbg, LEVEL_2, "[D] %+F: inserting %+F for %+F from %s to %s\n", perm, restore_copy, save_copy, free_reg->name, start->out_reg->name));
