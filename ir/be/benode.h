@@ -28,6 +28,8 @@ typedef enum be_opcode {
 	beo_Keep,
 	beo_MemPerm,
 	beo_Perm,
+	beo_RegSplit,
+	beo_RegJoin,
 	beo_Relocation,
 	beo_Start,
 	beo_Unknown,
@@ -52,6 +54,8 @@ extern ir_op *op_be_IncSP;
 extern ir_op *op_be_Keep;
 extern ir_op *op_be_MemPerm;
 extern ir_op *op_be_Perm;
+extern ir_op *op_be_RegSplit;
+extern ir_op *op_be_RegJoin;
 extern ir_op *op_be_Relocation;
 extern ir_op *op_be_Start;
 extern ir_op *op_be_Unknown;
@@ -92,6 +96,16 @@ ir_node *be_new_Copy_before_reg(ir_node *val, ir_node *before, arch_register_t c
  * Make a new Perm node.
  */
 ir_node *be_new_Perm(ir_node *block, int n, ir_node *const *in);
+
+/**
+ * Create a new RegSplit node. This node transforms a double register into two single registers.
+ */
+ir_node *be_new_RegSplit(ir_node *block, ir_node *const in);
+
+/**
+ * Create a new RegJoin node. This node transforms two single registers back into a double register.
+ */
+ir_node *be_new_RegJoin(ir_node *block, ir_node *const *ins);
 
 /**
  * Create a new MemPerm node.
@@ -243,6 +257,8 @@ static inline bool be_is_Asm       (const ir_node *irn) { return get_irn_op(irn)
 static inline bool be_is_Copy      (const ir_node *irn) { return get_irn_op(irn) == op_be_Copy      ; }
 static inline bool be_is_CopyKeep  (const ir_node *irn) { return get_irn_op(irn) == op_be_CopyKeep  ; }
 static inline bool be_is_Perm      (const ir_node *irn) { return get_irn_op(irn) == op_be_Perm      ; }
+static inline bool be_is_RegSplit  (const ir_node *irn) { return get_irn_op(irn) == op_be_RegSplit  ; }
+static inline bool be_is_RegJoin   (const ir_node *irn) { return get_irn_op(irn) == op_be_RegJoin   ; }
 static inline bool be_is_MemPerm   (const ir_node *irn) { return get_irn_op(irn) == op_be_MemPerm   ; }
 static inline bool be_is_Keep      (const ir_node *irn) { return get_irn_op(irn) == op_be_Keep      ; }
 static inline bool be_is_IncSP     (const ir_node *irn) { return get_irn_op(irn) == op_be_IncSP     ; }

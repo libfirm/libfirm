@@ -65,6 +65,8 @@ ir_op *op_be_IncSP;
 ir_op *op_be_Keep;
 ir_op *op_be_MemPerm;
 ir_op *op_be_Perm;
+ir_op *op_be_RegSplit;
+ir_op *op_be_RegJoin;
 ir_op *op_be_Relocation;
 ir_op *op_be_Start;
 ir_op *op_be_Unknown;
@@ -152,6 +154,27 @@ ir_node *be_new_Perm(ir_node *const block, int const n, ir_node *const *const in
 			in_req->width == 1 ? in_req->cls->class_req :
 			be_create_cls_req(irg, in_req->cls, in_req->width);
 		be_node_set_register_req_in(  irn, i, slot_req);
+		arch_set_irn_register_req_out(irn, i, slot_req);
+	}
+
+	return irn;
+}
+
+ir_node *be_new_RegSplit(ir_node *const block, ir_node *const in)
+{
+	ir_graph *const irg = get_irn_irg(block);
+	ir_node *const ins[]  = { in };
+	ir_node  *const irn = new_ir_node(NULL, irg, block, op_be_RegSplit, mode_T, 1, ins);
+	init_node_attr(irn, 2, arch_irn_flags_none);
+	arch_register_req_t const *const in_req   = arch_get_irn_register_req(in);
+	be_node_set_register_req_in(irn, 0, in_req);
+	for (int i = 0; i < 2; ++i) {
+		/*arch_register_req_t const *const slot_req =
+			in_req->width == 1 ? in_req->cls->class_req :
+			be_create_cls_req(irg, in_req->cls, in_req->width);
+		 */
+		arch_register_req_t const *const slot_req = be_create_cls_req(irg, in_req->cls, 1);
+		//be_node_set_register_req_in(  irn, i, slot_req);
 		arch_set_irn_register_req_out(irn, i, slot_req);
 	}
 
@@ -659,6 +682,8 @@ void be_init_op(void)
 	op_be_Keep       = new_be_op(o + beo_Keep,       "be_Keep",       op_pin_state_pinned,     irop_flag_keep,                              0);
 	op_be_MemPerm    = new_be_op(o + beo_MemPerm,    "be_MemPerm",    op_pin_state_pinned,     irop_flag_none,                              sizeof(be_memperm_attr_t));
 	op_be_Perm       = new_be_op(o + beo_Perm,       "be_Perm",       op_pin_state_pinned,     irop_flag_none,                              0);
+	op_be_RegSplit   = new_be_op(o + beo_RegSplit,   "be_RegSplit",   op_pin_state_pinned,     irop_flag_none,                              0);
+	op_be_RegJoin    = new_be_op(o + beo_RegJoin,    "be_RegJoin",    op_pin_state_pinned,     irop_flag_none,                              0);
 	op_be_Relocation = new_be_op(o + beo_Relocation, "be_Relocation", op_pin_state_floats,     irop_flag_constlike | irop_flag_start_block, sizeof(be_relocation_attr_t));
 	op_be_Start      = new_be_op(o + beo_Start,      "be_Start",      op_pin_state_pinned,     irop_flag_start_block,                       0);
 	op_be_Unknown    = new_be_op(o + beo_Unknown,    "be_Unknown",    op_pin_state_floats,     irop_flag_constlike,                         0);
@@ -673,6 +698,8 @@ void be_init_op(void)
 	set_op_attrs_equal(op_be_Keep,       attrs_equal_be_node);
 	set_op_attrs_equal(op_be_MemPerm,    attrs_equal_be_node);
 	set_op_attrs_equal(op_be_Perm,       attrs_equal_be_node);
+	set_op_attrs_equal(op_be_RegSplit,   attrs_equal_be_node);
+	set_op_attrs_equal(op_be_RegJoin,    attrs_equal_be_node);
 	set_op_attrs_equal(op_be_Relocation, be_relocation_attrs_equal);
 	set_op_attrs_equal(op_be_Unknown,    attrs_equal_be_node);
 }
@@ -685,4 +712,6 @@ void be_finish_op(void)
 	free_ir_op(op_be_Keep);     op_be_Keep     = NULL;
 	free_ir_op(op_be_MemPerm);  op_be_MemPerm  = NULL;
 	free_ir_op(op_be_Perm);     op_be_Perm     = NULL;
+	free_ir_op(op_be_RegSplit); op_be_RegSplit = NULL;
+	free_ir_op(op_be_RegJoin);  op_be_RegJoin  = NULL;
 }
