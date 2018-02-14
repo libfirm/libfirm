@@ -169,14 +169,25 @@ ir_node *be_new_RegSplit(ir_node *const block, ir_node *const in)
 	arch_register_req_t const *const in_req   = arch_get_irn_register_req(in);
 	be_node_set_register_req_in(irn, 0, in_req);
 	for (int i = 0; i < 2; ++i) {
-		/*arch_register_req_t const *const slot_req =
-			in_req->width == 1 ? in_req->cls->class_req :
-			be_create_cls_req(irg, in_req->cls, in_req->width);
-		 */
 		arch_register_req_t const *const slot_req = be_create_cls_req(irg, in_req->cls, 1);
-		//be_node_set_register_req_in(  irn, i, slot_req);
 		arch_set_irn_register_req_out(irn, i, slot_req);
 	}
+
+	return irn;
+}
+
+ir_node *be_new_RegJoin(ir_node *block, ir_node *const *ins)
+{
+	ir_graph *const irg = get_irn_irg(block);
+	ir_node  *const irn = new_ir_node(NULL, irg, block, op_be_RegJoin, mode_D, 2, ins);
+	init_node_attr(irn, 1, arch_irn_flags_none);
+
+	for (int i = 0; i < 2; ++i) {
+		arch_register_req_t const *const in_req   = arch_get_irn_register_req(ins[i]);
+		be_node_set_register_req_in(irn, i, in_req);
+	}
+	arch_register_req_t const *const out_req = be_create_cls_req(irg, arch_get_irn_register_req(ins[0])->cls, 2);
+	arch_set_irn_register_req_out(irn, 0, out_req);
 
 	return irn;
 }
