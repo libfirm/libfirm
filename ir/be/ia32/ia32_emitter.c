@@ -1413,6 +1413,7 @@ void ia32_emit_function(ir_graph *const irg)
 {
 	be_gas_elf_type_char = '@';
 	get_unique_label(pic_base_label, sizeof(pic_base_label), "PIC_BASE");
+	x86_pic_base_label = pic_base_label;
 
 	ir_entity *const entity = get_irg_entity(irg);
 	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment, NULL);
