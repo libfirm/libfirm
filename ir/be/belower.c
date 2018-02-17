@@ -192,7 +192,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 		for (unsigned pos = 0; pos != arity; ++pos) {
 			ir_node *const in = get_irn_n(perm, pos);
 			if (arch_get_irn_register_req_width(in) == 2) {
-				ir_node *const block = get_nodes_block(in);
+				ir_node *const block = get_nodes_block(perm);
 				ir_node *split = be_new_RegSplit(block, in);
 				ir_node *proj1 = be_new_Proj_reg(split, 0, arch_get_irn_register(in));
 				ir_node *proj2 = be_new_Proj_reg(split, 1, arch_register_for_index(arch_get_irn_register(in)->cls, arch_get_irn_register(in)->index + 1));
