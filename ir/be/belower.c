@@ -178,6 +178,9 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 			mixed_reg_widths = true;
 		}
 	}
+	if (!mixed_reg_widths) {
+		new_arity = arity;
+	}
 
 	/* Map from register index to pair with this register as output. */
 	reg_pair_t     **const oregmap    = ALLOCANZ(reg_pair_t*, n_regs);
@@ -201,14 +204,20 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 			ir_node *const in = get_irn_n(perm, pos);
 			if (arch_get_irn_register_req_width(in) == 2) {
 				ir_node *const block = get_nodes_block(perm);
-				ir_node *split = be_new_RegSplit(block, in);
-				ir_node *proj1 = be_new_Proj_reg(split, 0, arch_get_irn_register(in));
-				ir_node *proj2 = be_new_Proj_reg(split, 1, arch_register_for_index(arch_get_irn_register(in)->cls, arch_get_irn_register(in)->index + 1));
-				DBG((dbg, LEVEL_4, "\t%+F inserted\n", split));
-				perm_ins[new_pos] = proj1;
+				ir_node *in1, *in2;
+				if (be_is_RegJoin(in)) {
+					in1 = get_irn_n(in, 0);
+					in2 = get_irn_n(in, 1);
+				} else {
+					ir_node *split = be_new_RegSplit(block, in);
+					in1 = be_new_Proj_reg(split, 0, arch_get_irn_register(in));
+					in2 = be_new_Proj_reg(split, 1, arch_register_for_index(arch_get_irn_register(in)->cls, arch_get_irn_register(in)->index + 1));
+					DBG((dbg, LEVEL_4, "\t%+F inserted\n", split));
+				}
+				perm_ins[new_pos] = in1;
 				new_perm_out_regs[new_pos] = arch_get_irn_register(projs[pos]);
 				new_pos++;
-				perm_ins[new_pos] = proj2;
+				perm_ins[new_pos] = in2;
 				new_perm_out_regs[new_pos] = arch_register_for_index(arch_get_irn_register(projs[pos])->cls, arch_get_irn_register(projs[pos])->index + 1);
 				new_pos++;
 			} else {
