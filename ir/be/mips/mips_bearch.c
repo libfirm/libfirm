@@ -160,7 +160,7 @@ static void mips_assign_spill_slots(ir_graph *const irg)
 
 static ir_node *mips_new_IncSP(ir_node *const block, ir_node *const sp, int const offset, unsigned const align)
 {
-	return be_new_IncSP(&mips_registers[REG_SP], block, sp, offset, align);
+	return be_new_IncSP(block, sp, offset, align);
 }
 
 static void mips_introduce_prologue(ir_graph *const irg, unsigned const size)

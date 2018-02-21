@@ -64,14 +64,12 @@ static const regalloc_if_t TEMPLATE_regalloc_if = {
 
 static void introduce_prologue(ir_graph *const irg)
 {
-	arch_register_t const *const sp         = &TEMPLATE_registers[REG_SP];
-	ir_node               *const start      = get_irg_start(irg);
-	ir_node               *const block      = get_nodes_block(start);
-	ir_node               *const initial_sp = be_get_Start_proj(irg, sp);
-	ir_type               *const frame_type = get_irg_frame_type(irg);
-	unsigned               const frame_size = get_type_size(frame_type);
-	ir_node               *const incsp
-		= be_new_IncSP(sp, block, initial_sp, frame_size, false);
+	ir_node  *const start      = get_irg_start(irg);
+	ir_node  *const block      = get_nodes_block(start);
+	ir_node  *const initial_sp = be_get_Start_proj(irg, &TEMPLATE_registers[REG_SP]);
+	ir_type  *const frame_type = get_irg_frame_type(irg);
+	unsigned  const frame_size = get_type_size(frame_type);
+	ir_node  *const incsp      = be_new_IncSP(block, initial_sp, frame_size, false);
 	edges_reroute_except(initial_sp, incsp, incsp);
 	sched_add_after(start, incsp);
 }

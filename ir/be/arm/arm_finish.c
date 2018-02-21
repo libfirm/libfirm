@@ -57,16 +57,14 @@ static void arm_set_frame_entity(ir_node *node, ir_entity *entity,
 
 static void introduce_epilog(ir_node *ret)
 {
-	arch_register_t const *const sp_reg = &arm_registers[REG_SP];
-	assert(arch_get_irn_register_req_in(ret, n_arm_Return_sp) == sp_reg->single_req);
+	assert(arch_get_irn_register_req_in(ret, n_arm_Return_sp) == arm_registers[REG_SP].single_req);
 
 	ir_node  *const sp         = get_irn_n(ret, n_arm_Return_sp);
 	ir_node  *const block      = get_nodes_block(ret);
 	ir_graph *const irg        = get_irn_irg(ret);
 	ir_type  *const frame_type = get_irg_frame_type(irg);
 	unsigned  const frame_size = get_type_size(frame_type);
-	ir_node  *const incsp      = be_new_IncSP(sp_reg, block, sp, -frame_size,
-	                                          true);
+	ir_node  *const incsp      = be_new_IncSP(block, sp, -frame_size, true);
 	set_irn_n(ret, n_arm_Return_sp, incsp);
 	sched_add_before(ret, incsp);
 }
@@ -79,15 +77,13 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		introduce_epilog(ret);
 	}
 
-	const arch_register_t *sp_reg     = &arm_registers[REG_SP];
-	ir_node               *start      = get_irg_start(irg);
-	ir_node               *block      = get_nodes_block(start);
-	ir_node               *initial_sp = be_get_Start_proj(irg, sp_reg);
-	ir_type               *frame_type = get_irg_frame_type(irg);
-	unsigned               frame_size = get_type_size(frame_type);
+	ir_node  *const start      = get_irg_start(irg);
+	ir_node  *const block      = get_nodes_block(start);
+	ir_node  *const initial_sp = be_get_Start_proj(irg, &arm_registers[REG_SP]);
+	ir_type  *const frame_type = get_irg_frame_type(irg);
+	unsigned  const frame_size = get_type_size(frame_type);
 
-	ir_node *const incsp = be_new_IncSP(sp_reg, block, initial_sp, frame_size,
-	                                    false);
+	ir_node *const incsp = be_new_IncSP(block, initial_sp, frame_size, false);
 	edges_reroute_except(initial_sp, incsp, incsp);
 	sched_add_after(start, incsp);
 }

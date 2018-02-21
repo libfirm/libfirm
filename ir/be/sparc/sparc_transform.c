@@ -1714,8 +1714,7 @@ static ir_node *gen_Call(ir_node *node)
 	/* construct an IncSP -> we have to always be sure that the stack is
 	 * aligned even if we don't push arguments on it */
 	ir_node *const new_frame = get_initial_sp(irg);
-	ir_node *const callframe = be_new_IncSP(sp_reg, new_block, new_frame,
-	                                        cconv->param_stack_size, false);
+	ir_node *const callframe = be_new_IncSP(new_block, new_frame, cconv->param_stack_size, false);
 	in_req[in_arity] = sp_reg->single_req;
 	in[in_arity]     = callframe;
 	++in_arity;
@@ -1830,8 +1829,7 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* IncSP to destroy the call stackframe */
 	ir_node *const call_stack = be_new_Proj(res, pn_sparc_Call_stack);
-	ir_node *const incsp      = be_new_IncSP(sp_reg, new_block, call_stack,
-	                                         -cconv->param_stack_size, false);
+	ir_node *const incsp      = be_new_IncSP(new_block, call_stack, -cconv->param_stack_size, false);
 	be_stack_record_chain(&stack_env, callframe, n_be_IncSP_pred, incsp);
 
 	sparc_free_calling_convention(cconv);

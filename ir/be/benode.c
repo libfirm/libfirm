@@ -240,12 +240,12 @@ ir_node *be_new_Keep_one(ir_node *const kept)
 	return be_new_Keep(block, ARRAY_SIZE(in), in);
 }
 
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
-                      ir_node *old_sp, int offset, bool no_align)
+ir_node *be_new_IncSP(ir_node *bl, ir_node *old_sp, int offset, bool no_align)
 {
+	arch_register_class_t const *const cls = arch_get_irn_register_req(old_sp)->cls;
 	ir_graph *irg = get_irn_irg(bl);
 	ir_node  *in[] = { old_sp };
-	ir_node  *irn  = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->cls->mode,
+	ir_node  *irn  = new_ir_node(NULL, irg, bl, op_be_IncSP, cls->mode,
 	                             ARRAY_SIZE(in), in);
 	init_node_attr(irn, 1, arch_irn_flags_none);
 	be_incsp_attr_t *a = (be_incsp_attr_t*)get_irn_generic_attr(irn);
@@ -253,7 +253,7 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
 	a->no_align        = no_align;
 
 	/* Set output constraint to stack register. */
-	be_node_set_register_req_in(irn, 0, sp->cls->class_req);
+	be_node_set_register_req_in(irn, 0, cls->class_req);
 	arch_copy_irn_out_info(irn, 0, old_sp);
 	return irn;
 }

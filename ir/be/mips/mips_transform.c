@@ -449,7 +449,7 @@ static ir_node *gen_Call(ir_node *const node)
 	int      const frame_size = cconv.param_stack_size;
 	ir_node *const block      = be_transform_nodes_block(node);
 	ir_node *const sp         = get_Start_sp(irg);
-	ir_node *const call_frame = be_new_IncSP(&mips_registers[REG_SP], block, sp, frame_size, 0);
+	ir_node *const call_frame = be_new_IncSP(block, sp, frame_size, 0);
 
 	ins[n_mips_jal_stack]  = call_frame;
 	reqs[n_mips_jal_stack] = &mips_single_reg_req_gp_sp;
@@ -488,7 +488,7 @@ static ir_node *gen_Call(ir_node *const node)
 	}
 
 	ir_node *const jal_stack = be_new_Proj(jal, pn_mips_jal_stack);
-	ir_node *const new_stack = be_new_IncSP(&mips_registers[REG_SP], block, jal_stack, -frame_size, 0);
+	ir_node *const new_stack = be_new_IncSP(block, jal_stack, -frame_size, 0);
 	be_stack_record_chain(&stack_env, call_frame, n_be_IncSP_pred, new_stack);
 
 	return jal;

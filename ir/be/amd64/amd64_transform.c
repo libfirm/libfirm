@@ -515,8 +515,7 @@ static ir_node *gen_be_Relocation(ir_node *const node)
 ir_node *amd64_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
                          bool no_align)
 {
-	ir_node *incsp = be_new_IncSP(&amd64_registers[REG_RSP], block, old_sp,
-	                              offset, no_align);
+	ir_node *const incsp = be_new_IncSP(block, old_sp, offset, no_align);
 	arch_add_irn_flags(incsp, arch_irn_flag_modify_flags);
 	return incsp;
 }

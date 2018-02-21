@@ -62,9 +62,8 @@ static void peephole_be_IncSP(ir_node *node)
 	ir_node *first = node;
 	ir_node *block = get_nodes_block(node);
 	for (unsigned cnt = 1; cnt < v.ops; ++cnt) {
-		int      value = sign * arm_ror(v.values[cnt], v.rors[cnt]);
-		ir_node *incsp = be_new_IncSP(&arm_registers[REG_SP], block, node,
-		                              value, be_get_IncSP_no_align(node));
+		int      const value = sign * arm_ror(v.values[cnt], v.rors[cnt]);
+		ir_node *const incsp = be_new_IncSP(block, node, value, be_get_IncSP_no_align(node));
 		sched_add_after(node, incsp);
 		node = incsp;
 	}

@@ -110,7 +110,6 @@ enum {
 
 /**
  * Make a stack pointer increase/decrease node.
- * @param sp     The stack pointer register.
  * @param block  The block to insert the node into.
  * @param old_sp The node defining the former stack pointer.
  * @param offset amount the stack should expand (positive offset) or shrink
@@ -122,8 +121,7 @@ enum {
  * @note         This node sets a register constraint to the @p sp register on
  *               its output.
  */
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *block,
-                      ir_node *old_sp, int offset, bool no_align);
+ir_node *be_new_IncSP(ir_node *block, ir_node *old_sp, int offset, bool no_align);
 
 /** Returns the previous node that computes the stack pointer. */
 ir_node *be_get_IncSP_pred(ir_node *incsp);

@@ -5475,8 +5475,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 ir_node *ia32_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
                         bool no_align)
 {
-	ir_node *incsp = be_new_IncSP(&ia32_registers[REG_ESP], block, old_sp,
-	                              offset, no_align);
+	ir_node *const incsp = be_new_IncSP(block, old_sp, offset, no_align);
 	arch_add_irn_flags(incsp, arch_irn_flag_modify_flags);
 	return incsp;
 }

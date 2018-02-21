@@ -1774,8 +1774,7 @@ static ir_node *gen_Call(ir_node *node)
 	/* stack pointer (create parameter stackframe + align stack)
 	 * Note that we always need an IncSP to ensure stack alignment */
 	ir_node *const new_frame = get_initial_sp(irg);
-	ir_node *const callframe = be_new_IncSP(sp_reg, new_block, new_frame,
-	                                        cconv->param_stack_size, false);
+	ir_node *const callframe = be_new_IncSP(new_block, new_frame, cconv->param_stack_size, false);
 	int sp_pos = in_arity++;
 	in_req[sp_pos] = sp_reg->single_req;
 	in[sp_pos]     = callframe;
@@ -1882,8 +1881,7 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* IncSP to destroy the call stackframe */
 	ir_node *const call_stack = be_new_Proj(res, pn_arm_Bl_stack);
-	ir_node *const incsp      = be_new_IncSP(sp_reg, new_block, call_stack,
-	                                         -cconv->param_stack_size, false);
+	ir_node *const incsp      = be_new_IncSP(new_block, call_stack, -cconv->param_stack_size, false);
 	be_stack_record_chain(&stack_env, callframe, n_be_IncSP_pred, incsp);
 
 	arm_free_calling_convention(cconv);
