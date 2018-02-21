@@ -1505,12 +1505,10 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		}
 
 		if (need_phi) {
-			ir_mode *mode = get_irn_mode(node);
 			const arch_register_req_t *phi_req = cls->class_req;
 			if (req->width > 1)
 				phi_req = be_create_cls_req(irg, cls, req->width);
-			ir_node *phi  = be_new_Phi(block, n_preds, phi_ins, mode,
-			                           phi_req);
+			ir_node *const phi = be_new_Phi(block, n_preds, phi_ins, phi_req);
 
 			DB((dbg, LEVEL_3, "Create Phi %+F (for %+F) -", phi, node));
 #ifdef DEBUG_libfirm

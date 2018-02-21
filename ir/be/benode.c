@@ -369,11 +369,10 @@ bool be_get_IncSP_no_align(const ir_node *irn)
 	return a->no_align;
 }
 
-ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
-                    const arch_register_req_t *req)
+ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, arch_register_req_t const *req)
 {
 	ir_graph *irg  = get_irn_irg(block);
-	ir_node  *phi = new_ir_node(NULL, irg, block, op_Phi, mode, n_ins, ins);
+	ir_node  *phi = new_ir_node(NULL, irg, block, op_Phi, req->cls->mode, n_ins, ins);
 	phi->attr.phi.u.backedge = new_backedge_arr(get_irg_obstack(irg), n_ins);
 	struct obstack *obst = be_get_be_obst(irg);
 	backend_info_t *info = be_get_info(phi);

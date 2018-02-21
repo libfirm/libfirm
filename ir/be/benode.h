@@ -170,8 +170,7 @@ void be_set_phi_reg_req(ir_node *phi, const arch_register_req_t *req);
 /**
  * Creates a new phi with associated backend informations
  */
-ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
-                    const arch_register_req_t *req);
+ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, arch_register_req_t const *req);
 
 /**
  * Create a new Phi with backend info and without inputs.
