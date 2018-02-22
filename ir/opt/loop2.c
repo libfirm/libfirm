@@ -17,6 +17,7 @@ static void duplicate_node(ir_node *const node, ir_node *const new_block)
 static void rewire_node(ir_node *const node)
 {
 	ir_node *const new_node = get_irn_link(node);
+	assert(new_node);
 	assert(get_irn_arity(node) == get_irn_arity(new_node));
 	// TODO: use foreach_irn_in
 	int const arity = get_irn_arity(new_node);
@@ -35,8 +36,9 @@ static void rewire_node(ir_node *const node)
 
 static void duplicate_block(ir_node *const block)
 {
-	ir_node      *const new_block = exact_copy(block);
-	unsigned int  const n_outs    = get_irn_n_outs(block);
+	ir_node *const new_block = exact_copy(block);
+	set_irn_link(block, new_block);
+	unsigned int const n_outs = get_irn_n_outs(block);
 	for (unsigned int i = 0; i < n_outs; ++i) {
 		ir_node *const node = get_irn_out(block, i);
 		assert(!is_Block(node));
