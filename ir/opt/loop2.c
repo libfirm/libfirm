@@ -1,6 +1,13 @@
 #include "lcssa_t.h"
 #include "irtools.h"
+#include "xmalloc.h"
 #include <assert.h>
+
+static void set_block_keepalive(ir_node *const block)
+{
+	ir_node *const end = get_irg_end(get_irn_irg(block));
+	add_End_keepalive(end, block);
+}
 
 static void duplicate_node(ir_node *const node, ir_node *const new_block)
 {
@@ -19,16 +26,28 @@ static void rewire_node(ir_node *const node)
 	ir_node *const new_node = get_irn_link(node);
 	assert(new_node);
 	assert(get_irn_arity(node) == get_irn_arity(new_node));
+	if (has_backedges(node)) {
+		// loop header
+		assert(get_irn_arity(node) == 2);
+		assert(is_backedge(node, 1));
+		ir_node *const pred     = get_irn_n(new_node, 1);
+		ir_node *const new_pred = get_irn_link(pred);
+		assert(new_pred);
+		// jump to the old node from outside and from the new node
+		set_irn_n(node, 1, new_pred);
+		// jump to the new node only from the old node
+		ir_node **const in = ALLOCAN(ir_node *, 1);
+		in[0] = pred;
+		set_irn_in(new_node, 1, in);
+		return;
+	}
 	// TODO: use foreach_irn_in
 	int const arity = get_irn_arity(new_node);
 	for (int i = 0; i < arity; ++i) {
 		ir_node *const pred     = get_irn_n(new_node, i);
 		ir_node *const new_pred = get_irn_link(pred);
-		if (is_backedge(node, i)) {
-			assert(new_pred != NULL);
-			set_irn_n(node, i, new_pred);
-		}
-		else if (new_pred != NULL) {
+		assert(!is_backedge(node, i));
+		if (new_pred != NULL) {
 			set_irn_n(new_node, i, new_pred);
 		}
 	}
@@ -42,6 +61,8 @@ static void duplicate_block(ir_node *const block)
 	for (unsigned int i = 0; i < n_outs; ++i) {
 		ir_node *const node = get_irn_out(block, i);
 		assert(!is_Block(node));
+		if (get_nodes_block(node) != block)
+			continue;
 		duplicate_node(node, new_block);
 	}
 }
@@ -53,6 +74,8 @@ static void rewire_block(ir_node *const block)
 	for (unsigned int i = 0; i < n_outs; ++i) {
 		ir_node *const node = get_irn_out(block, i);
 		assert(!is_Block(node));
+		if (get_nodes_block(node) != block)
+			continue;
 		rewire_node(node);
 	}
 }
