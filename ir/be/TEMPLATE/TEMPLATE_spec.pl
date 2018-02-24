@@ -30,44 +30,48 @@ $mode_fp = "mode_F";  # mode used by floatingpoint registers
 # );
 
 %reg_classes = (
-	gp => [
-		{ name => "r0"  },
-		{ name => "r1"  },
-		{ name => "r2"  },
-		{ name => "r3"  },
-		{ name => "r4"  },
-		{ name => "r5"  },
-		{ name => "r6"  },
-		{ name => "r7"  },
-		{ name => "r8"  },
-		{ name => "r9"  },
-		{ name => "r10" },
-		{ name => "r11" },
-		{ name => "r12" },
-		{ name => "r13" },
-		{ name => "sp"  }, # stackpointer
-		{ name => "bp"  }, # basepointer
-		{ mode => $mode_gp }
-	],
-	fp => [
-		{ name => "f0"  },
-		{ name => "f1"  },
-		{ name => "f2"  },
-		{ name => "f3"  },
-		{ name => "f4"  },
-		{ name => "f5"  },
-		{ name => "f6"  },
-		{ name => "f7"  },
-		{ name => "f8"  },
-		{ name => "f9"  },
-		{ name => "f10" },
-		{ name => "f11" },
-		{ name => "f12" },
-		{ name => "f13" },
-		{ name => "f14" },
-		{ name => "f15" },
-		{ mode => $mode_fp }
-	]
+	gp => {
+		mode => $mode_gp,
+		registers => [
+			{ name => "r0"  },
+			{ name => "r1"  },
+			{ name => "r2"  },
+			{ name => "r3"  },
+			{ name => "r4"  },
+			{ name => "r5"  },
+			{ name => "r6"  },
+			{ name => "r7"  },
+			{ name => "r8"  },
+			{ name => "r9"  },
+			{ name => "r10" },
+			{ name => "r11" },
+			{ name => "r12" },
+			{ name => "r13" },
+			{ name => "sp"  }, # stackpointer
+			{ name => "bp"  }, # basepointer
+		]
+	},
+	fp => {
+		mode => $mode_fp,
+		registers => [
+			{ name => "f0"  },
+			{ name => "f1"  },
+			{ name => "f2"  },
+			{ name => "f3"  },
+			{ name => "f4"  },
+			{ name => "f5"  },
+			{ name => "f6"  },
+			{ name => "f7"  },
+			{ name => "f8"  },
+			{ name => "f9"  },
+			{ name => "f10" },
+			{ name => "f11" },
+			{ name => "f12" },
+			{ name => "f13" },
+			{ name => "f14" },
+			{ name => "f15" },
+		]
+	}
 );
 
 my $binop = {

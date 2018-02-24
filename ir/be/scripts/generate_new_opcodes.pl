@@ -60,11 +60,10 @@ my %regclass2len = ();
 
 # build register->class hashes
 foreach my $class_name (sort(keys(%reg_classes))) {
-	my @class = @{$reg_classes{$class_name}};
-	pop(@class);
+	my $regs = $reg_classes{$class_name}{registers};
 
 	my $idx = 0;
-	foreach (@class) {
+	foreach (@$regs) {
 		$reg2class{$_->{name}} = {
 			class => $class_name,
 			index => $idx
@@ -110,7 +109,7 @@ sub get_requirement_mode
 	if (!defined($cls)) {
 		die "cannot determine mode for requirement '$req'";
 	}
-	return $cls->[-1]->{mode};
+	return $cls->{mode};
 }
 
 sub create_constructor

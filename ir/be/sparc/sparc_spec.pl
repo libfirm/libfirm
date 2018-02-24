@@ -9,93 +9,100 @@ $mode_fp4     = "sparc_mode_Q";
 
 # available SPARC registers: 8 globals, 24 window regs (8 ins, 8 outs, 8 locals)
 %reg_classes = (
-	gp => [
-		# Note: locals come first here since they're usually constrained last
-		# (by calls and others)
-		{ name => "l0", encoding => 16, dwarf => 16 },
-		{ name => "l1", encoding => 17, dwarf => 17 },
-		{ name => "l2", encoding => 18, dwarf => 18 },
-		{ name => "l3", encoding => 19, dwarf => 19 },
-		{ name => "l4", encoding => 20, dwarf => 20 },
-		{ name => "l5", encoding => 21, dwarf => 21 },
-		{ name => "l6", encoding => 22, dwarf => 22 },
-		{ name => "l7", encoding => 23, dwarf => 23 },
+	gp => {
+		mode => $mode_gp,
+		registers => [
+			# Note: locals come first here since they're usually constrained last
+			# (by calls and others)
+			{ name => "l0", encoding => 16, dwarf => 16 },
+			{ name => "l1", encoding => 17, dwarf => 17 },
+			{ name => "l2", encoding => 18, dwarf => 18 },
+			{ name => "l3", encoding => 19, dwarf => 19 },
+			{ name => "l4", encoding => 20, dwarf => 20 },
+			{ name => "l5", encoding => 21, dwarf => 21 },
+			{ name => "l6", encoding => 22, dwarf => 22 },
+			{ name => "l7", encoding => 23, dwarf => 23 },
 
-		{ name => "g0", encoding =>  0, dwarf => 0 },
-		{ name => "g1", encoding =>  1, dwarf => 1 },
-		{ name => "g2", encoding =>  2, dwarf => 2 },
-		{ name => "g3", encoding =>  3, dwarf => 3 },
-		{ name => "g4", encoding =>  4, dwarf => 4 },
-		{ name => "g5", encoding =>  5, dwarf => 5 },
-		{ name => "g6", encoding =>  6, dwarf => 6 },
-		{ name => "g7", encoding =>  7, dwarf => 7 },
+			{ name => "g0", encoding =>  0, dwarf => 0 },
+			{ name => "g1", encoding =>  1, dwarf => 1 },
+			{ name => "g2", encoding =>  2, dwarf => 2 },
+			{ name => "g3", encoding =>  3, dwarf => 3 },
+			{ name => "g4", encoding =>  4, dwarf => 4 },
+			{ name => "g5", encoding =>  5, dwarf => 5 },
+			{ name => "g6", encoding =>  6, dwarf => 6 },
+			{ name => "g7", encoding =>  7, dwarf => 7 },
 
-		{ name => "o0", encoding =>  8, dwarf => 8 },
-		{ name => "o1", encoding =>  9, dwarf => 9 },
-		{ name => "o2", encoding => 10, dwarf => 10 },
-		{ name => "o3", encoding => 11, dwarf => 11 },
-		{ name => "o4", encoding => 12, dwarf => 12 },
-		{ name => "o5", encoding => 13, dwarf => 13 },
-		{ name => "sp", encoding => 14, dwarf => 14 },
-		{ name => "o7", encoding => 15, dwarf => 15 },
+			{ name => "o0", encoding =>  8, dwarf => 8 },
+			{ name => "o1", encoding =>  9, dwarf => 9 },
+			{ name => "o2", encoding => 10, dwarf => 10 },
+			{ name => "o3", encoding => 11, dwarf => 11 },
+			{ name => "o4", encoding => 12, dwarf => 12 },
+			{ name => "o5", encoding => 13, dwarf => 13 },
+			{ name => "sp", encoding => 14, dwarf => 14 },
+			{ name => "o7", encoding => 15, dwarf => 15 },
 
-		{ name => "i0", encoding => 24, dwarf => 24 },
-		{ name => "i1", encoding => 25, dwarf => 25 },
-		{ name => "i2", encoding => 26, dwarf => 26 },
-		{ name => "i3", encoding => 27, dwarf => 27 },
-		{ name => "i4", encoding => 28, dwarf => 28 },
-		{ name => "i5", encoding => 29, dwarf => 29 },
-		{ name => "fp", encoding => 30, dwarf => 30 },
-		{ name => "i7", encoding => 31, dwarf => 31 },
-		{ mode => $mode_gp }
-	],
-	fpflags => [
-		{ name => "fsr" },
-		{ mode => $mode_fpflags, flags => "manual_ra" }
-	],
-	flags => [
-		{ name => "psr" },
-		{ mode => $mode_flags, flags => "manual_ra" }
-	],
-	mul_div_high_res => [
-		{ name => "y" },
-		{ mode => $mode_gp, flags => "manual_ra" }
-	],
-	fp => [
-		{ name => "f0",  encoding =>  0, dwarf => 32 },
-		{ name => "f1",  encoding =>  1, dwarf => 33 },
-		{ name => "f2",  encoding =>  2, dwarf => 34 },
-		{ name => "f3",  encoding =>  3, dwarf => 35 },
-		{ name => "f4",  encoding =>  4, dwarf => 36 },
-		{ name => "f5",  encoding =>  5, dwarf => 37 },
-		{ name => "f6",  encoding =>  6, dwarf => 38 },
-		{ name => "f7",  encoding =>  7, dwarf => 39 },
-		{ name => "f8",  encoding =>  8, dwarf => 40 },
-		{ name => "f9",  encoding =>  9, dwarf => 41 },
-		{ name => "f10", encoding => 10, dwarf => 42 },
-		{ name => "f11", encoding => 11, dwarf => 43 },
-		{ name => "f12", encoding => 12, dwarf => 44 },
-		{ name => "f13", encoding => 13, dwarf => 45 },
-		{ name => "f14", encoding => 14, dwarf => 46 },
-		{ name => "f15", encoding => 15, dwarf => 47 },
-		{ name => "f16", encoding => 16, dwarf => 48 },
-		{ name => "f17", encoding => 17, dwarf => 49 },
-		{ name => "f18", encoding => 18, dwarf => 50 },
-		{ name => "f19", encoding => 19, dwarf => 51 },
-		{ name => "f20", encoding => 20, dwarf => 52 },
-		{ name => "f21", encoding => 21, dwarf => 53 },
-		{ name => "f22", encoding => 22, dwarf => 54 },
-		{ name => "f23", encoding => 23, dwarf => 55 },
-		{ name => "f24", encoding => 24, dwarf => 56 },
-		{ name => "f25", encoding => 25, dwarf => 57 },
-		{ name => "f26", encoding => 26, dwarf => 58 },
-		{ name => "f27", encoding => 27, dwarf => 59 },
-		{ name => "f28", encoding => 28, dwarf => 60 },
-		{ name => "f29", encoding => 29, dwarf => 61 },
-		{ name => "f30", encoding => 30, dwarf => 62 },
-		{ name => "f31", encoding => 31, dwarf => 63 },
-		{ mode => $mode_fp }
-	]
+			{ name => "i0", encoding => 24, dwarf => 24 },
+			{ name => "i1", encoding => 25, dwarf => 25 },
+			{ name => "i2", encoding => 26, dwarf => 26 },
+			{ name => "i3", encoding => 27, dwarf => 27 },
+			{ name => "i4", encoding => 28, dwarf => 28 },
+			{ name => "i5", encoding => 29, dwarf => 29 },
+			{ name => "fp", encoding => 30, dwarf => 30 },
+			{ name => "i7", encoding => 31, dwarf => 31 },
+		]
+	},
+	fpflags => {
+		flags => "manual_ra",
+		mode => $mode_fpflags,
+		registers => [ { name => "fsr" }, ]
+	},
+	flags => {
+		flags => "manual_ra",
+		mode => $mode_flags,
+		registers => [ { name => "psr" }, ]
+	},
+	mul_div_high_res => {
+		flags => "manual_ra",
+		mode => $mode_gp,
+		registers => [ { name => "y" }, ]
+	},
+	fp => {
+		mode => $mode_fp,
+		registers => [
+			{ name => "f0",  encoding =>  0, dwarf => 32 },
+			{ name => "f1",  encoding =>  1, dwarf => 33 },
+			{ name => "f2",  encoding =>  2, dwarf => 34 },
+			{ name => "f3",  encoding =>  3, dwarf => 35 },
+			{ name => "f4",  encoding =>  4, dwarf => 36 },
+			{ name => "f5",  encoding =>  5, dwarf => 37 },
+			{ name => "f6",  encoding =>  6, dwarf => 38 },
+			{ name => "f7",  encoding =>  7, dwarf => 39 },
+			{ name => "f8",  encoding =>  8, dwarf => 40 },
+			{ name => "f9",  encoding =>  9, dwarf => 41 },
+			{ name => "f10", encoding => 10, dwarf => 42 },
+			{ name => "f11", encoding => 11, dwarf => 43 },
+			{ name => "f12", encoding => 12, dwarf => 44 },
+			{ name => "f13", encoding => 13, dwarf => 45 },
+			{ name => "f14", encoding => 14, dwarf => 46 },
+			{ name => "f15", encoding => 15, dwarf => 47 },
+			{ name => "f16", encoding => 16, dwarf => 48 },
+			{ name => "f17", encoding => 17, dwarf => 49 },
+			{ name => "f18", encoding => 18, dwarf => 50 },
+			{ name => "f19", encoding => 19, dwarf => 51 },
+			{ name => "f20", encoding => 20, dwarf => 52 },
+			{ name => "f21", encoding => 21, dwarf => 53 },
+			{ name => "f22", encoding => 22, dwarf => 54 },
+			{ name => "f23", encoding => 23, dwarf => 55 },
+			{ name => "f24", encoding => 24, dwarf => 56 },
+			{ name => "f25", encoding => 25, dwarf => 57 },
+			{ name => "f26", encoding => 26, dwarf => 58 },
+			{ name => "f27", encoding => 27, dwarf => 59 },
+			{ name => "f28", encoding => 28, dwarf => 60 },
+			{ name => "f29", encoding => 29, dwarf => 61 },
+			{ name => "f30", encoding => 30, dwarf => 62 },
+			{ name => "f31", encoding => 31, dwarf => 63 },
+		]
+	}
 );
 
 %init_attr = (

@@ -20,50 +20,58 @@ $mode_flags = "ia32_mode_flags";
 $mode_fpcw  = "ia32_mode_fpcw";
 
 %reg_classes = (
-	gp => [
-		{ name => "edx", encoding => 2, dwarf => 2 },
-		{ name => "ecx", encoding => 1, dwarf => 1 },
-		{ name => "eax", encoding => 0, dwarf => 0 },
-		{ name => "ebx", encoding => 3, dwarf => 3 },
-		{ name => "esi", encoding => 6, dwarf => 6 },
-		{ name => "edi", encoding => 7, dwarf => 7 },
-		{ name => "ebp", encoding => 5, dwarf => 5 },
-		{ name => "esp", encoding => 4, dwarf => 4 },
-		{ name => "gp_NOREG", type => "virtual" }, # we need a dummy register for NoReg nodes
-		{ mode => $mode_gp }
-	],
-	xmm => [
-		{ name => "xmm0", dwarf => 21 },
-		{ name => "xmm1", dwarf => 22 },
-		{ name => "xmm2", dwarf => 23 },
-		{ name => "xmm3", dwarf => 24 },
-		{ name => "xmm4", dwarf => 25 },
-		{ name => "xmm5", dwarf => 26 },
-		{ name => "xmm6", dwarf => 27 },
-		{ name => "xmm7", dwarf => 28 },
-		{ name => "xmm_NOREG", type => "virtual" }, # we need a dummy register for NoReg nodes
-		{ mode => $mode_xmm }
-	],
-	fp => [
-		{ name => "st0", realname => "st",    encoding => 0, dwarf => 11 },
-		{ name => "st1", realname => "st(1)", encoding => 1, dwarf => 12 },
-		{ name => "st2", realname => "st(2)", encoding => 2, dwarf => 13 },
-		{ name => "st3", realname => "st(3)", encoding => 3, dwarf => 14 },
-		{ name => "st4", realname => "st(4)", encoding => 4, dwarf => 15 },
-		{ name => "st5", realname => "st(5)", encoding => 5, dwarf => 16 },
-		{ name => "st6", realname => "st(6)", encoding => 6, dwarf => 17 },
-		{ name => "st7", realname => "st(7)", encoding => 7, dwarf => 18 },
-		{ name => "fp_NOREG", type => "virtual" }, # we need a dummy register for NoReg nodes
-		{ mode => $mode_fp87 }
-	],
-	fp_cw => [	# the floating point control word
-		{ name => "fpcw", dwarf => 37 },
-		{ mode => $mode_fpcw, flags => "manual_ra" }
-	],
-	flags => [
-		{ name => "eflags", dwarf => 9 },
-		{ mode => "ia32_mode_flags", flags => "manual_ra" }
-	],
+	gp => {
+		mode => $mode_gp,
+		registers => [
+			{ name => "edx", encoding => 2, dwarf => 2 },
+			{ name => "ecx", encoding => 1, dwarf => 1 },
+			{ name => "eax", encoding => 0, dwarf => 0 },
+			{ name => "ebx", encoding => 3, dwarf => 3 },
+			{ name => "esi", encoding => 6, dwarf => 6 },
+			{ name => "edi", encoding => 7, dwarf => 7 },
+			{ name => "ebp", encoding => 5, dwarf => 5 },
+			{ name => "esp", encoding => 4, dwarf => 4 },
+			{ name => "gp_NOREG", type => "virtual" }, # we need a dummy register for NoReg nodes
+		]
+	},
+	xmm => {
+		mode => $mode_xmm,
+		registers => [
+			{ name => "xmm0", dwarf => 21 },
+			{ name => "xmm1", dwarf => 22 },
+			{ name => "xmm2", dwarf => 23 },
+			{ name => "xmm3", dwarf => 24 },
+			{ name => "xmm4", dwarf => 25 },
+			{ name => "xmm5", dwarf => 26 },
+			{ name => "xmm6", dwarf => 27 },
+			{ name => "xmm7", dwarf => 28 },
+			{ name => "xmm_NOREG", type => "virtual" }, # we need a dummy register for NoReg nodes
+		]
+	},
+	fp => {
+		mode => $mode_fp87,
+		registers => [
+			{ name => "st0", realname => "st",    encoding => 0, dwarf => 11 },
+			{ name => "st1", realname => "st(1)", encoding => 1, dwarf => 12 },
+			{ name => "st2", realname => "st(2)", encoding => 2, dwarf => 13 },
+			{ name => "st3", realname => "st(3)", encoding => 3, dwarf => 14 },
+			{ name => "st4", realname => "st(4)", encoding => 4, dwarf => 15 },
+			{ name => "st5", realname => "st(5)", encoding => 5, dwarf => 16 },
+			{ name => "st6", realname => "st(6)", encoding => 6, dwarf => 17 },
+			{ name => "st7", realname => "st(7)", encoding => 7, dwarf => 18 },
+			{ name => "fp_NOREG", type => "virtual" }, # we need a dummy register for NoReg nodes
+		]
+	},
+	fp_cw => { # the floating point control word
+		flags => "manual_ra",
+		mode => $mode_fpcw,
+		registers => [ { name => "fpcw", dwarf => 37 }, ]
+	},
+	flags => {
+		flags => "manual_ra",
+		mode => "ia32_mode_flags",
+		registers => [ { name => "eflags", dwarf => 9 }, ]
+	},
 );
 
 sub ia32_custom_init_attr {

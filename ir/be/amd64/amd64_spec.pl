@@ -6,59 +6,66 @@ $mode_xmm   = "amd64_mode_xmm";
 $mode_x87   = "x86_mode_E";
 
 %reg_classes = (
-	gp => [
-		{ name => "rax", dwarf => 0 },
-		{ name => "rcx", dwarf => 2 },
-		{ name => "rdx", dwarf => 1 },
-		{ name => "rsi", dwarf => 4 },
-		{ name => "rdi", dwarf => 5 },
-		{ name => "rbx", dwarf => 3 },
-		{ name => "rbp", dwarf => 6 },
-		{ name => "rsp", dwarf => 7 },
-		{ name => "r8",  dwarf => 8 },
-		{ name => "r9",  dwarf => 9 },
-		{ name => "r10", dwarf => 10 },
-		{ name => "r11", dwarf => 11 },
-		{ name => "r12", dwarf => 12 },
-		{ name => "r13", dwarf => 13 },
-		{ name => "r14", dwarf => 14 },
-		{ name => "r15", dwarf => 15 },
-		{ mode => $mode_gp }
-	],
-	flags => [
-		{ name => "eflags", dwarf => 49 },
-		{ mode => $mode_flags, flags => "manual_ra" }
-	],
-	xmm => [
-		{ name => "xmm0",  dwarf => 17 },
-		{ name => "xmm1",  dwarf => 18 },
-		{ name => "xmm2",  dwarf => 19 },
-		{ name => "xmm3",  dwarf => 20 },
-		{ name => "xmm4",  dwarf => 21 },
-		{ name => "xmm5",  dwarf => 22 },
-		{ name => "xmm6",  dwarf => 23 },
-		{ name => "xmm7",  dwarf => 24 },
-		{ name => "xmm8",  dwarf => 25 },
-		{ name => "xmm9",  dwarf => 26 },
-		{ name => "xmm10", dwarf => 27 },
-		{ name => "xmm11", dwarf => 28 },
-		{ name => "xmm12", dwarf => 29 },
-		{ name => "xmm13", dwarf => 30 },
-		{ name => "xmm14", dwarf => 31 },
-		{ name => "xmm15", dwarf => 32 },
-		{ mode => $mode_xmm }
-	],
-	x87 => [
-		{ name => "st0", realname => "st",    encoding => 0, dwarf => 11 },
-		{ name => "st1", realname => "st(1)", encoding => 1, dwarf => 12 },
-		{ name => "st2", realname => "st(2)", encoding => 2, dwarf => 13 },
-		{ name => "st3", realname => "st(3)", encoding => 3, dwarf => 14 },
-		{ name => "st4", realname => "st(4)", encoding => 4, dwarf => 15 },
-		{ name => "st5", realname => "st(5)", encoding => 5, dwarf => 16 },
-		{ name => "st6", realname => "st(6)", encoding => 6, dwarf => 17 },
-		{ name => "st7", realname => "st(7)", encoding => 7, dwarf => 18 },
-		{ mode => $mode_x87 }
-	],
+	gp => {
+		mode => $mode_gp,
+		registers => [
+			{ name => "rax", dwarf =>  0 },
+			{ name => "rcx", dwarf =>  2 },
+			{ name => "rdx", dwarf =>  1 },
+			{ name => "rsi", dwarf =>  4 },
+			{ name => "rdi", dwarf =>  5 },
+			{ name => "rbx", dwarf =>  3 },
+			{ name => "rbp", dwarf =>  6 },
+			{ name => "rsp", dwarf =>  7 },
+			{ name => "r8",  dwarf =>  8 },
+			{ name => "r9",  dwarf =>  9 },
+			{ name => "r10", dwarf => 10 },
+			{ name => "r11", dwarf => 11 },
+			{ name => "r12", dwarf => 12 },
+			{ name => "r13", dwarf => 13 },
+			{ name => "r14", dwarf => 14 },
+			{ name => "r15", dwarf => 15 },
+		]
+	},
+	flags => {
+		flags => "manual_ra",
+		mode => $mode_flags,
+		registers => [ { name => "eflags", dwarf => 49 }, ]
+	},
+	xmm => {
+		mode => $mode_xmm,
+		registers => [
+			{ name => "xmm0",  dwarf => 17 },
+			{ name => "xmm1",  dwarf => 18 },
+			{ name => "xmm2",  dwarf => 19 },
+			{ name => "xmm3",  dwarf => 20 },
+			{ name => "xmm4",  dwarf => 21 },
+			{ name => "xmm5",  dwarf => 22 },
+			{ name => "xmm6",  dwarf => 23 },
+			{ name => "xmm7",  dwarf => 24 },
+			{ name => "xmm8",  dwarf => 25 },
+			{ name => "xmm9",  dwarf => 26 },
+			{ name => "xmm10", dwarf => 27 },
+			{ name => "xmm11", dwarf => 28 },
+			{ name => "xmm12", dwarf => 29 },
+			{ name => "xmm13", dwarf => 30 },
+			{ name => "xmm14", dwarf => 31 },
+			{ name => "xmm15", dwarf => 32 },
+		]
+	},
+	x87 => {
+		mode => $mode_x87,
+		registers => [
+			{ name => "st0", realname => "st",    encoding => 0, dwarf => 11 },
+			{ name => "st1", realname => "st(1)", encoding => 1, dwarf => 12 },
+			{ name => "st2", realname => "st(2)", encoding => 2, dwarf => 13 },
+			{ name => "st3", realname => "st(3)", encoding => 3, dwarf => 14 },
+			{ name => "st4", realname => "st(4)", encoding => 4, dwarf => 15 },
+			{ name => "st5", realname => "st(5)", encoding => 5, dwarf => 16 },
+			{ name => "st6", realname => "st(6)", encoding => 6, dwarf => 17 },
+			{ name => "st7", realname => "st(7)", encoding => 7, dwarf => 18 },
+		]
+	},
 );
 
 %custom_irn_flags = (

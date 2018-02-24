@@ -40,10 +40,10 @@ my %regclass2len = ();
 my %reg2class = ();
 
 foreach my $class_name (sort(keys(%reg_classes))) {
-	my @class = @{ $reg_classes{$class_name} };
+	my $regs = $reg_classes{$class_name}{registers};
 
 	my $idx = 0;
-	foreach (@class) {
+	foreach (@$regs) {
 		if (defined(my $name = $_->{name})) {
 			$reg2class{$name} = {
 				"class" => $class_name,
@@ -92,14 +92,13 @@ sub has_flag
 
 # generate register type and class variable, init function and default requirements
 foreach my $class_name (sort(keys(%reg_classes))) {
-	my @class = @{ $reg_classes{$class_name} };
+	my $class = $reg_classes{$class_name};
 
 	my $arch_class_name = "${arch}_$class_name";
 	my $class_req       = "${arch}_class_reg_req_$class_name";
 	my $class_enum      = "CLASS_$arch_class_name";
 	my $class_ptr       = "&${arch}_reg_classes[$class_enum]";
-	my $flags           = pop(@class);
-	my $class_mode      = $flags->{mode};
+	my $class_mode      = $class->{mode};
 
 	$single_constraints .= <<EOF;
 const arch_register_req_t $class_req = {
@@ -111,9 +110,10 @@ EOF
 
 	$classdef .= "\t$class_enum,\n";
 
-	my $numregs     = @class;
-	my $manual_ra = has_flag("manual_ra", $flags->{flags});
-	my $uname     = uc($class[0]->{name});
+	my $regs      = $class->{registers};
+	my $numregs   = @$regs;
+	my $manual_ra = has_flag("manual_ra", $class->{flags});
+	my $uname     = uc($regs->[0]->{name});
 	$regclasses .= <<EOF;
 	{
 		.name      = \"$arch_class_name\",
@@ -128,7 +128,7 @@ EOF
 
 	$reginit .= "\t$arch\_reg_classes[$class_enum].mode = $class_mode;\n";
 	$regdef2 .= "enum {\n";
-	foreach (@class) {
+	foreach (@$regs) {
 		my $name         = $_->{name};
 		# realname is name if not set by user
 		my $realname     = $_->{realname} // $name;

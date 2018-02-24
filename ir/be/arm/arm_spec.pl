@@ -8,40 +8,45 @@ $mode_flags = "arm_mode_flags";
 $mode_fp    = "mode_F";
 
 %reg_classes = (
-	gp => [
-		{ name => "r0",  dwarf => 0 },
-		{ name => "r1",  dwarf => 1 },
-		{ name => "r2",  dwarf => 2 },
-		{ name => "r3",  dwarf => 3 },
-		{ name => "r4",  dwarf => 4 },
-		{ name => "r5",  dwarf => 5 },
-		{ name => "r6",  dwarf => 6 },
-		{ name => "r7",  dwarf => 7 },
-		{ name => "r8",  dwarf => 8 },
-		{ name => "r9",  dwarf => 9 },
-		{ name => "r10", dwarf => 10 },
-		{ name => "r11", dwarf => 11 },
-		{ name => "r12", dwarf => 12 },
-		{ name => "sp",  dwarf => 13 },
-		{ name => "lr",  dwarf => 14 },
-		{ name => "pc",  dwarf => 15 },
-		{ mode => $mode_gp }
-	],
-	fpa => [
-		{ name => "f0", dwarf => 96 },
-		{ name => "f1", dwarf => 97 },
-		{ name => "f2", dwarf => 98 },
-		{ name => "f3", dwarf => 99 },
-		{ name => "f4", dwarf => 100 },
-		{ name => "f5", dwarf => 101 },
-		{ name => "f6", dwarf => 102 },
-		{ name => "f7", dwarf => 103 },
-		{ mode => $mode_fp }
-	],
-	flags => [
-		{ name => "fl" },
-		{ mode => $mode_flags, flags => "manual_ra" }
-	],
+	gp => {
+		mode => $mode_gp,
+		registers => [
+			{ name => "r0",  dwarf => 0 },
+			{ name => "r1",  dwarf => 1 },
+			{ name => "r2",  dwarf => 2 },
+			{ name => "r3",  dwarf => 3 },
+			{ name => "r4",  dwarf => 4 },
+			{ name => "r5",  dwarf => 5 },
+			{ name => "r6",  dwarf => 6 },
+			{ name => "r7",  dwarf => 7 },
+			{ name => "r8",  dwarf => 8 },
+			{ name => "r9",  dwarf => 9 },
+			{ name => "r10", dwarf => 10 },
+			{ name => "r11", dwarf => 11 },
+			{ name => "r12", dwarf => 12 },
+			{ name => "sp",  dwarf => 13 },
+			{ name => "lr",  dwarf => 14 },
+			{ name => "pc",  dwarf => 15 },
+		]
+	},
+	fpa => {
+		mode => $mode_fp,
+		registers => [
+			{ name => "f0", dwarf => 96 },
+			{ name => "f1", dwarf => 97 },
+			{ name => "f2", dwarf => 98 },
+			{ name => "f3", dwarf => 99 },
+			{ name => "f4", dwarf => 100 },
+			{ name => "f5", dwarf => 101 },
+			{ name => "f6", dwarf => 102 },
+			{ name => "f7", dwarf => 103 },
+		]
+	},
+	flags => {
+		flags => "manual_ra",
+		mode => $mode_flags,
+		registers => [ { name => "fl" }, ]
+	},
 );
 
 %init_attr = (
