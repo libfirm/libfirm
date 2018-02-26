@@ -262,7 +262,6 @@ my $x87const = {
 	outs      => [ "res" ],
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_X87;\n"
 	            ."x86_insn_size_t size    = X86_SIZE_80;\n",
-	mode      => $mode_x87,
 	emit      => "{name}",
 };
 
@@ -272,7 +271,6 @@ my $x87unop = {
 	out_reqs  => [ "x87" ],
 	ins       => [ "value" ],
 	attr_type => "amd64_x87_attr_t",
-	mode      => $mode_x87,
 	emit      => "{name}",
 };
 
@@ -283,7 +281,6 @@ my $x87binop = {
 	out_reqs  => [ "x87" ],
 	ins       => [ "left", "right" ],
 	attr_type => "amd64_x87_attr_t",
-	mode      => $mode_x87,
 };
 
 my $x87store = {
@@ -294,7 +291,6 @@ my $x87store = {
 	outs      => [ "M" ],
 	attr_type => "amd64_x87_binop_addr_attr_t",
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	mode      => "mode_M",
 };
 
 %nodes = (

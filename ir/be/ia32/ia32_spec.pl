@@ -1889,7 +1889,6 @@ fdup => {
 	attr_type   => "ia32_x87_attr_t",
 	attr        => "const arch_register_t *reg",
 	init        => "attr->x87.reg = reg;",
-	mode        => $mode_fp87,
 	latency     => 1,
 },
 
