@@ -34,11 +34,6 @@ my $target_c = "$target_dir/gen_${arch}_new_nodes.c";
 my $target_h = "$target_dir/gen_${arch}_new_nodes.h";
 
 $default_attr_type //= "${arch}_attr_t";
-if (!%init_attr) {
-	%init_attr = (
-		$default_attr_type => "",
-	);
-}
 
 # create c code file from specs
 
