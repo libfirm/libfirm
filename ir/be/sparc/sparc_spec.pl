@@ -108,7 +108,7 @@ $mode_fp4     = "sparc_mode_Q";
 %init_attr = (
 	sparc_attr_t            => "",
 	sparc_load_store_attr_t => "",
-	sparc_jmp_cond_attr_t   => "",
+	sparc_jmp_cond_attr_t   => "init_sparc_jmp_cond_attr(res, relation, is_unsigned);",
 	sparc_switch_jmp_attr_t => "be_switch_attr_init(res, &attr->swtch, table, jump_table);",
 	sparc_fp_attr_t         => "init_sparc_fp_attributes(res, fp_mode);",
 	sparc_fp_conv_attr_t    => "init_sparc_fp_conv_attributes(res, src_mode, dest_mode);",
@@ -460,14 +460,13 @@ FrameAddr => {
 Bicc => {
 	template => $branchcc,
 	attr     => "ir_relation relation, bool is_unsigned",
-	init     => "\tinit_sparc_jmp_cond_attr(res, relation, is_unsigned);",
 	in_reqs  => [ "flags" ],
 },
 
 fbfcc => {
 	template => $branchcc,
 	attr     => "ir_relation relation",
-	init     => "\tinit_sparc_jmp_cond_attr(res, relation, false);",
+	fixed    => "bool const is_unsigned = false;",
 	in_reqs  => [ "fpflags" ],
 },
 
