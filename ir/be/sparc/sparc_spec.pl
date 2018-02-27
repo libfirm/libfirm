@@ -454,7 +454,6 @@ FrameAddr => {
 	in_reqs   => [ "gp" ],
 	out_reqs  => [ "gp" ],
 	ins       => [ "base" ],
-	attr_type => "sparc_attr_t",
 	init      => "sparc_set_attr_imm(res, entity, offset);",
 },
 
