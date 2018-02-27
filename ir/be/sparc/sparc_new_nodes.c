@@ -235,10 +235,12 @@ void init_sparc_fp_conv_attributes(ir_node *res, ir_mode *src_mode,
 	attr->dest_mode = dest_mode;
 }
 
-void init_sparc_call_attributes(ir_node *node, ir_type *call_type)
+void init_sparc_call_attributes(ir_node *const node, ir_type *const call_type, bool const aggregate_return)
 {
 	sparc_call_attr_t *attr = get_sparc_call_attr(node);
 	attr->call_type = call_type;
+	if (aggregate_return)
+		arch_add_irn_flags(node, (arch_irn_flags_t)sparc_arch_irn_flag_aggregate_return);
 }
 
 int sparc_attrs_equal(const ir_node *a, const ir_node *b)
