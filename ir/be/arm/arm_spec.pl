@@ -67,7 +67,8 @@ $mode_fp    = "mode_F";
 	arm_shifter_operand_t =>
 		"init_arm_attributes(res);",
 	arm_cmp_attr_t =>
-		"init_arm_attributes(res);",
+		"init_arm_attributes(res);\n".
+		"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
 	arm_farith_attr_t =>
 		"init_arm_attributes(res);\n".
 		"\tinit_arm_farith_attributes(res, op_mode);",
@@ -211,32 +212,28 @@ my $cmp_shifter_operand = {
 		imm => {
 			attr    => "unsigned char immediate_value, unsigned char immediate_rot, bool ins_permuted, bool is_unsigned",
 			init    =>
-				"init_arm_shifter_operand(res, 1, immediate_value, ARM_SHF_IMM, immediate_rot);\n".
-				"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
+				"init_arm_shifter_operand(res, 1, immediate_value, ARM_SHF_IMM, immediate_rot);\n",
 			in_reqs => [ "gp" ],
 			ins     => [ "left" ],
 		},
 		reg => {
 			attr    => "bool ins_permuted, bool is_unsigned",
 			init    =>
-				"init_arm_shifter_operand(res, 1, 0, ARM_SHF_REG, 0);\n".
-				"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
+				"init_arm_shifter_operand(res, 1, 0, ARM_SHF_REG, 0);\n",
 			in_reqs => [ "gp", "gp" ],
 			ins     => [ "left", "right" ],
 		},
 		reg_shift_reg => {
 			attr    => "arm_shift_modifier_t shift_modifier, bool ins_permuted, bool is_unsigned",
 			init    =>
-				"init_arm_shifter_operand(res, 1, 0, shift_modifier, 0);\n".
-				"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
+				"init_arm_shifter_operand(res, 1, 0, shift_modifier, 0);\n",
 			in_reqs => [ "gp", "gp", "gp" ],
 			ins     => [ "left", "right", "shift" ],
 		},
 		reg_shift_imm => {
 			attr    => "arm_shift_modifier_t shift_modifier, unsigned shift_immediate, bool ins_permuted, bool is_unsigned",
 			init    =>
-				"init_arm_shifter_operand(res, 1, 0, shift_modifier, shift_immediate);\n".
-				"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
+				"init_arm_shifter_operand(res, 1, 0, shift_modifier, shift_immediate);\n",
 			in_reqs => [ "gp", "gp" ],
 			ins     => [ "left", "right" ],
 		},
@@ -515,7 +512,7 @@ Cmfe => {
 	irn_flags => [ "rematerializable", "modify_flags" ],
 	attr_type => "arm_cmp_attr_t",
 	attr      => "bool ins_permuted",
-	init      => "init_arm_cmp_attr(res, ins_permuted, false);",
+	fixed     => "bool const is_unsigned = false;",
 	in_reqs   => [ "fpa", "fpa" ],
 	out_reqs  => [ "flags" ],
 	emit      => 'cmfe %S0, %S1',
