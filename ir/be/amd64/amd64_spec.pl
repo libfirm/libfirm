@@ -74,40 +74,36 @@ $mode_x87   = "x86_mode_E";
 
 %init_attr = (
 	amd64_attr_t =>
-		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode, size);",
+		"init_amd64_attributes(res, op_mode, size);",
 	amd64_addr_attr_t =>
-		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode, size);\n"
+		"init_amd64_attributes(res, op_mode, size);\n"
 		."\tattr->addr = addr;",
 	amd64_binop_addr_attr_t =>
-		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
-		."\t*attr = *attr_init;",
+		"*attr = *attr_init;",
 	amd64_switch_jmp_attr_t =>
-		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode, size);\n"
+		"init_amd64_attributes(res, op_mode, size);\n"
 		."\tattr->base.addr = *addr;\n"
 		."\tbe_switch_attr_init(res, &attr->swtch, table, table_entity);",
 	amd64_cc_attr_t =>
-		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_CC, size);\n"
+		"init_amd64_attributes(res, AMD64_OP_CC, size);\n"
 		."\tinit_amd64_cc_attributes(res, cc);",
 	amd64_movimm_attr_t =>
-		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_IMM64, size);\n"
+		"init_amd64_attributes(res, AMD64_OP_IMM64, size);\n"
 		."\tinit_amd64_movimm_attributes(res, imm);",
 	amd64_shift_attr_t =>
-		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
-		."\t*attr = *attr_init;\n",
+		"*attr = *attr_init;\n",
 	amd64_call_addr_attr_t =>
-		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
-		."\t*attr = *attr_init;",
+		"*attr = *attr_init;",
 	amd64_copyb_attr_t =>
-		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_NONE, size);\n"
+		"init_amd64_attributes(res, AMD64_OP_NONE, size);\n"
 		."\tinit_amd64_copyb_attributes(res, size);",
 	amd64_x87_attr_t =>
-		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, AMD64_OP_X87, X86_SIZE_80);\n",
+		"init_amd64_attributes(res, AMD64_OP_X87, X86_SIZE_80);\n",
 	amd64_x87_addr_attr_t =>
-		"init_amd64_attributes(res, irn_flags, in_reqs, n_res, op_mode, size);\n"
+		"init_amd64_attributes(res, op_mode, size);\n"
 		."\tattr->base.addr = addr;\n",
 	amd64_x87_binop_addr_attr_t =>
-		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n"
-		."\tattr->base = *attr_init;\n"
+		"attr->base = *attr_init;\n"
 		."\tassert(attr_init->base.base.op_mode == AMD64_OP_ADDR_REG);\n"
 		."\tattr->base.base.base.op_mode = AMD64_OP_X87_ADDR_REG;\n",
 );

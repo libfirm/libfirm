@@ -12,9 +12,7 @@
 
 #include "arm_new_nodes.h"
 
-void init_arm_attributes(ir_node *node, arch_irn_flags_t flags,
-                         const arch_register_req_t **in_reqs,
-                         int n_res);
+void init_arm_attributes(ir_node *node);
 
 void init_arm_load_store_attributes(ir_node *res, ir_mode *ls_mode,
                                     ir_entity *entity, int entity_sign,

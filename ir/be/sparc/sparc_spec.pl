@@ -106,17 +106,13 @@ $mode_fp4     = "sparc_mode_Q";
 );
 
 %init_attr = (
-	sparc_attr_t            => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
-	sparc_load_store_attr_t => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
-	sparc_jmp_cond_attr_t   => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
-	sparc_switch_jmp_attr_t => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
-	                           "\tbe_switch_attr_init(res, &attr->swtch, table, jump_table);\n",
-	sparc_fp_attr_t         => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
-	                           "\tinit_sparc_fp_attributes(res, fp_mode);\n",
-	sparc_fp_conv_attr_t    => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
-	                           "\tinit_sparc_fp_conv_attributes(res, src_mode, dest_mode);\n",
-	sparc_call_attr_t       => "be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
-	                           "\tinit_sparc_call_attributes(res, call_type);",
+	sparc_attr_t            => "",
+	sparc_load_store_attr_t => "",
+	sparc_jmp_cond_attr_t   => "",
+	sparc_switch_jmp_attr_t => "be_switch_attr_init(res, &attr->swtch, table, jump_table);",
+	sparc_fp_attr_t         => "init_sparc_fp_attributes(res, fp_mode);",
+	sparc_fp_conv_attr_t    => "init_sparc_fp_conv_attributes(res, src_mode, dest_mode);",
+	sparc_call_attr_t       => "init_sparc_call_attributes(res, call_type);",
 );
 
 %custom_irn_flags = (

@@ -36,7 +36,7 @@ my $target_h = "$target_dir/gen_${arch}_new_nodes.h";
 $default_attr_type //= "${arch}_attr_t";
 if (!%init_attr) {
 	%init_attr = (
-		$default_attr_type => "be_info_init_irn(res, irn_flags, in_reqs, n_res);",
+		$default_attr_type => "",
 	);
 }
 
@@ -255,43 +255,46 @@ EOF
 	ir_graph *const irg = get_irn_irg(block);
 	ir_node  *const res = new_ir_node(dbgi, irg, block, op_${arch}_$op, $mode, $arity_, $in);
 
+	/* init node attributes */
+EOF
+
+	my $attr_init_code = "";
+	if ((my $attr_type = $on->{attr_type}) ne "") {
+		$temp .= <<EOF;
+
 	/* flags */
 	arch_irn_flags_t irn_flags = arch_irn_flags_none;
 EOF
-	if (my $irn_flags = $n->{irn_flags}) {
-		my %known_irn_flags = (
-			"dont_spill"       => "arch_irn_flag_dont_spill",
-			"rematerializable" => "arch_irn_flag_rematerializable",
-			"modify_flags"     => "arch_irn_flag_modify_flags",
-			"simple_jump"      => "arch_irn_flag_simple_jump",
-			"schedule_first"   => "arch_irn_flag_schedule_first",
-			"not_scheduled"    => "arch_irn_flag_not_scheduled",
-		);
-		if (%custom_irn_flags) {
-			%known_irn_flags = (%known_irn_flags, %custom_irn_flags);
-		}
-		foreach my $flag (@$irn_flags) {
-			if (defined(my $known_irn_flag = $known_irn_flags{$flag})) {
-				$temp .= "\tirn_flags |= $known_irn_flag;\n";
-			} else {
-				print STDERR "WARNING: irn_flag '$flag' in opcode '$op' is unknown\n";
+		if (my $irn_flags = $n->{irn_flags}) {
+			my %known_irn_flags = (
+				"dont_spill"       => "arch_irn_flag_dont_spill",
+				"rematerializable" => "arch_irn_flag_rematerializable",
+				"modify_flags"     => "arch_irn_flag_modify_flags",
+				"simple_jump"      => "arch_irn_flag_simple_jump",
+				"schedule_first"   => "arch_irn_flag_schedule_first",
+				"not_scheduled"    => "arch_irn_flag_not_scheduled",
+			);
+			if (%custom_irn_flags) {
+				%known_irn_flags = (%known_irn_flags, %custom_irn_flags);
+			}
+			foreach my $flag (@$irn_flags) {
+				if (defined(my $known_irn_flag = $known_irn_flags{$flag})) {
+					$temp .= "\tirn_flags |= $known_irn_flag;\n";
+				} else {
+					print STDERR "WARNING: irn_flag '$flag' in opcode '$op' is unknown\n";
+				}
 			}
 		}
-	}
 
-	$temp .= <<EOF;
+		if ($out_arity != $ARITY_VARIABLE) {
+			$temp .= "\tint const n_res = $out_arity;\n"
+		}
 
-	/* init node attributes */
-EOF
-	if ($out_arity != $ARITY_VARIABLE) {
-		$temp .= "\tint const n_res = $out_arity;\n"
-	}
-
-	my $attr_init_code = "(void)irn_flags, (void)n_res;";
-	if ((my $attr_type = $on->{attr_type}) ne "") {
-		$attr_init_code = $init_attr{$attr_type};
-		if (!defined($attr_init_code)) {
+		$temp .= "\tbe_info_init_irn(res, irn_flags, in_reqs, n_res);\n";
+		if (!defined(my $init = $init_attr{$attr_type})) {
 			die "Fatal error: Couldn't find attribute initialisation code for type '$attr_type'";
+		} elsif ($init ne "") {
+			$attr_init_code = "\t$init\n";
 		}
 		$temp .= <<EOF;
 	$attr_type *const attr = ($attr_type*)get_irn_generic_attr(res);
@@ -303,7 +306,7 @@ EOF
 		$temp .= "\t$fixed\n";
 	}
 
-	$temp .= "\t$attr_init_code\n";
+	$temp .= $attr_init_code;
 	if (defined($custom_init_attr_func)) {
 		my $custominit = &$custom_init_attr_func($n, $on, "${arch}_$op");
 		if ($custominit ne "") {

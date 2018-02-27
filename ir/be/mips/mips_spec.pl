@@ -46,18 +46,14 @@ my $mode_gp = "mode_Iu"; # TODO
 );
 
 %init_attr = (
-	mips_attr_t =>
-		"be_info_init_irn(res, irn_flags, in_reqs, n_res);",
+	mips_attr_t => "",
 	mips_cond_attr_t =>
-		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
-		"\tattr->cond = cond;",
+		"attr->cond = cond;",
 	mips_immediate_attr_t =>
-		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
-		"\tattr->ent = ent;\n".
+		"attr->ent = ent;\n".
 		"\tattr->val = val;",
 	mips_switch_attr_t =>
-		"be_info_init_irn(res, irn_flags, in_reqs, n_res);\n".
-		"\tbe_switch_attr_init(res, &attr->swtch, table, table_entity);\n",
+		"be_switch_attr_init(res, &attr->swtch, table, table_entity);",
 );
 
 my $binOp = {

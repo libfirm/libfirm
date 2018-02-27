@@ -14,9 +14,7 @@
 
 void amd64_dump_node(FILE *F, const ir_node *n, dump_reason_t reason);
 
-void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
-                           const arch_register_req_t **in_reqs,
-                           int n_res, amd64_op_mode_t op_mode,
+void init_amd64_attributes(ir_node *node, amd64_op_mode_t op_mode,
                            x86_insn_size_t size);
 
 void init_amd64_cc_attributes(ir_node *node, x86_condition_code_t cc);

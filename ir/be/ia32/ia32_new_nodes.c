@@ -512,11 +512,8 @@ void ia32_swap_left_right(ir_node *node)
 	set_irn_n(node, n_ia32_binary_right, left);
 }
 
-void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
-                          const arch_register_req_t **in_reqs, int n_res,
-                          x86_insn_size_t const size)
+void init_ia32_attributes(ir_node *node, x86_insn_size_t const size)
 {
-	be_info_init_irn(node, flags, in_reqs, n_res);
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->size = size;
 

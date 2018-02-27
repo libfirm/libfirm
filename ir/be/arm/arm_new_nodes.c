@@ -261,11 +261,8 @@ void set_arm_CondJmp_relation(ir_node *node, ir_relation relation)
 }
 
 /* Set the ARM machine node attributes to default values. */
-void init_arm_attributes(ir_node *node, arch_irn_flags_t flags,
-                         const arch_register_req_t **in_reqs,
-                         int n_res)
+void init_arm_attributes(ir_node *node)
 {
-	be_info_init_irn(node, flags, in_reqs, n_res);
 	arm_attr_t *const attr = get_arm_attr(node);
 	attr->is_load_store    = false;
 }
