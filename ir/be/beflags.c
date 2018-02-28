@@ -36,12 +36,12 @@
 #include "irtools.h"
 #include <stdbool.h>
 
-static const arch_register_class_t *flag_class;
-static const arch_register_t       *flags_reg;
-static func_rematerialize           remat;
-static check_modifies_flags         check_modify;
-static try_replace_flags            try_replace;
-static bool                         changed;
+static arch_register_req_t const *flags_req;
+static arch_register_t     const *flags_reg;
+static func_rematerialize         remat;
+static check_modifies_flags       check_modify;
+static try_replace_flags          try_replace;
+static bool                       changed;
 
 static ir_node *default_remat(ir_node *node, ir_node *after)
 {
@@ -106,10 +106,9 @@ static void move_other_uses(ir_node *node, ir_node *copy)
 	ir_node *copy_prev = get_irn_sched_info(copy)->prev;
 
 	foreach_out_edge(node, out) {
-		ir_node *proj = get_edge_src_irn(out);
-		if (get_irn_mode(proj) == flag_class->mode) {
+		ir_node *const proj = get_edge_src_irn(out);
+		if (arch_get_irn_register_req(proj) == flags_req)
 			continue;
-		}
 
 		ir_node *new_proj = NULL;
 		foreach_out_edge_safe(proj, edge) {
@@ -163,13 +162,12 @@ static bool rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 		value = copy;
 	}
 
-	ir_mode *value_mode = get_irn_mode(value);
-	ir_node *n          = flag_consumers;
+	ir_node *n = flag_consumers;
 	do {
-		foreach_irn_in(n, i, in) {
+		for (int i = 0, arity = get_irn_arity(n); i < arity; ++i) {
 			/* Assume that each node has at most one flag
 			 * input. */
-			if (get_irn_mode(in) == value_mode) {
+			if (arch_get_irn_register_req_in(n, i) == flags_req) {
 				set_irn_n(n, i, value);
 				break;
 			}
@@ -217,9 +215,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 		/* test whether the current node needs flags */
 		ir_node *new_flags_needed = NULL;
 		foreach_irn_in(node, i, pred) {
-			const arch_register_req_t *req
-				= arch_get_irn_register_req_in(node, i);
-			if (req->cls == flag_class) {
+			if (arch_get_irn_register_req_in(node, i) == flags_req) {
 				assert(new_flags_needed == NULL);
 				new_flags_needed = pred;
 			}
@@ -274,8 +270,8 @@ void be_sched_fix_flags(ir_graph *irg, const arch_register_class_t *flag_cls,
                         check_modifies_flags check_modifies_flags_func,
                         try_replace_flags try_replace_flags_func)
 {
-	flag_class   = flag_cls;
-	flags_reg    = &flag_class->regs[0];
+	flags_req    = flag_cls->class_req;
+	flags_reg    = &flag_cls->regs[0];
 	remat        = remat_func;
 	check_modify = check_modifies_flags_func;
 	try_replace  = try_replace_flags_func;
