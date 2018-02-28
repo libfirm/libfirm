@@ -18,6 +18,7 @@ static void duplicate_node(ir_node *const node, ir_node *const new_block)
 	//set_optimize(opt);
 	set_nodes_block(new_node, new_block);
 	set_irn_link(node, new_node);
+	set_irn_link(new_node, node);
 	printf("new node %ld\n", get_irn_node_nr(new_node));
 }
 
@@ -26,6 +27,33 @@ static void rewire_node(ir_node *const node)
 	ir_node *const new_node = get_irn_link(node);
 	assert(new_node);
 	assert(get_irn_arity(node) == get_irn_arity(new_node));
+	unsigned int const n_outs = get_irn_n_outs(node);
+	for (unsigned int i = 0; i < n_outs; ++i) {
+		int n;
+		ir_node *const succ = get_irn_out_ex(node, i, &n);
+		// TODO: revisit this condition
+		if (get_irn_link(succ) == NULL && (is_Block(succ) || is_Phi(succ))) {
+			int const arity = get_irn_arity(succ);
+			int new_arity = arity;
+			for (int j = 0; j < arity; ++j) {
+				ir_node *const pred     = get_irn_n(succ, j);
+				ir_node *const new_pred = get_irn_link(pred);
+				if (new_pred && new_pred != pred)
+					++new_arity;
+			}
+			ir_node **const in = ALLOCAN(ir_node *, new_arity);
+			for (int j = 0; j < arity; ++j) {
+				ir_node *const pred     = get_irn_n(succ, j);
+				ir_node *const new_pred = get_irn_link(pred);
+
+				in[j] = pred;
+				if (new_pred && new_pred != pred) {
+					in[--new_arity] = new_pred;
+				}
+			}
+			set_irn_in(succ, arity * 2, in);
+		}
+	}
 	if (has_backedges(node)) {
 		// loop header
 		assert(get_irn_arity(node) == 2);
