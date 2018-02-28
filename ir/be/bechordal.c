@@ -218,7 +218,7 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 #else
 	bipartite_t         *const bp          = bipartite_new(n_regs, n_regs);
 #endif
-	bool double_register_capable = (strcmp(env->cls->name, "sparc_fp") == 0); // TODO store this in a better way like within the register class
+	bool double_register_capable = env->cls->double_registers_allowed;
 
 	bitset_t *const available = bitset_alloca(n_regs);
 	bitset_set_all(available);
