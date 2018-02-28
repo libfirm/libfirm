@@ -636,7 +636,7 @@ static x86_condition_code_t determine_final_cc(ir_node const *const flags,
  */
 static void emit_amd64_jcc(const ir_node *irn)
 {
-	const ir_node         *flags = get_irn_n(irn, n_amd64_jcc_eflags);
+	const ir_node         *flags = get_irn_n(irn, n_amd64_jcc_flags);
 	const amd64_cc_attr_t *attr  = get_amd64_cc_attr_const(irn);
 	x86_condition_code_t   cc    = determine_final_cc(flags, attr->cc);
 
