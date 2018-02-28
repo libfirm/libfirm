@@ -68,6 +68,7 @@ $mode_fp4     = "sparc_mode_Q";
 	},
 	fp => {
 		mode => $mode_fp,
+		flags => "double_registers_allowed",
 		registers => [
 			{ name => "f0",  encoding =>  0, dwarf => 32 },
 			{ name => "f1",  encoding =>  1, dwarf => 33 },
