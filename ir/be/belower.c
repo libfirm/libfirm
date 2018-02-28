@@ -111,14 +111,9 @@ static arch_register_t const *get_free_register(ir_node *const perm, lower_env_t
 		   of the Perm, we *cannot* regard the Perm's own outputs as
 		   free registers. */
 		bool const reg_is_free = perm != node;
-		if (get_irn_mode(node) == mode_T) {
-			foreach_out_edge(node, edge) {
-				ir_node *proj = get_edge_src_irn(edge);
-				set_reg_free(free_regs, proj, reg_is_free);
-			}
-		} else {
-			set_reg_free(free_regs, node, reg_is_free);
-		}
+		be_foreach_value(node, value,
+			set_reg_free(free_regs, value, reg_is_free);
+		);
 
 		foreach_irn_in(node, i, in) {
 			set_reg_free(free_regs, in, false);
