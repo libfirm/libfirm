@@ -3,12 +3,6 @@
 #include "xmalloc.h"
 #include <assert.h>
 
-static void set_block_keepalive(ir_node *const block)
-{
-	ir_node *const end = get_irg_end(get_irn_irg(block));
-	add_End_keepalive(end, block);
-}
-
 static void duplicate_node(ir_node *const node, ir_node *const new_block)
 {
 	ir_printf("duplicate node %n (%d)\n", node, get_irn_node_nr(node));
