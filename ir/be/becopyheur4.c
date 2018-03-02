@@ -1293,9 +1293,8 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 		if (mirn->init_col == mirn->col)
 			continue;
 
-		const arch_register_t *const reg = arch_register_for_index(co->cls, mirn->col);
-		ir_node               *const irn = get_idx_irn(co->irg, pn);
-		arch_set_irn_register(irn, reg);
+		ir_node *const irn = get_idx_irn(co->irg, pn);
+		arch_set_irn_register_idx(irn, mirn->col);
 		DB((dbg, LEVEL_1, "%+F set color from %d to %d\n", irn, mirn->init_col, mirn->col));
 	}
 

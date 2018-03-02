@@ -63,10 +63,4 @@ static inline unsigned get_irn_col(ir_node const *const node)
 	return arch_get_irn_register(node)->index;
 }
 
-static inline void set_irn_col(arch_register_class_t const *const cls, ir_node *const node, unsigned const color)
-{
-	arch_register_t const *const reg = arch_register_for_index(cls, color);
-	arch_set_irn_register(node, reg);
-}
-
 #endif

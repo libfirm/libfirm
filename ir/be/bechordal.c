@@ -353,7 +353,7 @@ static void assign(ir_node *const block, void *const env_ptr)
 			assert(reg && "Register must have been assigned");
 			bitset_set(available, reg->index);
 		} else {
-			arch_register_t const *reg = arch_get_irn_register(irn);
+			arch_register_t const *const reg = arch_get_irn_register(irn);
 			/* All live-ins must have a register assigned. (The dominators were
 			 * allocated before.) */
 			assert(b->is_real || reg);
@@ -365,12 +365,11 @@ static void assign(ir_node *const block, void *const env_ptr)
 			} else {
 				assert(!arch_irn_is_ignore(irn));
 				col = get_next_free_reg(available);
-				reg = arch_register_for_index(env->cls, col);
-				arch_set_irn_register(irn, reg);
+				arch_set_irn_register_idx(irn, col);
 			}
 			bitset_clear(available, col);
 
-			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", reg->name, col, irn));
+			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", arch_get_irn_register(irn)->name, col, irn));
 		}
 	}
 }

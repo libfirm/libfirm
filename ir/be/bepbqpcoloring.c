@@ -652,11 +652,9 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 	/* assign colors */
 	deq_foreach_pointer(&pbqp_alloc_env.rpeo, pbqp_node_t, node) {
-		ir_node               *irn   = get_idx_irn(irg, node->index);
-		num                    color = get_node_solution(pbqp_alloc_env.pbqp_inst, node->index);
-		const arch_register_t *reg   = arch_register_for_index(cls, color);
-
-		arch_set_irn_register(irn, reg);
+		ir_node *const irn   = get_idx_irn(irg, node->index);
+		num      const color = get_node_solution(pbqp_alloc_env.pbqp_inst, node->index);
+		arch_set_irn_register_idx(irn, color);
 	}
 
 

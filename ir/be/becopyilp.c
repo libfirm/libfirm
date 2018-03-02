@@ -168,7 +168,7 @@ static void sr_reinsert(ilp_env_t *const ienv)
 			++free_col;
 			assert(free_col < n_regs);
 		}
-		set_irn_col(ienv->co->cls, irn, free_col);
+		arch_set_irn_register_idx(irn, free_col);
 		ir_nodeset_remove(&ienv->all_removed, irn); /* irn is back in graph again */
 	}
 }

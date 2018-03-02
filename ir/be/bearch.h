@@ -393,4 +393,11 @@ arch_register_req_t *be_create_cls_req(ir_graph *irg, arch_register_class_t cons
 
 arch_register_req_t const *be_create_reg_req(ir_graph *irg, arch_register_t const *reg, bool ignore);
 
+static inline void arch_set_irn_register_idx(ir_node *const irn, unsigned const idx)
+{
+	arch_register_class_t const *const cls = arch_get_irn_register_req(irn)->cls;
+	arch_register_t       const *const reg = arch_register_for_index(cls, idx);
+	arch_set_irn_register(irn, reg);
+}
+
 #endif

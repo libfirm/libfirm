@@ -531,7 +531,7 @@ static void ilp2_apply(ilp_env_t *const ienv)
 			unsigned color;
 			if (sscanf(var_name, "x_%u_%u", &nodenr, &color) == 2) {
 				ir_node *const irn = get_idx_irn(irg, nodenr);
-				set_irn_col(ienv->co->cls, irn, color);
+				arch_set_irn_register_idx(irn, color);
 			} else {
 				panic("this should be an x-var");
 			}
