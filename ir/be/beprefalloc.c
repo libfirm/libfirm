@@ -471,6 +471,11 @@ static void combine_congruence_classes(void)
 }
 
 
+static void register_assignment(ir_node *const node, unsigned const reg_idx, unsigned const width)
+{
+	for (unsigned r0 = reg_idx; r0 < reg_idx + width; ++r0)
+		assignments[r0] = node;
+}
 
 /**
  * Assign register reg to the given node.
@@ -480,10 +485,14 @@ static void combine_congruence_classes(void)
  */
 static void use_reg(ir_node *node, const arch_register_t *reg, unsigned width)
 {
-	unsigned r = reg->index;
-	for (unsigned r0 = r; r0 < r + width; ++r0)
-		assignments[r0] = node;
+	register_assignment(node, reg->index, width);
 	arch_set_irn_register(node, reg);
+}
+
+static void use_reg_idx(ir_node *const node, unsigned const reg_idx, unsigned const width)
+{
+	register_assignment(node, reg_idx, width);
+	arch_set_irn_register_idx(node, reg_idx);
 }
 
 static void free_reg_of_value(ir_node *node)
@@ -607,19 +616,18 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	if (i >= n_regs)
 		return false;
 
-	const arch_register_t *reg   = arch_register_for_index(cls, r);
-	ir_node               *copy  = be_new_Copy(block, to_split);
-	unsigned               width = 1;
+	ir_node *const copy  = be_new_Copy(block, to_split);
+	unsigned const width = 1;
 	mark_as_copy_of(copy, to_split);
 	/* hacky, but correct here */
 	if (assignments[from_reg->index] == to_split)
 		free_reg_of_value(to_split);
-	use_reg(copy, reg, width);
+	use_reg_idx(copy, r, width);
 	sched_add_before(before, copy);
 
 	DB((dbg, LEVEL_3,
 	    "Optimistic live-range split %+F move %+F(%s) -> %s before %+F (win %f, depth %d)\n",
-	    copy, to_split, from_reg->name, reg->name, before, delta, recursion));
+	    copy, to_split, from_reg->name, arch_get_irn_register(copy)->name, before, delta, recursion));
 	return true;
 }
 
@@ -630,8 +638,8 @@ static void assign_reg(ir_node const *const block, ir_node *const node, arch_reg
 {
 	assert(!is_Phi(node));
 	/* preassigned register? */
-	arch_register_t const *final_reg = arch_get_irn_register(node);
-	unsigned         const width     = req->width;
+	arch_register_t const *const final_reg = arch_get_irn_register(node);
+	unsigned               const width     = req->width;
 	if (final_reg != NULL) {
 		DB((dbg, LEVEL_2, "Preassignment %+F -> %s\n", node, final_reg->name));
 		use_reg(node, final_reg, width);
@@ -719,9 +727,8 @@ static void assign_reg(ir_node const *const block, ir_node *const node, arch_reg
 		panic("no register left for %+F", node);
 	}
 
-	final_reg = arch_register_for_index(cls, final_reg_index);
-	DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, final_reg->name));
-	use_reg(node, final_reg, width);
+	use_reg_idx(node, final_reg_index, width);
+	DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, arch_get_irn_register(node)->name));
 }
 
 /**
@@ -796,12 +803,10 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 		ir_node *src  = assignments[old_r];
 		ir_node *copy = be_new_Copy(block, src);
 		sched_add_before(before, copy);
-		const arch_register_t *reg = arch_register_for_index(cls, r);
-		DB((dbg, LEVEL_2, "Copy %+F (from %+F, before %+F) -> %s\n",
-		    copy, src, before, reg->name));
 		mark_as_copy_of(copy, src);
 		unsigned width = 1; /* TODO */
-		use_reg(copy, reg, width);
+		use_reg_idx(copy, r, width);
+		DB((dbg, LEVEL_2, "Copy %+F (from %+F, before %+F) -> %s\n", copy, src, before, arch_get_irn_register(copy)->name));
 
 		if (live_nodes != NULL) {
 			ir_nodeset_insert(live_nodes, copy);
@@ -860,13 +865,11 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 
 		ir_node *const proj0 = be_new_Proj(perm, 0);
 		mark_as_copy_of(proj0, in[0]);
-		const arch_register_t *reg0 = arch_register_for_index(cls, old_r);
-		use_reg(proj0, reg0, width);
+		use_reg_idx(proj0, old_r, width);
 
 		ir_node *const proj1 = be_new_Proj(perm, 1);
 		mark_as_copy_of(proj1, in[1]);
-		const arch_register_t *reg1 = arch_register_for_index(cls, r2);
-		use_reg(proj1, reg1, width);
+		use_reg_idx(proj1, r2, width);
 
 		/* 1 value is now in the correct register */
 		permutation[old_r] = old_r;
@@ -1428,9 +1431,8 @@ static void assign_phi_registers(ir_node *block)
 
 		unsigned r = assignment[n++];
 		assert(rbitset_is_set(normal_regs, r));
-		const arch_register_t *reg = arch_register_for_index(cls, r);
-		DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, reg->name));
-		use_reg(node, reg, req->width);
+		use_reg_idx(node, r, req->width);
+		DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, arch_get_irn_register(node)->name));
 
 		/* adapt preferences for phi inputs */
 		propagate_phi_register(node, r);
