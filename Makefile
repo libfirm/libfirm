@@ -36,12 +36,16 @@ endif
 
 # Variants
 CFLAGS_debug       = -O0 -g3 -DDEBUG_libfirm
-CFLAGS_profile     = -O3 -pg -DNDEBUG -fno-inline
+CFLAGS_profile     = -O3 -pg -fno-inline
 CFLAGS_coverage    = -O0 --coverage -DDEBUG_libfirm
-CFLAGS_optimize    = -O3 -fomit-frame-pointer -DNDEBUG
+CFLAGS_optimize    = -O3 -fomit-frame-pointer
 LINKFLAGS_debug    =
 LINKFLAGS_profile  = -pg
 LINKFLAGS_coverage = --coverage
+
+ifeq ($(findstring -DDEBUG_libfirm, $(CFLAGS_$(variant))),)
+CFLAGS += -DNDEBUG
+endif
 
 # General flags
 CPPFLAGS  ?=
