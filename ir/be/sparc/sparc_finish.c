@@ -244,7 +244,7 @@ static void finish_sparc_Ld(ir_node *node)
 		ir_node                 *mem             = get_irn_n(node, n_sparc_Ld_mem);
 		ir_mode                 *load_store_mode = load_store_attr->load_store_mode;
 		ir_node                 *constant        = create_constant_from_immediate(node, offset);
-		ir_node                 *new_load        = new_bd_sparc_Ld_reg(dbgi, block, ptr, constant, mem, load_store_mode);
+		ir_node                 *new_load        = new_bd_sparc_Ld_reg(dbgi, block, mem, ptr, constant, load_store_mode);
 		finish_load_store(node, new_load, load_store_attr);
 	}
 }

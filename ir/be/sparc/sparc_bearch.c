@@ -418,8 +418,7 @@ static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
 	if (mode_is_float(mode)) {
 		load = create_ldf(NULL, block, frame, spill, mode, NULL, 0, true);
 	} else {
-		load = new_bd_sparc_Ld_imm(NULL, block, frame, spill, mode, NULL, 0,
-		                           true);
+		load = new_bd_sparc_Ld_imm(NULL, block, spill, frame, mode, NULL, 0, true);
 	}
 	arch_add_irn_flags(load, arch_irn_flag_reload);
 	sched_add_before(before, load);

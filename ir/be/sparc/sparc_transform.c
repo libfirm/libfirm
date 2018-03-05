@@ -818,12 +818,9 @@ static ir_node *gen_Load(ir_node *node)
 		match_address(ptr, &address, true);
 		if (address.ptr2 != NULL) {
 			assert(address.entity == NULL && address.offset == 0);
-			new_load = new_bd_sparc_Ld_reg(dbgi, block, address.ptr,
-			                               address.ptr2, new_mem, mode);
+			new_load = new_bd_sparc_Ld_reg(dbgi, block, new_mem, address.ptr, address.ptr2, mode);
 		} else {
-			new_load = new_bd_sparc_Ld_imm(dbgi, block, address.ptr, new_mem,
-			                               mode, address.entity, address.offset,
-			                               false);
+			new_load = new_bd_sparc_Ld_imm(dbgi, block, new_mem, address.ptr, mode, address.entity, address.offset, false);
 		}
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
@@ -1227,8 +1224,7 @@ static ir_node *gen_Switch(ir_node *node)
 	/* scale index */
 	ir_node *idx = new_bd_sparc_Sll_imm(dbgi, new_block, new_selector, NULL, 2);
 	/* load from jumptable */
-	ir_node *load = new_bd_sparc_Ld_reg(dbgi, new_block, table_address, idx,
-	                                    get_irg_no_mem(irg), mode_gp);
+	ir_node *load = new_bd_sparc_Ld_reg(dbgi, new_block, get_irg_no_mem(irg), table_address, idx, mode_gp);
 	ir_node *address = be_new_Proj(load, pn_sparc_Ld_res);
 
 	unsigned n_outs = get_Switch_n_outs(node);
@@ -1385,8 +1381,7 @@ static ir_node *create_ftoi(dbg_info *dbgi, ir_node *block, ir_node *op,
 	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *stf   = new_bd_sparc_Stf_s(dbgi, block, ftoi, sp, nomem, mode_fp, NULL, 0, true);
 	arch_add_irn_flags(stf, arch_irn_flag_spill);
-	ir_node  *ld    = new_bd_sparc_Ld_imm(dbgi, block, sp, stf, mode_gp,
-	                                      NULL, 0, true);
+	ir_node  *ld    = new_bd_sparc_Ld_imm(dbgi, block, stf, sp, mode_gp, NULL, 0, true);
 	ir_node  *res   = be_new_Proj(ld, pn_sparc_Ld_res);
 	set_irn_pinned(stf, false);
 	set_irn_pinned(ld, false);
@@ -1647,13 +1642,12 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 		arch_add_irn_flags(stf, arch_irn_flag_spill);
 		set_irn_pinned(stf, false);
 
-		ir_node *ld = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp, NULL, 0, true);
+		ir_node *ld = new_bd_sparc_Ld_imm(dbgi, block, stf, stack, mode_gp, NULL, 0, true);
 		set_irn_pinned(ld, false);
 		result[0] = be_new_Proj(ld, pn_sparc_Ld_res);
 
 		if (bits == 64) {
-			ir_node *ld2 = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp,
-			                                   NULL, 4, true);
+			ir_node *ld2 = new_bd_sparc_Ld_imm(dbgi, block, stf, stack, mode_gp, NULL, 4, true);
 			set_irn_pinned(ld, false);
 			result[1] = be_new_Proj(ld2, pn_sparc_Ld_res);
 
@@ -2125,7 +2119,7 @@ static ir_node *gen_Bitcast(ir_node *node)
 		ir_node *stf = create_stf(dbgi, new_block, new_op, sp, nomem, src_mode,
 		                          NULL, 0, true);
 		arch_add_irn_flags(stf, arch_irn_flag_spill);
-		ir_node *const ld  = new_bd_sparc_Ld_imm(dbgi, new_block, sp, stf, dst_mode, NULL, 0, true);
+		ir_node *const ld  = new_bd_sparc_Ld_imm(dbgi, new_block, stf, sp, dst_mode, NULL, 0, true);
 		ir_node *const res = be_new_Proj(ld, pn_sparc_Ld_res);
 		set_irn_pinned(stf, false);
 		set_irn_pinned(ld, false);
@@ -2264,9 +2258,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 			} else if (param->entity != NULL) {
 				ir_node *fp  = get_initial_fp(irg);
 				ir_node *mem = be_get_Start_mem(irg);
-				ir_node *ld  = new_bd_sparc_Ld_imm(NULL, new_block, fp, mem,
-				                                   mode_gp, param->entity,
-				                                   0, true);
+				ir_node *ld  = new_bd_sparc_Ld_imm(NULL, new_block, mem, fp, mode_gp, param->entity, 0, true);
 				value1 = be_new_Proj(ld, pn_sparc_Ld_res);
 			}
 
@@ -2287,8 +2279,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 			                   param->entity, 0, true);
 			value = be_new_Proj(load, pn_sparc_Ldf_res);
 		} else {
-			load  = new_bd_sparc_Ld_imm(NULL, new_block, base, mem, mode,
-			                            param->entity, 0, true);
+			load  = new_bd_sparc_Ld_imm(NULL, new_block, mem, base, mode, param->entity, 0, true);
 			value = be_new_Proj(load, pn_sparc_Ld_res);
 		}
 		set_irn_pinned(load, false);

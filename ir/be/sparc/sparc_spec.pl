@@ -324,23 +324,23 @@ Ld => {
 	state     => "exc_pinned",
 	constructors => {
 		imm => {
-			in_reqs => [ "gp", "mem" ],
-			ins     => [ "ptr", "mem" ],
+			in_reqs => [ "mem", "gp" ],
+			ins     => [ "mem", "ptr" ],
 			attr    => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 			init    => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
 		},
 		reg => {
-			in_reqs => [ "gp", "gp", "mem" ],
-			ins     => [ "ptr", "ptr2", "mem" ],
+			in_reqs => [ "mem", "gp", "gp" ],
+			ins     => [ "mem", "ptr", "ptr2" ],
 			attr    => "ir_mode *ls_mode",
 			init    => "init_sparc_load_store_attributes(res, ls_mode, NULL, 0, false, true);",
 		},
 	},
-	ins       => [ "ptr", "mem" ],
+	ins       => [ "mem", "ptr" ],
 	out_reqs  => [ "gp", "mem" ],
 	outs      => [ "res", "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	emit      => "ld%ML %O0, %D0"
+	emit      => "ld%ML %O1, %D0"
 },
 
 SetHi => {
