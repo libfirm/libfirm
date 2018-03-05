@@ -451,6 +451,14 @@ my $loadop = {
 	ins      => [ "base", "index", "mem" ],
 };
 
+my $storeop = {
+	op_flags => [ "uses_memory", "fragile" ],
+	state    => "exc_pinned",
+	out_reqs => [ "mem", "exec", "exec" ],
+	outs     => [ "M", "X_regular", "X_except" ],
+	attr     => "x86_insn_size_t size",
+};
+
 %nodes = (
 
 Immediate => {
@@ -1072,16 +1080,12 @@ Load => {
 },
 
 Store => {
-	op_flags => [ "uses_memory", "fragile" ],
-	state    => "exc_pinned",
+	template => $storeop,
 	constructors => {
 		""     => { in_reqs => [ "gp", "gp", "mem", "gp" ] },
 		"8bit" => { in_reqs => [ "gp", "gp", "mem", "eax ebx ecx edx" ] }
 	},
-	out_reqs => [ "mem", "exec", "exec" ],
 	ins      => [ "base", "index", "mem", "val" ],
-	outs     => [ "M", "X_regular", "X_except" ],
-	attr     => "x86_insn_size_t size",
 	emit     => "mov%M %S3, %AM",
 	latency  => 2,
 },
@@ -1494,13 +1498,9 @@ xLoad => {
 },
 
 xStore => {
-	op_flags => [ "uses_memory", "fragile" ],
-	state    => "exc_pinned",
+	template => $storeop,
 	in_reqs  => [ "gp", "gp", "mem", "xmm" ],
-	out_reqs => [ "mem", "exec", "exec" ],
 	ins      => [ "base", "index", "mem", "val" ],
-	outs     => [ "M", "X_regular", "X_except" ],
-	attr     => "x86_insn_size_t size",
 	emit     => "movs%FX %S3, %AM",
 	latency  => 0,
 },
@@ -1669,29 +1669,21 @@ fld => {
 },
 
 fst => {
+	template  => $storeop,
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "mem", "fp" ],
-	out_reqs  => [ "mem", "exec", "exec" ],
 	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "M", "X_regular", "X_except" ],
 	emit      => "fst%FP%FM %AM",
-	attr      => "x86_insn_size_t size",
 	latency   => 2,
 	attr_type => "ia32_x87_attr_t",
 },
 
 fstp => {
+	template  => $storeop,
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "mem", "fp:K" ],
-	out_reqs  => [ "mem", "exec", "exec" ],
 	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "M", "X_regular", "X_except" ],
 	emit      => "fstp%FM %AM",
-	attr      => "x86_insn_size_t size",
 	latency   => 2,
 	attr_type => "ia32_x87_attr_t",
 },
@@ -1707,26 +1699,18 @@ fild => {
 },
 
 fist => {
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
+	template  => $storeop,
 	in_reqs   => [ "gp", "gp", "mem", "fp", "fpcw" ],
-	out_reqs  => [ "mem", "exec", "exec" ],
 	ins       => [ "base", "index", "mem", "val", "fpcw" ],
-	outs      => [ "M", "X_regular", "X_except" ],
-	attr      => "x86_insn_size_t size",
 	emit      => "fist%FP%FI %AM",
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 },
 
 fistp => {
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
+	template  => $storeop,
 	in_reqs   => [ "gp", "gp", "mem", "fp:K", "fpcw" ],
-	out_reqs  => [ "mem", "exec", "exec" ],
 	ins       => [ "base", "index", "mem", "val", "fpcw" ],
-	outs      => [ "M", "X_regular", "X_except" ],
-	attr      => "x86_insn_size_t size",
 	emit      => "fistp%FI %AM",
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
@@ -1734,13 +1718,9 @@ fistp => {
 
 # SSE3 fisttp instruction
 fisttp => {
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
+	template  => $storeop,
 	in_reqs   => [ "gp", "gp", "mem", "fp:K" ],
-	out_reqs  => [ "mem", "exec", "exec" ],
 	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "M", "X_regular", "X_except" ],
-	attr      => "x86_insn_size_t size",
 	emit      => "fisttp%FI %AM",
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
@@ -1923,13 +1903,9 @@ xxLoad => {
 },
 
 xxStore => {
-	op_flags => [ "uses_memory", "fragile" ],
-	state    => "exc_pinned",
+	template => $storeop,
 	in_reqs  => [ "gp", "gp", "mem", "xmm" ],
-	out_reqs => [ "mem", "exec", "exec" ],
 	ins      => [ "base", "index", "mem", "val" ],
-	outs     => [ "M", "X_regular", "X_except" ],
-	attr     => "x86_insn_size_t size",
 	emit     => "movdqu %S3, %AM",
 	latency  => 1,
 },
