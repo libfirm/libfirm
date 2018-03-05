@@ -444,6 +444,13 @@ my $emmsop = {
 	              ."\t".$x87sim,
 };
 
+my $loadop = {
+	op_flags => [ "uses_memory", "fragile" ],
+	state    => "exc_pinned",
+	in_reqs  => [ "gp", "gp", "mem" ],
+	ins      => [ "base", "index", "mem" ],
+};
+
 %nodes = (
 
 Immediate => {
@@ -1055,11 +1062,8 @@ Cltd => {
 # lateny of 0 for load is correct
 
 Load => {
-	op_flags => [ "uses_memory", "fragile" ],
-	state    => "exc_pinned",
-	in_reqs  => [ "gp", "gp", "mem" ],
+	template => $loadop,
 	out_reqs => [ "gp", "none", "mem", "exec", "exec" ],
-	ins      => [ "base", "index", "mem" ],
 	outs     => [ "res", "unused", "M", "X_regular", "X_except" ],
 	latency  => 0,
 	attr     => "x86_insn_size_t size, bool sign_extend",
@@ -1481,11 +1485,8 @@ Ucomis => {
 },
 
 xLoad => {
-	op_flags => [ "uses_memory", "fragile" ],
-	state    => "exc_pinned",
-	in_reqs  => [ "gp", "gp", "mem" ],
+	template => $loadop,
 	out_reqs => [ "xmm", "none", "mem", "exec", "exec" ],
-	ins      => [ "base", "index", "mem" ],
 	outs     => [ "res", "unused", "M", "X_regular", "X_except" ],
 	emit     => "movs%FX %AM, %D0",
 	attr     => "x86_insn_size_t size",
@@ -1657,12 +1658,9 @@ fchs => {
 },
 
 fld => {
+	template  => $loadop,
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem" ],
 	out_reqs  => [ "fp", "none", "mem", "exec", "exec" ],
-	ins       => [ "base", "index", "mem" ],
 	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
 	emit      => "fld%FM %AM",
 	attr      => "x86_insn_size_t size",
@@ -1699,12 +1697,9 @@ fstp => {
 },
 
 fild => {
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem" ],
+	template  => $loadop,
 	out_reqs  => [ "fp", "none", "mem", "exec", "exec" ],
 	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
-	ins       => [ "base", "index", "mem" ],
 	attr      => "x86_insn_size_t size",
 	emit      => "fild%FI %AM",
 	fixed     => $x87sim,
@@ -1919,13 +1914,10 @@ femms => {
 # Spilling and reloading of SSE registers
 
 xxLoad => {
-	op_flags  => [ "uses_memory", "fragile" ],
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem" ],
+	template => $loadop,
 	out_reqs  => [ "xmm", "mem", "exec", "exec" ],
 	attr      => "x86_insn_size_t size",
 	emit      => "movdqu %D0, %AM",
-	ins       => [ "base", "index", "mem" ],
 	outs      => [ "res", "M", "X_regular", "X_except" ],
 	latency   => 1,
 },
