@@ -399,8 +399,7 @@ static ir_node *sparc_new_spill(ir_node *value, ir_node *after)
 	if (mode_is_float(mode)) {
 		store = create_stf(NULL, block, value, frame, mem, mode, NULL, 0, true);
 	} else {
-		store = new_bd_sparc_St_imm(NULL, block, value, frame, mem, mode, NULL,
-		                            0, true);
+		store = new_bd_sparc_St_imm(NULL, block, mem, value, frame, mode, NULL, 0, true);
 	}
 	arch_add_irn_flags(store, arch_irn_flag_spill);
 	sched_add_after(after, store);

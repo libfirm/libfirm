@@ -868,12 +868,9 @@ static ir_node *gen_Store(ir_node *node)
 		match_address(ptr, &address, true);
 		if (address.ptr2 != NULL) {
 			assert(address.entity == NULL && address.offset == 0);
-			new_store = new_bd_sparc_St_reg(dbgi, block, new_val, address.ptr,
-			                                address.ptr2, new_mem, mode);
+			new_store = new_bd_sparc_St_reg(dbgi, block, new_mem, new_val, address.ptr, address.ptr2, mode);
 		} else {
-			new_store = new_bd_sparc_St_imm(dbgi, block, new_val, address.ptr,
-			                                new_mem, mode, address.entity,
-			                                address.offset, false);
+			new_store = new_bd_sparc_St_imm(dbgi, block, new_mem, new_val, address.ptr, mode, address.entity, address.offset, false);
 		}
 	}
 	set_irn_pinned(new_store, get_irn_pinned(node));
@@ -1402,8 +1399,7 @@ static ir_node *create_itof(dbg_info *dbgi, ir_node *block, ir_node *op,
 	ir_graph *irg   = get_irn_irg(block);
 	ir_node  *sp    = get_irg_frame(irg);
 	ir_node  *nomem = get_irg_no_mem(irg);
-	ir_node  *st    = new_bd_sparc_St_imm(dbgi, block, op, sp, nomem,
-	                                      mode_gp, NULL, 0, true);
+	ir_node  *st    = new_bd_sparc_St_imm(dbgi, block, nomem, op, sp, mode_gp, NULL, 0, true);
 	arch_add_irn_flags(st, arch_irn_flag_spill);
 	ir_node  *ldf   = new_bd_sparc_Ldf_s(dbgi, block, sp, st, mode_fp,
 	                                     NULL, 0, true);
@@ -1597,16 +1593,14 @@ static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
 	ir_graph *irg   = get_irn_irg(block);
 	ir_node  *sp    = get_irg_frame(irg);
 	ir_node  *nomem = get_irg_no_mem(irg);
-	ir_node  *st    = new_bd_sparc_St_imm(dbgi, block, value0, sp, nomem,
-	                                      mode_gp, NULL, 0, true);
+	ir_node  *st    = new_bd_sparc_St_imm(dbgi, block, nomem, value0, sp, mode_gp, NULL, 0, true);
 	arch_add_irn_flags(st, arch_irn_flag_spill);
 	set_irn_pinned(st, false);
 
 	ir_mode *mode;
 	ir_node *mem;
 	if (value1 != NULL) {
-		ir_node *st1 = new_bd_sparc_St_imm(dbgi, block, value1, sp, nomem,
-		                                   mode_gp, NULL, 4, true);
+		ir_node *st1 = new_bd_sparc_St_imm(dbgi, block, nomem, value1, sp, mode_gp, NULL, 4, true);
 		arch_add_irn_flags(st1, arch_irn_flag_spill);
 		ir_node *in[2] = { st, st1 };
 		ir_node *sync  = new_r_Sync(block, 2, in);
@@ -1767,7 +1761,7 @@ static ir_node *gen_Call(ir_node *node)
 
 		ir_node *const str = mode_is_float(mode) ?
 			create_stf(         dbgi, new_block, partial_value, callframe, new_mem, mode, NULL, offset, true) :
-			new_bd_sparc_St_imm(dbgi, new_block, partial_value, callframe, new_mem, mode, NULL, offset, true);
+			new_bd_sparc_St_imm(dbgi, new_block, new_mem, partial_value, callframe, mode, NULL, offset, true);
 		set_irn_pinned(str, false);
 		sync_ins[sync_arity++] = str;
 	}
@@ -2117,8 +2111,7 @@ static ir_node *gen_Bitcast(ir_node *node)
 	case irma_twos_complement: {
 		assert(get_mode_arithmetic(dst_mode) == irma_ieee754);
 
-		ir_node *st  = new_bd_sparc_St_imm(dbgi, new_block, new_op, sp, nomem,
-		                                   src_mode, NULL, 0, true);
+		ir_node *st  = new_bd_sparc_St_imm(dbgi, new_block, nomem, new_op, sp, src_mode, NULL, 0, true);
 		arch_add_irn_flags(st, arch_irn_flag_spill);
 		ir_node *const ldf = create_ldf(dbgi, new_block, sp, st, dst_mode, NULL, 0, true);
 		ir_node *const res = be_new_Proj(ldf, pn_sparc_Ldf_res);
