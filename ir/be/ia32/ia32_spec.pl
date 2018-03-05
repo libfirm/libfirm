@@ -1699,10 +1699,11 @@ fstp => {
 },
 
 fild => {
+	op_flags  => [ "uses_memory", "fragile" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "mem" ],
-	out_reqs  => [ "fp", "none", "mem" ],
-	outs      => [ "res", "unused", "M" ],
+	out_reqs  => [ "fp", "none", "mem", "exec", "exec" ],
+	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
 	ins       => [ "base", "index", "mem" ],
 	attr      => "x86_insn_size_t size",
 	emit      => "fild%FI %AM",
