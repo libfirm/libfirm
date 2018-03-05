@@ -689,8 +689,8 @@ static void emit_sparc_ASM(const ir_node *node)
  */
 static void emit_sparc_SubSP(const ir_node *irn)
 {
-	sparc_emitf(irn, "sub %S0, %SI1, %D0");
-	sparc_emitf(irn, "add %S0, %u, %D1", SPARC_MIN_STACKSIZE);
+	sparc_emitf(irn, "sub %S1, %SI2, %D0");
+	sparc_emitf(irn, "add %S1, %u, %D1", SPARC_MIN_STACKSIZE);
 }
 
 static void fill_delay_slot(const ir_node *node)

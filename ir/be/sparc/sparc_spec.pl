@@ -426,15 +426,15 @@ SubSP => {
 		imm => {
 			attr    => "ir_entity *immediate_entity, int32_t immediate_value",
 			init    => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			in_reqs => [ "sp", "mem" ],
-			ins     => [ "stack", "mem" ],
+			in_reqs => [ "mem", "sp" ],
+			ins     => [ "mem", "stack" ],
 		},
 		reg => {
-			in_reqs => [ "sp", "gp", "mem" ],
-			ins     => [ "stack", "size", "mem" ],
+			in_reqs => [ "mem", "sp", "gp" ],
+			ins     => [ "mem", "stack", "size" ],
 		}
 	},
-	ins      => [ "stack" ],
+	ins      => [ "mem", "stack" ],
 	out_reqs => [ "sp:I", "gp", "mem" ],
 	outs     => [ "stack", "addr", "M" ],
 },

@@ -1852,10 +1852,10 @@ static ir_node *gen_Alloc(ir_node *node)
 	if (is_Const(size)) {
 		long const sizel = get_Const_long(size);
 		assert((sizel & (SPARC_STACK_ALIGNMENT - 1)) == 0 && "Found Alloc with misaligned constant");
-		subsp = new_bd_sparc_SubSP_imm(dbgi, new_block, stack_pred, new_mem, NULL, sizel);
+		subsp = new_bd_sparc_SubSP_imm(dbgi, new_block, new_mem, stack_pred, NULL, sizel);
 	} else {
 		ir_node *new_size = be_transform_node(size);
-		subsp = new_bd_sparc_SubSP_reg(dbgi, new_block, stack_pred, new_size, new_mem);
+		subsp = new_bd_sparc_SubSP_reg(dbgi, new_block, new_mem, stack_pred, new_size);
 	}
 
 	ir_node *const stack_proj = be_new_Proj_reg(subsp, pn_sparc_SubSP_stack, sp_reg);
