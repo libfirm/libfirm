@@ -512,6 +512,10 @@ EOF
 	my $attr_size = $attr_type ne "" ? "sizeof($attr_type)" : "0";
 	$obst_new_irop .= "\top = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_$state, $op_flags_joined, $op_arity, -1, $attr_size);\n";
 
+	if ($mem >= 0) {
+		$obst_new_irop .= "\tir_op_set_memory_index(op, $mem);";
+	}
+
 	my $dump_func = $n{dump_func} // "${arch}_dump_node";
 	$obst_new_irop .= "\tset_op_dump(op, $dump_func);\n";
 
