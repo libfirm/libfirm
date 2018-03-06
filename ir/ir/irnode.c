@@ -622,7 +622,9 @@ ir_node *get_memop_mem(const ir_node *node)
 {
 	const ir_op *op = get_irn_op(node);
 	assert(is_memop(node));
-	return get_irn_n(node, op->memory_index);
+	ir_node *const mem = get_irn_n(node, op->memory_index);
+	assert(get_irn_mode(mem) == mode_M);
+	return mem;
 }
 
 void set_memop_mem(ir_node *node, ir_node *mem)
