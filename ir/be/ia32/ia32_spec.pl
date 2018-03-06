@@ -220,7 +220,7 @@ my $shiftop_double = {
 };
 
 my $divop = {
-	op_flags  => [ "fragile", "uses_memory" ],
+	op_flags  => [ "fragile" ],
 	irn_flags => [ "modify_flags" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "mem", "gp", "eax", "edx" ],
@@ -301,7 +301,6 @@ my $memop = {
 };
 
 my $prefetchop = {
-	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp", "mem" ],
 	out_reqs  => [ "mem" ],
@@ -429,7 +428,6 @@ my $noregop = {
 };
 
 my $fpcwop = {
-	op_flags => [ "uses_memory" ],
 	state    => "pinned",
 	fixed    => "x86_insn_size_t const size = X86_SIZE_16;",
 	emit     => "{name} %AM",
@@ -445,14 +443,14 @@ my $emmsop = {
 };
 
 my $loadop = {
-	op_flags => [ "uses_memory", "fragile" ],
+	op_flags => [ "fragile" ],
 	state    => "exc_pinned",
 	in_reqs  => [ "gp", "gp", "mem" ],
 	ins      => [ "base", "index", "mem" ],
 };
 
 my $storeop = {
-	op_flags => [ "uses_memory", "fragile" ],
+	op_flags => [ "fragile" ],
 	state    => "exc_pinned",
 	out_reqs => [ "mem", "exec", "exec" ],
 	outs     => [ "M", "X_regular", "X_except" ],
@@ -1529,7 +1527,6 @@ l_FloattoLL => {
 },
 
 CopyB => {
-	op_flags  => [ "uses_memory" ],
 	in_reqs   => [ "edi", "esi", "ecx", "mem" ],
 	out_reqs  => [ "edi", "esi", "ecx", "mem" ],
 	ins       => [ "dest", "source", "count", "mem" ],
@@ -1540,7 +1537,6 @@ CopyB => {
 },
 
 CopyB_i => {
-	op_flags  => [ "uses_memory" ],
 	in_reqs   => [ "edi", "esi", "mem" ],
 	out_reqs  => [ "edi", "esi", "mem" ],
 	ins       => [ "dest", "source", "mem" ],
@@ -1563,7 +1559,7 @@ Cwtl => {
 },
 
 Conv_I2I => {
-	op_flags => [ "uses_memory", "fragile" ],
+	op_flags => [ "fragile" ],
 	state    => "exc_pinned",
 	constructors => {
 		""     => { in_reqs => [ "gp", "gp", "mem", "gp" ] },

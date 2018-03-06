@@ -94,7 +94,6 @@ my $immediateOp = {
 };
 
 my $loadOp = {
-	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "mem", "cls-gp" ],
 	out_reqs  => [ "mem", "cls-gp" ],
@@ -115,7 +114,6 @@ my $modOp = {
 };
 
 my $storeOp = {
-	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "mem", "cls-gp", "cls-gp" ],
 	out_reqs  => [ "mem" ],

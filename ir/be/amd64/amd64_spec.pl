@@ -303,7 +303,6 @@ push_am => {
 },
 
 push_reg => {
-	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "rsp",   "mem", "gp"  ],
 	ins       => [ "stack", "mem", "val" ],
@@ -340,7 +339,6 @@ sub_sp => {
 },
 
 leave => {
-	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	in_reqs   => [ "rbp", "mem" ],
 	out_reqs  => [ "rbp:I", "mem", "rsp:I" ],
@@ -686,7 +684,6 @@ movdqu_store => {
 },
 
 copyB => {
-	op_flags  => [ "uses_memory" ],
 	in_reqs   => [ "rdi", "rsi", "rcx", "mem" ],
 	out_reqs  => [ "rdi", "rsi", "rcx", "mem" ],
 	ins       => [ "dest", "source", "count", "mem" ],
@@ -697,7 +694,6 @@ copyB => {
 },
 
 copyB_i => {
-	op_flags  => [ "uses_memory" ],
 	in_reqs   => [ "rdi", "rsi", "mem" ],
 	out_reqs  => [ "rdi", "rsi", "mem" ],
 	ins       => [ "dest", "source", "mem" ],

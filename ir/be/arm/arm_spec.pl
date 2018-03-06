@@ -452,7 +452,6 @@ SwitchJmp => {
 },
 
 Ldr => {
-	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
@@ -464,7 +463,6 @@ Ldr => {
 },
 
 Str => {
-	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
@@ -519,7 +517,6 @@ Cmfe => {
 },
 
 Ldf => {
-	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
@@ -531,7 +528,6 @@ Ldf => {
 },
 
 Stf => {
-	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],

@@ -196,7 +196,6 @@ my $binopcczero_operand = {
 
 my $div_operand = {
 	irn_flags    => [ "rematerializable", "has_delay_slot" ],
-	op_flags     => [ "uses_memory" ],
 	state        => "exc_pinned",
 	ins          => [ "mem", "dividend_high", "dividend_low", "divisor" ],
 	out_reqs     => [ "gp", "mem" ],
@@ -320,7 +319,6 @@ SubX_t => {
 
 # Load / Store
 Ld => {
-	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	constructors => {
 		imm => {
@@ -353,7 +351,6 @@ SetHi => {
 },
 
 St => {
-	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	constructors => {
 		imm => {
@@ -624,7 +621,6 @@ SDiv => { template => $div_operand },
 UDiv => { template => $div_operand },
 
 Stbar => {
-	op_flags => [ "uses_memory" ],
 	state    => "exc_pinned",
 	ins      => [ "mem" ],
 	outs     => [ "M" ],
@@ -634,7 +630,6 @@ Stbar => {
 },
 
 Cas => {
-	op_flags => [ "uses_memory" ],
 	state    => "exc_pinned",
 	ins      => [ "ptr", "old", "new", "mem" ],
 	outs     => [ "res", "M" ],
@@ -722,8 +717,7 @@ fftoi => {
 },
 
 Ldf => {
-	op_flags   => [ "uses_memory" ],
-	state      => "exc_pinned",
+	state     => "exc_pinned",
 	constructors => {
 		s => { out_reqs => [ "cls-fp",   "mem" ] },
 		d => { out_reqs => [ "cls-fp:2", "mem" ] },
@@ -739,7 +733,6 @@ Ldf => {
 },
 
 Stf => {
-	op_flags  => [ "uses_memory" ],
 	state     => "exc_pinned",
 	constructors => {
 		s => { in_reqs => [ "cls-fp",   "gp", "mem" ] },
