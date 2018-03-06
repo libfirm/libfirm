@@ -255,7 +255,6 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 					rbitset_clear(bs, col);
 				}
 			}
-			rbitset_clear(bs, 30);
 		}
 
 

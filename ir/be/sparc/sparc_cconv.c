@@ -40,6 +40,7 @@ static const unsigned ignore_regs[] = {
 	REG_FSR,
 	REG_Y,
 
+	REG_F30,
 	REG_F31,
 };
 
@@ -106,7 +107,6 @@ static const unsigned caller_saves[] = {
 	REG_F27,
 	REG_F28,
 	REG_F29,
-	REG_F30,
 	REG_PSR,
 	REG_FSR,
 	REG_Y,
