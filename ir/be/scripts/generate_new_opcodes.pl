@@ -440,6 +440,7 @@ EOF
 		%constructors = ( "" => \%constructor );
 	}
 
+	my $mem = undef;
 	foreach my $constr (sort(keys(%constructors))) {
 		my %cstr = %{ $constructors{$constr} };
 		# Copy some values from outer node if they don't exists in the constr
@@ -449,11 +450,45 @@ EOF
 			}
 		}
 		create_constructor($orig_op, $constr, \%cstr, \%n);
+
+		# Scan for mem input
+		my $cons_mem = undef;
+		if (defined(my $in_reqs = $cstr{in_reqs})) {
+			if ($in_reqs eq "...") {
+				$cons_mem = -1; # unknown whether there is mem input
+			} else {
+				my $idx = 0;
+				for my $req (@$in_reqs) {
+					if ($req eq "mem") {
+						if (defined($cons_mem)) {
+							die("Fatal error: constructor of \"$op\" has multiple mem inputs\n");
+						}
+						$cons_mem = $idx;
+					}
+					++$idx;
+				}
+			}
+		}
+
+		$cons_mem //= -2; # no mem input
+
+		if (!defined($mem)) {
+			$mem = $cons_mem;
+		} elsif ($mem != $cons_mem) {
+			die("Fatal error: inconsistent mem input slot for \"$op\"\n");
+		}
+	}
+
+	my $op_flags = $n{op_flags};
+
+	# Add flag 'uses_memory' if there is a known mem input
+	if ($mem >= 0 && (!defined($op_flags) || !grep(/^uses_memory$/, @$op_flags))) {
+		push(@$op_flags, "uses_memory");
 	}
 
 	my $is_fragile = 0;
 	my $op_flags_joined;
-	if (my $op_flags = $n{op_flags}) {
+	if (defined($op_flags)) {
 		my %known_flags = map { $_ => 1 } (
 			"commutative", "cfopcode", "unknown_jump", "fragile", "forking",
 			"constlike", "keep", "start_block", "uses_memory", "dump_noblock",
