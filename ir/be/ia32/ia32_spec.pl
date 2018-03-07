@@ -827,14 +827,11 @@ Not => {
 },
 
 NotMem => {
+	template  => $unop_mem,
+	name      => "not",
 	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem" ],
 	out_reqs  => [ "none", "none", "mem" ],
-	ins       => [ "base", "index", "mem" ],
 	outs      => [ "unused0", "unused1", "M" ],
-	attr      => "x86_insn_size_t size",
-	emit      => "not%M %AM",
 	encode    => "ia32_enc_unop_mem(node, 0xF6, 2)",
 	latency   => 1,
 	# no flags modified
