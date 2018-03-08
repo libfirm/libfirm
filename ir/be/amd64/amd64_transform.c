@@ -538,6 +538,7 @@ typedef struct amd64_args_t {
 	ir_node                    *in[4];
 	int                         arity;
 	const arch_register_req_t **reqs;
+	bool                        ins_permuted;
 } amd64_args_t;
 
 static bool match_immediate_32(x86_imm32_t *const imm, ir_node const *const op, bool const must_match_ip_relative)
@@ -722,6 +723,7 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 	ir_node *op;
 	bool     use_am
 		= use_address_matching(mode, flags, block, op1, op2, &load, &op);
+	bool ins_permuted = use_am && (op == op2);
 
 	x86_addr_t *addr = &attr->base.addr;
 	if (use_immediate && match_immediate_32(&attr->u.immediate, op2, false)) {
@@ -750,6 +752,7 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 
 		args->mem_proj      = get_Proj_for_pn(load, pn_Load_M);
 		attr->base.base.op_mode = AMD64_OP_REG_ADDR;
+		args->ins_permuted  = ins_permuted;
 	} else {
 		/* simply transform the arguments */
 		int const reg_input0 = args->arity++;
@@ -2100,8 +2103,10 @@ static ir_node *gen_Cmp(ir_node *const node)
 		match_binop(&args, block, cmp_mode, op1, op2, match_am);
 		new_node = new_bd_amd64_ucomis(dbgi, new_block, args.arity, args.in, args.reqs, &args.attr);
 	} else {
-		match_binop(&args, block, cmp_mode, op1, op2, match_immediate | match_am);
+		match_binop(&args, block, cmp_mode, op1, op2, match_immediate | match_am | match_commutative);
 		new_node = new_bd_amd64_cmp(dbgi, new_block, args.arity, args.in, args.reqs, &args.attr);
+		amd64_binop_addr_attr_t *const attr = (amd64_binop_addr_attr_t*)get_irn_generic_attr(new_node);
+		attr->base.base.ins_permuted = args.ins_permuted;
 	}
 
 	fix_node_mem_proj(new_node, args.mem_proj);
@@ -2141,6 +2146,14 @@ static ir_node *gen_Cond(ir_node *const node)
 	ir_node             *const flags = get_flags_node(sel, &cc);
 	dbg_info            *const dbgi  = get_irn_dbg_info(node);
 	ir_node             *const block = be_transform_nodes_block(node);
+	if (is_Proj(flags)) {
+		ir_node *cmp = get_Proj_pred(flags);
+		amd64_binop_addr_attr_t *const attr = (amd64_binop_addr_attr_t*)get_irn_generic_attr(cmp);
+		if (attr->base.base.ins_permuted) {
+			//cc = x86_negate_condition_code(cc);
+			cc = x86_invert_condition_code(cc);
+		}
+	}
 	return new_bd_amd64_jcc(dbgi, block, flags, cc);
 }
 

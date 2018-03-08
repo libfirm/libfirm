@@ -52,6 +52,7 @@ typedef struct amd64_attr_t {
 	except_attr exc; /**< the exception attribute. MUST be the first one. */
 	ENUMBF(amd64_op_mode_t) op_mode : 5;
 	ENUMBF(x86_insn_size_t) size    : 3;
+	bool        ins_permuted;
 } amd64_attr_t;
 
 typedef struct amd64_addr_attr_t {
