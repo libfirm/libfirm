@@ -35,16 +35,16 @@ LINKDLLFLAGS = -shared
 endif
 
 # Variants
-CFLAGS_debug       = -O0 -g3 -DDEBUG_libfirm
-CFLAGS_profile     = -O3 -pg -fno-inline
-CFLAGS_coverage    = -O0 --coverage -DDEBUG_libfirm
-CFLAGS_optimize    = -O3 -fomit-frame-pointer
+CFLAGS_debug       = -O0 -g3
+CFLAGS_profile     = -O3 -pg -fno-inline -DNDEBUG
+CFLAGS_coverage    = -O0 --coverage
+CFLAGS_optimize    = -O3 -fomit-frame-pointer -DNDEBUG
 LINKFLAGS_debug    =
 LINKFLAGS_profile  = -pg
 LINKFLAGS_coverage = --coverage
 
-ifeq ($(findstring -DDEBUG_libfirm, $(CFLAGS_$(variant))),)
-CFLAGS += -DNDEBUG
+ifeq ($(findstring -DNDEBUG, $(CFLAGS_$(variant))),)
+CFLAGS += -DDEBUG_libfirm
 endif
 
 # General flags
