@@ -465,6 +465,7 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	ir_node *noreg = ia32_new_NoReg_gp(irg);
 	set_irn_n(node, n_ia32_base,  noreg);
 	set_irn_n(node, n_ia32_index, noreg);
+	attr->addr.variant   = X86_ADDR_INVALID;
 	attr->addr.immediate = (x86_imm32_t) { .kind = X86_IMM_VALUE, .offset = 0 };
 	attr->addr.log_scale = 0;
 	attr->frame_use      = IA32_FRAME_USE_NONE;

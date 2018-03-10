@@ -63,6 +63,7 @@ static bool ia32_transform_sub_to_neg_add(ir_node *const irn,
 		                                            ? ia32_SSIGN : ia32_DSIGN);
 		ia32_attr_t *const attr = get_ia32_attr(res);
 		attr->addr.immediate.entity = entity;
+		attr->addr.variant          = X86_ADDR_JUST_IMM;
 		set_ia32_op_type(res, ia32_AddrModeS);
 
 		arch_set_irn_register(res, out_reg);
