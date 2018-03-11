@@ -29,10 +29,12 @@ enum {
 /** proj numbers for "normal" one-result nodes (for the complicated cases where we not only
  * need the result) */
 enum {
-	pn_ia32_res   = 0,
-	pn_ia32_flags = 1,
-	pn_ia32_M     = 2,
-	pn_ia32_st_M  = 0,
+	pn_ia32_res          = 0,
+	pn_ia32_flags        = 1,
+	pn_ia32_M            = 2,
+	pn_ia32_st_M         = 0,
+	pn_ia32_st_X_regular = 1,
+	pn_ia32_st_X_except  = 2,
 };
 
 extern struct obstack opcodes_obst;

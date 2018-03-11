@@ -4545,56 +4545,11 @@ static ir_node *gen_Proj_Load(ir_node *node)
 
 static ir_node *create_proj_for_store(ir_node *store, pn_Store pn)
 {
-	if (is_ia32_Store(store)) {
-		switch ((pn_Store)pn) {
-		case pn_Store_M:
-			return be_new_Proj(store, pn_ia32_Store_M);
-		case pn_Store_X_except:
-			return be_new_Proj(store, pn_ia32_Store_X_except);
-		case pn_Store_X_regular:
-			return be_new_Proj(store, pn_ia32_Store_X_regular);
-		}
-	} else if (is_ia32_fist(store) || is_ia32_fistp(store)) {
-		assert((int)pn_ia32_fist_M == (int)pn_ia32_fistp_M);
-		assert((int)pn_ia32_fist_X_except == (int)pn_ia32_fistp_X_except);
-		assert((int)pn_ia32_fist_X_regular == (int)pn_ia32_fistp_X_regular);
-		switch ((pn_Store)pn) {
-		case pn_Store_M:
-			return be_new_Proj(store, pn_ia32_fist_M);
-		case pn_Store_X_except:
-			return be_new_Proj(store, pn_ia32_fist_X_except);
-		case pn_Store_X_regular:
-			return be_new_Proj(store, pn_ia32_fist_X_regular);
-		}
-	} else if (is_ia32_fisttp(store)) {
-		switch ((pn_Store)pn) {
-		case pn_Store_M:
-			return be_new_Proj(store, pn_ia32_fisttp_M);
-		case pn_Store_X_except:
-			return be_new_Proj(store, pn_ia32_fisttp_X_except);
-		case pn_Store_X_regular:
-			return be_new_Proj(store, pn_ia32_fisttp_X_regular);
-		}
-	} else if (is_ia32_fst(store) || is_ia32_fstp(store)) {
-		assert((int)pn_ia32_fst_M == (int)pn_ia32_fstp_M);
-		assert((int)pn_ia32_fst_X_except == (int)pn_ia32_fstp_X_except);
-		assert((int)pn_ia32_fst_X_regular == (int)pn_ia32_fstp_X_regular);
-		switch ((pn_Store)pn) {
-		case pn_Store_M:
-			return be_new_Proj(store, pn_ia32_fst_M);
-		case pn_Store_X_except:
-			return be_new_Proj(store, pn_ia32_fst_X_except);
-		case pn_Store_X_regular:
-			return be_new_Proj(store, pn_ia32_fst_X_regular);
-		}
-	} else if (is_ia32_xStore(store)) {
-		switch ((pn_Store)pn) {
-		case pn_Store_M:
-			return be_new_Proj(store, pn_ia32_xStore_M);
-		case pn_Store_X_except:
-			return be_new_Proj(store, pn_ia32_xStore_X_except);
-		case pn_Store_X_regular:
-			return be_new_Proj(store, pn_ia32_xStore_X_regular);
+	if (is_ia32_Store(store) || is_ia32_fist(store) || is_ia32_fistp(store) || is_ia32_fisttp(store) || is_ia32_xStore(store) || is_ia32_fst(store) || is_ia32_fstp(store)) {
+		switch (pn) {
+		case pn_Store_M:         return be_new_Proj(store, pn_ia32_st_M);
+		case pn_Store_X_except:  return be_new_Proj(store, pn_ia32_st_X_except);
+		case pn_Store_X_regular: return be_new_Proj(store, pn_ia32_st_X_regular);
 		}
 	} else if (is_Sync(store)) {
 		/* hack for the case that gen_float_const_Store produced a Sync */
