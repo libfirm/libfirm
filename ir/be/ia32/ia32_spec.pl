@@ -457,6 +457,20 @@ my $storeop = {
 	attr     => "x86_insn_size_t size",
 };
 
+my $fucomop = {
+# we can't allow to rematerialize this node so we don't
+# accidently produce Phi(Fucom, Fucom(ins_permuted))
+#	irn_flags => [ "rematerializable" ],
+	in_reqs   => [ "fp", "fp" ],
+	out_reqs  => [ "eax" ],
+	ins       => [ "left", "right" ],
+	outs      => [ "flags" ],
+	attr_type => "ia32_x87_attr_t",
+	attr      => "bool ins_permuted",
+	fixed     => "x86_insn_size_t const size = X86_SIZE_16;",
+	init      => "attr->attr.ins_permuted = ins_permuted;",
+};
+
 %nodes = (
 
 Immediate => {
@@ -1757,37 +1771,17 @@ fldl2e => {
 },
 
 FucomFnstsw => {
-# we can't allow to rematerialize this node so we don't
-# accidently produce Phi(Fucom, Fucom(ins_permuted))
-#	irn_flags => [ "rematerializable" ],
-	in_reqs   => [ "fp", "fp" ],
-	out_reqs  => [ "eax" ],
-	ins       => [ "left", "right" ],
-	outs      => [ "flags" ],
-	emit      => "fucom%FP %F0\n".
-	             "fnstsw %%ax",
-	attr      => "bool ins_permuted",
-	fixed     => "x86_insn_size_t const size = X86_SIZE_16;",
-	init      => "attr->attr.ins_permuted = ins_permuted;",
-	latency   => 3,
-	attr_type => "ia32_x87_attr_t",
+	template => $fucomop,
+	emit     => "fucom%FP %F0\n".
+	            "fnstsw %%ax",
+	latency  => 3,
 },
 
 FucomppFnstsw => {
-# we can't allow to rematerialize this node so we don't
-# accidently produce Phi(Fucom, Fucom(ins_permuted))
-#	irn_flags => [ "rematerializable" ],
-	in_reqs   => [ "fp", "fp" ],
-	out_reqs  => [ "eax" ],
-	ins       => [ "left", "right" ],
-	outs      => [ "flags" ],
-	fixed     => "x86_insn_size_t const size = X86_SIZE_32;",
-	emit      => "fucompp\n".
-	             "fnstsw %%ax",
-	attr      => "bool ins_permuted",
-	init      => "attr->attr.ins_permuted = ins_permuted;",
-	latency   => 3,
-	attr_type => "ia32_x87_attr_t",
+	template => $fucomop,
+	emit     => "fucompp\n".
+	            "fnstsw %%ax",
+	latency  => 3,
 },
 
 Fucomi => {
