@@ -62,7 +62,7 @@ $mode_fpcw  = "ia32_mode_fpcw";
 			{ name => "fp_NOREG", type => "virtual" }, # we need a dummy register for NoReg nodes
 		]
 	},
-	fp_cw => { # the floating point control word
+	fpcw => { # the floating point control word
 		flags => "manual_ra",
 		mode => $mode_fpcw,
 		registers => [ { name => "fpcw", dwarf => 37 }, ]
@@ -313,7 +313,7 @@ my $prefetchop = {
 my $fbinop = {
 #	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	in_reqs   => [ "gp", "gp", "mem", "fp", "fp", "fpcw" ],
+	in_reqs   => [ "gp", "gp", "mem", "fp", "fp", "cls-fpcw" ],
 	out_reqs  => [ "fp", "none", "mem" ],
 	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
 	outs      => [ "res", "dummy", "M" ],
@@ -1032,21 +1032,21 @@ NoReg_XMM => {
 
 ChangeCW => {
 	template => $noregop,
-	out_reqs => [ "fpcw" ],
+	out_reqs => [ "cls-fpcw" ],
 	latency  => 3,
 },
 
 FldCW => {
 	template => $fpcwop,
 	in_reqs  => [ "gp", "gp", "mem" ],
-	out_reqs => [ "fpcw" ],
+	out_reqs => [ "cls-fpcw" ],
 	ins      => [ "base", "index", "mem" ],
 	latency  => 5,
 },
 
 FnstCW => {
 	template => $fpcwop,
-	in_reqs  => [ "gp", "gp", "mem", "fp_cw" ],
+	in_reqs  => [ "gp", "gp", "mem", "cls-fpcw" ],
 	out_reqs => [ "mem" ],
 	ins      => [ "base", "index", "mem", "fpcw" ],
 	latency  => 5,
@@ -1054,7 +1054,7 @@ FnstCW => {
 
 FnstCWNOP => {
 	template => $fpcwop,
-	in_reqs  => [ "fp_cw" ],
+	in_reqs  => [ "cls-fpcw" ],
 	out_reqs => [ "mem" ],
 	ins      => [ "fpcw" ],
 	latency  => 0,
@@ -1707,7 +1707,7 @@ fild => {
 
 fist => {
 	template  => $storeop,
-	in_reqs   => [ "gp", "gp", "mem", "fp", "fpcw" ],
+	in_reqs   => [ "gp", "gp", "mem", "fp", "cls-fpcw" ],
 	ins       => [ "base", "index", "mem", "val", "fpcw" ],
 	emit      => "fist%FP%FI %AM",
 	latency   => 4,
@@ -1716,7 +1716,7 @@ fist => {
 
 fistp => {
 	template  => $storeop,
-	in_reqs   => [ "gp", "gp", "mem", "fp:K", "fpcw" ],
+	in_reqs   => [ "gp", "gp", "mem", "fp:K", "cls-fpcw" ],
 	ins       => [ "base", "index", "mem", "val", "fpcw" ],
 	emit      => "fistp%FI %AM",
 	latency   => 4,
