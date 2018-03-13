@@ -21,6 +21,8 @@ static void rewire_node(ir_node *const node)
 	ir_node *const new_node = get_irn_link(node);
 	assert(new_node);
 	assert(get_irn_arity(node) == get_irn_arity(new_node));
+
+	// rewire the successors outside the loop
 	unsigned int const n_outs = get_irn_n_outs(node);
 	for (unsigned int i = 0; i < n_outs; ++i) {
 		int n;
@@ -48,8 +50,10 @@ static void rewire_node(ir_node *const node)
 			set_irn_in(succ, arity * 2, in);
 		}
 	}
+
+	// loop header block
 	if (has_backedges(node)) {
-		// loop header
+		assert(is_Block(node));
 		assert(get_irn_arity(node) == 2);
 		assert(is_backedge(node, 1));
 		ir_node *const pred     = get_irn_n(new_node, 1);
@@ -63,6 +67,22 @@ static void rewire_node(ir_node *const node)
 		set_irn_in(new_node, 1, in);
 		return;
 	}
+
+	// phi node inside loop header
+	if (is_Phi(node) && has_backedges(get_nodes_block(node))) {
+		//printf("candidate: %ld\n", get_irn_node_nr(node));
+		assert(get_irn_arity(get_nodes_block(node)) == 2);
+		assert(is_backedge(get_nodes_block(node), 1));
+		ir_node *const pred     = get_irn_n(node, 1);
+		ir_node *const new_pred = get_irn_link(pred);
+		assert(new_pred);
+		set_irn_n(node, 1, new_pred);
+		ir_node **const in = ALLOCAN(ir_node *, 1);
+		in[0] = pred;
+		set_irn_in(new_node, 1, in);
+		return;
+	}
+
 	// TODO: use foreach_irn_in
 	int const arity = get_irn_arity(new_node);
 	for (int i = 0; i < arity; ++i) {
