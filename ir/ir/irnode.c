@@ -489,11 +489,10 @@ void remove_keep_alive(const ir_node *irn)
 
 void remove_End_Bads_and_doublets(ir_node *end)
 {
-	int n = get_End_n_keepalives(end);
+	int const n = get_End_n_keepalives(end);
 	if (n <= 0)
 		return;
 
-	ir_graph *irg = get_irn_irg(end);
 	pset_new_t keeps;
 	pset_new_init(&keeps);
 
@@ -504,15 +503,16 @@ void remove_End_Bads_and_doublets(ir_node *end)
 		if (is_Bad(ka) || is_NoMem(ka) || pset_new_contains(&keeps, ka)) {
 			changed = true;
 			remove_irn_n(end, idx - END_KEEPALIVE_OFFSET);
-			--n;
 		} else {
 			pset_new_insert(&keeps, ka);
 		}
 	}
 	pset_new_destroy(&keeps);
 
-	if (changed)
+	if (changed) {
+		ir_graph *const irg = get_irn_irg(end);
 		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+	}
 }
 
 void free_End(ir_node *end)
