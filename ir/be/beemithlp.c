@@ -40,6 +40,8 @@ void be_init_emitters(void)
 	be_set_emitter(op_be_Keep,    be_emit_nothing);
 	be_set_emitter(op_be_Start,   be_emit_nothing);
 	be_set_emitter(op_be_Unknown, be_emit_unknown);
+	be_set_emitter(op_be_RegSplit, be_emit_nothing);
+	be_set_emitter(op_be_RegJoin, be_emit_nothing);
 }
 
 void be_emit_nothing(ir_node const *const node)
