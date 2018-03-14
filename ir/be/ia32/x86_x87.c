@@ -1414,7 +1414,7 @@ static void sim_be_Asm(x87_state *const state, ir_node *const n)
 		x87_pop(state);
 
 	/* Collect out requirements.
-	 * If inputs are not overweritten, it is assumed that they remain on the
+	 * If inputs are not overwritten, it is assumed that they remain on the
 	 * stack.  Clobbering a register means that the value is popped from the
 	 * stack by the inline assembler statement.
 	 * Extension: GCC only allows an output "u" if there is an output "t".
