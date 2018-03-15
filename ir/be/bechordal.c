@@ -48,7 +48,7 @@ static int get_next_free_reg(bitset_t *const available, unsigned consecutive)
 			free_length++;
 		}
 	}
-	DBG((dbg, LEVEL_4, "\t[chordal] Return pos %d as result of %d-consecutive search\n", pos, consecutive));
+	DBG((dbg, LEVEL_4, "\tReturn pos %d as result of %d-consecutive search\n", pos, consecutive));
 	return pos;
 }
 
@@ -246,6 +246,7 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 		DBG((dbg, LEVEL_2, "\tassociating %+F (reg width required: %d) and %+F\n", op->carrier, arch_get_irn_register_req_width(op->carrier), partner));
 
 		// TODO this part should not be done here, instead it should be already available within the operand
+		/* allow only even indices for double registers */
 		unsigned const *const bs_orig = get_decisive_partner_regs(op, n_regs);
 		unsigned *const bs = rbitset_alloca(n_regs);
 		rbitset_copy(bs, bs_orig, n_regs);
@@ -402,7 +403,7 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 		ir_node *const partner = pmap_get(ir_node, partners, irn);
 		if (partner != NULL) {
 			arch_set_irn_register(partner, reg);
-			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", partner, reg->name));
+			DBG((dbg, LEVEL_2, "\tsetting %+F (partner) to register %s\n", partner, reg->name));
 		}
 	}
 
@@ -482,6 +483,7 @@ static void assign(ir_node *const block, void *const env_ptr)
 				}
 			} else {
 				assert(!arch_irn_is_ignore(irn));
+				DBG((dbg, LEVEL_4, "%+F needs reg (width: %d)\n", irn, arch_get_irn_register_req_width(irn)));
 				col = get_next_free_reg(available, arch_get_irn_register_req_width(irn));
 				arch_set_irn_register_idx(irn, col);
 			}

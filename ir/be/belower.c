@@ -61,10 +61,12 @@ static void set_reg_free(unsigned *free_regs, ir_node const *irn, bool const reg
 	if (!mode_is_data(get_irn_mode(irn)))
 		return;
 	arch_register_t const *reg = arch_get_irn_register(irn);
-	if (reg_is_free) {
-		rbitset_set(free_regs, reg->global_index);
-	} else {
-		rbitset_clear(free_regs, reg->global_index);
+	for (int i = 0; i < arch_get_irn_register_req_width(irn); i++) {
+		if (reg_is_free) {
+			rbitset_set(free_regs, reg->global_index + i);
+		} else {
+			rbitset_clear(free_regs, reg->global_index + i);
+		}
 	}
 }
 
@@ -130,7 +132,7 @@ static arch_register_t const *get_free_register(ir_node *const perm, lower_env_t
 		arch_register_t const *free_reg = &regs[free_idx];
 		if (free_reg->cls != cls)
 			continue;
-		if (width == 2 && (free_reg->index % 2 > 0))
+		if (width == 2 && (free_reg->index % 2 > 0 || !rbitset_is_set(free_regs, free_idx + 1)))
 			continue;
 
 		return free_reg;
