@@ -264,9 +264,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 		out_projs = projs;
 		new_arity = arity;
 	}
-	char buf[256];
-	snprintf(buf, sizeof(buf), "lower-splits-inserted-%ld", get_irn_node_nr(perm));
-	dump_ir_graph(get_irn_irg(new_perm), buf);
+
 	/* Collect all input-output pairs of the Perm. */
 	for (unsigned pos = 0; pos != new_arity; ++pos) {
 		ir_node *const out = out_projs[pos];
