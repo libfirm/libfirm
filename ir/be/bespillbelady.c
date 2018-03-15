@@ -591,7 +591,8 @@ static void decide_start_workset(ir_node *const block)
 
 		for (size_t i = 0; i < ARR_LEN(delayed) && free_slots > 0; ++i) {
 			loc_t *loc = & delayed[i];
-			// skip if we don't have enough free slots for this delayed node
+			/* skip if we don't have enough free slots for this delayed node
+			 * but continue, next nodes may require less free slots! */
 			if ((free_slots - arch_get_irn_register_req_width(loc->node)) < 0) {
 				continue;
 			}
@@ -637,8 +638,7 @@ static void decide_start_workset(ir_node *const block)
 	/* Sort start values by first use */
 	QSORT_ARR(starters, loc_compare);
 
-
-	/* Copy the best ones from starters to start workset */
+	/* count how many values can be copied from starters to start workset*/
 	unsigned ws_count;
 	if (loc_get_used_len(starters) <= n_regs) {
 		ws_count = MIN((unsigned) ARR_LEN(starters), n_regs);
@@ -650,6 +650,7 @@ static void decide_start_workset(ir_node *const block)
 			ws_count -= 1;
 		}
 	}
+	/* Copy the best ones from starters to start workset */
 	assert(ws_count <= n_regs);
 	workset_clear(ws);
 	workset_bulk_fill(ws, ws_count, starters);
