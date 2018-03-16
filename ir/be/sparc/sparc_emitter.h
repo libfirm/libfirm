@@ -20,21 +20,22 @@
  * %A    <node>                  emit ",a" in delay slot annul mode
  * %Dx   <node>                  destination register x
  * %E    <node>                  entity+offset
- * %F    <node>                  floating point mode
+ * %FD   <node>                  floating point destination mode of conversion
+ * %FM   <node>                  floating point mode
+ * %FS   <node>                  floating point source mode of conversion
  * %H    <node>                  high immediate
- * %L    ir_node*                control flow target of the node
  * %ML   <node>                  load mode
- * %MOx  <node>                  memory access with offset [%reg + %reg/imm]
  * %MS   <node>                  store mode
+ * %Ox   <node>                  memory access with offset [%reg + %reg/imm]
  * %R    arch_register_t const*  register
  * %Sx   <node>                  source register x
  * %SIx  <node>                  immediate or source register x
  * %d    signed int              signed int
  * %s    const char*             string
  * %u    unsigned int            unsigned int
+ * %X    unsigned int            unsigned int in hexadecimal
  *
  * x starts at 0
- * %#M prints load modeu
  * + may be used with %d and %u
  */
 void sparc_emitf(ir_node const *node, char const *fmt, ...);
