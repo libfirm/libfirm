@@ -130,6 +130,17 @@ my $binop_commutative = {
 	emit      => "{name}%M %AM",
 };
 
+my $cmpop = {
+	irn_flags => [ "modify_flags", "rematerializable" ],
+	state     => "exc_pinned",
+	in_reqs   => "...",
+	out_reqs  => [ "none", "flags", "mem" ],
+	outs      => [ "dummy", "flags", "M" ],
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "{name}%M %AM",
+};
+
 my $sextop = {
 	in_reqs  => [ "rax" ],
 	out_reqs => [ "rdx" ],
@@ -457,16 +468,9 @@ jmp => {
 	            ."x86_insn_size_t size    = X86_SIZE_64;\n",
 },
 
-cmp => {
-	irn_flags => [ "modify_flags", "rematerializable" ],
-	state     => "exc_pinned",
-	in_reqs   => "...",
-	out_reqs  => [ "none", "flags", "mem" ],
-	outs      => [ "dummy", "flags", "M" ],
-	attr_type => "amd64_binop_addr_attr_t",
-	attr      => "const amd64_binop_addr_attr_t *attr_init",
-	emit      => "cmp%M %AM",
-},
+cmp => { template => $cmpop },
+
+test => { template => $cmpop },
 
 cmpxchg => {
 	irn_flags => [ "modify_flags" ],

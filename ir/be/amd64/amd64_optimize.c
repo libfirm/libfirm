@@ -17,6 +17,30 @@
 #include "gen_amd64_regalloc_if.h"
 #include "util.h"
 
+static void peephole_amd64_cmp(ir_node *const node)
+{
+	/* cmp $0, %reg -> test %reg, %reg */
+	amd64_binop_addr_attr_t const *const attr = get_amd64_binop_addr_attr_const(node);
+	if (attr->base.base.op_mode == AMD64_OP_REG_IMM) {
+		x86_imm32_t const *const imm = &attr->u.immediate;
+		if (imm->kind == X86_IMM_VALUE && imm->offset == 0) {
+			amd64_binop_addr_attr_t test_attr = *attr;
+			test_attr.base.base.op_mode = AMD64_OP_REG_REG;
+
+			dbg_info *const dbgi  = get_irn_dbg_info(node);
+			ir_node  *const block = get_nodes_block(node);
+			ir_node  *const base  = get_irn_n(node, attr->base.addr.base_input);
+			ir_node  *const in[]  = { base, base };
+			ir_node  *const test  = new_bd_amd64_test(dbgi, block, ARRAY_SIZE(in), in, amd64_reg_reg_reqs, &test_attr);
+
+			arch_register_t const *const oreg = arch_get_irn_register_out(node, pn_amd64_cmp_flags);
+			arch_set_irn_register_out(test, pn_amd64_test_flags, oreg);
+
+			be_peephole_replace(node, test);
+		}
+	}
+}
+
 static void make_add(ir_node *const node, size_t const n_in, ir_node *const *const in, arch_register_req_t const **const reqs, amd64_binop_addr_attr_t const *const attr, arch_register_t const *const oreg)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
@@ -117,6 +141,7 @@ static void peephole_be_IncSP(ir_node *const node)
 void amd64_peephole_optimization(ir_graph *const irg)
 {
 	ir_clear_opcodes_generic_func();
+	register_peephole_optimization(op_amd64_cmp,     peephole_amd64_cmp);
 	register_peephole_optimization(op_amd64_lea,     peephole_amd64_lea);
 	register_peephole_optimization(op_amd64_mov_imm, peephole_amd64_mov_imm);
 	register_peephole_optimization(op_be_IncSP,      peephole_be_IncSP);
