@@ -471,7 +471,7 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 				break;
 			if (!is_legal_delay_slot_filler(schedpoint))
 				continue;
-			if (can_move_up_into_delayslot(schedpoint, node)) {
+			if (!is_memop(schedpoint) && can_move_up_into_delayslot(schedpoint, node)) {
 				/* it's fine to move the insn across blocks */
 				return schedpoint;
 			} else if (is_sparc_cond_branch(node)) {
