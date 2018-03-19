@@ -290,13 +290,6 @@ bool be_can_move_up(ir_heights_t *heights, const ir_node *node,
 		assert(get_Block_cfgpred_block(node_block, 0) == after_block);
 		ir_node *first = sched_first(node_block);
 
-		/* do not move nodes changing memory */
-		if (is_memop(node)) {
-			ir_node *meminput = get_memop_mem(node);
-			if (!is_NoMem(meminput))
-				return false;
-		}
-
 		/* make sure we can move to the beginning of the succ block */
 		if (node != first && !be_can_move_up(heights, node, sched_prev(first)))
 			return false;
