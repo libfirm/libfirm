@@ -50,8 +50,9 @@ void mips_determine_calling_convention(mips_calling_convention_t *const cconv, i
 	} else {
 		params = 0;
 	}
-	cconv->param_stack_size = MAX(4, gp_param) * (MIPS_MACHINE_SIZE / 8);
-	cconv->n_mem_param      = gp_param > 4 ? gp_param - 4 : 0;
+	size_t const n_reg_params = ARRAY_SIZE(regs_param_gp);
+	cconv->param_stack_size = MAX(n_reg_params, gp_param) * (MIPS_MACHINE_SIZE / 8);
+	cconv->n_mem_param      = gp_param > n_reg_params ? gp_param - n_reg_params : 0;
 	cconv->parameters       = params;
 
 	/* Handle results. */
