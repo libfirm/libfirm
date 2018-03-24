@@ -351,21 +351,17 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 
 	/* 2. Make room for at least 'demand' slots */
 	unsigned len           = workset_get_length(ws);
-	//printf("len: %d\tused len:%d\n", len, workset_used_length(ws));
 	int single_regs_needed = workset_used_length(ws) + demand - n_regs;
 	assert(single_regs_needed <= (int)workset_used_length(ws));
 
 
 
 	/* Only make more free room if we do not have enough */
-	//printf("single regs needed: %d (demand: %d)\n", single_regs_needed, demand);
 	if (single_regs_needed > 0) {
 
 		/* calculate current next-use distance for live values */
 		for (unsigned i = 0; i < len; ++i) {
-			//printf("loop over workset: %d | ", i);
 			ir_node  *val  = workset_get_val(ws, i);
-			//printf("val: %ld\n", val->node_nr);
 			unsigned  dist = get_distance(instr, val, !is_usage);
 			workset_set_time(ws, i, dist);
 		}
@@ -404,16 +400,6 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 		ir_node *val = to_insert[i];
 		workset_insert(ws, val, spilled[i]);
 	}
-	// debug output
-	/*printf("end of displace(): ws: [");
-	for (unsigned i = 0; i < workset_get_length(ws); ++i) {
-		if (i == 0) {
-			printf("%ld", ws->vals[i].node->node_nr);
-			continue;
-		}
-		printf(",%ld", ws->vals[i].node->node_nr);
-    }
-	printf("]\n");*/
 }
 
 typedef enum available_t {
@@ -573,11 +559,8 @@ static void decide_start_workset(ir_node *const block)
 	}
 
 	unsigned pressure = be_get_loop_pressure(loop_ana, cls, loop);
-	//assert(ARR_LEN(delayed) <= pressure);
 	assert(loc_get_used_len(delayed) <= pressure);
-	//int free_slots          = n_regs - ARR_LEN(starters);
 	int free_slots          = n_regs - loc_get_used_len(starters);
-	//int free_pressure_slots = n_regs - (pressure - ARR_LEN(delayed));
 	int free_pressure_slots = n_regs - (pressure - loc_get_used_len(delayed));
 	free_slots              = MIN(free_slots, free_pressure_slots);
 
@@ -762,7 +745,6 @@ static void process_block(ir_node *block)
 		/* allocate all values _defined_ by this instruction */
 		workset_clear(new_vals);
 		be_foreach_definition(irn, cls, value, req,
-			assert(req->width == 1 || req->width == 2);
 			workset_insert(new_vals, value, false);
 		);
 		displace(new_vals, false, irn, MAX(-add_pressure, 0));

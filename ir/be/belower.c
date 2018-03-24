@@ -172,6 +172,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 			continue;
 		}
 		ir_node *const in   = get_irn_n(perm, pos);
+		assert(arch_get_irn_register_req_width(in) <= 2);
 		new_arity += arch_get_irn_register_req_width(in) - 1;
 		if (arch_get_irn_register_req_width(in) > req_width) {
 			req_width = arch_get_irn_register_req_width(in);
@@ -207,17 +208,11 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 			if (arch_get_irn_register_req_width(in) == 2) {
 				ir_node *const block = get_nodes_block(perm);
 				ir_node *in1, *in2;
-				//if (be_is_RegJoin(in)) {
-				//      in1 = get_irn_n(in, 0);
-				//      in2 = get_irn_n(in, 1);
-				//      sched_remove(in);
-				//} else {
-					ir_node *split = be_new_RegSplit(block, in);
-					sched_add_before(perm, split);
-					in1 = be_new_Proj_reg(split, 0, arch_get_irn_register(in));
-					in2 = be_new_Proj_reg(split, 1, arch_register_for_index(arch_get_irn_register(in)->cls, arch_get_irn_register(in)->index + 1));
-					DBG((dbg, LEVEL_4, "\t%+F inserted\n", split));
-				//}
+				ir_node *split = be_new_RegSplit(block, in);
+				sched_add_before(perm, split);
+				in1 = be_new_Proj_reg(split, 0, arch_get_irn_register(in));
+				in2 = be_new_Proj_reg(split, 1, arch_register_for_index(arch_get_irn_register(in)->cls, arch_get_irn_register(in)->index + 1));
+				DBG((dbg, LEVEL_4, "\t%+F inserted\n", split));
 				perm_ins[new_pos] = in1;
 				new_perm_out_regs[new_pos] = arch_get_irn_register(projs[pos]);
 				new_pos++;
@@ -287,9 +282,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 		pair->out_node = out;
 
 		oregmap[oreg->index] = pair++;
-		//for (int i = 0; i < arch_get_irn_register_req_width(in); i++) {
-			rbitset_set(inregs, ireg->index);
-		//}
+		rbitset_set(inregs, ireg->index);
 	}
 
 	if (pair == pairs) {
@@ -325,9 +318,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 			}
 			k = new_k;
 
-			//for (int j = 0; j < arch_get_irn_register_req_width(p->in_node); j++) {
-				rbitset_clear(inregs, k);
-			//}
+			rbitset_clear(inregs, k);
 		}
 	}
 
@@ -356,15 +347,11 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 				DBG((dbg, LEVEL_2, "\t[C] inserting %+F for %+F from %s to %s\n", copy, p->in_node, p->in_reg->name, p->out_reg->name));
 				exchange(p->out_node, copy);
 				unsigned const in_idx = p->in_reg->index;
-				//for (int j = 0; j < arch_get_irn_register_req_width(p->in_node); j++) {
-					rbitset_clear(inregs, in_idx);
-				//}
+				rbitset_clear(inregs, in_idx);
 				p = oregmap[in_idx];
 			} while (p != start);
 
-			//for (int j = 0; j < arch_get_irn_register_req_width(start->in_node); j++) {
-				rbitset_clear(inregs, start->in_reg->index);
-			//}
+			rbitset_clear(inregs, start->in_reg->index);
 
 			ir_node *const restore_copy = be_new_Copy_before_reg(save_copy, new_perm, start->out_reg);
 			DBG((dbg, LEVEL_2, "\t[D] inserting %+F for %+F from %s to %s\n", restore_copy, save_copy, free_reg->name, start->out_reg->name));
@@ -635,7 +622,6 @@ static void lower_nodes_after_ra_walker(ir_graph *irg, void *walk_env)
 			lower_perm_node(perm, cls, arity, projs, env);
 		}
 
-		//post(*left_end, env);
 		deq_shrink_left(&perms, sizeof(ir_node*));
 	}
 	deq_free(&perms);

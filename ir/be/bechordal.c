@@ -236,6 +236,7 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 		if (op->partner && pmap_contains(partners, op->partner->carrier))
 			continue;
 
+		assert(arch_get_irn_register_req_width(op->carrier) <= 2);
 		ir_node *const partner = op->partner ? op->partner->carrier : NULL;
 		pmap_insert(partners, op->carrier, partner);
 		if (partner != NULL)
@@ -245,7 +246,7 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 
 		DBG((dbg, LEVEL_2, "\tassociating %+F (reg width required: %d) and %+F\n", op->carrier, arch_get_irn_register_req_width(op->carrier), partner));
 
-		// TODO this part should not be done here, instead it should be already available within the operand
+		// TODO it would be better if this constraint is already stored in the operand
 		/* allow only even indices for double registers */
 		unsigned const *const bs_orig = get_decisive_partner_regs(op, n_regs);
 		unsigned *const bs = rbitset_alloca(n_regs);
