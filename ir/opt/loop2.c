@@ -5,7 +5,7 @@
 
 static void duplicate_node(ir_node *const node, ir_node *const new_block)
 {
-	ir_printf("duplicate node %n (%d)\n", node, get_irn_node_nr(node));
+	//ir_printf("duplicate node %n (%d)\n", node, get_irn_node_nr(node));
 	//int const opt = get_optimize();
 	//set_optimize(0);
 	ir_node *const new_node = exact_copy(node);
@@ -13,7 +13,7 @@ static void duplicate_node(ir_node *const node, ir_node *const new_block)
 	set_nodes_block(new_node, new_block);
 	set_irn_link(node, new_node);
 	set_irn_link(new_node, node);
-	printf("new node %ld\n", get_irn_node_nr(new_node));
+	//printf("new node %ld\n", get_irn_node_nr(new_node));
 }
 
 static void rewire_node(ir_node *const node)
@@ -99,6 +99,7 @@ static void duplicate_block(ir_node *const block)
 {
 	ir_node *const new_block = exact_copy(block);
 	set_irn_link(block, new_block);
+	set_irn_link(new_block, block);
 	unsigned int const n_outs = get_irn_n_outs(block);
 	for (unsigned int i = 0; i < n_outs; ++i) {
 		ir_node *const node = get_irn_out(block, i);
@@ -124,7 +125,7 @@ static void rewire_block(ir_node *const block)
 
 static void duplicate_loop(ir_loop *const loop)
 {
-	printf("duplicating loop\n");
+	//printf("duplicating loop\n");
 	size_t const n_elements = get_loop_n_elements(loop);
 	// step 1: duplicate blocks
 	for (size_t i = 0; i < n_elements; ++i) {
