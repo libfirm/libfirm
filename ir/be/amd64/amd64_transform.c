@@ -632,7 +632,8 @@ static bool needs_extension(ir_node *op)
 static bool use_address_matching(ir_mode *mode, match_flags_t flags,
                                  ir_node *block,
                                  ir_node *op1, ir_node *op2,
-                                 ir_node **out_load, ir_node **out_op)
+                                 ir_node **out_load, ir_node **out_op,
+								 bool *ins_permuted)
 {
 	if (! (flags & match_am))
 		return false;
@@ -653,6 +654,9 @@ static bool use_address_matching(ir_mode *mode, match_flags_t flags,
 		if (load1 != NULL && !input_depends_on_load(load1, op2)) {
 			(*out_load) = load1;
 			(*out_op)   = op2;
+			if (ins_permuted != NULL) {
+				*ins_permuted = true;
+			}
 			return true;
 		}
 	}
@@ -721,9 +725,9 @@ static void match_binop(amd64_args_t *args, ir_node *block,
 
 	ir_node *load;
 	ir_node *op;
+	bool ins_permuted;
 	bool     use_am
-		= use_address_matching(mode, flags, block, op1, op2, &load, &op);
-	bool ins_permuted = use_am && (op == op2);
+		= use_address_matching(mode, flags, block, op1, op2, &load, &op, &ins_permuted);
 
 	x86_addr_t *addr = &attr->base.addr;
 	if (use_immediate && match_immediate_32(&attr->u.immediate, op2, false)) {
@@ -816,7 +820,7 @@ static ir_node *gen_binop_rax(ir_node *node, ir_node *op0, ir_node *op1,
 	ir_node *load;
 	ir_node *op;
 	bool     use_am
-		= use_address_matching(mode, flags, block, op0, op1, &load, &op);
+		= use_address_matching(mode, flags, block, op0, op1, &load, &op, NULL);
 
 	ir_node *in[4];
 	int      arity = 0;
@@ -879,7 +883,7 @@ static ir_node *gen_binop_xmm(ir_node *node, ir_node *op0, ir_node *op1,
 	ir_node *load;
 	ir_node *op;
 	bool use_am = use_address_matching(mode, flags, block, op0, op1, &load,
-	                                   &op);
+	                                   &op, NULL);
 
 	x86_addr_t *addr = &attr->base.addr;
 	if (use_am) {
@@ -1031,7 +1035,7 @@ static ir_node *gen_Add(ir_node *const node)
 	ir_node *load;
 	ir_node *op;
 	bool     use_am
-		= use_address_matching(mode, flags, block, op1, op2, &load, &op);
+		= use_address_matching(mode, flags, block, op1, op2, &load, &op, NULL);
 
 	ir_node *res;
 	if (use_am)
@@ -2150,7 +2154,6 @@ static ir_node *gen_Cond(ir_node *const node)
 		ir_node *cmp = get_Proj_pred(flags);
 		amd64_binop_addr_attr_t *const attr = (amd64_binop_addr_attr_t*)get_irn_generic_attr(cmp);
 		if (attr->base.base.ins_permuted) {
-			//cc = x86_negate_condition_code(cc);
 			cc = x86_invert_condition_code(cc);
 		}
 	}
@@ -2191,7 +2194,7 @@ static ir_node *match_mov(dbg_info *dbgi, ir_node *block, ir_node *value,
 	ir_node *load;
 	ir_node *op;
 	bool use_am = use_address_matching(mode, match_am, block, NULL,
-	                                   value, &load, &op);
+	                                   value, &load, &op, NULL);
 
 	amd64_op_mode_t op_mode;
 	x86_addr_t      addr;
