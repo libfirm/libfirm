@@ -147,6 +147,14 @@ void ir_platform_set(ir_machine_triple_t const *machine,
 		ppdef1("__mips__");
 		ir_platform.long_double_size  = 8;
 		ir_platform.long_double_align = 8;
+	} else if (streq(cpu, "riscv32")) {
+		ppdef1("__riscv");
+		ppdef1("__riscv_div");
+		ppdef1("__riscv_mul");
+		ppdef1("__riscv_muldiv");
+		ppdef("__riscv_xlen", "32");
+		ir_platform.long_double_size  = 16;
+		ir_platform.long_double_align = 16;
 	} else if (streq(cpu, "TEMPLATE")) {
 		ir_platform.long_double_size  = 8;
 		ir_platform.long_double_align = 8;

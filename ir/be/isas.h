@@ -23,6 +23,9 @@ extern arch_isa_if_t const ia32_isa_if;
 void be_init_arch_mips(void);
 extern arch_isa_if_t const mips_isa_if;
 
+void be_init_arch_riscv32(void);
+extern arch_isa_if_t const riscv32_isa_if;
+
 void be_init_arch_sparc(void);
 extern arch_isa_if_t const sparc_isa_if;
 

@@ -58,6 +58,7 @@ libFirm 1.22.1 (2016-01-07)
 * amd64, ia32: Support the asm operand modifiers `A`, `P`, `X` and `p`
 * be: Accept `#` and `%` as register name prefix for gcc compatibility
 * arm, mips, sparc: Handle clobbers in asm
+* riscv: Add new backend
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)

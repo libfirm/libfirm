@@ -37,6 +37,8 @@ int ir_target_set_triple(ir_machine_triple_t const *machine)
 		isa = &amd64_isa_if;
 	} else if (streq(cpu, "mips")) {
 		isa = &mips_isa_if;
+	} else if (streq(cpu, "riscv32")) {
+		isa = &riscv32_isa_if;
 	} else if (streq(cpu, "TEMPLATE")) {
 		isa = &TEMPLATE_isa_if;
 	} else {
