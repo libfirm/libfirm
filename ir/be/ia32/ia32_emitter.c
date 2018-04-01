@@ -305,12 +305,11 @@ void x86_emit_condition_code(x86_condition_code_t cc)
 typedef enum ia32_emit_mod_t {
 	EMIT_NONE         = 0,
 	EMIT_ALTERNATE_AM = 1U << 0,
-	EMIT_LONG         = 1U << 1,
-	EMIT_LOW_REG      = 1U << 2,
-	EMIT_HIGH_REG     = 1U << 3,
-	EMIT_16BIT_REG    = 1U << 4,
-	EMIT_32BIT_REG    = 1U << 5,
-	EMIT_SHIFT_COMMA  = 1U << 6,
+	EMIT_LOW_REG      = 1U << 1,
+	EMIT_HIGH_REG     = 1U << 2,
+	EMIT_16BIT_REG    = 1U << 3,
+	EMIT_32BIT_REG    = 1U << 4,
+	EMIT_SHIFT_COMMA  = 1U << 5,
 } ia32_emit_mod_t;
 ENUM_BITSET(ia32_emit_mod_t)
 
@@ -336,7 +335,6 @@ void ia32_emitf(ir_node const *const node, char const *fmt, ...)
 		for (;;) {
 			switch (*fmt) {
 			case '*': mod |= EMIT_ALTERNATE_AM; break;
-			case 'l': mod |= EMIT_LONG;         break;
 			case '<': mod |= EMIT_LOW_REG;      break;
 			case '>': mod |= EMIT_HIGH_REG;     break;
 			case '^': mod |= EMIT_16BIT_REG;    break;
@@ -552,15 +550,11 @@ emit_S:
 				}
 			}
 
-			case 'u':
-				if (mod & EMIT_LONG) {
-					unsigned long num = va_arg(ap, unsigned long);
-					be_emit_irprintf("%lu", num);
-				} else {
-					unsigned num = va_arg(ap, unsigned);
-					be_emit_irprintf("%u", num);
-				}
+			case 'u': {
+				unsigned num = va_arg(ap, unsigned);
+				be_emit_irprintf("%u", num);
 				break;
+			}
 
 			default:
 unknown:
