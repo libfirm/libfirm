@@ -34,7 +34,7 @@
  * %X    unsigned int            unsigned int in hexadecimal
  *
  * x starts at 0
- * + may be used with %d and %u
+ * + may be used with %d
  */
 void sparc_emitf(ir_node const *node, char const *fmt, ...);
 

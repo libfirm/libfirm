@@ -593,7 +593,7 @@ void sparc_emitf(ir_node const *const node, char const *fmt, ...)
 
 		case 'u': {
 			unsigned const num = va_arg(ap, unsigned);
-			be_emit_irprintf(plus ? "%+u" : "%u", num);
+			be_emit_irprintf("%u", num);
 			break;
 		}
 
