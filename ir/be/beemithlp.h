@@ -85,6 +85,13 @@ void be_emit_cfop_target(ir_node const *jmp);
 
 bool be_is_fallthrough(ir_node const *jmp);
 
+ /**
+  * fmt parameter     output
+  * --- ------------  -------------------
+  * %%                %
+  * %L  <node>        control flow target
+  * %d  int           int
+  */
 #define BE_EMITF(node, fmt, ap, in_delay_slot) \
 	va_list ap; \
 	va_start(ap, fmt); \

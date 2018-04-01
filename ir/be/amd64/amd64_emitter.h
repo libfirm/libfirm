@@ -19,7 +19,6 @@
  * %C   <node>                  immediate value
  * %Dx  <node>                  destination register x
  * %E   ir_entity const*        entity
- * %L   <node>                  control flow target
  * %O   <node>                  offset
  * %R   arch_register_t const*  register
  * %Sx  <node>                  source register x

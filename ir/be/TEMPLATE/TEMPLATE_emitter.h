@@ -25,7 +25,6 @@
  * %Dx  <node>                  destination register x
  * %O   <node>                  shifter operand
  * %I   <node>                  immediate
- * %L   <node>                  target label
  */
 void TEMPLATE_emitf(const ir_node *node, const char *format, ...);
 

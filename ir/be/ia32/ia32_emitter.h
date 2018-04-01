@@ -31,7 +31,6 @@
  * %FM  <node>                  x87 mode suffix
  * %FX  <node>                  SSE mode suffix
  * %I   <node>                  immediate of the node
- * %L   <node>                  control flow target of the node
  * %M   <node>                  mode suffix of the node
  * %Px  <node>                  condition code
  * %PX  int                     condition code
