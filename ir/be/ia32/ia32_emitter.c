@@ -552,12 +552,6 @@ emit_S:
 				}
 			}
 
-			case 's': {
-				const char *str = va_arg(ap, const char*);
-				be_emit_string(str);
-				break;
-			}
-
 			case 'u':
 				if (mod & EMIT_LONG) {
 					unsigned long num = va_arg(ap, unsigned long);

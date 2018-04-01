@@ -295,12 +295,6 @@ void arm_emitf(const ir_node *node, const char *format, ...)
 			break;
 		}
 
-		case 's': {
-			const char *string = va_arg(ap, const char *);
-			be_emit_string(string);
-			break;
-		}
-
 		case 'r': {
 			arch_register_t *reg = va_arg(ap, arch_register_t*);
 			arm_emit_register(reg);

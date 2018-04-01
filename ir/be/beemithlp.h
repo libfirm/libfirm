@@ -91,6 +91,7 @@ bool be_is_fallthrough(ir_node const *jmp);
   * %%                %
   * %L  <node>        control flow target
   * %d  int           int
+  * %s  char const*   string
   */
 #define BE_EMITF(node, fmt, ap, in_delay_slot) \
 	va_list ap; \
@@ -117,6 +118,10 @@ bool be_is_fallthrough(ir_node const *jmp);
 			++fmt; \
 			int const num = va_arg(ap, int); \
 			be_emit_irprintf("%d", num); \
+		} else if (*fmt == 's') { \
+			++fmt; \
+			char const *const string = va_arg(ap, char const*); \
+			be_emit_string(string); \
 		} else
 
 #define BE_EMIT_JMP(arch, node, name, jmp) \

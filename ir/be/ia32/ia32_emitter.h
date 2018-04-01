@@ -36,7 +36,6 @@
  * %PX  int                     condition code
  * %R   arch_register_t const*  register
  * %Sx  <node>                  source register x
- * %s   char const*             string
  * %u   unsigned int            unsigned int
  *
  * x starts at 0

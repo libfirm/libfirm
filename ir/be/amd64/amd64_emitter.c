@@ -483,12 +483,6 @@ emit_R:
 				break;
 			}
 
-			case 's': {
-				char const *const str = va_arg(ap, char const*);
-				be_emit_string(str);
-				break;
-			}
-
 			case 'u': {
 				unsigned const num = va_arg(ap, unsigned);
 				be_emit_irprintf("%u", num);

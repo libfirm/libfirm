@@ -31,7 +31,6 @@
  * %Sx   <node>                  source register x
  * %SIx  <node>                  immediate or source register x
  * %d    signed int              signed int
- * %s    const char*             string
  * %u    unsigned int            unsigned int
  * %X    unsigned int            unsigned int in hexadecimal
  *

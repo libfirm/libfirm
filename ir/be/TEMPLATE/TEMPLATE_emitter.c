@@ -89,12 +89,6 @@ void TEMPLATE_emitf(const ir_node *node, const char *format, ...)
 			break;
 		}
 
-		case 's': {
-			const char *string = va_arg(ap, const char *);
-			be_emit_string(string);
-			break;
-		}
-
 		default:
 unknown:
 			panic("unknown format conversion");

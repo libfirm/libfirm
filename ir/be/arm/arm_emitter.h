@@ -30,7 +30,6 @@
  * %C   const ent_or_tv_t*      constant
  * %t   const ir_node*          controlflow target
  * %m   ir_mode*                fpa mode postfix
- * %s   const char*             string
  * %u   unsigned int            unsigned int
  * %X   signed int              signed int (hexadecimal)
  */
