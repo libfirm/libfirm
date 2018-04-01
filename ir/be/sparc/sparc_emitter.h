@@ -30,7 +30,6 @@
  * %Sx   <node>                  source register x
  * %SIx  <node>                  immediate or source register x
  * %d    signed int              signed int
- * %u    unsigned int            unsigned int
  * %X    unsigned int            unsigned int in hexadecimal
  *
  * x starts at 0

@@ -83,12 +83,6 @@ void TEMPLATE_emitf(const ir_node *node, const char *format, ...)
 			break;
 		}
 
-		case 'u': {
-			unsigned num = va_arg(ap, unsigned);
-			be_emit_irprintf("%u", num);
-			break;
-		}
-
 		default:
 unknown:
 			panic("unknown format conversion");

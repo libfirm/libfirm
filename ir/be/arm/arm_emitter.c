@@ -289,12 +289,6 @@ void arm_emitf(const ir_node *node, const char *format, ...)
 			break;
 		}
 
-		case 'u': {
-			unsigned num = va_arg(ap, unsigned);
-			be_emit_irprintf("%u", num);
-			break;
-		}
-
 		case 'r': {
 			arch_register_t *reg = va_arg(ap, arch_register_t*);
 			arm_emit_register(reg);

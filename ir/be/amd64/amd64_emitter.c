@@ -483,12 +483,6 @@ emit_R:
 				break;
 			}
 
-			case 'u': {
-				unsigned const num = va_arg(ap, unsigned);
-				be_emit_irprintf("%u", num);
-				break;
-			}
-
 			default:
 unknown:
 				panic("unknown format conversion");

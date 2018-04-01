@@ -34,7 +34,6 @@
  * %PX  int                     condition code
  * %R   arch_register_t const*  register
  * %Sx  <node>                  source register x
- * %u   unsigned int            unsigned int
  *
  * x starts at 0
  * # modifier for %ASx, %D, %R, and %S uses ls mode of node to alter register width

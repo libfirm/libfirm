@@ -542,12 +542,6 @@ emit_S:
 				}
 			}
 
-			case 'u': {
-				unsigned num = va_arg(ap, unsigned);
-				be_emit_irprintf("%u", num);
-				break;
-			}
-
 			default:
 unknown:
 				panic("unknown format conversion");
