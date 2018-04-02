@@ -336,7 +336,7 @@ static void emit_arm_Address(const ir_node *irn)
 static void emit_arm_FrameAddr(const ir_node *irn)
 {
 	const arm_Address_attr_t *attr = get_arm_Address_attr_const(irn);
-	arm_emitf(irn, "add %D0, %S0, #0x%X", attr->fp_offset);
+	arm_emitf(irn, "add %D0, %S0, #%d", attr->fp_offset);
 }
 
 /**
@@ -483,7 +483,7 @@ static void emit_be_IncSP(const ir_node *irn)
 		op   = "sub";
 		offs = -offs;
 	}
-	arm_emitf(irn, "%s %D0, %S0, #0x%X", op, offs);
+	arm_emitf(irn, "%s %D0, %S0, #%d", op, offs);
 }
 
 static void emit_be_Copy(const ir_node *irn)
