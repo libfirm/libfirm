@@ -3,6 +3,79 @@
 #include "xmalloc.h"
 #include <assert.h>
 
+static void walk_loop(ir_loop *const loop, irg_walk_func *const func, void *const env)
+{
+	size_t const n_elements = get_loop_n_elements(loop);
+	for (size_t i = 0; i < n_elements; ++i) {
+		loop_element const element = get_loop_element(loop, i);
+		if (*element.kind == k_ir_node) {
+			func(element.node, env);
+		} else if (*element.kind == k_ir_loop) {
+			walk_loop(element.son, func, env);
+		}
+	}
+}
+
+static bool is_inner_loop(ir_loop *const outer_loop, ir_loop *inner_loop)
+{
+	ir_loop *old_inner_loop;
+	do {
+		old_inner_loop = inner_loop;
+		inner_loop = get_loop_outer_loop(inner_loop);
+	} while (inner_loop != old_inner_loop && inner_loop != outer_loop);
+	return inner_loop != old_inner_loop;
+}
+
+static bool block_is_inside_loop(ir_node *const block, ir_loop *const loop)
+{
+	ir_loop *const block_loop = get_irn_loop(block);
+	if (block_loop == NULL)
+		return false;
+	return block_loop == loop || is_inner_loop(loop, block_loop);
+}
+
+static bool block_dominates_loop(ir_node *const block, ir_loop *const loop)
+{
+	size_t const n_elements = get_loop_n_elements(loop);
+	for (size_t i = 0; i < n_elements; ++i) {
+		loop_element const element = get_loop_element(loop, i);
+		if (*element.kind == k_ir_node) {
+			assert(is_Block(element.node));
+			if (!block_dominates(block, element.node))
+				return false;
+		} else if (*element.kind == k_ir_loop) {
+			if (!block_dominates_loop(block, element.son))
+				return false;
+		}
+	}
+	return true;
+}
+
+// returns the block that dominates all blocks in the loop or NULL
+static ir_node *get_loop_header(ir_loop *const loop)
+{
+	// pick a random block
+	ir_node *header = NULL;
+	size_t const n_elements = get_loop_n_elements(loop);
+	for (size_t i = 0; i < n_elements; ++i) {
+		loop_element const element = get_loop_element(loop, i);
+		if (*element.kind == k_ir_node) {
+			header = element.node;
+			break;
+		}
+	}
+	assert(header && is_Block(header));
+
+	// walk up the dominance tree
+	ir_node *idom = get_Block_idom(header);
+	while (block_is_inside_loop(idom, loop)) {
+		header = idom;
+		idom = get_Block_idom(header);
+	}
+
+	return block_dominates_loop(header, loop) ? header : NULL;
+}
+
 static void duplicate_node(ir_node *const node, ir_node *const new_block)
 {
 	//ir_printf("duplicate node %n (%d)\n", node, get_irn_node_nr(node));
