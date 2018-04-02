@@ -89,7 +89,7 @@ static void duplicate_node(ir_node *const node, ir_node *const new_block)
 	//printf("new node %ld\n", get_irn_node_nr(new_node));
 }
 
-static void rewire_node(ir_node *const node)
+static void rewire_node(ir_node *const node, ir_node *const header)
 {
 	ir_node *const new_node = get_irn_link(node);
 	assert(new_node);
@@ -125,7 +125,7 @@ static void rewire_node(ir_node *const node)
 	}
 
 	// loop header block
-	if (has_backedges(node)) {
+	if (node == header) {
 		assert(is_Block(node));
 		assert(get_irn_arity(node) == 2);
 		assert(is_backedge(node, 1));
@@ -142,8 +142,7 @@ static void rewire_node(ir_node *const node)
 	}
 
 	// phi node inside loop header
-	if (is_Phi(node) && has_backedges(get_nodes_block(node))) {
-		//printf("candidate: %ld\n", get_irn_node_nr(node));
+	if (is_Phi(node) && get_nodes_block(node) == header) {
 		assert(get_irn_arity(get_nodes_block(node)) == 2);
 		assert(is_backedge(get_nodes_block(node), 1));
 		ir_node *const pred     = get_irn_n(node, 1);
@@ -183,22 +182,24 @@ static void duplicate_block(ir_node *const block)
 	}
 }
 
-static void rewire_block(ir_node *const block)
+static void rewire_block(ir_node *const block, ir_node *const header)
 {
-	rewire_node(block);
+	rewire_node(block, header);
 	unsigned int const n_outs = get_irn_n_outs(block);
 	for (unsigned int i = 0; i < n_outs; ++i) {
 		ir_node *const node = get_irn_out(block, i);
 		assert(!is_Block(node));
 		if (get_nodes_block(node) != block)
 			continue;
-		rewire_node(node);
+		rewire_node(node, header);
 	}
 }
 
 static void duplicate_loop(ir_loop *const loop)
 {
-	//printf("duplicating loop\n");
+	ir_node *const header = get_loop_header(loop);
+	if (header == NULL)
+		return;
 	size_t const n_elements = get_loop_n_elements(loop);
 	// step 1: duplicate blocks
 	for (size_t i = 0; i < n_elements; ++i) {
@@ -213,7 +214,7 @@ static void duplicate_loop(ir_loop *const loop)
 		loop_element const element = get_loop_element(loop, i);
 		if (*element.kind == k_ir_node) {
 			assert(is_Block(element.node));
-			rewire_block(element.node);
+			rewire_block(element.node, header);
 		}
 	}
 }
