@@ -19,7 +19,6 @@
 /**
  * fmt  parameter               output
  * ---- ----------------------  ---------------------------------------------
- * %%                           %
  * %AF  <node>                  address mode or x87 register
  * %AM  <node>                  address mode of the node
  * %ASx <node>                  address mode of the node or source register x

@@ -15,7 +15,6 @@
 /**
  * fmt  parameter               output
  * ---- ----------------------  ---------------------------------------------
- * %%                           %
  * %C   <node>                  immediate value
  * %Dx  <node>                  destination register x
  * %E   ir_entity const*        entity

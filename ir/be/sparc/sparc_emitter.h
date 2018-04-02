@@ -16,7 +16,6 @@
 /**
  * fmt   parameter               output
  * ----  ----------------------  -------------------------------
- * %%                            %
  * %A    <node>                  emit ",a" in delay slot annul mode
  * %Dx   <node>                  destination register x
  * %E    <node>                  entity+offset
