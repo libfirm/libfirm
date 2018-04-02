@@ -29,7 +29,6 @@
  * %C   const ent_or_tv_t*      constant
  * %t   const ir_node*          controlflow target
  * %m   ir_mode*                fpa mode postfix
- * %X   signed int              signed int (hexadecimal)
  */
 void arm_emitf(const ir_node *node, const char *format, ...);
 
