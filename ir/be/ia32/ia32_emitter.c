@@ -877,9 +877,9 @@ static void emit_be_IncSP(const ir_node *node)
 		return;
 
 	if (offs > 0) {
-		ia32_emitf(node, "subl $%u, %#D0", offs);
+		ia32_emitf(node, "subl $%d, %#D0", offs);
 	} else {
-		ia32_emitf(node, "addl $%u, %#D0", -offs);
+		ia32_emitf(node, "addl $%d, %#D0", -offs);
 	}
 }
 
