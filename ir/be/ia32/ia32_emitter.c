@@ -370,14 +370,6 @@ emit_AM:
 						ia32_emit_am(node);
 						break;
 
-					case 'R':
-						reg = va_arg(ap, const arch_register_t*);
-						if (get_ia32_op_type(node) == ia32_Normal) {
-							goto emit_R;
-						} else {
-							goto emit_AM;
-						}
-
 					case 'S':
 						if (get_ia32_op_type(node) == ia32_Normal) {
 							goto emit_S;

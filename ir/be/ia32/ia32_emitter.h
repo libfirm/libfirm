@@ -22,7 +22,6 @@
  * %%                           %
  * %AF  <node>                  address mode or x87 register
  * %AM  <node>                  address mode of the node
- * %AR  arch_register_t const*  address mode of the node or register
  * %ASx <node>                  address mode of the node or source register x
  * %B   <node>                  operands for binary operation
  * %Dx  <node>                  destination register x
