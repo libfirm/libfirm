@@ -68,7 +68,7 @@ static ir_node *get_loop_header(ir_loop *const loop)
 
 	// walk up the dominance tree
 	ir_node *idom = get_Block_idom(header);
-	while (block_is_inside_loop(idom, loop)) {
+	while (idom && block_is_inside_loop(idom, loop)) {
 		header = idom;
 		idom = get_Block_idom(header);
 	}
@@ -127,7 +127,6 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 	// loop header block
 	if (node == header) {
 		assert(is_Block(node));
-		assert(get_irn_arity(node) == 2);
 		assert(is_backedge(node, 1));
 		ir_node *const pred     = get_irn_n(new_node, 1);
 		ir_node *const new_pred = get_irn_link(pred);
@@ -143,7 +142,6 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 
 	// phi node inside loop header
 	if (is_Phi(node) && get_nodes_block(node) == header) {
-		assert(get_irn_arity(get_nodes_block(node)) == 2);
 		assert(is_backedge(get_nodes_block(node), 1));
 		ir_node *const pred     = get_irn_n(node, 1);
 		ir_node *const new_pred = get_irn_link(pred);
@@ -223,17 +221,18 @@ static void duplicate_loop(ir_loop *const loop)
 }
 
 // duplicate one innermost loop, for testing purposes
-static void duplicate_one_loop(ir_loop *const loop)
+static void duplicate_one_loop(ir_loop *const loop, bool outermost)
 {
 	size_t const n_elements = get_loop_n_elements(loop);
 	for (size_t i = 0; i < n_elements; ++i) {
 		loop_element const element = get_loop_element(loop, i);
 		if (*element.kind == k_ir_loop) {
-			duplicate_one_loop(element.son);
+			duplicate_one_loop(element.son, false);
 			return;
 		}
 	}
-	duplicate_loop(loop);
+	if (!outermost)
+		duplicate_loop(loop);
 }
 
 void do_loop_unrolling2(ir_graph *const irg)
@@ -242,7 +241,7 @@ void do_loop_unrolling2(ir_graph *const irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
-	duplicate_one_loop(get_irg_loop(irg));
+	duplicate_one_loop(get_irg_loop(irg), true);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	dump_ir_graph(irg, "loop-unrolling");
 }
