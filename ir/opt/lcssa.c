@@ -38,7 +38,8 @@ static ir_node *insert_phi(ir_node *const node, int const n, ir_node *const bloc
 static void insert_phis_for_edge(ir_node *node, int n)
 {
 	ir_node *const pred = get_irn_n(node, n);
-	if (!mode_is_data(get_irn_mode(pred)))
+	ir_mode *const mode = get_irn_mode(pred);
+	if (!(mode_is_data(mode) || mode == mode_M))
 		return;
 	ir_node *const pred_block = get_nodes_block(pred);
 	if (!is_inside_loop(pred_block))
