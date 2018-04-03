@@ -111,16 +111,16 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 					++new_arity;
 			}
 			ir_node **const in = ALLOCAN(ir_node *, new_arity);
-			for (int j = 0; j < arity; ++j) {
+			for (int j = 0, k = arity; j < arity; ++j) {
 				ir_node *const pred     = get_irn_n(succ, j);
 				ir_node *const new_pred = get_irn_link(pred);
 
 				in[j] = pred;
 				if (new_pred && new_pred != pred) {
-					in[--new_arity] = new_pred;
+					in[k++] = new_pred;
 				}
 			}
-			set_irn_in(succ, arity * 2, in);
+			set_irn_in(succ, new_arity, in);
 		}
 	}
 
@@ -147,8 +147,11 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 		assert(is_backedge(get_nodes_block(node), 1));
 		ir_node *const pred     = get_irn_n(node, 1);
 		ir_node *const new_pred = get_irn_link(pred);
-		assert(new_pred);
-		set_irn_n(node, 1, new_pred);
+		if (new_pred) {
+			set_irn_n(node, 1, new_pred);
+		} else {
+			assert(get_irn_n(node, 0) == get_irn_n(node, 1));
+		}
 		ir_node **const in = ALLOCAN(ir_node *, 1);
 		in[0] = pred;
 		set_irn_in(new_node, 1, in);
