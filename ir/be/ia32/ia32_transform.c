@@ -4720,8 +4720,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node                   **const in       = ALLOCAN(ir_node*, n_ins);
 	arch_register_req_t const **const in_req   = be_allocate_in_reqs(irg, n_ins);
 
-	if (get_method_additional_properties(type) & mtp_property_returns_twice)
-		ia32_get_irg_data(irg)->has_returns_twice_call = true;
+	record_returns_twice(irg, type);
 
 	in[n_ia32_Call_base]       = am.addr.base;
 	in_req[n_ia32_Call_base]   = req_gp;

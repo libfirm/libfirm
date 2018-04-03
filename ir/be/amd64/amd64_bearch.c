@@ -605,11 +605,6 @@ static void amd64_finish_and_emit(ir_graph *irg)
 
 	/* create and coalesce frame entities */
 	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
-	/* Disable coalescing for "returns twice" calls: In case of setjmp/longjmp
-	 * our control flow graph isn't completely correct: There are no backedges
-	 * from longjmp to the setjmp => coalescing would produce wrong results. */
-	if (irg_data->has_returns_twice_call)
-		be_forbid_coalescing(fec_env);
 	irg_walk_graph(irg, NULL, amd64_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, amd64_set_frame_entity, omit_fp);
 	be_free_frame_entity_coalescer(fec_env);

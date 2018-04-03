@@ -1803,8 +1803,7 @@ static ir_node *gen_Call(ir_node *const node)
 
 	assert(n_params == cconv->n_parameters);
 
-	if (get_method_additional_properties(type) & mtp_property_returns_twice)
-		amd64_get_irg_data(irg)->has_returns_twice_call = true;
+	record_returns_twice(irg, type);
 
 	/* construct arguments */
 

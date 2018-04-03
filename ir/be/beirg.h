@@ -54,6 +54,7 @@ typedef struct be_irg_t {
 	struct obstack    obst;
 	/** Architecture specific per-graph data */
 	void             *isa_link;
+	bool              has_returns_twice_call;
 } be_irg_t;
 
 static inline be_irg_t *be_birg_from_irg(const ir_graph *irg)
@@ -77,6 +78,12 @@ static inline struct obstack *be_get_be_obst(const ir_graph *irg)
 	struct obstack *const obst = &birg->obst;
 	assert(obstack_object_size(obst) == 0);
 	return obst;
+}
+
+static inline void record_returns_twice(ir_graph *const irg, ir_type *const type)
+{
+	if (get_method_additional_properties(type) & mtp_property_returns_twice)
+		be_birg_from_irg(irg)->has_returns_twice_call = true;
 }
 
 #endif

@@ -21,7 +21,6 @@
 typedef struct ia32_irg_data_t {
 	bool     do_x87_sim;     /**< Should simulate x87 register stack. */
 	bool     omit_fp;        /**< No frame pointer is used. */
-	bool     has_returns_twice_call;
 	ir_node *noreg_gp;       /**< unique NoReg_GP node */
 	ir_node *noreg_fp;       /**< unique NoReg_FP node */
 	ir_node *noreg_xmm;      /**< unique NoReg_XMM node */

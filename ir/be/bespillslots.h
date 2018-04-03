@@ -27,11 +27,6 @@ be_fec_env_t *be_new_frame_entity_coalescer(ir_graph *irg);
  */
 void be_free_frame_entity_coalescer(be_fec_env_t *env);
 
-/**
- * forbid coalescing of spillslots.
- */
-void be_forbid_coalescing(be_fec_env_t *env);
-
 void be_load_needs_frame_entity(be_fec_env_t *env, ir_node *node,
 								unsigned slot_size, unsigned slot_po2align);
 

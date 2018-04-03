@@ -1690,6 +1690,8 @@ static ir_node *gen_Call(ir_node *node)
 
 	assert(n_params == cconv->n_parameters);
 
+	record_returns_twice(irg, type);
+
 	/* construct arguments */
 
 	/* memory input */
@@ -1782,8 +1784,8 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* create call node */
 	ir_node *const res = entity ?
-		new_bd_sparc_Call_imm(dbgi, new_block, in_arity, in, in_req, out_arity, type, entity, 0, aggregate_return) :
-		new_bd_sparc_Call_reg(dbgi, new_block, in_arity, in, in_req, out_arity, type,            aggregate_return);
+		new_bd_sparc_Call_imm(dbgi, new_block, in_arity, in, in_req, out_arity, entity, 0, aggregate_return) :
+		new_bd_sparc_Call_reg(dbgi, new_block, in_arity, in, in_req, out_arity,            aggregate_return);
 
 	/* create output register reqs */
 	arch_set_irn_register_req_out(res, pn_sparc_Call_M, arch_memory_req);

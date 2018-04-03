@@ -68,7 +68,6 @@ struct be_fec_env_t {
 	set_frame_entity_func  set_frame_entity;
 	bool                   at_begin;  /**< frame entities should be allocate at
 	                                       the beginning of the stackframe */
-	bool                   coalescing_forbidden;
 };
 
 /** Compare 2 affinity edges (used in quicksort) */
@@ -581,11 +580,6 @@ void be_free_frame_entity_coalescer(be_fec_env_t *env)
 	free(env);
 }
 
-void be_forbid_coalescing(be_fec_env_t *env)
-{
-	env->coalescing_forbidden = true;
-}
-
 void be_assign_entities(be_fec_env_t *env,
                         set_frame_entity_func set_frame_entity,
                         bool alloc_entities_at_begin)
@@ -596,7 +590,10 @@ void be_assign_entities(be_fec_env_t *env,
 	if (stat_ev_enabled)
 		stat_ev_dbl("spillslots", ARR_LEN(env->spills));
 
-	if (be_coalesce_spill_slots && !env->coalescing_forbidden)
+	/* Disable coalescing for "returns twice" calls: In case of setjmp/longjmp
+	 * our control flow graph isn't completely correct: There are no backedges
+	 * from longjmp to the setjmp => coalescing would produce wrong results. */
+	if (be_coalesce_spill_slots && !be_birg_from_irg(env->irg)->has_returns_twice_call)
 		do_greedy_coalescing(env);
 
 	if (stat_ev_enabled)

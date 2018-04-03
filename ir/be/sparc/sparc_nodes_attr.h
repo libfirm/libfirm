@@ -44,7 +44,6 @@ enum sparc_arch_irn_flags_t {
 typedef struct sparc_call_attr_t sparc_call_attr_t;
 struct sparc_call_attr_t {
 	sparc_attr_t  base;
-	ir_type      *call_type; /**< The call type, copied from the original Call node. */
 };
 
 /**
