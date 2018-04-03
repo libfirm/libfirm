@@ -31,7 +31,6 @@ int sparc_load_store_attrs_equal(const ir_node *a, const ir_node *b);
 int sparc_jmp_cond_attrs_equal(const ir_node *a, const ir_node *b);
 int sparc_fp_attrs_equal(const ir_node *a, const ir_node *b);
 int sparc_fp_conv_attrs_equal(const ir_node *a, const ir_node *b);
-int sparc_call_attrs_equal(const ir_node *a, const ir_node *b);
 int sparc_switch_jmp_attrs_equal(const ir_node *a, const ir_node *b);
 
 #endif

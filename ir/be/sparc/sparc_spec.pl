@@ -112,7 +112,6 @@ $mode_fp4     = "sparc_mode_Q";
 	sparc_switch_jmp_attr_t => "be_switch_attr_init(res, &attr->swtch, table, jump_table);",
 	sparc_fp_attr_t         => "init_sparc_fp_attributes(res, fp_mode);",
 	sparc_fp_conv_attr_t    => "init_sparc_fp_conv_attributes(res, src_mode, dest_mode);",
-	sparc_call_attr_t       => "init_sparc_call_attributes(res, aggregate_return);",
 );
 
 %custom_irn_flags = (
@@ -498,7 +497,7 @@ Call => {
 	in_reqs   => "...",
 	out_reqs  => "...",
 	outs      => [ "M", "stack", "first_result" ],
-	attr_type => "sparc_call_attr_t",
+	fixed     => "if (aggregate_return) arch_add_irn_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_aggregate_return);",
 	constructors => {
 		imm => {
 			attr => "ir_entity *entity, int32_t offset, bool aggregate_return",

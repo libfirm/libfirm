@@ -39,14 +39,6 @@ enum sparc_arch_irn_flags_t {
 };
 
 /**
- * attribute for Call instruction
- */
-typedef struct sparc_call_attr_t sparc_call_attr_t;
-struct sparc_call_attr_t {
-	sparc_attr_t  base;
-};
-
-/**
  * attribute for FP immediate instruction
  */
 typedef struct sparc_fp_attr_t sparc_fp_attr_t;

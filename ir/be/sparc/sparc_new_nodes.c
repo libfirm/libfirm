@@ -197,18 +197,6 @@ const sparc_fp_conv_attr_t *get_sparc_fp_conv_attr_const(const ir_node *node)
 	return (const sparc_fp_conv_attr_t*) get_irn_generic_attr_const(node);
 }
 
-sparc_call_attr_t *get_sparc_call_attr(ir_node *node)
-{
-	assert(is_sparc_Call(node));
-	return (sparc_call_attr_t*)get_irn_generic_attr(node);
-}
-
-const sparc_call_attr_t *get_sparc_call_attr_const(const ir_node *node)
-{
-	assert(is_sparc_Call(node));
-	return (const sparc_call_attr_t*)get_irn_generic_attr_const(node);
-}
-
 void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
                                       ir_entity *entity, int32_t offset,
                                       bool is_frame_entity, bool is_reg_reg)
@@ -233,12 +221,6 @@ void init_sparc_fp_conv_attributes(ir_node *res, ir_mode *src_mode,
 	sparc_fp_conv_attr_t *attr = get_sparc_fp_conv_attr(res);
 	attr->src_mode = src_mode;
 	attr->dest_mode = dest_mode;
-}
-
-void init_sparc_call_attributes(ir_node *const node, bool const aggregate_return)
-{
-	if (aggregate_return)
-		arch_add_irn_flags(node, (arch_irn_flags_t)sparc_arch_irn_flag_aggregate_return);
 }
 
 int sparc_attrs_equal(const ir_node *a, const ir_node *b)
@@ -281,11 +263,6 @@ int sparc_fp_conv_attrs_equal(const ir_node *a, const ir_node *b)
 	return sparc_attrs_equal(a, b)
 	    && attr_a->src_mode == attr_b->src_mode
 	    && attr_a->dest_mode == attr_b->dest_mode;
-}
-
-int sparc_call_attrs_equal(const ir_node *a, const ir_node *b)
-{
-	return sparc_attrs_equal(a, b);
 }
 
 int sparc_switch_jmp_attrs_equal(const ir_node *a, const ir_node *b)
