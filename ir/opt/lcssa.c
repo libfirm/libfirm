@@ -65,7 +65,8 @@ static void insert_phis_for_edge(ir_node *node, int n)
 static void insert_phis_for_node(ir_node *const node, void *const env)
 {
 	(void)env;
-	if (is_Block(node))
+	// ignore blocks and keep-alive edges
+	if (is_Block(node) || is_End(node))
 		return;
 	int const arity = get_irn_arity(node);
 	for (int i = 0; i < arity; ++i) {
