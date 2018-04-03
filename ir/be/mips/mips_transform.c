@@ -436,8 +436,10 @@ static ir_node *gen_Call(ir_node *const node)
 		++p;
 	}
 
+	ir_type *const fun_type = get_Call_type(node);
+	record_returns_twice(irg, fun_type);
+
 	mips_calling_convention_t cconv;
-	ir_type            *const fun_type = get_Call_type(node);
 	mips_determine_calling_convention(&cconv, fun_type);
 
 	ir_node *mems[1 + cconv.n_mem_param];
