@@ -126,32 +126,50 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 	// loop header block
 	if (node == header) {
 		assert(is_Block(node));
-		assert(is_backedge(node, 1));
-		ir_node *const pred     = get_irn_n(new_node, 1);
-		ir_node *const new_pred = get_irn_link(pred);
-		assert(new_pred);
-		// jump to the old node from outside and from the new node
-		set_irn_n(node, 1, new_pred);
-		// jump to the new node only from the old node
-		ir_node **const in = ALLOCAN(ir_node *, 1);
-		in[0] = pred;
-		set_irn_in(new_node, 1, in);
+		int const arity = get_irn_arity(node);
+		int new_arity = 0;
+		for (int i = 0; i < arity; ++i) {
+			if (is_backedge(node, i)) {
+				++new_arity;
+			}
+		}
+		ir_node **const in = ALLOCAN(ir_node *, new_arity);
+		for (int i = 0, j = 0; i < arity; ++i) {
+			if (is_backedge(node, i)) {
+				ir_node *const pred     = get_irn_n(new_node, i);
+				ir_node *const new_pred = get_irn_link(pred);
+				assert(new_pred);
+				// jump to the old node from outside and from the new node
+				set_irn_n(node, i, new_pred);
+				// jump to the new node only from the old node
+				in[j++] = pred;
+			}
+		}
+		set_irn_in(new_node, new_arity, in);
 		return;
 	}
 
 	// phi node inside loop header
 	if (is_Phi(node) && get_nodes_block(node) == header) {
-		assert(is_backedge(get_nodes_block(node), 1));
-		ir_node *const pred     = get_irn_n(node, 1);
-		ir_node *const new_pred = get_irn_link(pred);
-		if (new_pred) {
-			set_irn_n(node, 1, new_pred);
-		} else {
-			assert(get_irn_n(node, 0) == get_irn_n(node, 1));
+		int const arity = get_irn_arity(node);
+		int new_arity = 0;
+		for (int i = 0; i < arity; ++i) {
+			if (is_backedge(get_nodes_block(node), i)) {
+				++new_arity;
+			}
 		}
 		ir_node **const in = ALLOCAN(ir_node *, 1);
-		in[0] = pred;
-		set_irn_in(new_node, 1, in);
+		for (int i = 0, j = 0; i < arity; ++i) {
+			if (is_backedge(get_nodes_block(node), i)) {
+				ir_node *const pred     = get_irn_n(node, i);
+				ir_node *const new_pred = get_irn_link(pred);
+				if (new_pred) {
+					set_irn_n(node, i, new_pred);
+				}
+				in[j++] = pred;
+			}
+		}
+		set_irn_in(new_node, new_arity, in);
 		return;
 	}
 
