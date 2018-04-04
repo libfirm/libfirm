@@ -30,7 +30,7 @@ static ir_node *insert_phi(ir_node *const node, int const n, ir_node *const bloc
 	set_optimize(opt);
 	set_irn_n(node, n, phi);
 	mark_irn_visited(phi);
-	DB((dbg, LEVEL_3, "inserting phi %ld\n", get_irn_node_nr(phi)));
+	DB((dbg, LEVEL_3, "inserting phi %N\n", phi));
 	return phi;
 }
 

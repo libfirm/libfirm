@@ -1,7 +1,10 @@
 #include "lcssa_t.h"
 #include "irtools.h"
 #include "xmalloc.h"
+#include "debug.h"
 #include <assert.h>
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static void walk_loop(ir_loop *const loop, irg_walk_func *const func, void *const env)
 {
@@ -78,15 +81,11 @@ static ir_node *get_loop_header(ir_loop *const loop)
 
 static void duplicate_node(ir_node *const node, ir_node *const new_block)
 {
-	//ir_printf("duplicate node %n (%d)\n", node, get_irn_node_nr(node));
-	//int const opt = get_optimize();
-	//set_optimize(0);
 	ir_node *const new_node = exact_copy(node);
-	//set_optimize(opt);
 	set_nodes_block(new_node, new_block);
 	set_irn_link(node, new_node);
 	set_irn_link(new_node, node);
-	//printf("new node %ld\n", get_irn_node_nr(new_node));
+	DB((dbg, LEVEL_3, "duplicating node %N (%n), new node %N\n", node, node, new_node));
 }
 
 static void rewire_node(ir_node *const node, ir_node *const header)
@@ -173,6 +172,8 @@ static void duplicate_block(ir_node *const block)
 	ir_node *const new_block = exact_copy(block);
 	set_irn_link(block, new_block);
 	set_irn_link(new_block, block);
+	DB((dbg, LEVEL_3, "duplicating block %N, new block %N\n", block, new_block));
+
 	unsigned int const n_outs = get_irn_n_outs(block);
 	for (unsigned int i = 0; i < n_outs; ++i) {
 		ir_node *const node = get_irn_out(block, i);
@@ -237,6 +238,7 @@ static void duplicate_one_loop(ir_loop *const loop, bool outermost)
 
 void do_loop_unrolling2(ir_graph *const irg)
 {
+	FIRM_DBG_REGISTER(dbg, "firm.opt.loop-unrolling");
 	assure_lcssa(irg);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
