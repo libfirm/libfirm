@@ -100,7 +100,7 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 		int n;
 		ir_node *const succ = get_irn_out_ex(node, i, &n);
 		// TODO: revisit this condition
-		if (get_irn_link(succ) == NULL && (is_Block(succ) || is_Phi(succ))) {
+		if (get_irn_link(succ) == NULL && (is_Block(succ) || is_Phi(succ)) && !irn_visited(succ)) {
 			int const arity = get_irn_arity(succ);
 			int new_arity = arity;
 			for (int j = 0; j < arity; ++j) {
@@ -120,6 +120,7 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 				}
 			}
 			set_irn_in(succ, new_arity, in);
+			mark_irn_visited(succ);
 		}
 	}
 
@@ -221,6 +222,7 @@ static void duplicate_loop(ir_loop *const loop)
 	if (header == NULL)
 		return;
 	size_t const n_elements = get_loop_n_elements(loop);
+
 	// step 1: duplicate blocks
 	for (size_t i = 0; i < n_elements; ++i) {
 		loop_element const element = get_loop_element(loop, i);
@@ -229,7 +231,9 @@ static void duplicate_loop(ir_loop *const loop)
 			duplicate_block(element.node);
 		}
 	}
+
 	// step 2: rewire the edges
+	inc_irg_visited(get_irn_irg(header));
 	for (size_t i = 0; i < n_elements; ++i) {
 		loop_element const element = get_loop_element(loop, i);
 		if (*element.kind == k_ir_node) {
