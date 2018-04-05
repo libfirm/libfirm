@@ -88,6 +88,62 @@ static void duplicate_node(ir_node *const node, ir_node *const new_block)
 	DB((dbg, LEVEL_3, "duplicating node %N (%n), new node %N\n", node, node, new_node));
 }
 
+static void rewire_successor_phi(ir_node *const phi, ir_node *const block, int arity, int new_arity)
+{
+	ir_node **const in = ALLOCAN(ir_node *, new_arity);
+	for (int i = 0, j = arity; i < arity; ++i) {
+		ir_node *const pred_phi       = get_irn_n(phi, i);
+		ir_node *const new_pred_phi   = get_irn_link(pred_phi);
+		ir_node *const pred_block     = get_irn_n(block, i);
+		ir_node *const new_pred_block = get_irn_link(pred_block);
+
+		in[i] = pred_phi;
+		if (new_pred_block && new_pred_block != pred_block) {
+			in[j++] = new_pred_phi ? new_pred_phi : pred_phi;
+		}
+	}
+	set_irn_in(phi, new_arity, in);
+}
+
+static void rewire_successor_block(ir_node *const block)
+{
+	if (irn_visited(block))
+		return;
+
+	int const arity = get_irn_arity(block);
+
+	// find the new arity
+	int new_arity = arity;
+	for (int i = 0; i < arity; ++i) {
+		ir_node *const pred_block     = get_irn_n(block, i);
+		ir_node *const new_pred_block = get_irn_link(pred_block);
+		if (new_pred_block && new_pred_block != pred_block)
+			++new_arity;
+	}
+
+	// rewire phis inside the block
+	unsigned int const n_outs = get_irn_n_outs(block);
+	for (unsigned int i = 0; i < n_outs; ++i) {
+		ir_node *const node = get_irn_out(block, i);
+		if (is_Phi(node))
+			rewire_successor_phi(node, block, arity, new_arity);
+	}
+
+	ir_node **const in = ALLOCAN(ir_node *, new_arity);
+	for (int i = 0, j = arity; i < arity; ++i) {
+		ir_node *const pred_block     = get_irn_n(block, i);
+		ir_node *const new_pred_block = get_irn_link(pred_block);
+
+		in[i] = pred_block;
+		if (new_pred_block && new_pred_block != pred_block) {
+			in[j++] = new_pred_block;
+		}
+	}
+	set_irn_in(block, new_arity, in);
+
+	mark_irn_visited(block);
+}
+
 static void rewire_node(ir_node *const node, ir_node *const header)
 {
 	ir_node *const new_node = get_irn_link(node);
@@ -97,30 +153,9 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 	// rewire the successors outside the loop
 	unsigned int const n_outs = get_irn_n_outs(node);
 	for (unsigned int i = 0; i < n_outs; ++i) {
-		int n;
-		ir_node *const succ = get_irn_out_ex(node, i, &n);
-		// TODO: revisit this condition
-		if (get_irn_link(succ) == NULL && (is_Block(succ) || is_Phi(succ)) && !irn_visited(succ)) {
-			int const arity = get_irn_arity(succ);
-			int new_arity = arity;
-			for (int j = 0; j < arity; ++j) {
-				ir_node *const pred     = get_irn_n(succ, j);
-				ir_node *const new_pred = get_irn_link(pred);
-				if (new_pred && new_pred != pred)
-					++new_arity;
-			}
-			ir_node **const in = ALLOCAN(ir_node *, new_arity);
-			for (int j = 0, k = arity; j < arity; ++j) {
-				ir_node *const pred     = get_irn_n(succ, j);
-				ir_node *const new_pred = get_irn_link(pred);
-
-				in[j] = pred;
-				if (new_pred && new_pred != pred) {
-					in[k++] = new_pred;
-				}
-			}
-			set_irn_in(succ, new_arity, in);
-			mark_irn_visited(succ);
+		ir_node *const succ = get_irn_out(node, i);
+		if (get_irn_link(succ) == NULL && is_Block(succ)) {
+			rewire_successor_block(succ);
 		}
 	}
 
