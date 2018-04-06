@@ -283,18 +283,18 @@ static void duplicate_loop(ir_loop *const loop)
 	}
 }
 
-// duplicate one innermost loop, for testing purposes
-static void duplicate_one_loop(ir_loop *const loop, bool outermost)
+static void duplicate_innermost_loops(ir_loop *const loop, bool const outermost)
 {
+	bool         innermost  = true;
 	size_t const n_elements = get_loop_n_elements(loop);
 	for (size_t i = 0; i < n_elements; ++i) {
 		loop_element const element = get_loop_element(loop, i);
 		if (*element.kind == k_ir_loop) {
-			duplicate_one_loop(element.son, false);
-			return;
+			duplicate_innermost_loops(element.son, false);
+			innermost = false;
 		}
 	}
-	if (!outermost)
+	if (innermost && !outermost)
 		duplicate_loop(loop);
 }
 
@@ -304,7 +304,7 @@ void do_loop_unrolling2(ir_graph *const irg)
 	assure_lcssa(irg);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	duplicate_one_loop(get_irg_loop(irg), true);
+	duplicate_innermost_loops(get_irg_loop(irg), true);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	dump_ir_graph(irg, "loop-unrolling");
 }
