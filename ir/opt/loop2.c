@@ -165,16 +165,17 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 		int const arity = get_irn_arity(node);
 		int new_arity = 0;
 		for (int i = 0; i < arity; ++i) {
-			if (is_backedge(node, i)) {
+			ir_node *const pred     = get_irn_n(header, i);
+			ir_node *const new_pred = get_irn_link(pred);
+			if (new_pred) {
 				++new_arity;
 			}
 		}
 		ir_node **const in = ALLOCAN(ir_node *, new_arity);
 		for (int i = 0, j = 0; i < arity; ++i) {
-			if (is_backedge(node, i)) {
-				ir_node *const pred     = get_irn_n(new_node, i);
-				ir_node *const new_pred = get_irn_link(pred);
-				assert(new_pred);
+			ir_node *const pred     = get_irn_n(header, i);
+			ir_node *const new_pred = get_irn_link(pred);
+			if (new_pred) {
 				// jump to the old node from outside and from the new node
 				set_irn_n(node, i, new_pred);
 				// jump to the new node only from the old node
@@ -188,15 +189,16 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 	// phi node inside loop header
 	if (is_Phi(node) && get_nodes_block(node) == header) {
 		int const arity = get_irn_arity(node);
+		assert(arity == get_irn_arity(header));
 		int new_arity = 0;
 		for (int i = 0; i < arity; ++i) {
-			if (is_backedge(get_nodes_block(node), i)) {
+			if (get_irn_link(get_irn_n(header, i))) {
 				++new_arity;
 			}
 		}
 		ir_node **const in = ALLOCAN(ir_node *, 1);
 		for (int i = 0, j = 0; i < arity; ++i) {
-			if (is_backedge(get_nodes_block(node), i)) {
+			if (get_irn_link(get_irn_n(header, i))) {
 				ir_node *const pred     = get_irn_n(node, i);
 				ir_node *const new_pred = get_irn_link(pred);
 				if (new_pred) {
@@ -256,6 +258,9 @@ static void duplicate_loop(ir_loop *const loop)
 	ir_node *const header = get_loop_header(loop);
 	if (header == NULL)
 		return;
+
+	DB((dbg, LEVEL_3, "found loop header %N\n", header));
+	irg_walk_graph(get_irn_irg(header), firm_clear_link, NULL, NULL);
 	size_t const n_elements = get_loop_n_elements(loop);
 
 	// step 1: duplicate blocks
@@ -299,7 +304,6 @@ void do_loop_unrolling2(ir_graph *const irg)
 	assure_lcssa(irg);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 	duplicate_one_loop(get_irg_loop(irg), true);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	dump_ir_graph(irg, "loop-unrolling");
