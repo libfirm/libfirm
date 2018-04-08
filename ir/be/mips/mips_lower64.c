@@ -7,12 +7,6 @@
 #include "gen_mips_regalloc_if.h"
 #include "lower_dw.h"
 
-static ir_entity *mips_create_64_intrinsic_fkt(ir_type *const method, ir_op const *const op, ir_mode const *const imode, ir_mode const *const omode, void *const context)
-{
-	(void)method, (void)op, (void)imode, (void)omode, (void)context;
-	panic("TODO");
-}
-
 static void mips_lower_add64(ir_node *const node, ir_mode *const mode)
 {
 	dbg_info *const dbg        = get_irn_dbg_info(node);
@@ -61,8 +55,7 @@ void mips_lower64(void)
 {
 	ir_mode *const word_unsigned = mips_reg_classes[CLASS_mips_gp].mode;
 	ir_mode *const word_signed   = find_signed_mode(word_unsigned);
-	lwrdw_param_t lower_dw_params = {
-		.create_intrinsic = &mips_create_64_intrinsic_fkt,
+	lwrdw_param_t const lower_dw_params = {
 		.word_unsigned    = word_unsigned,
 		.word_signed      = word_signed,
 		.doubleword_size  = 64,

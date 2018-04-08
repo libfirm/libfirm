@@ -452,6 +452,46 @@ static void lower_Store(ir_node *node, ir_mode *mode)
 	}
 }
 
+static ir_entity *create_libgcc_entity(ir_type *const method, ir_op const *const op, ir_mode const *const imode, ir_mode const *const omode)
+{
+	const char *name;
+	if (op == op_Mul) {
+		name = "__muldi3";
+	} else if (op == op_Div) {
+		name = mode_is_signed(imode) ? "__divdi3" : "__udivdi3";
+	} else if (op == op_Mod) {
+		name = mode_is_signed(imode) ? "__moddi3" : "__umoddi3";
+	} else if (op == op_Conv) {
+		if (mode_is_float(imode)) {
+			assert(get_mode_size_bits(omode) == 64);
+			if (get_mode_size_bits(imode) == 64) {
+				name = mode_is_signed(omode) ? "__fixdfdi" : "__fixunsdfdi";
+			} else if (get_mode_size_bits(imode) == 32) {
+				name = mode_is_signed(omode) ? "__fixsfdi" : "__fixunssfdi";
+			} else {
+				assert(get_mode_size_bits(imode) == 128);
+				panic("can't conver long double to long long yet");
+			}
+		} else if (mode_is_float(omode)) {
+			assert(get_mode_size_bits(imode) == 64);
+			if (get_mode_size_bits(omode) == 64) {
+				name = mode_is_signed(imode) ? "__floatdidf" : "__floatundidf";
+			} else if (get_mode_size_bits(omode) == 32) {
+				name = mode_is_signed(imode) ? "__floatdisf" : "__floatundisf";
+			} else {
+				assert(get_mode_size_bits(omode) == 128);
+				panic("can't convert long long to long double yet");
+			}
+		} else {
+			panic("can't lower 64bit Conv");
+		}
+	} else {
+		panic("cannot lower unexpected 64bit operation %s", get_op_name(op));
+	}
+
+	return create_compilerlib_entity(name, method);
+}
+
 /**
  * Return a node containing the address of the intrinsic emulation function.
  *
@@ -476,7 +516,7 @@ static ir_node *get_intrinsic_address(ir_type *method, ir_op *op,
 	ir_entity *ent = entry->ent;
 	if (ent == NULL) {
 		/* create a new one */
-		ent = env.p.create_intrinsic(method, op, imode, omode, env.p.ctx);
+		ent = create_libgcc_entity(method, op, imode, omode);
 
 		assert(ent && "Intrinsic creator must return an entity");
 		entry->ent = ent;

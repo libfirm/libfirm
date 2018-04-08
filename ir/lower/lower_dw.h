@@ -22,29 +22,13 @@ typedef struct lower64_entry_t {
 	ir_node *high_word;   /**< the high word */
 } lower64_entry_t;
 
-
-/**
- * A callback type for creating an intrinsic entity for a given opcode.
- *
- * @param method   the method type of the emulation function entity
- * @param op       the emulated ir_op
- * @param imode    the input mode of the emulated opcode
- * @param omode    the output mode of the emulated opcode
- * @param context  the context parameter
- */
-typedef ir_entity *(create_intrinsic_fkt)(ir_type *method, const ir_op *op,
-                                          const ir_mode *imode,
-                                          const ir_mode *omode, void *context);
-
 /**
  * The lowering parameter description.
  */
 typedef struct lwrdw_param_t {
-	create_intrinsic_fkt *create_intrinsic; /**< callback that creates the intrinsic entity */
-	void                 *ctx;              /**< context parameter for the creator function */
-	ir_mode              *word_unsigned;    /**< mode for unsigned word */
-	ir_mode              *word_signed;      /**< mode for signed word */
-	unsigned short        doubleword_size;  /**< bitsize of the doubleword mode */
+	ir_mode        *word_unsigned;    /**< mode for unsigned word */
+	ir_mode        *word_signed;      /**< mode for signed word */
+	unsigned short  doubleword_size;  /**< bitsize of the doubleword mode */
 } lwrdw_param_t;
 
 /**
