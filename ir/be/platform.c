@@ -177,7 +177,6 @@ BSD:
 	} else if (strstart(os, "darwin")) {
 		object_format = OBJECT_FORMAT_MACH_O;
 		ir_platform.is_darwin                     = true;
-		ir_platform.default_exe_name              = "a.out";
 		ir_platform.user_label_prefix             = '_';
 		ir_platform.long_double_size              = 16;
 		ir_platform.long_double_align             = 16;
