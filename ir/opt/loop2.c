@@ -6,19 +6,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static void walk_loop(ir_loop *const loop, irg_walk_func *const func, void *const env)
-{
-	size_t const n_elements = get_loop_n_elements(loop);
-	for (size_t i = 0; i < n_elements; ++i) {
-		loop_element const element = get_loop_element(loop, i);
-		if (*element.kind == k_ir_node) {
-			func(element.node, env);
-		} else if (*element.kind == k_ir_loop) {
-			walk_loop(element.son, func, env);
-		}
-	}
-}
-
 static bool is_inner_loop(ir_loop *const outer_loop, ir_loop *inner_loop)
 {
 	ir_loop *old_inner_loop;
@@ -320,5 +307,4 @@ void do_loop_unrolling2(ir_graph *const irg)
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	duplicate_innermost_loops(get_irg_loop(irg), true);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-	dump_ir_graph(irg, "loop-unrolling");
 }
