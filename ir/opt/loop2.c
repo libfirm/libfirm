@@ -253,6 +253,19 @@ static void rewire_block(ir_node *const block, ir_node *const header)
 	}
 }
 
+static void rewire_keepalives(ir_node *const header)
+{
+	ir_node *const end   = get_irg_end(get_irn_irg(header));
+	int      const arity = get_irn_arity(end);
+	for (int i = 0; i < arity; ++i) {
+		ir_node *const pred     = get_irn_n(end, i);
+		ir_node *const new_pred = get_irn_link(pred);
+		if (new_pred) {
+			add_End_keepalive(end, new_pred);
+		}
+	}
+}
+
 static void duplicate_loop(ir_loop *const loop)
 {
 	ir_node *const header = get_loop_header(loop);
@@ -281,6 +294,7 @@ static void duplicate_loop(ir_loop *const loop)
 			rewire_block(element.node, header);
 		}
 	}
+	rewire_keepalives(header);
 }
 
 static void duplicate_innermost_loops(ir_loop *const loop, bool const outermost)
