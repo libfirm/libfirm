@@ -778,13 +778,14 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
 	x86_asm_operand_t const *const op   = &((x86_asm_operand_t const*)attr->operands)[pos];
 	/* modifiers:
 	 *   A: print '*' before operand (gcc doc: print an absolute memory reference)
+	 *   X: no modifying effect (gcc doc: don't print any sort of PIC '@' suffix for a symbol)
 	 *   b: 8 bit low name of register
 	 *   c: immediate without prefix '$'
 	 *   h: 8 bit high name of register
 	 *   k: 32 bit name of register
 	 *   p: like 'c' and other operands unmodified (gcc doc: "print raw symbol")
 	 *   w: 16 bit name of register */
-	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "Abhkpw", "c", ""))
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "AXbhkpw", "c", ""))
 		return;
 
 	if (modifier == 'A')
