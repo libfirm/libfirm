@@ -755,7 +755,11 @@ static void emit_ia32_asm_register(const arch_register_t *reg, char modifier,
 {
 	const char *name;
 	switch (modifier) {
-	case '\0': {
+	case 'b': name = get_register_name_8bit_low(reg); break;
+	case 'h': name = get_register_name_8bit_high(reg); break;
+	case 'w': name = get_register_name_16bit(reg); break;
+	case 'k': name = reg->name; break;
+	default:
 		if (mode_is_float(mode)) {
 			name = reg->name;
 		} else {
@@ -763,13 +767,6 @@ static void emit_ia32_asm_register(const arch_register_t *reg, char modifier,
 			name = get_register_name_size(reg, size, false);
 		}
 		break;
-	}
-	case 'b': name = get_register_name_8bit_low(reg); break;
-	case 'h': name = get_register_name_8bit_high(reg); break;
-	case 'w': name = get_register_name_16bit(reg); break;
-	case 'k': name = reg->name; break;
-	default:
-		panic("invalid asm op modifier");
 	}
 	be_emit_char('%');
 	be_emit_string(name);
@@ -780,13 +777,17 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
 	be_asm_attr_t     const *const attr = get_be_asm_attr_const(node);
 	x86_asm_operand_t const *const op   = &((x86_asm_operand_t const*)attr->operands)[pos];
 	/* modifiers:
+	 *   A: print '*' before operand (gcc doc: print an absolute memory reference)
 	 *   b: 8 bit low name of register
 	 *   c: immediate without prefix '$'
 	 *   h: 8 bit high name of register
 	 *   k: 32 bit name of register
 	 *   w: 16 bit name of register */
-	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "bhkw", "c", ""))
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "Abhkw", "c", ""))
 		return;
+
+	if (modifier == 'A')
+		be_emit_char('*');
 
 	switch ((be_asm_operand_kind_t)op->kind) {
 	case BE_ASM_OPERAND_INVALID:

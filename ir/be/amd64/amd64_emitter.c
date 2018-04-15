@@ -510,9 +510,6 @@ static void emit_amd64_asm_register(const arch_register_t *reg, char modifier,
 {
 	const char *name;
 	switch (modifier) {
-	case '\0':
-		name = mode != NULL ? get_register_name_ir_mode(reg, mode) : reg->name;
-		break;
 	case  'b': name = get_register_name_8bit(reg); break;
 	case  'h': name = get_register_name_8bit_high(reg); break;
 	case  'w': name = get_register_name_16bit(reg); break;
@@ -520,8 +517,7 @@ static void emit_amd64_asm_register(const arch_register_t *reg, char modifier,
 	case  'q': name = reg->name; break;
 	// gcc also knows 'x' V4SFmode, 't' V8SFmode, 'y' "st(0)" instead of "st",
 	// 'd' duplicate operand for AVX instruction
-	default:
-		panic("invalid asm op modifier");
+	default:   name = mode ? get_register_name_ir_mode(reg, mode) : reg->name; break;
 	}
 	be_emit_char('%');
 	be_emit_string(name);
@@ -532,14 +528,18 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 	be_asm_attr_t     const *const attr = get_be_asm_attr_const(node);
 	x86_asm_operand_t const *const op   = &((x86_asm_operand_t const*)attr->operands)[pos];
 	/* modifiers:
+	 *   A: print '*' before operand (gcc doc: print an absolute memory reference)
 	 *   b: 8 bit low name of register
 	 *   c: immediate without prefix '$'
 	 *   h: 8 bit high name of register
 	 *   k: 32 bit name of register
 	 *   q: 64 bit name of register
 	 *   w: 16 bit name of register */
-	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "bhkqw", "c", ""))
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "Abhkqw", "c", ""))
 		return;
+
+	if (modifier == 'A')
+		be_emit_char('*');
 
 	switch ((be_asm_operand_kind_t)op->kind) {
 	case BE_ASM_OPERAND_INVALID:
