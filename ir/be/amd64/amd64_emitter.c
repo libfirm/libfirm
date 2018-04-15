@@ -533,9 +533,10 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 	 *   c: immediate without prefix '$'
 	 *   h: 8 bit high name of register
 	 *   k: 32 bit name of register
+	 *   p: like 'c' and other operands unmodified (gcc doc: "print raw symbol")
 	 *   q: 64 bit name of register
 	 *   w: 16 bit name of register */
-	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "Abhkqw", "c", ""))
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "Abhkpqw", "c", ""))
 		return;
 
 	if (modifier == 'A')
@@ -567,7 +568,7 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 	}
 
 	case BE_ASM_OPERAND_IMMEDIATE:
-		if (modifier != 'c')
+		if (modifier != 'c' && modifier != 'p')
 			be_emit_char('$');
 		x86_emit_imm32(&op->u.imm32);
 		return;
