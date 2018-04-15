@@ -1,4 +1,5 @@
 #include "lcssa_t.h"
+#include "irtools.h"
 #include "xmalloc.h"
 #include "debug.h"
 #include <stdbool.h>
@@ -34,6 +35,51 @@ static ir_node *insert_phi(ir_node *const node, int const n, ir_node *const bloc
 	return phi;
 }
 
+static ir_node *insert_phis_recursive(ir_node *const pred, ir_node *const block)
+{
+	if (block == get_nodes_block(pred))
+		return pred;
+
+	ir_node *const link = get_irn_link(block);
+	if (link)
+		return link;
+
+	int       const arity = get_irn_arity(block);
+	ir_node **const in    = ALLOCAN(ir_node *, arity);
+	for (int i = 0; i < arity; ++i) {
+		in[i] = pred;
+	}
+	ir_mode *const mode = get_irn_mode(pred);
+	int      const opt  = get_optimize();
+	set_optimize(0);
+	ir_node *const phi = new_r_Phi(block, arity, in, mode);
+	set_optimize(opt);
+	set_irn_link(block, phi);
+
+	for (int i = 0; i < arity; ++i) {
+		ir_node *const pred_block = get_Block_cfgpred_block(block, i);
+		in[i] = insert_phis_recursive(pred, pred_block);
+	}
+	set_irn_in(phi, arity, in);
+
+	return phi;
+}
+
+static void clear_link_recursive(ir_node *const block)
+{
+	ir_node *const link = get_irn_link(block);
+	if (link == NULL)
+		return;
+
+	set_irn_link(block, NULL);
+
+	int const arity = get_irn_arity(block);
+	for (int i = 0; i < arity; ++i) {
+		ir_node *const pred_block = get_Block_cfgpred_block(block, i);
+		clear_link_recursive(pred_block);
+	}
+}
+
 // insert phi nodes for the edge between node and its nth predecessor
 static void insert_phis_for_edge(ir_node *node, int n)
 {
@@ -45,22 +91,14 @@ static void insert_phis_for_edge(ir_node *node, int n)
 	if (!is_inside_loop(pred_block))
 		return;
 	ir_node *block = get_nodes_block(node);
-	ir_loop *loop  = get_irn_loop(block);
-	// walk up the dominance tree
+
 	if (is_Phi(node)) {
-		// if node is a phi, start the walk at the nth predecessor of block
+		// if node is a phi, start at the nth predecessor of block
 		block = get_nodes_block(get_irn_n(block, n));
 	}
-	while (block != pred_block) {
-		ir_node *const idom = get_Block_idom(block);
-		// insert phi nodes whenever the loop changes
-		if (get_irn_loop(idom) != loop) {
-			node = insert_phi(node, n, block);
-			n = 0;
-			loop = get_irn_loop(idom);
-		}
-		block = idom;
-	}
+	ir_node *const phi = insert_phis_recursive(pred, block);
+	set_irn_n(node, n, phi);
+	clear_link_recursive(block);
 }
 
 static void insert_phis_for_node(ir_node *const node, void *const env)
@@ -153,7 +191,10 @@ void assure_lcssa(ir_graph *const irg)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.lcssa");
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 	irg_walk_graph(irg, insert_phis_for_node, NULL, NULL);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	DEBUG_ONLY(verify_lcssa(irg);)
 }
 
