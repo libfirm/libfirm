@@ -529,6 +529,7 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 	x86_asm_operand_t const *const op   = &((x86_asm_operand_t const*)attr->operands)[pos];
 	/* modifiers:
 	 *   A: print '*' before operand (gcc doc: print an absolute memory reference)
+	 *   P: like 'p' and rip-relative operands without (%rip) (but gcc doc says "if PIC, print an @PLT suffix")
 	 *   X: no modifying effect (gcc doc: don't print any sort of PIC '@' suffix for a symbol)
 	 *   b: 8 bit low name of register
 	 *   c: immediate without prefix '$'
@@ -537,7 +538,7 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 	 *   p: like 'c' and other operands unmodified (gcc doc: "print raw symbol")
 	 *   q: 64 bit name of register
 	 *   w: 16 bit name of register */
-	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "AXbhkpqw", "c", ""))
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "APXbhkpqw", "c", ""))
 		return;
 
 	if (modifier == 'A')
@@ -569,7 +570,7 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 	}
 
 	case BE_ASM_OPERAND_IMMEDIATE:
-		if (modifier != 'c' && modifier != 'p')
+		if (modifier != 'c' && modifier != 'P' && modifier != 'p')
 			be_emit_char('$');
 		x86_emit_imm32(&op->u.imm32);
 		return;
