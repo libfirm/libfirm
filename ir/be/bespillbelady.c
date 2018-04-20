@@ -692,7 +692,7 @@ static void process_block(ir_node *block)
 		/* allocate all values _defined_ by this instruction */
 		workset_clear(new_vals);
 		be_foreach_definition(irn, cls, value, req,
-			assert(req->width == 1);
+			assert(req->width == 1 || req->width == 2);
 			workset_insert(new_vals, value, false);
 		);
 		displace(new_vals, false, irn, MAX(-add_pressure, 0));

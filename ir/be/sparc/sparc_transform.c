@@ -1851,7 +1851,7 @@ static const arch_register_req_t *get_float_req(ir_mode *mode)
 	assert(mode_is_float(mode));
 	switch (get_mode_size_bits(mode)) {
 		case  32: return &float1_req;
-		case  64: return &float2_req;
+		case  64: return &float1_req;
 		case 128: return &float4_req;
 		default:  panic("invalid float mode");
 	}
