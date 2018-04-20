@@ -258,6 +258,7 @@ bool be_verify_schedule(ir_graph *irg)
 typedef struct be_verify_reg_alloc_env_t {
 	be_lv_t *lv;
 	bool     problem_found;
+	unsigned counter;
 } be_verify_reg_alloc_env_t;
 
 static void check_output_constraints(be_verify_reg_alloc_env_t *const env, const ir_node *node)
@@ -357,7 +358,8 @@ static void value_used(be_verify_reg_alloc_env_t *const env, ir_node const **con
 		ir_node const *const reg_node = registers[idx + i];
 		if (reg_node != NULL && reg_node != node
 			&& !ignore_error_for_reg(get_irn_irg(block), reg)) {
-			verify_warnf(block, "register %s assigned more than once (nodes %+F and %+F)", arch_register_for_index(reg->cls, reg->index + i)->name, node, reg_node);
+			env->counter++;
+			verify_warnf(block, "register %s assigned more than once (nodes %+F and %+F) [cnt: %d]", arch_register_for_index(reg->cls, reg->index + i)->name, node, reg_node, env->counter);
 			env->problem_found = true;
 		}
 		registers[idx + i] = node;
@@ -382,8 +384,9 @@ static void value_def(be_verify_reg_alloc_env_t *const env, ir_node const **cons
 		if (reg_node == NULL && get_irn_n_edges(node) == 0)
 			return;
 
-		if (reg_node != node && !ignore_error_for_reg(get_irn_irg(node), reg)) {
-			verify_warnf(node, "%+F not registered as value for register %s (but %+F)", node, reg->name, reg_node);
+		if (reg_node != node && !ignore_error_for_reg(get_irn_irg(node), reg) ) {
+			env->counter++;
+			verify_warnf(node, "%+F not registered as value for register %s (but %+F) [cnt: %d]", node, arch_register_for_index(reg->cls, reg->index + i)->name, reg_node, env->counter);
 			env->problem_found = true;
 		}
 		registers[idx + i] = NULL;
@@ -435,6 +438,7 @@ bool be_verify_register_allocation(ir_graph *const irg)
 	be_verify_reg_alloc_env_t env = {
 		.lv                 = be_liveness_new(irg),
 		.problem_found      = false,
+		.counter = 0
 	};
 
 	be_liveness_compute_sets(env.lv);
