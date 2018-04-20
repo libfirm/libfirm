@@ -205,15 +205,17 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 			if (arch_get_irn_register_req_width(in) == 2) {
 				ir_node *const block = get_nodes_block(perm);
 				ir_node *in1, *in2;
-				if (be_is_RegJoin(in)) {
-					in1 = get_irn_n(in, 0);
-					in2 = get_irn_n(in, 1);
-				} else {
+				//if (be_is_RegJoin(in)) {
+				//      in1 = get_irn_n(in, 0);
+				//      in2 = get_irn_n(in, 1);
+				//      sched_remove(in);
+				//} else {
 					ir_node *split = be_new_RegSplit(block, in);
+					sched_add_before(perm, split);
 					in1 = be_new_Proj_reg(split, 0, arch_get_irn_register(in));
 					in2 = be_new_Proj_reg(split, 1, arch_register_for_index(arch_get_irn_register(in)->cls, arch_get_irn_register(in)->index + 1));
 					DBG((dbg, LEVEL_4, "\t%+F inserted\n", split));
-				}
+				//}
 				perm_ins[new_pos] = in1;
 				new_perm_out_regs[new_pos] = arch_get_irn_register(projs[pos]);
 				new_pos++;
@@ -245,6 +247,7 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 				out_projs[new_pos] = new_out_proj1;
 				new_pos++;
 				out_projs[new_pos] = new_out_proj2;
+				sched_add_after(new_perm, join);
 			} else {
 				ir_node *new_out_proj = be_new_Proj_reg(new_perm, new_pos, arch_get_irn_register_out(perm, pos));
 				exchange(projs[pos], new_out_proj);
