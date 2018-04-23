@@ -5,6 +5,7 @@
 
 #include "mips_bearch_t.h"
 
+#include "be2addr.h"
 #include "be_t.h"
 #include "beirg.h"
 #include "bemodule.h"
@@ -253,6 +254,8 @@ static void mips_generate_code(FILE *const output, char const *const cup_name)
 		be_fix_stack_nodes(irg, &mips_registers[REG_SP]);
 		birg->non_ssa_regs = NULL;
 		be_sim_stack_pointer(irg, 0, 3, &mips_sp_sim);
+
+		be_handle_2addr(irg, NULL);
 
 		mips_emit_function(irg);
 		be_step_last(irg);
