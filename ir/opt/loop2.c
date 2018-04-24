@@ -223,7 +223,7 @@ static void rewire_block(ir_node *const block, ir_node *const header)
 	}
 }
 
-static void duplicate_loop(ir_loop *const loop, int factor)
+static void unroll_loop(ir_loop *const loop, int factor)
 {
 	ir_node *const header = get_loop_header(loop);
 	if (header == NULL)
@@ -256,6 +256,12 @@ static void duplicate_loop(ir_loop *const loop, int factor)
 	}
 }
 
+static int determine_unroll_factor(ir_loop *const loop)
+{
+	(void)loop;
+	return 2;
+}
+
 static void duplicate_innermost_loops(ir_loop *const loop, bool const outermost)
 {
 	bool         innermost  = true;
@@ -267,8 +273,11 @@ static void duplicate_innermost_loops(ir_loop *const loop, bool const outermost)
 			innermost = false;
 		}
 	}
-	if (innermost && !outermost)
-		duplicate_loop(loop, 2);
+	if (innermost && !outermost) {
+		int factor = determine_unroll_factor(loop);
+		if (factor)
+			unroll_loop(loop, factor);
+	}
 }
 
 void do_loop_unrolling2(ir_graph *const irg)
