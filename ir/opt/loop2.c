@@ -66,13 +66,15 @@ static ir_node *get_loop_header(ir_loop *const loop)
 	return block_dominates_loop(header, loop) ? header : NULL;
 }
 
-static void duplicate_node(ir_node *const node, ir_node *const new_block)
+static ir_node *duplicate_node(ir_node *const node, ir_node *const new_block)
 {
 	ir_node *const new_node = exact_copy(node);
-	set_nodes_block(new_node, new_block);
+	if (!is_Block(new_node))
+		set_nodes_block(new_node, new_block);
 	set_irn_link(node, new_node);
 	set_irn_link(new_node, node);
 	DB((dbg, LEVEL_3, "duplicating node %N (%n), new node %N\n", node, node, new_node));
+	return new_node;
 }
 
 static void rewire_successor_phi(ir_node *const phi, ir_node *const block, int arity, int new_arity)
@@ -212,10 +214,7 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 
 static void duplicate_block(ir_node *const block)
 {
-	ir_node *const new_block = exact_copy(block);
-	set_irn_link(block, new_block);
-	set_irn_link(new_block, block);
-	DB((dbg, LEVEL_3, "duplicating block %N, new block %N\n", block, new_block));
+	ir_node *const new_block = duplicate_node(block, NULL);
 
 	unsigned int const n_outs = get_irn_n_outs(block);
 	for (unsigned int i = 0; i < n_outs; ++i) {

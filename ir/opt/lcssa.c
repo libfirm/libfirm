@@ -58,9 +58,9 @@ static ir_node *insert_phis_recursive(ir_node *const pred, ir_node *const block)
 
 	for (int i = 0; i < arity; ++i) {
 		ir_node *const pred_block = get_Block_cfgpred_block(block, i);
-		in[i] = insert_phis_recursive(pred, pred_block);
+		ir_node *const pred_phi   = insert_phis_recursive(pred, pred_block);
+		set_irn_n(phi, i, pred_phi);
 	}
-	set_irn_in(phi, arity, in);
 
 	return phi;
 }
