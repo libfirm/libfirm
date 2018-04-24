@@ -15,26 +15,6 @@ static bool is_inside_loop(ir_node const *const node)
 	return loop && loop != get_irg_loop(graph);
 }
 
-// insert a phi node between node and its nth predecessor in block
-static ir_node *insert_phi(ir_node *const node, int const n, ir_node *const block)
-{
-	ir_node  *const pred        = get_irn_n(node, n);
-	int       const block_arity = get_irn_arity(block);
-	ir_node **const in          = ALLOCAN(ir_node *, block_arity);
-	for (int i = 0; i < block_arity; ++i) {
-		in[i] = pred;
-	}
-	ir_mode *const mode = get_irn_mode(pred);
-	int      const opt  = get_optimize();
-	set_optimize(0);
-	ir_node *const phi = new_r_Phi(block, block_arity, in, mode);
-	set_optimize(opt);
-	set_irn_n(node, n, phi);
-	mark_irn_visited(phi);
-	DB((dbg, LEVEL_3, "inserting phi %N\n", phi));
-	return phi;
-}
-
 static ir_node *insert_phis_recursive(ir_node *const pred, ir_node *const block)
 {
 	if (block == get_nodes_block(pred))

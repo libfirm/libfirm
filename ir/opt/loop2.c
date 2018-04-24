@@ -91,23 +91,6 @@ static ir_node *duplicate_node(ir_node *const node, ir_node *const new_block)
 	return new_node;
 }
 
-static void rewire_successor_phi(ir_node *const phi, ir_node *const block, int arity, int new_arity)
-{
-	ir_node **const in = ALLOCAN(ir_node *, new_arity);
-	for (int i = 0, j = arity; i < arity; ++i) {
-		ir_node *const pred_phi       = get_irn_n(phi, i);
-		ir_node *const new_pred_phi   = get_irn_link(pred_phi);
-		ir_node *const pred_block     = get_irn_n(block, i);
-		ir_node *const new_pred_block = get_irn_link(pred_block);
-
-		in[i] = pred_phi;
-		if (new_pred_block && new_pred_block != pred_block) {
-			in[j++] = new_pred_phi ? new_pred_phi : pred_phi;
-		}
-	}
-	set_irn_in(phi, new_arity, in);
-}
-
 static void rewire_successor_block(ir_node *const block, int n)
 {
 	ir_node *const node     = get_irn_n(block, n);
@@ -240,19 +223,6 @@ static void rewire_block(ir_node *const block, ir_node *const header)
 	}
 }
 
-static void rewire_keepalives(ir_node *const header)
-{
-	ir_node *const end   = get_irg_end(get_irn_irg(header));
-	int      const arity = get_irn_arity(end);
-	for (int i = 0; i < arity; ++i) {
-		ir_node *const pred     = get_irn_n(end, i);
-		ir_node *const new_pred = get_irn_link(pred);
-		if (new_pred) {
-			add_End_keepalive(end, new_pred);
-		}
-	}
-}
-
 static void duplicate_loop(ir_loop *const loop, int factor)
 {
 	ir_node *const header = get_loop_header(loop);
@@ -275,7 +245,6 @@ static void duplicate_loop(ir_loop *const loop, int factor)
 		}
 
 		// step 2: rewire the edges
-		inc_irg_visited(get_irn_irg(header));
 		for (size_t i = 0; i < n_elements; ++i) {
 			loop_element const element = get_loop_element(loop, i);
 			if (*element.kind == k_ir_node) {
