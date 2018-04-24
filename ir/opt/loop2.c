@@ -6,6 +6,17 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+static void add_edge(ir_node *const node, ir_node *const pred)
+{
+	int       const arity = get_irn_arity(node);
+	ir_node **const in    = ALLOCAN(ir_node *, arity + 1);
+	for (int i = 0; i < arity; ++i) {
+		in[i] = get_irn_n(node, i);
+	}
+	in[arity] = pred;
+	set_irn_in(node, arity + 1, in);
+}
+
 static bool is_inner_loop(ir_loop *const outer_loop, ir_loop *inner_loop)
 {
 	ir_loop *old_inner_loop;
@@ -71,6 +82,9 @@ static ir_node *duplicate_node(ir_node *const node, ir_node *const new_block)
 	ir_node *const new_node = exact_copy(node);
 	if (!is_Block(new_node))
 		set_nodes_block(new_node, new_block);
+	ir_node *const link = get_irn_link(node);
+	if (link)
+		set_irn_link(link, new_node);
 	set_irn_link(node, new_node);
 	set_irn_link(new_node, node);
 	DB((dbg, LEVEL_3, "duplicating node %N (%n), new node %N\n", node, node, new_node));
@@ -94,43 +108,26 @@ static void rewire_successor_phi(ir_node *const phi, ir_node *const block, int a
 	set_irn_in(phi, new_arity, in);
 }
 
-static void rewire_successor_block(ir_node *const block)
+static void rewire_successor_block(ir_node *const block, int n)
 {
-	if (irn_visited(block))
-		return;
-
-	int const arity = get_irn_arity(block);
-
-	// find the new arity
-	int new_arity = arity;
-	for (int i = 0; i < arity; ++i) {
-		ir_node *const pred_block     = get_irn_n(block, i);
-		ir_node *const new_pred_block = get_irn_link(pred_block);
-		if (new_pred_block && new_pred_block != pred_block)
-			++new_arity;
-	}
+	ir_node *const node     = get_irn_n(block, n);
+	ir_node *const new_node = get_irn_link(node);
+	assert(new_node);
+	add_edge(block, new_node);
 
 	// rewire phis inside the block
 	unsigned int const n_outs = get_irn_n_outs(block);
 	for (unsigned int i = 0; i < n_outs; ++i) {
-		ir_node *const node = get_irn_out(block, i);
-		if (is_Phi(node))
-			rewire_successor_phi(node, block, arity, new_arity);
-	}
-
-	ir_node **const in = ALLOCAN(ir_node *, new_arity);
-	for (int i = 0, j = arity; i < arity; ++i) {
-		ir_node *const pred_block     = get_irn_n(block, i);
-		ir_node *const new_pred_block = get_irn_link(pred_block);
-
-		in[i] = pred_block;
-		if (new_pred_block && new_pred_block != pred_block) {
-			in[j++] = new_pred_block;
+		ir_node *const phi = get_irn_out(block, i);
+		if (is_Phi(phi)) {
+			ir_node *const pred     = get_irn_n(phi, n);
+			ir_node       *new_pred = get_irn_link(pred);
+			if (new_pred == NULL) {
+				new_pred = pred;
+			}
+			add_edge(phi, new_pred);
 		}
 	}
-	set_irn_in(block, new_arity, in);
-
-	mark_irn_visited(block);
 }
 
 static void rewire_node(ir_node *const node, ir_node *const header)
@@ -142,9 +139,13 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 	// rewire the successors outside the loop
 	unsigned int const n_outs = get_irn_n_outs(node);
 	for (unsigned int i = 0; i < n_outs; ++i) {
-		ir_node *const succ = get_irn_out(node, i);
+		int n;
+		ir_node *const succ = get_irn_out_ex(node, i, &n);
 		if (get_irn_link(succ) == NULL && is_Block(succ)) {
-			rewire_successor_block(succ);
+			rewire_successor_block(succ, n);
+		} else if (is_End(succ)) {
+			assert(get_irn_link(succ) == NULL);
+			add_End_keepalive(succ, new_node);
 		}
 	}
 
@@ -252,7 +253,7 @@ static void rewire_keepalives(ir_node *const header)
 	}
 }
 
-static void duplicate_loop(ir_loop *const loop)
+static void duplicate_loop(ir_loop *const loop, int factor)
 {
 	ir_node *const header = get_loop_header(loop);
 	if (header == NULL)
@@ -262,25 +263,28 @@ static void duplicate_loop(ir_loop *const loop)
 	irg_walk_graph(get_irn_irg(header), firm_clear_link, NULL, NULL);
 	size_t const n_elements = get_loop_n_elements(loop);
 
-	// step 1: duplicate blocks
-	for (size_t i = 0; i < n_elements; ++i) {
-		loop_element const element = get_loop_element(loop, i);
-		if (*element.kind == k_ir_node) {
-			assert(is_Block(element.node));
-			duplicate_block(element.node);
-		}
-	}
+	for (int j = 0; j < factor; ++j) {
 
-	// step 2: rewire the edges
-	inc_irg_visited(get_irn_irg(header));
-	for (size_t i = 0; i < n_elements; ++i) {
-		loop_element const element = get_loop_element(loop, i);
-		if (*element.kind == k_ir_node) {
-			assert(is_Block(element.node));
-			rewire_block(element.node, header);
+		// step 1: duplicate blocks
+		for (size_t i = 0; i < n_elements; ++i) {
+			loop_element const element = get_loop_element(loop, i);
+			if (*element.kind == k_ir_node) {
+				assert(is_Block(element.node));
+				duplicate_block(element.node);
+			}
 		}
+
+		// step 2: rewire the edges
+		inc_irg_visited(get_irn_irg(header));
+		for (size_t i = 0; i < n_elements; ++i) {
+			loop_element const element = get_loop_element(loop, i);
+			if (*element.kind == k_ir_node) {
+				assert(is_Block(element.node));
+				rewire_block(element.node, header);
+			}
+		}
+
 	}
-	rewire_keepalives(header);
 }
 
 static void duplicate_innermost_loops(ir_loop *const loop, bool const outermost)
@@ -295,7 +299,7 @@ static void duplicate_innermost_loops(ir_loop *const loop, bool const outermost)
 		}
 	}
 	if (innermost && !outermost)
-		duplicate_loop(loop);
+		duplicate_loop(loop, 2);
 }
 
 void do_loop_unrolling2(ir_graph *const irg)
