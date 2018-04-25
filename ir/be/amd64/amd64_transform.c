@@ -1008,12 +1008,31 @@ static x86_insn_size_t get_size_32_64_from_mode(ir_mode *const mode)
 	return get_mode_size_bits(mode) <= 32 ? X86_SIZE_32 : X86_SIZE_64;
 }
 
+static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2)
+{
+	return gen_shift_binop(node, op1, op2, new_bd_amd64_ror, pn_amd64_ror_res, match_immediate);
+}
+
+static ir_node *gen_Rol(ir_node *node, ir_node *op1, ir_node *op2)
+{
+	return gen_shift_binop(node, op1, op2, new_bd_amd64_rol, pn_amd64_rol_res, match_immediate);
+}
+
 static ir_node *gen_Add(ir_node *const node)
 {
 	ir_node *const op1   = get_Add_left(node);
 	ir_node *const op2   = get_Add_right(node);
 	ir_mode *const mode  = get_irn_mode(node);
 	ir_node *const block = get_nodes_block(node);
+
+	ir_node *rot_left;
+	ir_node *rot_right;
+	if (be_pattern_is_rotl(node, &rot_left, &rot_right)) {
+		if (is_Minus(rot_right)) {
+			return gen_Ror(node, rot_left, get_Minus_op(rot_right));
+		}
+		return gen_Rol(node, rot_left, rot_right);
+	}
 
 	if (mode_is_float(mode)) {
 		if (mode == x86_mode_E)
@@ -1115,6 +1134,16 @@ static ir_node *gen_Eor(ir_node *const node)
 
 static ir_node *gen_Or(ir_node *const node)
 {
+	ir_node *rot_left;
+	ir_node *rot_right;
+	if (be_pattern_is_rotl(node, &rot_left, &rot_right)) {
+		if (is_Minus(rot_right)) {
+			return gen_Ror(node, rot_left, get_Minus_op(rot_right));
+		}
+
+		return gen_Rol(node, rot_left, rot_right);
+	}
+
 	ir_node *const op1 = get_Or_left(node);
 	ir_node *const op2 = get_Or_right(node);
 	return gen_binop_am(node, op1, op2, new_bd_amd64_or, pn_amd64_or_res,

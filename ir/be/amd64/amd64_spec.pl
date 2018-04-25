@@ -396,6 +396,10 @@ shr => { template => $shiftop },
 
 sar => { template => $shiftop },
 
+rol => { template => $shiftop },
+
+ror => { template => $shiftop },
+
 sub => {
 	template  => $binop,
 	irn_flags => [ "modify_flags", "rematerializable" ],

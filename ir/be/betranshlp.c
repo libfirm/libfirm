@@ -534,9 +534,23 @@ bool be_pattern_is_rotl(ir_node const *const irn_or, ir_node **const left,
 		    != (long) get_mode_size_bits(mode))
 			return false;
 
+
+		// (a << b) + (a >> -b) - for b=0 this would be a+a instead of a
+		if (is_Add(irn_or) && (tarval_is_null(tv1) || tarval_is_null(tv2))) {
+			return false;
+		}
+
 		*left  = x;
 		*right = c1;
 		return true;
+	}
+
+	// If the operation is Add and we can't guarantee that the shift amount is
+	// not zero, don't use an rotate. This prevents (a << 0) + (a >> 0) to be
+	// detected as rot
+	// TODO: Use constbit info to prevent false negatives
+	if (is_Add(irn_or)) {
+		return false;
 	}
 
 	/* Note: the obvious rot formulation (a << x) | (a >> (32-x)) gets
