@@ -258,9 +258,6 @@ static void parse_asm_constraints(be_asm_constraint_t *const constraint, ident *
 
 static ir_node *gen_ASM(ir_node *const node)
 {
-	if (get_ASM_n_clobbers(node) != 0)
-		TODO(node);
-
 	unsigned            const n_operands = be_count_asm_operands(node);
 	ir_graph           *const irg        = get_irn_irg(node);
 	struct obstack     *const obst       = get_irg_obstack(irg);

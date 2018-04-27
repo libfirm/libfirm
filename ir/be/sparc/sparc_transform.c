@@ -270,25 +270,6 @@ static bool sparc_match_immediate(sparc_asm_operand_t *const operand, ir_node *c
 
 static ir_node *gen_ASM(ir_node *node)
 {
-	ident   **clobbers     = get_ASM_clobbers(node);
-	//unsigned  clobber_bits[BITSET_SIZE_ELEMS(N_SPARC_REGISTERS)];
-
-	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
-		const char *const clobber = get_id_str(clobbers[c]);
-		if (streq(clobber, "cc"))
-			continue;
-
-		arch_register_t const *const reg = arch_find_register(clobber);
-		if (reg == NULL)
-			panic("invalid clobber in sparc asm");
-
-#if 0
-		rbitset_set(clobber_bits, reg->global_index);
-#else
-		panic("clobbers not correctly supported yet");
-#endif
-	}
-
 	unsigned             const n_operands = be_count_asm_operands(node);
 	ir_graph            *const irg        = get_irn_irg(node);
 	struct obstack      *const obst       = get_irg_obstack(irg);
@@ -307,8 +288,6 @@ static ir_node *gen_ASM(ir_node *node)
 		assert(parsed_constraint.immediate_type == 0);
 		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, out_idx);
 		ARR_APP1(arch_register_req_t const*, out_reqs, req);
-
-		/* TODO: adjust register_req for clobbers */
 
 		sparc_asm_operand_t *const operand = &operands[pos];
 		operand->kind = BE_ASM_OPERAND_OUTPUT_VALUE;
@@ -349,18 +328,14 @@ static ir_node *gen_ASM(ir_node *node)
 		ARR_APP1(arch_register_req_t const*, in_reqs, req);
 	}
 
-	/* parse clobbers */
+	/* Handle clobber "cc". */
+	ident **const clobbers = get_ASM_clobbers(node);
 	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
 		const char *const clobber = get_id_str(clobbers[c]);
 		if (streq(clobber, "cc")) {
 			ARR_APP1(arch_register_req_t const*, out_reqs, sparc_registers[REG_PSR].single_req);
 			ARR_APP1(arch_register_req_t const*, out_reqs, sparc_registers[REG_FSR].single_req);
-			continue;
 		}
-
-		arch_register_t const *const reg = arch_find_register(clobber);
-		assert(reg != NULL); /* otherwise we had a panic earlier */
-		ARR_APP1(arch_register_req_t const*, out_reqs, reg->single_req);
 	}
 
 	return be_make_asm(node, in, in_reqs, out_reqs, operands);
