@@ -228,6 +228,45 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 		}
 	}
 
+	size_t const n_clobbers = get_ASM_n_clobbers(node);
+	if (n_clobbers != 0) {
+		/* Collect clobbers and add them as outputs. */
+		unsigned clobber_bits[ir_target.isa->n_register_classes];
+		memset(&clobber_bits, 0, sizeof(clobber_bits));
+		ident **const clobbers = get_ASM_clobbers(node);
+		for (size_t i = 0; i < n_clobbers; ++i) {
+			char            const *const clobber = get_id_str(clobbers[i]);
+			arch_register_t const *const reg     = be_parse_register_name(clobber);
+			if (reg) {
+				assert(reg->cls->n_regs <= sizeof(unsigned) * 8);
+				if (!reg->cls->allow_clobber_input)
+					clobber_bits[reg->cls->index] |= 1U << reg->index;
+				ARR_APP1(arch_register_req_t const*, out_reqs, reg->single_req);
+			}
+		}
+
+		/* Restrict inputs by clobbers. */
+		for (size_t i = 0, n = ARR_LEN(in_reqs); i != n; ++i) {
+			arch_register_req_t   const *const req = in_reqs[i];
+			arch_register_class_t const *const cls = req->cls;
+			assert(cls->index < ARRAY_SIZE(clobber_bits));
+			unsigned const clobber = clobber_bits[cls->index];
+			if (clobber != 0) {
+				arch_register_req_t *const new_req = (arch_register_req_t*)obstack_alloc(obst, sizeof(*new_req) + sizeof(unsigned));
+				unsigned            *const limited = (unsigned*)(new_req + 1);
+				if (req->limited) {
+					*limited = *req->limited;
+				} else {
+					be_get_allocatable_regs(irg, cls, limited);
+				}
+				*limited        &= ~clobber;
+				*new_req         = *req;
+				new_req->limited = limited;
+				in_reqs[i] = new_req;
+			}
+		}
+	}
+
 	/* Attempt to make ASM node register pressure faithful.
 	 * (This does not work for complicated cases yet!)
 	 *
