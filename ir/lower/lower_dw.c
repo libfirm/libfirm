@@ -11,6 +11,10 @@
  */
 #include "lower_dw.h"
 
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "array.h"
 #include "constbits.h"
 #include "dbginfo_t.h"
@@ -38,10 +42,7 @@
 #include "target_t.h"
 #include "tv_t.h"
 #include "type_t.h"
-#include <assert.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#include "bool.h"
 
 /** A map from (op, imode, omode) to Intrinsic functions entities. */
 static set *intrinsic_fkt;

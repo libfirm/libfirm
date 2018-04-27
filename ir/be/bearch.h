@@ -11,8 +11,7 @@
 #ifndef FIRM_BE_BEARCH_H
 #define FIRM_BE_BEARCH_H
 
-#include <stdbool.h>
-
+#include "bool.h"
 #include "firm_types.h"
 #include "jit.h"
 #include "raw_bitset.h"

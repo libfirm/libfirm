@@ -13,8 +13,7 @@
 
 #include "irop.h"
 
-#include <stdbool.h>
-
+#include "bool.h"
 #include "tv.h"
 
 #define get_op_code(op)         get_op_code_(op)

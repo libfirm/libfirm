@@ -12,7 +12,7 @@
 #ifndef FIRM_BE_BEGNUAS_H
 #define FIRM_BE_BEGNUAS_H
 
-#include <stdbool.h>
+#include "bool.h"
 #include "be_types.h"
 #include "bedwarf.h"
 #include "benode.h"

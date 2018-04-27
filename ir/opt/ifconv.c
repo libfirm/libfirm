@@ -8,6 +8,8 @@
  * @brief   If conversion
  * @author  Christoph Mallon
  */
+#include <assert.h>
+
 #include "cdep_t.h"
 #include "debug.h"
 #include "ircons.h"
@@ -19,8 +21,7 @@
 #include "irtools.h"
 #include "pdeq.h"
 #include "target_t.h"
-#include <assert.h>
-#include <stdbool.h>
+#include "bool.h"
 
 /**
  * Environment for if-conversion.

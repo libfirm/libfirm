@@ -7,12 +7,13 @@
 
 #include "target.h"
 
+#include <assert.h>
+
 #include "bearch.h"
 #include "be_types.h"
 #include "compiler.h"
 #include "iroptimize.h"
-#include <assert.h>
-#include <stdbool.h>
+#include "bool.h"
 
 #define ir_target_big_endian()   ir_target_big_endian_()
 

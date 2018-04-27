@@ -12,7 +12,7 @@
 #define FIRM_IR_IRARCH_H
 
 #include "firm_types.h"
-#include <stdbool.h>
+#include "bool.h"
 
 /**
  * The Multiplication replacement can consist of the following instructions.

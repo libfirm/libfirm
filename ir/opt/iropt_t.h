@@ -11,7 +11,7 @@
 #ifndef FIRM_IR_IROPT_T_H
 #define FIRM_IR_IROPT_T_H
 
-#include <stdbool.h>
+#include "bool.h"
 #include "irop_t.h"
 #include "iropt.h"
 #include "irnode_t.h"

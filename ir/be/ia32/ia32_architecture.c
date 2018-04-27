@@ -10,7 +10,6 @@
  */
 #include "ia32_architecture.h"
 
-#include <stdbool.h>
 #include <string.h>
 
 #include "irmode_t.h"
@@ -19,6 +18,7 @@
 #include "irtools.h"
 #include "tv.h"
 #include "util.h"
+#include "bool.h"
 
 #undef NATIVE_X86
 

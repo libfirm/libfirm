@@ -11,8 +11,7 @@
 #ifndef FIRM_BE_BESCHED_H
 #define FIRM_BE_BESCHED_H
 
-#include <stdbool.h>
-
+#include "bool.h"
 #include "beinfo.h"
 #include "irdom.h"
 

@@ -12,7 +12,28 @@
 #define FIRM_STAT_TIMING_H
 
 #include <stddef.h>
-#include <sys/time.h>
+
+#if defined(__linux__) || defined(__APPLE__)
+# include <sys/time.h>
+#elif defined(_WIN32) && !defined(gettimeofday)
+# include <windows.h>
+# include <time.h>
+int gettimeofday(struct timeval *tv, struct timezone *tz)
+{
+	time_t rawtime;
+	LARGE_INTEGER tickPerSecond;
+	LARGE_INTEGER tick;
+
+	time(&rawtime);
+	tv->tv_sec = (long)rawtime;
+	QueryPerformanceFrequency(&tickPerSecond);
+	QueryPerformanceCounter(&tick);
+	tv->tv_usec = (tick.QuadPart % tickPerSecond.QuadPart);
+	return 0;
+}
+#else
+# error Cannot find any system time file
+#endif
 
 typedef unsigned long long timing_ticks_t;
 
@@ -21,17 +42,21 @@ typedef unsigned long long timing_ticks_t;
  * The time is relative to an unspecified start, so it can only be used to
  * measure relative time/timespans.
  */
+#if defined(_MSC_VER)
+static __inline timing_ticks_t timing_ticks(void)
+#else
 static inline timing_ticks_t timing_ticks(void)
+#endif
 {
-#if defined(__i386__) || defined(_M_IX86) || defined(_M_X64)
+#if defined(__i386__) && defined(__GNUC__)
 	unsigned h;
 	unsigned l;
 	__asm__ volatile("rdtsc" : "=a" (l), "=d" (h));
-	return (timing_ticks_t)h << 32 | l;
+	return (timing_ticks_t) h << 32 | l;
 #else
 	struct timeval tval;
 	gettimeofday(&tval, NULL);
-	return (unsigned long) (tval.tv_usec + 1000000 * tval.tv_sec);
+	return (timing_ticks_t) (tval.tv_usec + 1000000 * tval.tv_sec);
 #endif
 }
 

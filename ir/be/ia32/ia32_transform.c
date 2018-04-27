@@ -45,7 +45,7 @@
 #include "x86_address_mode.h"
 #include "x86_cconv.h"
 #include "x86_x87.h"
-#include <stdbool.h>
+#include "bool.h"
 
 /* define this to construct SSE constants instead of load them */
 #undef CONSTRUCT_SSE_CONST

@@ -11,15 +11,16 @@
  */
 #include "heights.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "bool.h"
+#include "util.h"
 #include "irdump.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irnodemap.h"
 #include "list.h"
-#include "util.h"
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 struct ir_heights_t {
 	ir_nodemap      data;

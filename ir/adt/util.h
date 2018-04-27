@@ -12,8 +12,9 @@
 #ifndef FIRM_ADT_UTIL_H
 #define FIRM_ADT_UTIL_H
 
-#include <stdbool.h>
 #include <string.h>
+
+#include "bool.h"
 
 /**
  * Returns size of a static array. Warning: This returns invalid values for

@@ -14,12 +14,13 @@
 #define FIRM_TV_TV_T_H
 
 #include <assert.h>
+#include <stdint.h>
+
 #include "firm_common.h"
 #include "irmode_t.h"
 #include "tv.h"
 #include "strcalc.h"
-#include <stdint.h>
-#include <stdbool.h>
+#include "bool.h"
 
 #define get_tarval_mode(tv)      get_tarval_mode_(tv)
 #define get_tarval_bad()         get_tarval_bad_()

@@ -10,8 +10,7 @@
 #ifndef FIRM_BE_BEASM_H
 #define FIRM_BE_BEASM_H
 
-#include <stdbool.h>
-
+#include "bool.h"
 #include "be_types.h"
 #include "firm_types.h"
 #include "obstack.h"

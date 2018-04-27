@@ -27,7 +27,7 @@
 #include "target_t.h"
 #include "tv_t.h"
 #include "type_t.h"
-#include <stdbool.h>
+#include "bool.h"
 
 typedef bool (*lower_softfloat_func)(ir_node *node);
 

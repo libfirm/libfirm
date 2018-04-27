@@ -11,8 +11,7 @@
 #ifndef FIRM_BE_ARM_ARM_BEARCH_T_H
 #define FIRM_BE_ARM_ARM_BEARCH_T_H
 
-#include <stdbool.h>
-
+#include "bool.h"
 #include "beirg.h"
 #include "firm_types.h"
 

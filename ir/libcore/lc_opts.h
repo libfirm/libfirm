@@ -13,7 +13,8 @@
 #define _LC_OPTS_H
 
 #include <stdio.h>
-#include <stdbool.h>
+
+#include "bool.h"
 
 /**
  * The type of an option.

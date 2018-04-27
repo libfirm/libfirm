@@ -11,18 +11,19 @@
  */
 #include "fltcalc.h"
 
-#include "panic.h"
-#include "strcalc.h"
-#include "xmalloc.h"
 #include <assert.h>
 #include <float.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <math.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "panic.h"
+#include "strcalc.h"
+#include "xmalloc.h"
+#include "bool.h"
 
 /** The number of extra precision rounding bits */
 #define ROUNDING_BITS 2

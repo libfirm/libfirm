@@ -17,7 +17,7 @@
 #ifndef FIRM_ANA_IRLIVECHK_H
 #define FIRM_ANA_IRLIVECHK_H
 
-#include <stdbool.h>
+#include "bool.h"
 #include "irnode_t.h"
 
 typedef enum {

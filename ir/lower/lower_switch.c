@@ -18,7 +18,7 @@
 #include "lowering.h"
 #include "panic.h"
 #include "util.h"
-#include <stdbool.h>
+#include "bool.h"
 
 typedef struct walk_env_t {
 	ir_nodeset_t  processed;

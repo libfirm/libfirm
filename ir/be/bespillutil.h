@@ -13,7 +13,7 @@
 #ifndef FIRM_BE_BESPILLUTIL_H
 #define FIRM_BE_BESPILLUTIL_H
 
-#include <stdbool.h>
+#include "bool.h"
 #include "firm_types.h"
 #include "bera.h"
 

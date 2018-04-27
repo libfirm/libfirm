@@ -8,7 +8,23 @@ endif()
 
 project(libfirm C)
 set(libfirm_VERSION "1.22.1")
+set(libfirm_VERSION_MAJOR "1")
+set(libfirm_VERSION_MINOR "22")
+set(libfirm_VERSION_PATCH "1")
 set(PROJECT_DESCRIPTION "library implementing the intermediate representation Firm")
+
+set(CPACK_PACKAGE_NAME "Libfirm")
+set(CPACK_PACKAGE_VENDOR "Firm Team")
+set(CPACK_PACKAGE_CONTACT "Firm Team")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION})
+set(CPACK_PACKAGE_VERSION ${libfirm_VERSION})
+set(CPACK_PACKAGE_VERSION_MAJOR ${libfirm_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${libfirm_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${libfirm_VERSION_PATCH})
+set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/COPYING)
+set(CPACK_RESOURCE_FILE_README ${CMAKE_SOURCE_DIR}/README.md)
+SET(CPACK_GENERATOR "DEB;RPM;TGZ;ZIP")
+include(CPack)
 
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 
@@ -99,6 +115,9 @@ set(SOURCES
 	ir/be/beutil.c
 	ir/be/bevarargs.c
 	ir/be/beverify.c
+	ir/be/machine_triple.c
+	ir/be/platform.c
+	ir/be/target.c
 	ir/common/debug.c
 	ir/common/debugger.c
 	ir/common/firm.c
@@ -376,6 +395,15 @@ add_backend(amd64
 	ir/be/amd64/amd64_varargs.c
 	ir/be/amd64/amd64_x87.c
 )
+add_backend(mips
+	ir/be/mips/mips_bearch.c
+	ir/be/mips/mips_cconv.c
+	ir/be/mips/mips_emitter.c
+	ir/be/mips/mips_lower64.c
+	ir/be/mips/mips_new_nodes.c
+	ir/be/mips/mips_nodes_attr.c
+	ir/be/mips/mips_transform.c
+)
 add_backend(TEMPLATE
 	ir/be/TEMPLATE/TEMPLATE_bearch.c
 	ir/be/TEMPLATE/TEMPLATE_emitter.c
@@ -406,6 +434,18 @@ if(CMAKE_VERSION VERSION_LESS "3.1")
 else()
 	set(CMAKE_C_STANDARD 99)
 endif()
+
+# C flags
+if(MSVC)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W2")
+else()
+	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -g3 -DDEBUG_libfirm")
+	else()
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -fomit-frame-pointer -DNDEBUG")
+	endif()
+endif()
+
 # Indicate that we build a shared library
 add_definitions(-DFIRM_BUILD -DFIRM_DLL)
 
@@ -415,23 +455,25 @@ add_library(firm ${SOURCES})
 if(UNIX)
 	target_link_libraries(firm LINK_PUBLIC m)
 elseif(WIN32)
-	target_link_libraries(firm LINK_PUBLIC gnurx winmm)
+	target_link_libraries(firm LINK_PUBLIC winmm)
 endif()
 
-enable_testing()
-add_custom_target(
+if(UNIX)
+	enable_testing()
+	add_custom_target(
 		check
 		${CMAKE_CTEST_COMMAND} -C $<CONFIG>
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
-foreach(test ${TESTS})
-	# Replace `/` with a `.` so cmake accepts the target name
-	string(REPLACE "/" "." test-id ${test})
-	add_executable(${test-id} ${test}.c)
-	target_link_libraries(${test-id} LINK_PRIVATE firm)
-	add_test(test-${test-id} ${test-id})
-	add_dependencies(check ${test-id})
-endforeach(test)
+	)
+	foreach(test ${TESTS})
+		# Replace `/` with a `.` so cmake accepts the target name
+		string(REPLACE "/" "." test-id ${test})
+		add_executable(${test-id} ${test}.c)
+		target_link_libraries(${test-id} LINK_PRIVATE firm)
+		add_test(test-${test-id} ${test-id})
+		add_dependencies(check ${test-id})
+	endforeach(test)
+endif()
 
 # Create install target
 set(INSTALL_HEADERS
@@ -465,7 +507,6 @@ set(INSTALL_HEADERS
 	include/libfirm/firm_types.h
 	include/libfirm/heights.h
 	include/libfirm/ident.h
-	include/libfirm/irarch.h
 	include/libfirm/ircgopt.h
 	include/libfirm/ircons.h
 	include/libfirm/irconsconfirm.h

@@ -46,8 +46,13 @@ static void impl_parcopy(const arch_register_class_t *cls,
 	be_lv_t        *lv           = be_get_irg_liveness(irg);
 	const unsigned  n_regs       = cls->n_regs;
 	unsigned        num_restores = 0;
+#if defined(_WIN32)
+	unsigned       *restore_srcs = ALLOCAN(unsigned, n_regs);
+	unsigned       *restore_dsts = ALLOCAN(unsigned, n_regs);
+#else
 	unsigned        restore_srcs[n_regs];
 	unsigned        restore_dsts[n_regs];
+#endif
 
 	/* Step 1: Search register transfer graph for nodes with > 1 outgoing edge.
 	 * Goal: Establish invariant that each node has <= 1 outgoing edges by
@@ -99,7 +104,11 @@ static void impl_parcopy(const arch_register_class_t *cls,
 
 	/* Step 2: Build Perm node and Proj node(s). */
 	unsigned  perm_size = 0;
+#if defined(_WIN32)
+	ir_node **perm_ins = ALLOCAN(ir_node *, n_regs);
+#else
 	ir_node  *perm_ins[n_regs];
+#endif
 	for (unsigned dst = 0; dst < n_regs; ++dst) {
 		const unsigned src = parcopy[dst];
 		if (src != n_regs && src != dst) {
@@ -165,10 +174,17 @@ static void insert_shuffle_code_walker(ir_node *block, void *data)
 	const unsigned               n_regs = cls->n_regs;
 
 	for (int pred_nr = 0; pred_nr < get_irn_arity(block); ++pred_nr) {
+#if defined(_WIN32)
+		unsigned  *parcopy  = ALLOCAN(unsigned, n_regs);
+		unsigned  *n_used   = ALLOCAN(unsigned, n_regs);
+		ir_node  **phis     = ALLOCAN(ir_node *, n_regs);
+		ir_node  **phi_args = ALLOCAN(ir_node *, n_regs);
+#else
 		unsigned  parcopy [n_regs];
 		unsigned  n_used  [n_regs];
 		ir_node  *phis    [n_regs];
 		ir_node  *phi_args[n_regs];
+#endif
 		bitset_t *keep_val = bitset_alloca(n_regs);
 
 		memset(n_used,   0, n_regs * sizeof(n_used[0]));

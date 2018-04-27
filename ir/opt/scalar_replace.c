@@ -10,6 +10,8 @@
  */
 #include "scalar_replace.h"
 
+#include <string.h>
+
 #include "array.h"
 #include "debug.h"
 #include "hashptr.h"
@@ -28,8 +30,7 @@
 #include "tv.h"
 #include "util.h"
 #include "xmalloc.h"
-#include <stdbool.h>
-#include <string.h>
+#include "bool.h"
 
 static unsigned get_vnum(const ir_node *node)
 {

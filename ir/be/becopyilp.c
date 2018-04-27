@@ -11,6 +11,8 @@
  */
 #include "becopyilp_t.h"
 
+#include <stdio.h>
+
 #include "be_t.h"
 #include "becopyopt_t.h"
 #include "beifg.h"
@@ -21,8 +23,7 @@
 #include "lc_opts_enum.h"
 #include "panic.h"
 #include "statev_t.h"
-#include <stdbool.h>
-#include <stdio.h>
+#include "bool.h"
 
 #define DUMP_ILP 1
 

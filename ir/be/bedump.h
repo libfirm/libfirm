@@ -12,8 +12,8 @@
 #define FIRM_BE_BEDUMP_H
 
 #include <stdio.h>
-#include <stdbool.h>
 
+#include "bool.h"
 #include "bearch.h"
 
 /**

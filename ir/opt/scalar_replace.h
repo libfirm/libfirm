@@ -12,7 +12,7 @@
 #define FIRM_OPT_SCALAR_REPLACE_H
 
 #include "firm_types.h"
-#include <stdbool.h>
+#include "bool.h"
 
 /**
  * Returns non-zero, if the address of an entity

@@ -12,8 +12,7 @@
 #ifndef FIRM_IR_EDGES_T_H
 #define FIRM_IR_EDGES_T_H
 
-#include <stdbool.h>
-
+#include "bool.h"
 #include "set.h"
 #include "list.h"
 

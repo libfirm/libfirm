@@ -25,7 +25,7 @@
 #include "target_t.h"
 #include "tv_t.h"
 #include "util.h"
-#include <stdbool.h>
+#include "bool.h"
 
 /** Walker environment. */
 struct ir_intrinsics_map {

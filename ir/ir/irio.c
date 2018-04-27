@@ -10,6 +10,10 @@
  */
 #include "irio_t.h"
 
+#include <ctype.h>
+#include <stdarg.h>
+#include <string.h>
+
 #include "array.h"
 #include "ircons_t.h"
 #include "irflag_t.h"
@@ -23,10 +27,7 @@
 #include "pmap.h"
 #include "tv_t.h"
 #include "util.h"
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <string.h>
+#include "bool.h"
 
 #define SYMERROR ((unsigned) ~0)
 

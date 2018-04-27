@@ -8,6 +8,9 @@
  * @brief    Dead node elimination and Procedure Inlining.
  * @author   Michael Beck, Goetz Lindenmaier
  */
+#include <assert.h>
+#include <limits.h>
+
 #include "analyze_irg_args.h"
 #include "array.h"
 #include "cgana.h"
@@ -37,9 +40,7 @@
 #include "pmap.h"
 #include "pqueue.h"
 #include "xmalloc.h"
-#include <assert.h>
-#include <limits.h>
-#include <stdbool.h>
+#include "bool.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

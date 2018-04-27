@@ -10,6 +10,8 @@
  */
 #include "lower_builtins.h"
 
+#include <stdlib.h>
+
 #include "adt/pmap.h"
 #include "ircons_t.h"
 #include "irgmod.h"
@@ -20,8 +22,7 @@
 #include "panic.h"
 #include "target_t.h"
 #include "util.h"
-#include <stdbool.h>
-#include <stdlib.h>
+#include "bool.h"
 
 static bool dont_lower[ir_bk_last + 1];
 static lower_func lower_va_arg;

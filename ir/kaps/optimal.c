@@ -11,6 +11,8 @@
  */
 #include "kaps.h"
 
+#include <assert.h>
+
 #include "adt/array.h"
 #include "bucket.h"
 #include "matrix.h"
@@ -22,8 +24,7 @@
 #include "pbqp_node_t.h"
 #include "timing.h"
 #include "vector.h"
-#include <assert.h>
-#include <stdbool.h>
+#include "bool.h"
 
 #if KAPS_DUMP
 #include "html_dumper.h"

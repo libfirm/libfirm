@@ -247,7 +247,11 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 	 * FIXME: need to do this per register class...
 	 */
 	size_t const orig_n_outs = ARR_LEN(out_reqs);
+#if defined(_WIN32)
+	uint8_t     *add_pressure = ALLOCAN(uint8_t, ir_target.isa->n_register_classes);
+#else
 	uint8_t      add_pressure[ir_target.isa->n_register_classes];
+#endif
 	memset(add_pressure, 0, sizeof(add_pressure));
 	if (orig_n_outs < orig_n_ins) {
 		bitset_t *const used_ins = bitset_alloca(orig_n_ins);

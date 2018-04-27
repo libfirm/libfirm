@@ -13,6 +13,9 @@
  */
 #include "ia32_new_nodes_t.h"
 
+#include <inttypes.h>
+#include <stdlib.h>
+
 #include "bearch.h"
 #include "bedump.h"
 #include "beinfo.h"
@@ -31,9 +34,7 @@
 #include "irverify_t.h"
 #include "x86_x87.h"
 #include "xmalloc.h"
-#include <inttypes.h>
-#include <stdbool.h>
-#include <stdlib.h>
+#include "bool.h"
 
 struct obstack opcodes_obst;
 

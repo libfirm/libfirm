@@ -14,7 +14,7 @@
 
 #include "irmode.h"
 
-#include <stdbool.h>
+#include "bool.h"
 #include "compiler.h"
 #include "firm_common.h"
 

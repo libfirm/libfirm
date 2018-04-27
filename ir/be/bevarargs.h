@@ -14,7 +14,7 @@
 
 #include "be_types.h"
 #include "firm_types.h"
-#include <stdbool.h>
+#include "bool.h"
 
 /**
  * Default implementation to lower a va_arg node.

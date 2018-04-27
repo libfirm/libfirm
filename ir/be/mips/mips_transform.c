@@ -423,7 +423,11 @@ static ir_node *gen_Call(ir_node *const node)
 	unsigned                    const n_params = get_Call_n_params(node);
 	unsigned                    const n_ins    = p + 1 + n_params;
 	arch_register_req_t const **const reqs     = be_allocate_in_reqs(irg, n_ins);
+#if defined(_WIN32)
+	ir_node                          **ins = ALLOCAN(ir_node *, n_ins);
+#else
 	ir_node                          *ins[n_ins];
+#endif
 
 	ir_entity     *callee;
 	ir_node *const ptr = get_Call_ptr(node);
@@ -442,7 +446,11 @@ static ir_node *gen_Call(ir_node *const node)
 	mips_calling_convention_t cconv;
 	mips_determine_calling_convention(&cconv, fun_type);
 
+#if defined(_WIN32)
+	ir_node **mems = ALLOCAN(ir_node *, 1 + cconv.n_mem_param);
+#else
 	ir_node *mems[1 + cconv.n_mem_param];
+#endif
 	unsigned m = 0;
 
 	ir_node *const mem = get_Call_mem(node);

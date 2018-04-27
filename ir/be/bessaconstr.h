@@ -34,7 +34,7 @@
 #ifndef FIRM_BE_BESSACONSTR_H
 #define FIRM_BE_BESSACONSTR_H
 
-#include <stdbool.h>
+#include "bool.h"
 #include "firm_types.h"
 #include "belive.h"
 #include "pdeq.h"

@@ -7,7 +7,7 @@
 
 #include "target.h"
 
-#include <stdbool.h>
+#include "bool.h"
 #include "compiler.h"
 
 typedef enum object_format_t {

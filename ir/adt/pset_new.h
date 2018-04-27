@@ -17,7 +17,7 @@
 #ifndef FIRM_ADT_PSET_NEW_H
 #define FIRM_ADT_PSET_NEW_H
 
-#include <stdbool.h>
+#include "bool.h"
 
 /** @cond PRIVATE */
 

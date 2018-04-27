@@ -11,6 +11,8 @@
  */
 #include "brute_force.h"
 
+#include <assert.h>
+
 #include "bucket.h"
 #include "kaps.h"
 #include "matrix.h"
@@ -21,8 +23,7 @@
 #include "pbqp_node.h"
 #include "pbqp_node_t.h"
 #include "vector.h"
-#include <assert.h>
-#include <stdbool.h>
+#include "bool.h"
 
 #if KAPS_DUMP
 #include "html_dumper.h"

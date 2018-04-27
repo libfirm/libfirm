@@ -124,7 +124,11 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 	}
 
 	/* parse clobbers */
+#if defined(_WIN32)
+	unsigned *clobber_bits = ALLOCAN(unsigned, ir_target.isa->n_register_classes);
+#else
 	unsigned clobber_bits[ir_target.isa->n_register_classes];
+#endif
 	memset(&clobber_bits, 0, sizeof(clobber_bits));
 	ident **const clobbers = get_ASM_clobbers(node);
 	for (size_t c = 0; c < n_clobbers; ++c) {

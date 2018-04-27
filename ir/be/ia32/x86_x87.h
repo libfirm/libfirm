@@ -12,7 +12,7 @@
 #ifndef FIRM_BE_IA32_X86_X87_H
 #define FIRM_BE_IA32_X86_X87_H
 
-#include <stdbool.h>
+#include "bool.h"
 #include "be_types.h"
 #include "firm_types.h"
 

@@ -25,8 +25,7 @@
 #include "irprintf.h"
 #include "set.h"
 #include "target_t.h"
-#include <stdbool.h>
-#include <stdbool.h>
+#include "bool.h"
 
 typedef struct be_verify_register_pressure_env_t_ {
 	be_lv_t                     *lv;                  /**< Liveness information. */

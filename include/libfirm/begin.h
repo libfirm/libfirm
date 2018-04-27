@@ -34,6 +34,18 @@
 	#define  FIRM_API extern
 #endif
 
+#if defined(_MSC_VER)
+# define inline __inline
+# define restrict __restrict
+# if _MSC_VER < 1900
+#   ifdef __FUNCTION__
+#     define __func__ __FUNCTION__
+#   else
+#     define __func__ ((const char *) 0)
+#   endif
+# endif
+#endif
+
 #endif
 
 /* mark declarations as C function (note that we always need this,

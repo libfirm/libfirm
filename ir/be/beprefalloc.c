@@ -22,6 +22,9 @@
  * TODO:
  *  - make use of free registers in the permute_values code
  */
+#include <float.h>
+#include <math.h>
+
 #include "be.h"
 #include "bechordal_t.h"
 #include "beirg.h"
@@ -55,9 +58,7 @@
 #include "target_t.h"
 #include "unionfind.h"
 #include "util.h"
-#include <float.h>
-#include <math.h>
-#include <stdbool.h>
+#include "bool.h"
 
 #define USE_FACTOR                     1.0f
 #define DEF_FACTOR                     1.0f

@@ -12,9 +12,10 @@
 #define FIRM_TV_STRCALC_H
 
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdlib.h>
+
 #include "firm_types.h"
+#include "bool.h"
 
 #define SC_BITS 8
 

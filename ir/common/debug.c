@@ -148,7 +148,9 @@ void _firm_dbg_print(const firm_dbg_module_t *mod, unsigned mask, const char *fm
 
 #else /* DEBUG_libfirm */
 
+#include "funcattr.h"
+
 /* some picky compiler don't allow empty files */
-static int __attribute__((unused)) dummy;
+static int FIRM_UNUSED dummy;
 
 #endif /* DEBUG_libfirm */

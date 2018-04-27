@@ -13,7 +13,7 @@
 #define FIRM_ANA_IRMEMORY_T_H
 
 #include "irmemory.h"
-#include <stdbool.h>
+#include "bool.h"
 
 /**
  * One-time inititialization of the memory< disambiguator.

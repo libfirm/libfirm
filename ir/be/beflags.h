@@ -13,7 +13,7 @@
 
 #include "be_types.h"
 #include "firm_types.h"
-#include <stdbool.h>
+#include "bool.h"
 
 /**
  * Callback which rematerializes (=duplicates) a machine node.

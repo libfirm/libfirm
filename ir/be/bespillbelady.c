@@ -32,7 +32,7 @@
 #include "obst.h"
 #include "statev_t.h"
 #include "util.h"
-#include <stdbool.h>
+#include "bool.h"
 
 #define DBG_SPILL     1
 #define DBG_WSETS     2

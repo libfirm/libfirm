@@ -29,6 +29,10 @@
  */
 #include "type_t.h"
 
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "array.h"
 #include "bitfiddle.h"
 #include "dbginfo.h"
@@ -42,10 +46,7 @@
 #include "tv_t.h"
 #include "util.h"
 #include "xmalloc.h"
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
+#include "bool.h"
 
 static ir_type *new_type(tp_opcode opcode, size_t attr_size, ir_mode *mode);
 static void free_compound_entities(ir_type *type);

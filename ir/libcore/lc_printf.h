@@ -14,11 +14,11 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 #include <obstack.h>
 
 #include "lc_appendable.h"
+#include "bool.h"
 
 typedef struct lc_arg_occ_t {
 	int width;                 /**< The width, or 0 if not given. */
