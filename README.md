@@ -39,6 +39,7 @@ familiar for people preparing packages for distribution.
 Repository Structure
 --------------------
 
+```
   include/libfirm/   # public API
   ir/                # nearly all the code
   ir/adt/            # containers and other generic data types
@@ -59,6 +60,7 @@ Repository Structure
   scripts/           # generator scripts, firm node specification
   unittests/         # unittests
   build/             # build system generates stuff here
+```
 
 Further Information and Contact
 -------------------------------
