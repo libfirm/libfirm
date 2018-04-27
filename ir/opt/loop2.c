@@ -169,7 +169,7 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 				++new_arity;
 			}
 		}
-		ir_node **const in = ALLOCAN(ir_node *, 1);
+		ir_node **const in = ALLOCAN(ir_node *, new_arity);
 		for (int i = 0, j = 0; i < arity; ++i) {
 			if (get_irn_link(get_irn_n(header, i))) {
 				ir_node *const pred     = get_irn_n(node, i);
