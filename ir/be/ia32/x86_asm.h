@@ -51,9 +51,6 @@ typedef struct x86_asm_constraint_t {
 
 typedef x86_asm_constraint_t x86_asm_constraint_list_t[128];
 
-typedef void (*emit_register_func)(const arch_register_t *reg, char modifier,
-                                   ir_mode *mode);
-
 arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *additional_clobber_names, char const *name);
 
 ir_node *x86_match_ASM(ir_node const *node, x86_clobber_name_t const *names, x86_asm_constraint_list_t const *constraints);
