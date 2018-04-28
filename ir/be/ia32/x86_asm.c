@@ -106,8 +106,7 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 	ir_asm_constraint const *const out_constraints   = get_ASM_output_constraints(node);
 
 	/* construct output constraints */
-	size_t              const   n_clobbers = get_ASM_n_clobbers(node);
-	arch_register_req_t const **out_reqs   = NEW_ARR_F(arch_register_req_t const*, 0);
+	arch_register_req_t const **out_reqs = NEW_ARR_F(arch_register_req_t const*, 0);
 
 	for (unsigned o = 0; o < n_out_constraints; ++o) {
 		ir_asm_constraint const *const constraint = &out_constraints[o];
@@ -121,22 +120,6 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 
 		x86_asm_operand_t *const op = &operands[constraint->pos];
 		set_operand_if_invalid(op, BE_ASM_OPERAND_OUTPUT_VALUE, o, constraint);
-	}
-
-	/* parse clobbers */
-	unsigned clobber_bits[ir_target.isa->n_register_classes];
-	memset(&clobber_bits, 0, sizeof(clobber_bits));
-	ident **const clobbers = get_ASM_clobbers(node);
-	for (size_t c = 0; c < n_clobbers; ++c) {
-		char            const *const clobber = get_id_str(clobbers[c]);
-		arch_register_t const *const reg     = x86_parse_clobber(additional_clobber_names, clobber);
-		if (reg != NULL) {
-			assert(reg->cls->n_regs <= sizeof(unsigned) * 8);
-			/* x87 registers may still be used as input, even if clobbered. */
-			if (reg->cls != &ia32_reg_classes[CLASS_ia32_fp])
-				clobber_bits[reg->cls->index] |= 1U << reg->index;
-			ARR_APP1(arch_register_req_t const*, out_reqs, reg->single_req);
-		}
 	}
 
 	/* inputs + input constraints */
@@ -159,25 +142,13 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 			continue;
 		}
 
-		arch_register_class_t const *const cls = parsed_constraint.cls;
-		if (cls != NULL) {
-			unsigned const r_clobber_bits = clobber_bits[cls->index];
-			if (r_clobber_bits != 0) {
-				if (parsed_constraint.all_registers_allowed) {
-					parsed_constraint.all_registers_allowed = false;
-					be_get_allocatable_regs(irg, cls, &parsed_constraint.allowed_registers);
-				}
-				parsed_constraint.allowed_registers &= ~r_clobber_bits;
-			}
-		}
-
 		ir_node            *const  new_pred = be_transform_node(pred);
 		unsigned            const  in_pos   = ARR_LEN(in_reqs);
 		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, in_pos);
 
 		set_operand_if_invalid(op, BE_ASM_OPERAND_INPUT_VALUE, in_pos, constraint);
 
-		if (cls == NULL && parsed_constraint.same_as < 0) {
+		if (!parsed_constraint.cls && parsed_constraint.same_as < 0) {
 			op->kind = BE_ASM_OPERAND_MEMORY;
 			req = arch_get_irn_register_req(new_pred)->cls->class_req;
 		} else if (parsed_constraint.memory_possible) {
@@ -186,6 +157,46 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 
 		ARR_APP1(arch_register_req_t const*, in_reqs, req);
 		ARR_APP1(ir_node*, in, new_pred);
+	}
+
+	size_t const n_clobbers = get_ASM_n_clobbers(node);
+	if (n_clobbers != 0) {
+		/* Collect clobbers and add them as outputs. */
+		unsigned clobber_bits[ir_target.isa->n_register_classes];
+		memset(&clobber_bits, 0, sizeof(clobber_bits));
+		ident **const clobbers = get_ASM_clobbers(node);
+		for (size_t c = 0; c < n_clobbers; ++c) {
+			char            const *const clobber = get_id_str(clobbers[c]);
+			arch_register_t const *const reg     = x86_parse_clobber(additional_clobber_names, clobber);
+			if (reg) {
+				assert(reg->cls->n_regs <= sizeof(unsigned) * 8);
+				/* x87 registers may still be used as input, even if clobbered. */
+				if (reg->cls != &ia32_reg_classes[CLASS_ia32_fp])
+					clobber_bits[reg->cls->index] |= 1U << reg->index;
+				ARR_APP1(arch_register_req_t const*, out_reqs, reg->single_req);
+			}
+		}
+
+		/* Restrict inputs by clobbers. */
+		for (size_t i = 0, n = ARR_LEN(in_reqs); i != n; ++i) {
+			arch_register_req_t   const *const req = in_reqs[i];
+			arch_register_class_t const *const cls = req->cls;
+			assert(cls->index < ARRAY_SIZE(clobber_bits));
+			unsigned const clobber = clobber_bits[cls->index];
+			if (clobber != 0) {
+				arch_register_req_t *const new_req = (arch_register_req_t*)obstack_alloc(obst, sizeof(*new_req) + sizeof(unsigned));
+				unsigned            *const limited = (unsigned*)(new_req + 1);
+				if (req->limited) {
+					*limited = *req->limited;
+				} else {
+					be_get_allocatable_regs(irg, cls, limited);
+				}
+				*limited        &= ~clobber;
+				*new_req         = *req;
+				new_req->limited = limited;
+				in_reqs[i] = new_req;
+			}
+		}
 	}
 
 	return be_make_asm(node, in, in_reqs, out_reqs, operands);
