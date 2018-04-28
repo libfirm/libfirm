@@ -210,33 +210,31 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 	unsigned                 const n_out_constraints = get_ASM_n_output_constraints(node);
 	for (unsigned o = 0; o != n_out_constraints; ++o) {
 		ir_asm_constraint const *const constraint = &out_constraints[o];
-		if (!strchr(get_id_str(constraint->constraint), '&'))
-			continue;
-		arch_register_req_t const *const oreq = out_reqs[o];
+		if (strchr(get_id_str(constraint->constraint), '&')) {
+			arch_register_req_t const *const oreq = out_reqs[o];
 
-		unsigned different = 0;
-		for (unsigned i = 0; i != orig_n_ins; ++i) {
-			if (in_reqs[i]->cls == oreq->cls)
-				different |= 1U << i;
-		}
+			unsigned different = 0;
+			for (unsigned i = 0; i != orig_n_ins; ++i) {
+				if (in_reqs[i]->cls == oreq->cls)
+					different |= 1U << i;
+			}
 
-		if (different != 0) {
-			arch_register_req_t *const req = OALLOCZ(obst, arch_register_req_t);
-			*req                   = *oreq;
-			req->must_be_different = different;
-			out_reqs[o]            = req;
+			if (different != 0) {
+				arch_register_req_t *const req = OALLOCZ(obst, arch_register_req_t);
+				*req                   = *oreq;
+				req->must_be_different = different;
+				out_reqs[o]            = req;
+			}
 		}
 	}
-
-	ir_node *const block = be_transform_nodes_block(node);
 
 	/* Attempt to make ASM node register pressure faithful.
 	 * (This does not work for complicated cases yet!)
 	 *
 	 * Algorithm: Check if there are fewer inputs or outputs (I will call this
 	 * the smaller list). Then try to match each constraint of the smaller list
-	 * to 1 of the other list. If we can't match it, then we have to add a dummy
-	 * input/output to the other list
+	 * to 1 of the other list. If we can't match it, then we add additional
+	 * register pressure.
 	 *
 	 * FIXME: This is still broken in lots of cases. But at least better than
 	 *        before...
@@ -249,21 +247,15 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 		bitset_t *const used_ins = bitset_alloca(orig_n_ins);
 		for (size_t o = 0; o < orig_n_outs; ++o) {
 			arch_register_req_t const *const outreq = out_reqs[o];
-			if (match_requirement(in_reqs, orig_n_ins, used_ins, outreq))
-				continue;
-
-			unsigned index = outreq->cls->index;
-			add_pressure[index]++;
+			if (!match_requirement(in_reqs, orig_n_ins, used_ins, outreq))
+				add_pressure[outreq->cls->index]++;
 		}
 	} else {
 		bitset_t *const used_outs = bitset_alloca(orig_n_outs);
 		for (unsigned i = 0; i < orig_n_ins; ++i) {
 			arch_register_req_t const *const inreq = in_reqs[i];
-			if (match_requirement(out_reqs, orig_n_outs, used_outs, inreq))
-				continue;
-
-			unsigned index = inreq->cls->index;
-			add_pressure[index]++;
+			if (!match_requirement(out_reqs, orig_n_outs, used_outs, inreq))
+				add_pressure[inreq->cls->index]++;
 		}
 	}
 
@@ -273,17 +265,18 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 	ARR_APP1(arch_register_req_t const*, out_reqs, arch_memory_req);
 
 	dbg_info                   *const dbgi        = get_irn_dbg_info(node);
+	ir_node                    *const block       = be_transform_nodes_block(node);
 	unsigned                    const n_ins       = ARR_LEN(in);
 	unsigned                    const n_outs      = ARR_LEN(out_reqs);
 	ident                      *const text        = get_ASM_text(node);
 	arch_register_req_t const **const dup_in_reqs = DUP_ARR_D(arch_register_req_t const*, obst, in_reqs);
 	ir_node                    *const new_node    = be_new_Asm(dbgi, block, n_ins, in, dup_in_reqs, n_outs, text, operands);
-	for (unsigned i = 0, n = ir_target.isa->n_register_classes; i < n; ++i) {
-		if (add_pressure[i] == 0)
-			continue;
-		arch_register_class_t const *const cls
-			= &ir_target.isa->register_classes[i];
-		arch_set_additional_pressure(new_node, cls, add_pressure[i]);
+
+	for (unsigned i = 0; i != ARRAY_SIZE(add_pressure); ++i) {
+		if (add_pressure[i] != 0) {
+			arch_register_class_t const *const cls = &ir_target.isa->register_classes[i];
+			arch_set_additional_pressure(new_node, cls, add_pressure[i]);
+		}
 	}
 
 	backend_info_t *const info = be_get_info(new_node);
