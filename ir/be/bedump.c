@@ -16,6 +16,8 @@
 #include "irdump_t.h"
 #include "irgwalk.h"
 #include "irprintf.h"
+#include "target_t.h"
+#include "util.h"
 
 static void dump_ifg_nodes(FILE *F, const be_ifg_t *ifg)
 {
@@ -240,6 +242,14 @@ void be_dump_reqs_and_registers(FILE *const F, ir_node const *const node)
 		}
 	} else {
 		fputs("output requirements missing\n", F);
+	}
+
+	for (size_t i = 0; i != ARRAY_SIZE(info->add_pressure); ++i) {
+		uint8_t const add = info->add_pressure[i];
+		if (add != 0) {
+			char const *const name = ir_target.isa->register_classes[i].name;
+			fprintf(F, "additional pressure %s = %d\n", name, add);
+		}
 	}
 
 	fputs("flags =", F);
