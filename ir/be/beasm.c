@@ -64,10 +64,6 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 	constraint->same_as = -1;
 
 	char const *i = get_id_str(constraint_text);
-	/* a memory constraint: no need to do anything in backend about it
-	 * (dependencies are already respected by the memory edge of the node) */
-	if (*i == '\0')
-		return;
 
 	/* TODO: improve error messages with node and source info. (As users can
 	 * easily hit these) */
