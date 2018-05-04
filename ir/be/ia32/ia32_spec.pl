@@ -49,6 +49,7 @@ $mode_fpcw  = "ia32_mode_fpcw";
 		]
 	},
 	fp => {
+		flags => "allow_clobber_input",
 		mode => $mode_fp87,
 		registers => [
 			{ name => "st0", realname => "st",    encoding => 0, dwarf => 11 },

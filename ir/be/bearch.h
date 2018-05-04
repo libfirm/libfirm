@@ -194,6 +194,8 @@ struct arch_register_class_t {
 	                                        class. */
 	/** don't do register allocation for this class */
 	bool                       manual_ra : 1;
+	/** Still allow clobbered registers as input. */
+	bool                       allow_clobber_input : 1;
 };
 
 static inline const arch_register_t *arch_register_for_index(

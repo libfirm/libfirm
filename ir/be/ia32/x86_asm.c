@@ -158,8 +158,7 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t cons
 			arch_register_t const *const reg     = be_parse_register_name(clobber);
 			if (reg) {
 				assert(reg->cls->n_regs <= sizeof(unsigned) * 8);
-				/* x87 registers may still be used as input, even if clobbered. */
-				if (reg->cls != &ia32_reg_classes[CLASS_ia32_fp])
+				if (!reg->cls->allow_clobber_input)
 					clobber_bits[reg->cls->index] |= 1U << reg->index;
 				ARR_APP1(arch_register_req_t const*, out_reqs, reg->single_req);
 			}
