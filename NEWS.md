@@ -56,6 +56,7 @@ libFirm 1.22.1 (2016-01-07)
 * ia32: Improve code generation for 64 bit multiplication if the lower half of a factor is 0 or 1
 * amd64: Add peephole optimization `cmp $0, %r` -> `test %r, %r`
 * amd64, ia32: Support the asm operand modifiers `A`, `P`, `X` and `p`
+* be: Accept `#` and `%` as register name prefix for gcc compatibility
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)

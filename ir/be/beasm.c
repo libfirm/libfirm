@@ -384,8 +384,13 @@ bool be_is_valid_asm_operand_kind(ir_node const *const node, char const modifier
 	return true;
 }
 
-arch_register_t const *be_parse_register_name(char const *const clobber)
+arch_register_t const *be_parse_register_name(char const *clobber)
 {
+	/* GCC always accepts '#' and '%' as register name prefix.
+	 * See strip_reg_name() in varasm.c. */
+	if (clobber[0] == '#' || clobber[0] == '%')
+		clobber += 1;
+
 	arch_register_t const *const reg = arch_find_register(clobber);
 	if (reg)
 		return reg;
