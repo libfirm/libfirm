@@ -53,4 +53,11 @@ void be_emit_asm(ir_node const *asmn, be_emit_asm_operand_func *emit_asm_operand
 
 bool be_is_valid_asm_operand_kind(ir_node const *node, char modifier, unsigned pos, be_asm_operand_kind_t have, char const *mod_any, char const *mod_imm, char const *mod_mem);
 
+struct be_register_name_t {
+	char const *name;
+	unsigned    index;
+};
+
+arch_register_t const *be_parse_register_name(char const *clobber);
+
 #endif

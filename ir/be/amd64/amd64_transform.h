@@ -14,7 +14,7 @@
 #include "x86_address_mode.h"
 #include "x86_asm.h"
 
-extern const x86_clobber_name_t        amd64_additional_clobber_names[];
+extern const be_register_name_t        amd64_additional_reg_names[];
 extern const x86_asm_constraint_list_t amd64_asm_constraints;
 
 extern arch_register_req_t const         amd64_requirement_gp_same_0;

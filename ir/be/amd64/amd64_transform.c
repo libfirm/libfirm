@@ -42,7 +42,7 @@ static be_stack_env_t  stack_env;
 
 /** we don't have a concept of aliasing registers, so enumerate them
  * manually for the asm nodes. */
-const x86_clobber_name_t amd64_additional_clobber_names[] = {
+be_register_name_t const amd64_additional_reg_names[] = {
 	{ "al", REG_RAX }, { "ah", REG_RAX }, { "ax", REG_RAX }, { "eax", REG_RAX },
 	{ "bl", REG_RBX }, { "bh", REG_RBX }, { "bx", REG_RBX }, { "ebx", REG_RBX },
 	{ "cl", REG_RCX }, { "ch", REG_RCX }, { "cx", REG_RCX }, { "ecx", REG_RCX },
@@ -2144,8 +2144,7 @@ static ir_node *gen_Cond(ir_node *const node)
 
 static ir_node *gen_ASM(ir_node *const node)
 {
-	return x86_match_ASM(node, amd64_additional_clobber_names,
-	                     &amd64_asm_constraints);
+	return x86_match_ASM(node, &amd64_asm_constraints);
 }
 
 static ir_node *gen_Phi(ir_node *const node)

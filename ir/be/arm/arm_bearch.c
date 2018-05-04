@@ -318,7 +318,6 @@ arch_isa_if_t const arm_isa_if = {
 	.finish                = arm_finish,
 	.generate_code         = arm_generate_code,
 	.lower_for_target      = arm_lower_for_target,
-	.is_valid_clobber      = be_default_is_valid_clobber,
 	.handle_intrinsics     = arm_handle_intrinsics,
 	.get_op_estimated_cost = arm_get_op_estimated_cost,
 };

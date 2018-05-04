@@ -1462,11 +1462,6 @@ static ir_jit_function_t *ia32_jit_compile(ir_jit_segment_t *const segment,
 	return res;
 }
 
-static int ia32_is_valid_clobber(const char *clobber)
-{
-	return x86_parse_clobber(ia32_additional_clobber_names, clobber) != NULL;
-}
-
 static bool is_float(ir_type const *const type)
 {
 	return is_atomic_type(type) && mode_is_float(get_type_mode(type));
@@ -1672,7 +1667,7 @@ arch_isa_if_t const ia32_isa_if = {
 	.jit_compile           = ia32_jit_compile,
 	.emit_function         = ia32_emit_jit_function,
 	.lower_for_target      = ia32_lower_for_target,
-	.is_valid_clobber      = ia32_is_valid_clobber,
+	.additional_reg_names  = ia32_additional_reg_names,
 	.get_op_estimated_cost = ia32_get_op_estimated_cost,
 };
 

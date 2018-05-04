@@ -30,11 +30,6 @@ typedef struct x86_asm_operand_t {
 	} u;
 } x86_asm_operand_t;
 
-typedef struct x86_clobber_name_t {
-	const char *name;
-	unsigned    index;
-} x86_clobber_name_t;
-
 typedef enum x86_asm_constraint_kind_t {
 	MATCH_INVALID,
 	MATCH_REG,
@@ -51,9 +46,7 @@ typedef struct x86_asm_constraint_t {
 
 typedef x86_asm_constraint_t x86_asm_constraint_list_t[128];
 
-arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *additional_clobber_names, char const *name);
-
-ir_node *x86_match_ASM(ir_node const *node, x86_clobber_name_t const *names, x86_asm_constraint_list_t const *constraints);
+ir_node *x86_match_ASM(ir_node const *node, x86_asm_constraint_list_t const *constraints);
 
 void x86_set_be_asm_constraint_support(const x86_asm_constraint_list_t *constraints);
 

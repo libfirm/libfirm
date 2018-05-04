@@ -61,7 +61,7 @@ static ir_node              *initial_va_list;
 
 /** we don't have a concept of aliasing registers, so enumerate them
  * manually for the asm nodes. */
-const x86_clobber_name_t ia32_additional_clobber_names[] = {
+be_register_name_t const ia32_additional_reg_names[] = {
 	{ "al", REG_EAX }, { "ah", REG_EAX }, { "ax", REG_EAX },
 	{ "bl", REG_EBX }, { "bh", REG_EBX }, { "bx", REG_EBX },
 	{ "cl", REG_ECX }, { "ch", REG_ECX }, { "cx", REG_ECX },
@@ -5437,7 +5437,7 @@ ir_node *ia32_new_IncSP(ir_node *block, ir_node *old_sp, int offset,
 static ir_node *gen_ASM(ir_node *node)
 {
 	ia32_request_x87_sim(get_irn_irg(node)); /* asm might have fp operands. */
-	return x86_match_ASM(node, ia32_additional_clobber_names, &ia32_asm_constraints);
+	return x86_match_ASM(node, &ia32_asm_constraints);
 }
 
 static ir_node *gen_Proj_Proj(ir_node *node)

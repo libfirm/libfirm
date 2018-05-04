@@ -565,7 +565,6 @@ arch_isa_if_t const sparc_isa_if = {
 	.finish                = sparc_finish,
 	.generate_code         = sparc_generate_code,
 	.lower_for_target      = sparc_lower_for_target,
-	.is_valid_clobber      = be_default_is_valid_clobber,
 	.handle_intrinsics     = sparc_handle_intrinsics,
 	.get_op_estimated_cost = sparc_get_op_estimated_cost,
 };

@@ -10,6 +10,7 @@
  * @date        25.11.2004
  */
 #include "be_t.h"
+#include "beasm.h"
 #include "bechordal_t.h"
 #include "bediagnostic.h"
 #include "beemitter.h"
@@ -194,7 +195,7 @@ int be_is_valid_clobber(const char *clobber)
 	if (streq(clobber, "cc"))
 		return 1;
 
-	return ir_target.isa->is_valid_clobber(clobber);
+	return be_parse_register_name(clobber) != NULL;
 }
 
 static void be_opt_register(void)

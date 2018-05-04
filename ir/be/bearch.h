@@ -299,10 +299,9 @@ struct arch_isa_if_t {
 	void (*lower_for_target)(void);
 
 	/**
-	 * returns true if the string is a valid clobbered (register) in this
-	 * backend
+	 * Additional register names in addition to the regular register names.
 	 */
-	int (*is_valid_clobber)(const char *clobber);
+	be_register_name_t const *additional_reg_names;
 
 	/**
 	 * Called directly after initialization. Backend should handle all
@@ -386,8 +385,6 @@ bool arch_reg_is_allocatable(const arch_register_req_t *req,
                              const arch_register_t *reg);
 
 void arch_copy_irn_out_info(ir_node *dst, unsigned dst_pos, ir_node const *src);
-
-int be_default_is_valid_clobber(char const *clobber);
 
 arch_register_req_t *be_create_cls_req(ir_graph *irg, arch_register_class_t const *cls, unsigned char width);
 

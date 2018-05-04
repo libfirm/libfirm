@@ -383,3 +383,20 @@ bool be_is_valid_asm_operand_kind(ir_node const *const node, char const modifier
 	}
 	return true;
 }
+
+arch_register_t const *be_parse_register_name(char const *const clobber)
+{
+	arch_register_t const *const reg = arch_find_register(clobber);
+	if (reg)
+		return reg;
+
+	be_register_name_t const *const add = ir_target.isa->additional_reg_names;
+	if (add) {
+		for (be_register_name_t const *i = add; i->name; ++i) {
+			if (streq(i->name, clobber))
+				return &ir_target.isa->registers[i->index];
+		}
+	}
+
+	return NULL;
+}

@@ -156,7 +156,6 @@ arch_isa_if_t const TEMPLATE_isa_if = {
 	.finish                = TEMPLATE_finish,
 	.generate_code         = TEMPLATE_generate_code,
 	.lower_for_target      = TEMPLATE_lower_for_target,
-	.is_valid_clobber      = be_default_is_valid_clobber,
 	.get_op_estimated_cost = TEMPLATE_get_op_estimated_cost,
 };
 

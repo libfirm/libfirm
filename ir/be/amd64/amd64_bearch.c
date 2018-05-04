@@ -756,11 +756,6 @@ static void amd64_lower_for_target(void)
 	be_after_irp_transform("lower-builtins");
 }
 
-static int amd64_is_valid_clobber(const char *clobber)
-{
-	return x86_parse_clobber(amd64_additional_clobber_names, clobber) != NULL;
-}
-
 static void amd64_init_types(void)
 {
 	/* use an int128 mode for xmm registers for now, so that firm allows us to
@@ -805,7 +800,7 @@ arch_isa_if_t const amd64_isa_if = {
 	.finish                = amd64_finish,
 	.generate_code         = amd64_generate_code,
 	.lower_for_target      = amd64_lower_for_target,
-	.is_valid_clobber      = amd64_is_valid_clobber,
+	.additional_reg_names  = amd64_additional_reg_names,
 	.handle_intrinsics     = amd64_handle_intrinsics,
 	.get_op_estimated_cost = amd64_get_op_estimated_cost,
 };

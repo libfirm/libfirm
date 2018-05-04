@@ -21,18 +21,6 @@
 #include "target_t.h"
 #include <assert.h>
 
-arch_register_t const *x86_parse_clobber(x86_clobber_name_t const *const additional_clobber_names, char const *const clobber)
-{
-	arch_register_t const *const reg = arch_find_register(clobber);
-	if (reg)
-		return reg;
-	for (x86_clobber_name_t const *i = additional_clobber_names; i->name; ++i) {
-		if (streq(i->name, clobber))
-			return &ir_target.isa->registers[i->index];
-	}
-	return NULL;
-}
-
 static void x86_parse_constraint_letter(void const *const env, be_asm_constraint_t* const c, char const l)
 {
 	x86_asm_constraint_list_t const *const constraints = (x86_asm_constraint_list_t const*)env;
@@ -93,7 +81,7 @@ static void set_operand_if_invalid(x86_asm_operand_t *const op, be_asm_operand_k
 	}
 }
 
-ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *const additional_clobber_names, x86_asm_constraint_list_t const *const constraints)
+ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t const *const constraints)
 {
 	unsigned           const n_operands = be_count_asm_operands(node);
 	ir_graph          *const irg        = get_irn_irg(node);
@@ -167,7 +155,7 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_clobber_name_t const *cons
 		ident **const clobbers = get_ASM_clobbers(node);
 		for (size_t c = 0; c < n_clobbers; ++c) {
 			char            const *const clobber = get_id_str(clobbers[c]);
-			arch_register_t const *const reg     = x86_parse_clobber(additional_clobber_names, clobber);
+			arch_register_t const *const reg     = be_parse_register_name(clobber);
 			if (reg) {
 				assert(reg->cls->n_regs <= sizeof(unsigned) * 8);
 				/* x87 registers may still be used as input, even if clobbered. */

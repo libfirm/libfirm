@@ -154,12 +154,6 @@ void arch_copy_irn_out_info(ir_node *const dst, unsigned const dst_pos, ir_node 
 	*dst_info = *src_info;
 }
 
-int be_default_is_valid_clobber(char const *const clobber)
-{
-	(void)clobber;
-	return false;
-}
-
 arch_register_req_t *be_create_cls_req(ir_graph *const irg, arch_register_class_t const *const cls, unsigned char const width)
 {
 	struct obstack      *const obst = be_get_be_obst(irg);
