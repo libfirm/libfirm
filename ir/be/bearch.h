@@ -306,6 +306,11 @@ struct arch_isa_if_t {
 	be_register_name_t const *additional_reg_names;
 
 	/**
+	 * Architecture-specific name prefix for registers.
+	 */
+	char register_prefix;
+
+	/**
 	 * Called directly after initialization. Backend should handle all
 	 * intrinsics here.
 	 */
