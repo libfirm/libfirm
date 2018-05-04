@@ -54,6 +54,7 @@ $mode_x87   = "x86_mode_E";
 		]
 	},
 	x87 => {
+		flags => "allow_clobber_input",
 		mode => $mode_x87,
 		registers => [
 			{ name => "st0", realname => "st",    encoding => 0, dwarf => 11 },
