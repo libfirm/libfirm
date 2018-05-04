@@ -110,10 +110,9 @@ EOF
 
 	$classdef .= "\t$class_enum,\n";
 
-	my $regs      = $class->{registers};
-	my $numregs   = @$regs;
-	my $manual_ra = has_flag("manual_ra", $class->{flags});
-	my $uname     = uc($regs->[0]->{name});
+	my $regs    = $class->{registers};
+	my $numregs = @$regs;
+	my $uname   = uc($regs->[0]->{name});
 	$regclasses .= <<EOF;
 	{
 		.name      = \"$arch_class_name\",
@@ -122,9 +121,15 @@ EOF
 		.class_req = &$class_req,
 		.index     = $class_enum,
 		.n_regs    = $numregs,
-		.manual_ra = $manual_ra,
-	},
 EOF
+
+	if (defined($class->{flags})) {
+		foreach my $flag ($class->{flags}) {
+			$regclasses .= "\t\t.$flag = true,\n";
+		}
+	}
+
+	$regclasses .= "\t},\n";
 
 	$reginit .= "\t$arch\_reg_classes[$class_enum].mode = $class_mode;\n";
 	$regdef2 .= "enum {\n";
