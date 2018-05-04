@@ -785,6 +785,28 @@ static unsigned amd64_get_op_estimated_cost(const ir_node *node)
 	return 1;
 }
 
+/** we don't have a concept of aliasing registers, so enumerate them
+ * manually for the asm nodes. */
+static be_register_name_t const amd64_additional_reg_names[] = {
+	{ "al", REG_RAX }, { "ah", REG_RAX }, { "ax", REG_RAX }, { "eax", REG_RAX },
+	{ "bl", REG_RBX }, { "bh", REG_RBX }, { "bx", REG_RBX }, { "ebx", REG_RBX },
+	{ "cl", REG_RCX }, { "ch", REG_RCX }, { "cx", REG_RCX }, { "ecx", REG_RCX },
+	{ "dl", REG_RDX }, { "dh", REG_RDX }, { "dx", REG_RDX }, { "edx", REG_RDX },
+	{ "sil",  REG_RSI }, { "si",   REG_RSI }, { "esi",  REG_RSI },
+	{ "dil",  REG_RDI }, { "di",   REG_RDI }, { "edi",  REG_RDI },
+	{ "bpl",  REG_RBP }, { "bp",   REG_RBP }, { "ebp",  REG_RBP },
+	{ "spl",  REG_RSP }, { "sp",   REG_RSP }, { "esp",  REG_RSP },
+	{ "r8b",  REG_R8  }, { "r8w",  REG_R8  }, { "r8d",  REG_R8  },
+	{ "r9b",  REG_R9  }, { "r9w",  REG_R9  }, { "r9d",  REG_R9  },
+	{ "r10b", REG_R10 }, { "r10w", REG_R10 }, { "r10d", REG_R10 },
+	{ "r11b", REG_R11 }, { "r11w", REG_R11 }, { "r11d", REG_R11 },
+	{ "r12b", REG_R12 }, { "r12w", REG_R12 }, { "r12d", REG_R12 },
+	{ "r13b", REG_R13 }, { "r13w", REG_R13 }, { "r13d", REG_R13 },
+	{ "r14b", REG_R14 }, { "r14w", REG_R14 }, { "r14d", REG_R14 },
+	{ "r15b", REG_R15 }, { "r15w", REG_R15 }, { "r15d", REG_R15 },
+	{ NULL, ~0u }
+};
+
 arch_isa_if_t const amd64_isa_if = {
 	.name                  = "amd64",
 	.pointer_size          = 8,

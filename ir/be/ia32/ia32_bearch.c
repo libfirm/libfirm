@@ -1650,6 +1650,17 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_LAST
 };
 
+/** we don't have a concept of aliasing registers, so enumerate them
+ * manually for the asm nodes. */
+static be_register_name_t const ia32_additional_reg_names[] = {
+	{ "al", REG_EAX }, { "ah", REG_EAX }, { "ax", REG_EAX },
+	{ "bl", REG_EBX }, { "bh", REG_EBX }, { "bx", REG_EBX },
+	{ "cl", REG_ECX }, { "ch", REG_ECX }, { "cx", REG_ECX },
+	{ "dl", REG_EDX }, { "dh", REG_EDX }, { "dx", REG_EDX },
+	{ "si", REG_ESI }, { "di", REG_EDI }, { "sp", REG_ESP },
+	{ "bp", REG_EBP }, { NULL, ~0u }
+};
+
 arch_isa_if_t const ia32_isa_if = {
 	.name                  = "ia32",
 	.pointer_size          = 4,

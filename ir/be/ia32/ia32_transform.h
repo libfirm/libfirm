@@ -15,7 +15,6 @@
 #include "x86_asm.h"
 #include "x86_node.h"
 
-extern const be_register_name_t        ia32_additional_reg_names[];
 extern const x86_asm_constraint_list_t ia32_asm_constraints;
 
 /**

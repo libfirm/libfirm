@@ -59,17 +59,6 @@ static x86_immediate_kind_t  lconst_imm_kind;
 static x86_addr_variant_t    lconst_variant;
 static ir_node              *initial_va_list;
 
-/** we don't have a concept of aliasing registers, so enumerate them
- * manually for the asm nodes. */
-be_register_name_t const ia32_additional_reg_names[] = {
-	{ "al", REG_EAX }, { "ah", REG_EAX }, { "ax", REG_EAX },
-	{ "bl", REG_EBX }, { "bh", REG_EBX }, { "bx", REG_EBX },
-	{ "cl", REG_ECX }, { "ch", REG_ECX }, { "cx", REG_ECX },
-	{ "dl", REG_EDX }, { "dh", REG_EDX }, { "dx", REG_EDX },
-	{ "si", REG_ESI }, { "di", REG_EDI }, { "sp", REG_ESP },
-	{ "bp", REG_EBP }, { NULL, ~0u }
-};
-
 #define GP &ia32_reg_classes[CLASS_ia32_gp]
 #define FP &ia32_reg_classes[CLASS_ia32_fp]
 const x86_asm_constraint_list_t ia32_asm_constraints = {
