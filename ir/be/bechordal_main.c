@@ -21,7 +21,6 @@
 #include "bemodule.h"
 #include "benode.h"
 #include "benode.h"
-#include "bepbqpcoloring.h"
 #include "bera.h"
 #include "bespill.h"
 #include "bespillslots.h"
