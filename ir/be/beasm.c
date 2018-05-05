@@ -9,6 +9,7 @@
 #include "bediagnostic.h"
 #include "beemitter.h"
 #include "begnuas.h"
+#include "beirg.h"
 #include "benode.h"
 #include "betranshlp.h"
 #include "ident_t.h"
@@ -233,11 +234,14 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 		/* Collect clobbers and add them as outputs. */
 		unsigned clobber_bits[ir_target.isa->n_register_classes];
 		memset(&clobber_bits, 0, sizeof(clobber_bits));
-		ident **const clobbers = get_ASM_clobbers(node);
+
+		be_irg_t       *const birg             = be_birg_from_irg(irg);
+		unsigned const *const allocatable_regs = birg->allocatable_regs;
+		ident         **const clobbers         = get_ASM_clobbers(node);
 		for (size_t i = 0; i < n_clobbers; ++i) {
 			char            const *const clobber = get_id_str(clobbers[i]);
 			arch_register_t const *const reg     = be_parse_register_name(clobber);
-			if (reg) {
+			if (reg && rbitset_is_set(allocatable_regs, reg->global_index)) {
 				assert(reg->cls->n_regs <= sizeof(unsigned) * 8);
 				if (!reg->cls->allow_clobber_input)
 					clobber_bits[reg->cls->index] |= 1U << reg->index;
