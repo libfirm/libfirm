@@ -313,6 +313,7 @@ arch_isa_if_t const mips_isa_if = {
 	.finish                = mips_finish,
 	.generate_code         = mips_generate_code,
 	.lower_for_target      = mips_lower_for_target,
+	.register_prefix       = '$',
 	.get_op_estimated_cost = mips_get_op_estimated_cost,
 };
 
