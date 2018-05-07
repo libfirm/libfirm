@@ -152,6 +152,11 @@ static void lower_mode(void (*const set)(ir_type*, size_t, ir_type*), ir_type *c
 	}
 }
 
+static ir_mode *get_high_mode(ir_mode *const mode)
+{
+	return mode_is_signed(mode) ? env.p.word_signed : env.p.word_unsigned;
+}
+
 /**
  * Create a method type for a Conv emulation from imode to omode.
  */
@@ -1269,8 +1274,7 @@ static void lower_Conv_to_Ll(ir_node *node)
 	ir_node  *res_high;
 
 	ir_mode  *low_unsigned = env.p.word_unsigned;
-	ir_mode  *low_signed
-		= mode_is_signed(omode) ? env.p.word_signed : low_unsigned;
+	ir_mode  *low_signed   = get_high_mode(omode);
 
 	if (get_mode_arithmetic(imode) == irma_twos_complement) {
 		if (needs_lowering(imode)) {
@@ -1731,8 +1735,7 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 			continue;
 		}
 
-		ir_mode *mode_h = mode_is_signed(mode)
-		                ? env.p.word_signed : env.p.word_unsigned;
+		ir_mode *const mode_h = get_high_mode(mode);
 
 		/* Switch off CSE or we might get an already existing Proj. */
 		int old_cse = get_opt_cse();
@@ -1833,8 +1836,7 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 			set_Proj_num(proj, new_nr);
 			continue;
 		}
-		ir_mode  *mode_h = mode_is_signed(proj_mode)
-		                 ? env.p.word_signed : env.p.word_unsigned;
+		ir_mode  *mode_h = get_high_mode(proj_mode);
 		dbg_info *dbg    = get_irn_dbg_info(proj);
 		ir_mode  *mode_l = env.p.word_unsigned;
 		ir_node  *pred   = get_Proj_pred(proj);
@@ -1898,8 +1900,7 @@ static void lower_Phi(ir_node *phi)
 	ir_node **in_h   = ALLOCAN(ir_node*, arity);
 	ir_graph *irg    = get_irn_irg(phi);
 	ir_mode  *mode_l = env.p.word_unsigned;
-	ir_mode  *mode_h = mode_is_signed(mode)
-	                 ? env.p.word_signed : env.p.word_unsigned;
+	ir_mode  *mode_h = get_high_mode(mode);
 	ir_node  *unk_l  = new_r_Dummy(irg, mode_l);
 	ir_node  *unk_h  = new_r_Dummy(irg, mode_h);
 	for (int i = 0; i < arity; ++i) {
@@ -2013,9 +2014,7 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 			++new_n_outs;
 			new_outputs[new_n_outs].pos        = constraint->pos;
 			new_outputs[new_n_outs].constraint = new_id_from_str("=d");
-			new_outputs[new_n_outs].mode = mode_is_signed(constraint->mode)
-			                             ? env.p.word_signed
-			                             : env.p.word_unsigned;
+			new_outputs[new_n_outs].mode       = get_high_mode(constraint->mode);
 			++new_n_outs;
 		} else {
 			new_outputs[new_n_outs] = *constraint;
@@ -2047,8 +2046,7 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 
 		ir_mode *proj_mode = get_irn_mode(proj);
 		if (needs_lowering(proj_mode)) {
-			ir_mode *high_mode = mode_is_signed(proj_mode)
-			                   ? env.p.word_signed : env.p.word_unsigned;
+			ir_mode *high_mode = get_high_mode(proj_mode);
 			ir_node *np_low    = new_r_Proj(new_asm, env.p.word_unsigned, pn);
 			ir_node *np_high   = new_r_Proj(new_asm, high_mode, pn+1);
 			ir_set_dw_lowered(proj, np_low, np_high);
@@ -2431,8 +2429,7 @@ static void lower_node(ir_node *node)
 	lower64_entry_t *entry = idx < env.n_entries ? env.entries[idx] : NULL;
 	if (entry != NULL || always_lower(get_irn_opcode(node))) {
 		ir_mode *op_mode = get_irn_op_mode(node);
-		ir_mode *mode    = mode_is_signed(op_mode)
-		                 ? env.p.word_signed : env.p.word_unsigned;
+		ir_mode *mode    = get_high_mode(op_mode);
 		DB((dbg, LEVEL_1, "  %+F\n", node));
 		func(node, mode);
 	}
