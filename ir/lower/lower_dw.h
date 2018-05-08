@@ -11,6 +11,8 @@
 #ifndef FIRM_LOWER_LOWER_DW_H
 #define FIRM_LOWER_LOWER_DW_H
 
+#include <stdbool.h>
+
 #include "firm_types.h"
 
 /**
@@ -56,6 +58,10 @@ void ir_register_dw_lower_function(ir_op *op, lower_dw_func func);
  * It registers 2 new values for the high and low part of the lowered value.
  */
 void ir_set_dw_lowered(ir_node *old, ir_node *new_low, ir_node *new_high);
+
+bool needs_lowering(ir_mode const *mode);
+
+ir_mode *get_high_mode(ir_mode *mode);
 
 ir_mode *get_node_high_mode(ir_node *node);
 

@@ -447,6 +447,98 @@ static void ia32_lower_conv64(ir_node *const node)
 	}
 }
 
+static void ia32_lower_ASM(ir_node *const asmn)
+{
+	size_t             n_outs             = get_ASM_n_output_constraints(asmn);
+	ir_asm_constraint *output_constraints = get_ASM_output_constraints(asmn);
+	ir_asm_constraint *input_constraints  = get_ASM_input_constraints(asmn);
+	unsigned           n_64bit_outs       = 0;
+
+	foreach_irn_in_r(asmn, i, op) {
+		ir_mode *op_mode = get_irn_mode(op);
+		if (needs_lowering(op_mode)) {
+			panic("lowering ASM 64bit input unimplemented");
+		}
+	}
+
+	for (size_t o = 0; o < n_outs; ++o) {
+		const ir_asm_constraint *constraint = &output_constraints[o];
+		if (needs_lowering(constraint->mode)) {
+			const char *constr = get_id_str(constraint->constraint);
+			++n_64bit_outs;
+			if (constr[0] != '=' || constr[1] != 'A') {
+				panic("lowering ASM 64bit output only supports '=A' currently");
+			}
+		}
+	}
+
+	if (n_64bit_outs == 0)
+		return;
+
+	dbg_info          *dbgi       = get_irn_dbg_info(asmn);
+	ir_node           *block      = get_nodes_block(asmn);
+	ir_node           *mem        = get_ASM_mem(asmn);
+	size_t             new_n_outs = 0;
+	size_t             n_clobber  = get_ASM_n_clobbers(asmn);
+	unsigned          *proj_map   = ALLOCAN(unsigned, n_outs);
+	ident            **clobbers   = get_ASM_clobbers(asmn);
+	ident             *asm_text   = get_ASM_text(asmn);
+	ir_asm_constraint *new_outputs
+		= ALLOCAN(ir_asm_constraint, n_outs+n_64bit_outs);
+	ir_node           *new_asm;
+
+	for (size_t o = 0; o < n_outs; ++o) {
+		const ir_asm_constraint *constraint = &output_constraints[o];
+		if (needs_lowering(constraint->mode)) {
+			new_outputs[new_n_outs].pos        = constraint->pos;
+			new_outputs[new_n_outs].constraint = new_id_from_str("=a");
+			new_outputs[new_n_outs].mode       = ir_get_low_unsigned_mode();
+			proj_map[o] = new_n_outs;
+			++new_n_outs;
+			new_outputs[new_n_outs].pos        = constraint->pos;
+			new_outputs[new_n_outs].constraint = new_id_from_str("=d");
+			new_outputs[new_n_outs].mode       = get_high_mode(constraint->mode);
+			++new_n_outs;
+		} else {
+			new_outputs[new_n_outs] = *constraint;
+			proj_map[o] = new_n_outs;
+			++new_n_outs;
+		}
+	}
+	assert(new_n_outs == n_outs+n_64bit_outs);
+
+	int       n_inputs = get_ASM_n_inputs(asmn);
+	ir_node **new_ins  = ALLOCAN(ir_node*, n_inputs);
+	for (int i = 0; i < n_inputs; ++i)
+		new_ins[i] = get_ASM_input(asmn, i);
+
+	new_asm = new_rd_ASM(dbgi, block, mem, n_inputs, new_ins, input_constraints,
+	                     new_n_outs, new_outputs, n_clobber, clobbers,
+	                     asm_text);
+
+	foreach_out_edge_safe(asmn, edge) {
+		ir_node *proj      = get_edge_src_irn(edge);
+		if (!is_Proj(proj))
+			continue;
+
+		unsigned pn = get_Proj_num(proj);
+		if (pn < n_outs)
+			pn = proj_map[pn];
+		else
+			pn = new_n_outs + pn - n_outs;
+
+		ir_mode *proj_mode = get_irn_mode(proj);
+		if (needs_lowering(proj_mode)) {
+			ir_node *const np_low  = new_r_Proj(new_asm, new_outputs[pn    ].mode, pn);
+			ir_node *const np_high = new_r_Proj(new_asm, new_outputs[pn + 1].mode, pn + 1);
+			ir_set_dw_lowered(proj, np_low, np_high);
+		} else {
+			ir_node *np = new_r_Proj(new_asm, proj_mode, pn);
+			exchange(proj, np);
+		}
+	}
+}
+
 void ia32_lower64(void)
 {
 	/* perform doubleword lowering */
@@ -459,6 +551,7 @@ void ia32_lower64(void)
 	};
 
 	ir_prepare_dw_lowering(&lower_dw_params);
+	ir_register_dw_lower_function(op_ASM,   ia32_lower_ASM);
 	ir_register_dw_lower_function(op_Add,   ia32_lower_add64);
 	ir_register_dw_lower_function(op_Sub,   ia32_lower_sub64);
 	ir_register_dw_lower_function(op_Mul,   ia32_lower_mul64);
