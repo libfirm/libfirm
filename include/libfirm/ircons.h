@@ -309,9 +309,9 @@
  *
  * The constant represents a target value.
  *
- * @param *db    A pointer for debug information.
- * @param *irg   The IR graph the node  belongs to.
- * @param *mode  The mode of the operands and results.
+ * @param db     A pointer for debug information.
+ * @param irg    The IR graph the node  belongs to.
+ * @param mode   The mode of the operands and results.
  * @param value  A value from which the tarval is made.
  */
 FIRM_API ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg,
@@ -323,8 +323,8 @@ FIRM_API ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg,
  *
  * The constant represents a target value.
  *
- * @param *irg   The IR graph the node  belongs to.
- * @param *mode  The mode of the operands and the results.
+ * @param irg    The IR graph the node  belongs to.
+ * @param mode   The mode of the operands and the results.
  * @param value  A value from which the tarval is made.
  */
 FIRM_API ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value);
@@ -332,8 +332,8 @@ FIRM_API ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value);
 /**
  * @see new_rd_Const_long()
  *
- * @param *db    A pointer for debug information.
- * @param *mode  The mode of the operands and results.
+ * @param db     A pointer for debug information.
+ * @param mode   The mode of the operands and results.
  * @param value  A value from which the tarval is made.
  */
 FIRM_API ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value);
@@ -378,23 +378,23 @@ FIRM_API ir_node *new_Phi_loop(int arity, ir_node *in[]);
 
 /** Constructor for a remainderless Div node.
  *
- * @param   *db    A pointer for debug information.
- * @param   *block The IR block the node belongs to.
- * @param   *memop The store needed to model exceptions
- * @param   *op1   The first operand.
- * @param   *op2   The second operand.
- * @param   pinned Whether the node is pinned in its block.
+ * @param db      A pointer for debug information.
+ * @param block   The IR block the node belongs to.
+ * @param memop   The store needed to model exceptions
+ * @param op1     The first operand.
+ * @param op2     The second operand.
+ * @param pinned  Whether the node is pinned in its block.
  */
 FIRM_API ir_node *new_rd_DivRL(dbg_info *db, ir_node *block, ir_node *memop,
                                ir_node *op1, ir_node *op2, int pinned);
 
 /** Constructor for a remainderless Div node.
  *
- * @param *block The IR block the node belongs to.
- * @param *memop The store needed to model exceptions
- * @param *op1   The first operand.
- * @param *op2   The second operand.
- * @param pinned Whether the node is pinned in its block.
+ * @param block   The IR block the node belongs to.
+ * @param memop   The store needed to model exceptions
+ * @param op1     The first operand.
+ * @param op2     The second operand.
+ * @param pinned  Whether the node is pinned in its block.
  */
 FIRM_API ir_node *new_r_DivRL(ir_node *block, ir_node *memop,
                               ir_node *op1, ir_node *op2, int pinned);
@@ -403,11 +403,11 @@ FIRM_API ir_node *new_r_DivRL(ir_node *block, ir_node *memop,
  *
  * Adds the node to the block in current_ir_block.
  *
- * @param   *db    A pointer for debug information.
- * @param   *memop The store needed to model exceptions
- * @param   *op1   The first operand.
- * @param   *op2   The second operand.
- * @param   pinned Whether the node is pinned in its block.
+ * @param db      A pointer for debug information.
+ * @param memop   The store needed to model exceptions
+ * @param op1     The first operand.
+ * @param op2     The second operand.
+ * @param pinned  Whether the node is pinned in its block.
  */
 FIRM_API ir_node *new_d_DivRL(dbg_info *db, ir_node *memop,
                               ir_node *op1, ir_node *op2, int pinned);
@@ -416,10 +416,10 @@ FIRM_API ir_node *new_d_DivRL(dbg_info *db, ir_node *memop,
  *
  * Adds the node to the block in current_ir_block.
  *
- * @param   *memop The store needed to model exceptions
- * @param   *op1   The first operand.
- * @param   *op2   The second operand.
- * @param   pinned Whether the node is pinned in its block.
+ * @param memop   The store needed to model exceptions
+ * @param op1     The first operand.
+ * @param op2     The second operand.
+ * @param pinned  Whether the node is pinned in its block.
  */
 FIRM_API ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2,
                             int pinned);
@@ -432,17 +432,17 @@ FIRM_API ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2,
 
 /** Constructor for an ASM pseudo node.
  *
- * @param *db         A pointer for debug information.
- * @param *block      The block the node belong to.
- * @param *mem        memory dependency
- * @param arity       The number of data inputs to the node.
- * @param *in         The array of length arity of data inputs.
- * @param *inputs     The array of length arity of input constraints.
- * @param n_outs      The number of data outputs to the node.
- * @param *outputs    The array of length n_outs of output constraints.
- * @param n_clobber   The number of clobbered registers.
- * @param *clobber    The array of length n_clobber of clobbered registers.
- * @param *asm_text   The assembler text.
+ * @param db         A pointer for debug information.
+ * @param block      The block the node belong to.
+ * @param mem        memory dependency
+ * @param arity      The number of data inputs to the node.
+ * @param in         The array of length arity of data inputs.
+ * @param inputs     The array of length arity of input constraints.
+ * @param n_outs     The number of data outputs to the node.
+ * @param outputs    The array of length n_outs of output constraints.
+ * @param n_clobber  The number of clobbered registers.
+ * @param clobber    The array of length n_clobber of clobbered registers.
+ * @param asm_text   The assembler text.
  */
 FIRM_API ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
                             int arity, ir_node *in[], ir_asm_constraint *inputs,
@@ -452,16 +452,16 @@ FIRM_API ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
 
 /** Constructor for an ASM pseudo node.
  *
- * @param *block      The block the node belong to.
- * @param *mem        memory dependency
- * @param arity       The number of data inputs to the node.
- * @param *in         The array of length arity of data inputs.
- * @param *inputs     The array of length arity of input constraints.
- * @param n_outs      The number of data outputs to the node.
- * @param *outputs    The array of length n_outs of output constraints.
- * @param n_clobber   The number of clobbered registers.
- * @param *clobber    The array of length n_clobber of clobbered registers.
- * @param *asm_text   The assembler text.
+ * @param block      The block the node belong to.
+ * @param mem        memory dependency
+ * @param arity      The number of data inputs to the node.
+ * @param in         The array of length arity of data inputs.
+ * @param inputs     The array of length arity of input constraints.
+ * @param n_outs     The number of data outputs to the node.
+ * @param outputs    The array of length n_outs of output constraints.
+ * @param n_clobber  The number of clobbered registers.
+ * @param clobber    The array of length n_clobber of clobbered registers.
+ * @param asm_text   The assembler text.
  */
 FIRM_API ir_node *new_r_ASM(ir_node *block, ir_node *mem,
                             int arity, ir_node *in[], ir_asm_constraint *inputs,
@@ -471,16 +471,16 @@ FIRM_API ir_node *new_r_ASM(ir_node *block, ir_node *mem,
 
 /** Constructor for an ASM pseudo node.
  *
- * @param *db         A pointer for debug information.
- * @param *mem        memory dependency
- * @param arity       The number of data inputs to the node.
- * @param *in         The array of length arity of data inputs.
- * @param *inputs     The array of length arity of input constraints.
- * @param n_outs      The number of data outputs to the node.
- * @param *outputs    The array of length n_outs of output constraints.
- * @param n_clobber   The number of clobbered registers.
- * @param *clobber    The array of length n_clobber of clobbered registers.
- * @param *asm_text   The assembler text.
+ * @param db         A pointer for debug information.
+ * @param mem        memory dependency
+ * @param arity      The number of data inputs to the node.
+ * @param in         The array of length arity of data inputs.
+ * @param inputs     The array of length arity of input constraints.
+ * @param n_outs     The number of data outputs to the node.
+ * @param outputs    The array of length n_outs of output constraints.
+ * @param n_clobber  The number of clobbered registers.
+ * @param clobber    The array of length n_clobber of clobbered registers.
+ * @param asm_text   The assembler text.
  * @ingroup ASM
  */
 FIRM_API ir_node *new_d_ASM(dbg_info *db, ir_node *mem, int arity,
@@ -491,15 +491,15 @@ FIRM_API ir_node *new_d_ASM(dbg_info *db, ir_node *mem, int arity,
 
 /** Constructor for an ASM pseudo node.
  *
- * @param *mem        memory dependency
- * @param arity       The number of data inputs to the node.
- * @param *in         The array of length arity of data inputs.
- * @param *inputs     The array of length arity of input constraints.
- * @param n_outs      The number of data outputs to the node.
- * @param *outputs    The array of length n_outs of output constraints.
- * @param n_clobber   The number of clobbered registers.
- * @param *clobber    The array of length n_clobber of clobbered registers.
- * @param *asm_text   The assembler text.
+ * @param mem        memory dependency
+ * @param arity      The number of data inputs to the node.
+ * @param in         The array of length arity of data inputs.
+ * @param inputs     The array of length arity of input constraints.
+ * @param n_outs     The number of data outputs to the node.
+ * @param outputs    The array of length n_outs of output constraints.
+ * @param n_clobber  The number of clobbered registers.
+ * @param clobber    The array of length n_clobber of clobbered registers.
+ * @param asm_text   The assembler text.
  * @ingroup ASM
  */
 FIRM_API ir_node *new_ASM(ir_node *mem, int arity, ir_node *in[],
@@ -599,8 +599,8 @@ FIRM_API ir_node *get_r_cur_block(ir_graph *irg);
  * associated with pos.  pos must be less than the value passed as n_loc
  * to new_ir_graph.  This call automatically inserts Phi nodes.
  *
- * @param  pos   The position/id of the local variable.
- * @param *mode  The mode of the value to get.
+ * @param pos   The position/id of the local variable.
+ * @param mode  The mode of the value to get.
  */
 FIRM_API ir_node *get_value(int pos, ir_mode *mode);
 /** Returns the current value of a local variable in given graph
@@ -628,8 +628,8 @@ FIRM_API ir_mode *ir_r_guess_mode(ir_graph *irg, int pos);
  * to new_ir_graph.  This call is needed to automatically inserts Phi
  * nodes.
  *
- * @param  pos   The position/id of the local variable.
- * @param *value The new value written to the local variable.
+ * @param pos    The position/id of the local variable.
+ * @param value  The new value written to the local variable.
  */
 FIRM_API void set_value(int pos, ir_node *value);
 /** Sets current value of a variable in a given graph */
@@ -651,7 +651,7 @@ FIRM_API ir_node *get_r_store(ir_graph *irg);
  * Use this function to remember a new definition of the memory state.
  * This call is needed to automatically inserts Phi nodes.
  *
- * @param *store The new memory state.
+ * @param store  The new memory state.
  */
 FIRM_API void set_store(ir_node *store);
 /** Sets current memory state for a given graph
