@@ -627,10 +627,10 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 	 *   f: memory reference without surrounding '[]'
 	 *   m: see 'f'
 	 *   r: immediate, but show '%g0' instead of '0' */
-	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "r", "", "fm"))
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "r", "", "fm"))
 		return;
 
-	switch (op->kind) {
+	switch (op->op.kind) {
 	case BE_ASM_OPERAND_INVALID:
 		panic("invalid asm operand");
 
@@ -644,18 +644,18 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 	}
 
 	case BE_ASM_OPERAND_INPUT_VALUE:
-		sparc_emit_register(arch_get_irn_register_in(node, op->pos));
+		sparc_emit_register(arch_get_irn_register_in(node, op->op.pos));
 		return;
 
 	case BE_ASM_OPERAND_OUTPUT_VALUE:
-		sparc_emit_register(arch_get_irn_register_out(node, op->pos));
+		sparc_emit_register(arch_get_irn_register_out(node, op->op.pos));
 		return;
 
 	case BE_ASM_OPERAND_MEMORY: {
 		bool const address_only = modifier == 'f' || modifier == 'm';
 		if (!address_only)
 			be_emit_char('[');
-		sparc_emit_register(arch_get_irn_register_in(node, op->pos));
+		sparc_emit_register(arch_get_irn_register_in(node, op->op.pos));
 		if (!address_only)
 			be_emit_char(']');
 		return;

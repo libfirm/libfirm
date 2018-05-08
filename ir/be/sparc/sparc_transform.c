@@ -262,7 +262,7 @@ static bool sparc_match_immediate(sparc_asm_operand_t *const operand, ir_node *c
 		value = 0;
 	}
 
-	operand->kind                   = BE_ASM_OPERAND_IMMEDIATE;
+	be_set_asm_operand(&operand->op, BE_ASM_OPERAND_IMMEDIATE, -1);
 	operand->immediate_value        = value;
 	operand->immediate_value_entity = entity;
 	return true;
@@ -289,9 +289,7 @@ static ir_node *gen_ASM(ir_node *node)
 		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, out_idx);
 		ARR_APP1(arch_register_req_t const*, out_reqs, req);
 
-		sparc_asm_operand_t *const operand = &operands[pos];
-		operand->kind = BE_ASM_OPERAND_OUTPUT_VALUE;
-		operand->pos  = out_idx;
+		be_set_asm_operand(&operands[pos].op, BE_ASM_OPERAND_OUTPUT_VALUE, out_idx);
 	}
 
 	/* inputs + input constraints */
@@ -322,8 +320,7 @@ static ir_node *gen_ASM(ir_node *node)
 			req  = arch_get_irn_register_req(new_pred)->cls->class_req;
 		}
 
-		operand->kind = kind;
-		operand->pos  = ARR_LEN(in);
+		be_set_asm_operand(&operand->op, kind, ARR_LEN(in));
 		ARR_APP1(ir_node*, in, new_pred);
 		ARR_APP1(arch_register_req_t const*, in_reqs, req);
 	}

@@ -54,10 +54,9 @@ typedef struct arm_attr_t {
 } arm_attr_t;
 
 typedef struct arm_asm_operand_t {
-	be_asm_operand_kind_t kind;
-	unsigned              pos;
-	int32_t               val;
-	ir_entity            *ent;
+	be_asm_operand_t op;
+	int32_t          val;
+	ir_entity       *ent;
 } arm_asm_operand_t;
 
 /**

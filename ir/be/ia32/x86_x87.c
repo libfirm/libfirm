@@ -1369,7 +1369,7 @@ static bool is_clobber(ir_node const *const asm_n, ir_node const *const value)
 		= (x86_asm_operand_t const*)get_be_asm_attr_const(asm_n)->operands;
 	for (size_t i = 0, n = ARR_LEN(operands); i != n; ++i) {
 		x86_asm_operand_t const *const op = &operands[i];
-		if (op->kind == BE_ASM_OPERAND_OUTPUT_VALUE && op->inout_pos == num)
+		if (op->op.kind == BE_ASM_OPERAND_OUTPUT_VALUE && (unsigned)op->op.pos == num)
 			return false;
 	}
 

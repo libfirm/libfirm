@@ -86,10 +86,9 @@ struct sparc_switch_jmp_attr_t {
 };
 
 typedef struct sparc_asm_operand_t {
-	be_asm_operand_kind_t kind;
-	unsigned              pos;
-	int32_t               immediate_value;
-	ir_entity            *immediate_value_entity;
+	be_asm_operand_t op;
+	int32_t          immediate_value;
+	ir_entity       *immediate_value_entity;
 } sparc_asm_operand_t;
 
 #endif

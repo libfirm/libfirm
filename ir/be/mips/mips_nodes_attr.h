@@ -32,10 +32,9 @@ static inline mips_cond_t mips_negate_cond(mips_cond_t const c)
 }
 
 typedef struct mips_asm_operand_t {
-	be_asm_operand_kind_t kind;
-	unsigned              pos;
-	int32_t               val;
-	ir_entity            *ent;
+	be_asm_operand_t op;
+	int32_t          val;
+	ir_entity       *ent;
 } mips_asm_operand_t;
 
 typedef struct mips_cond_attr_t {

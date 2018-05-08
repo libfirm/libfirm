@@ -10,6 +10,7 @@
 #ifndef FIRM_BE_BEASM_H
 #define FIRM_BE_BEASM_H
 
+#include <assert.h>
 #include <stdbool.h>
 
 #include "be_types.h"
@@ -23,6 +24,18 @@ typedef enum be_asm_operand_kind_t {
 	BE_ASM_OPERAND_IMMEDIATE,
 	BE_ASM_OPERAND_MEMORY,
 } be_asm_operand_kind_t;
+
+typedef struct be_asm_operand_t {
+	be_asm_operand_kind_t kind;
+	int                   pos;
+} be_asm_operand_t;
+
+static inline void be_set_asm_operand(be_asm_operand_t* const op, be_asm_operand_kind_t const kind, int const pos)
+{
+	assert((kind == BE_ASM_OPERAND_IMMEDIATE) == (pos == -1));
+	op->kind = kind;
+	op->pos  = pos;
+}
 
 /**
  * An assembler constraint.

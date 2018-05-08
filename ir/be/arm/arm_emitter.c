@@ -425,19 +425,19 @@ static void emit_arm_asm_operand(ir_node const *const node, char const modifier,
 	 *   B: Ones' complement of immediate and without prefix '#'
 	 *   C: memory reference consisting only of a single register
 	 *   c: immediate without prefix '#' */
-	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "", "Bc", "C"))
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "", "Bc", "C"))
 		return;
 
-	switch (op->kind) {
+	switch (op->op.kind) {
 	case BE_ASM_OPERAND_INVALID:
 		panic("invalid asm operand");
 
 	case BE_ASM_OPERAND_INPUT_VALUE:
-		arm_emit_register(arch_get_irn_register_in(node, op->pos));
+		arm_emit_register(arch_get_irn_register_in(node, op->op.pos));
 		return;
 
 	case BE_ASM_OPERAND_OUTPUT_VALUE:
-		arm_emit_register(arch_get_irn_register_out(node, op->pos));
+		arm_emit_register(arch_get_irn_register_out(node, op->op.pos));
 		return;
 
 	case BE_ASM_OPERAND_IMMEDIATE:
@@ -459,7 +459,7 @@ static void emit_arm_asm_operand(ir_node const *const node, char const modifier,
 
 	case BE_ASM_OPERAND_MEMORY:
 		be_emit_char('[');
-		arm_emit_register(arch_get_irn_register_in(node, op->pos));
+		arm_emit_register(arch_get_irn_register_in(node, op->op.pos));
 		be_emit_char(']');
 		return;
 	}

@@ -786,33 +786,33 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
 	 *   k: 32 bit name of register
 	 *   p: like 'c' and other operands unmodified (gcc doc: "print raw symbol")
 	 *   w: 16 bit name of register */
-	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->kind, "APXbhkpw", "c", ""))
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "APXbhkpw", "c", ""))
 		return;
 
 	if (modifier == 'A')
 		be_emit_char('*');
 
-	switch ((be_asm_operand_kind_t)op->kind) {
+	switch ((be_asm_operand_kind_t)op->op.kind) {
 	case BE_ASM_OPERAND_INVALID:
 		panic("invalid asm operand");
 
 	case BE_ASM_OPERAND_INPUT_VALUE: {
 		arch_register_t const *const reg
-			= arch_get_irn_register_in(node, op->inout_pos);
+			= arch_get_irn_register_in(node, op->op.pos);
 		emit_ia32_asm_register(reg, modifier, op->u.mode);
 		return;
 	}
 
 	case BE_ASM_OPERAND_OUTPUT_VALUE: {
 		arch_register_t const *const reg
-			= arch_get_irn_register_out(node, op->inout_pos);
+			= arch_get_irn_register_out(node, op->op.pos);
 		emit_ia32_asm_register(reg, modifier, op->u.mode);
 		return;
 	}
 
 	case BE_ASM_OPERAND_MEMORY: {
 		arch_register_t const *const reg
-			= arch_get_irn_register_in(node, op->inout_pos);
+			= arch_get_irn_register_in(node, op->op.pos);
 		be_emit_irprintf("(%%%s)", reg->name);
 		return;
 	}

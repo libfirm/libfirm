@@ -73,11 +73,10 @@ static void set_operand_if_invalid(x86_asm_operand_t *const op, be_asm_operand_k
 	/* Multiple constraints for same pos. This can happen for example when
 	 * a =A constraint gets lowered to two constraints: =a and =d for the
 	 * same pos. */
-	if (op->kind == BE_ASM_OPERAND_INVALID) {
-		op->kind      = kind;
-		op->inout_pos = pos;
-		op->u.mode    = constraint->mode;
-		assert(op->inout_pos == pos); // Make sure we had no overflow.
+	if (op->op.kind == BE_ASM_OPERAND_INVALID) {
+		be_set_asm_operand(&op->op, kind, pos);
+		op->u.mode = constraint->mode;
+		assert((unsigned)op->op.pos == pos); // Make sure we had no overflow.
 	}
 }
 
@@ -126,7 +125,7 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t cons
 		char               const imm_type = parsed_constraint.immediate_type;
 		if (imm_type != '\0'
 		    && x86_match_immediate(&op->u.imm32, pred, imm_type)) {
-			op->kind = BE_ASM_OPERAND_IMMEDIATE;
+			be_set_asm_operand(&op->op, BE_ASM_OPERAND_IMMEDIATE, -1);
 			continue;
 		}
 
@@ -137,7 +136,7 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t cons
 		set_operand_if_invalid(op, BE_ASM_OPERAND_INPUT_VALUE, in_pos, constraint);
 
 		if (!parsed_constraint.cls && parsed_constraint.same_as < 0) {
-			op->kind = BE_ASM_OPERAND_MEMORY;
+			op->op.kind = BE_ASM_OPERAND_MEMORY;
 			req = arch_get_irn_register_req(new_pred)->cls->class_req;
 		} else if (parsed_constraint.memory_possible) {
 			/* TODO: match Load or Load/Store if memory possible is set */

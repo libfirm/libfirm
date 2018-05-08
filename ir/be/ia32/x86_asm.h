@@ -22,8 +22,7 @@
 #include "x86_node.h"
 
 typedef struct x86_asm_operand_t {
-	ENUMBF(be_asm_operand_kind_t) kind : 3;
-	uint8_t inout_pos; /**< in/out pos where register is assigned */
+	be_asm_operand_t op;
 	union {
 		ir_mode    *mode;
 		x86_imm32_t imm32;
