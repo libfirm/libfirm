@@ -7,7 +7,7 @@
 #include "gen_mips_regalloc_if.h"
 #include "lower_dw.h"
 
-static void mips_lower_add64(ir_node *const node, ir_mode *const mode)
+static void mips_lower_add64(ir_node *const node)
 {
 	dbg_info *const dbg        = get_irn_dbg_info(node);
 	ir_node  *const block      = get_nodes_block(node);
@@ -21,6 +21,7 @@ static void mips_lower_add64(ir_node *const node, ir_mode *const mode)
 	ir_node  *const res_low   = new_rd_Add(dbg, block, left_low,  right_low);
 	ir_node  *const cmp_carry = new_rd_Cmp(dbg, block, res_low,   right_low, ir_relation_less);
 	ir_graph *const irg       = get_irn_irg(node);
+	ir_mode  *const mode      = get_node_high_mode(node);
 	ir_node  *const one       = new_r_Const(irg, get_mode_one(mode));
 	ir_node  *const zero      = new_r_Const(irg, get_mode_null(mode));
 	ir_node  *const carry     = new_rd_Mux(dbg, block, cmp_carry, zero, one);
@@ -29,7 +30,7 @@ static void mips_lower_add64(ir_node *const node, ir_mode *const mode)
 	ir_set_dw_lowered(node, res_low, res_high);
 }
 
-static void mips_lower_sub64(ir_node *const node, ir_mode *const mode)
+static void mips_lower_sub64(ir_node *const node)
 {
 	dbg_info *const dbg        = get_irn_dbg_info(node);
 	ir_node  *const block      = get_nodes_block(node);
@@ -43,6 +44,7 @@ static void mips_lower_sub64(ir_node *const node, ir_mode *const mode)
 	ir_node  *const res_low   = new_rd_Sub(dbg, block, left_low,  right_low);
 	ir_node  *const cmp_carry = new_rd_Cmp(dbg, block, res_low,   left_low, ir_relation_greater);
 	ir_graph *const irg       = get_irn_irg(node);
+	ir_mode  *const mode      = get_node_high_mode(node);
 	ir_node  *const one       = new_r_Const(irg, get_mode_one(mode));
 	ir_node  *const zero      = new_r_Const(irg, get_mode_null(mode));
 	ir_node  *const carry     = new_rd_Mux(dbg, block, cmp_carry, zero, one);

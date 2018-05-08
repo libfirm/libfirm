@@ -129,7 +129,7 @@ static carry_result lower_sub_borrow(ir_node *left, ir_node *right, ir_mode *mod
  * carry for the higher parts. If the carry's value is known, fold it
  * into the upper add.
  */
-static void ia32_lower_add64(ir_node *node, ir_mode *mode)
+static void ia32_lower_add64(ir_node *const node)
 {
 	dbg_info     *dbg        = get_irn_dbg_info(node);
 	ir_node      *block      = get_nodes_block(node);
@@ -177,6 +177,7 @@ static void ia32_lower_add64(ir_node *node, ir_mode *mode)
 		ir_node  *flags      = new_r_Proj(add_low, mode_flags, pn_ia32_l_Add_flags);
 
 		/* h_res = a_h + b_h + carry */
+		ir_mode  *mode     = get_node_high_mode(node);
 		ir_node  *add_high
 			= new_bd_ia32_l_Adc(dbg, block, left_high, right_high, flags, mode);
 		ir_set_dw_lowered(node, res_low, add_high);
@@ -188,7 +189,7 @@ static void ia32_lower_add64(ir_node *node, ir_mode *mode)
  * with borrow for the higher parts. If the borrow's value is known,
  * fold it into the upper sub.
  */
-static void ia32_lower_sub64(ir_node *node, ir_mode *mode)
+static void ia32_lower_sub64(ir_node *const node)
 {
 	dbg_info     *dbg        = get_irn_dbg_info(node);
 	ir_node      *block      = get_nodes_block(node);
@@ -234,6 +235,7 @@ static void ia32_lower_sub64(ir_node *node, ir_mode *mode)
 		ir_node  *flags      = new_r_Proj(sub_low, mode_flags, pn_ia32_l_Sub_flags);
 
 		/* h_res = a_h - b_h - carry */
+		ir_mode  *mode     = get_node_high_mode(node);
 		ir_node  *sub_high
 			= new_bd_ia32_l_Sbb(dbg, block, left_high, right_high, flags, mode);
 		ir_set_dw_lowered(node, res_low, sub_high);
@@ -273,7 +275,7 @@ static bool is_sign_extend(ir_node *low, ir_node *high)
 /**
  * lower 64bit Mul operation.
  */
-static void ia32_lower_mul64(ir_node *node, ir_mode *mode)
+static void ia32_lower_mul64(ir_node *const node)
 {
 	dbg_info *const dbg        = get_irn_dbg_info(node);
 	ir_node  *const block      = get_nodes_block(node);
@@ -293,6 +295,7 @@ static void ia32_lower_mul64(ir_node *node, ir_mode *mode)
 	/* handle the often used case of 32x32=64 mul */
 	ir_node *h_res;
 	ir_node *l_res;
+	ir_mode *mode = get_node_high_mode(node);
 	if (is_sign_extend(left_low, left_high)
 	    && is_sign_extend(right_low, right_high)) {
 		ir_node *mul = new_bd_ia32_l_IMul(dbg, block, left_low, right_low);
@@ -328,7 +331,7 @@ static void ia32_lower_mul64(ir_node *node, ir_mode *mode)
 /**
  * lower 64bit minus operation
  */
-static void ia32_lower_minus64(ir_node *node, ir_mode *mode)
+static void ia32_lower_minus64(ir_node *const node)
 {
 	dbg_info *dbg     = get_irn_dbg_info(node);
 	ir_node  *block   = get_nodes_block(node);
@@ -337,6 +340,7 @@ static void ia32_lower_minus64(ir_node *node, ir_mode *mode)
 	ir_node  *op_high = get_lowered_high(op);
 	ir_node  *minus   = new_bd_ia32_l_Minus64(dbg, block, op_low, op_high);
 	ir_node  *l_res   = new_r_Proj(minus, ia32_mode_gp, pn_ia32_Minus64_res_low);
+	ir_mode  *mode    = get_node_high_mode(node);
 	ir_node  *h_res   = new_r_Proj(minus, mode, pn_ia32_Minus64_res_high);
 	ir_set_dw_lowered(node, l_res, h_res);
 }
@@ -344,7 +348,7 @@ static void ia32_lower_minus64(ir_node *node, ir_mode *mode)
 /**
  * lower 64bit conversions
  */
-static void ia32_lower_conv64(ir_node *node, ir_mode *mode)
+static void ia32_lower_conv64(ir_node *const node)
 {
 	dbg_info  *dbg       = get_irn_dbg_info(node);
 	ir_node   *op        = get_Conv_op(node);
@@ -357,6 +361,7 @@ static void ia32_lower_conv64(ir_node *node, ir_mode *mode)
 		ir_node *float_to_ll;
 		ir_node *l_res;
 		ir_node *h_res;
+		ir_mode *mode = get_node_high_mode(node);
 		if (mode_is_signed(mode)) {
 			/* convert from float to signed 64bit */
 			ir_node *block = get_nodes_block(node);
@@ -438,7 +443,7 @@ static void ia32_lower_conv64(ir_node *node, ir_mode *mode)
 
 		exchange(node, ll_to_float);
 	} else {
-		ir_default_lower_dw_Conv(node, mode);
+		ir_default_lower_dw_Conv(node);
 	}
 }
 

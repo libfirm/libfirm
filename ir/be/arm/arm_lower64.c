@@ -19,7 +19,7 @@
 #include "panic.h"
 #include "util.h"
 
-static void lower64_add(ir_node *node, ir_mode *mode)
+static void lower64_add(ir_node *const node)
 {
 	dbg_info *dbgi       = get_irn_dbg_info(node);
 	ir_node  *block      = get_nodes_block(node);
@@ -33,12 +33,13 @@ static void lower64_add(ir_node *node, ir_mode *mode)
 	ir_mode  *mode_low   = get_irn_mode(left_low);
 	ir_node  *res_low    = new_r_Proj(adds, mode_low, pn_arm_AddS_t_res);
 	ir_node  *res_flags  = new_r_Proj(adds, mode_ANY, pn_arm_AddS_t_flags);
+	ir_mode  *mode       = get_node_high_mode(node);
 	ir_node  *adc        = new_bd_arm_AdC_t(dbgi, block, left_high,
 	                                        right_high, res_flags, mode);
 	ir_set_dw_lowered(node, res_low, adc);
 }
 
-static void lower64_sub(ir_node *node, ir_mode *mode)
+static void lower64_sub(ir_node *const node)
 {
 	dbg_info *dbgi       = get_irn_dbg_info(node);
 	ir_node  *block      = get_nodes_block(node);
@@ -52,12 +53,13 @@ static void lower64_sub(ir_node *node, ir_mode *mode)
 	ir_mode  *mode_low   = get_irn_mode(left_low);
 	ir_node  *res_low    = new_r_Proj(subs, mode_low, pn_arm_SubS_t_res);
 	ir_node  *res_flags  = new_r_Proj(subs, mode_ANY, pn_arm_SubS_t_flags);
+	ir_mode  *mode       = get_node_high_mode(node);
 	ir_node  *sbc        = new_bd_arm_SbC_t(dbgi, block, left_high,
 	                                        right_high, res_flags, mode);
 	ir_set_dw_lowered(node, res_low, sbc);
 }
 
-static void lower64_minus(ir_node *node, ir_mode *mode)
+static void lower64_minus(ir_node *const node)
 {
 	dbg_info *dbgi         = get_irn_dbg_info(node);
 	ir_graph *irg          = get_irn_irg(node);
@@ -67,6 +69,7 @@ static void lower64_minus(ir_node *node, ir_mode *mode)
 	ir_node  *right_high   = get_lowered_high(op);
 	ir_mode  *low_unsigned = get_irn_mode(right_low);
 	ir_node  *left_low     = new_r_Const_null(irg, low_unsigned);
+	ir_mode  *mode         = get_node_high_mode(node);
 	ir_node  *left_high    = new_r_Const_null(irg, mode);
 	ir_node  *subs         = new_bd_arm_SubS_t(dbgi, block, left_low,
 	                                           right_low);
@@ -77,7 +80,7 @@ static void lower64_minus(ir_node *node, ir_mode *mode)
 	ir_set_dw_lowered(node, res_low, sbc);
 }
 
-static void lower64_mul(ir_node *node, ir_mode *mode)
+static void lower64_mul(ir_node *const node)
 {
 	dbg_info *dbgi       = get_irn_dbg_info(node);
 	ir_node  *block      = get_nodes_block(node);
@@ -87,6 +90,7 @@ static void lower64_mul(ir_node *node, ir_mode *mode)
 	ir_node  *left_high  = get_lowered_high(left);
 	ir_node  *right_low  = get_lowered_low(right);
 	ir_node  *right_high = get_lowered_high(right);
+	ir_mode  *mode       = get_node_high_mode(node);
 	ir_node  *conv_l_low = new_rd_Conv(dbgi, block, left_low, mode);
 	ir_node  *mul1       = new_rd_Mul(dbgi, block, conv_l_low, right_high);
 	ir_node  *umull      = new_bd_arm_UMulL_t(dbgi, block, left_low, right_low);
@@ -130,8 +134,7 @@ static void create_divmod_intrinsics(ir_mode *mode_unsigned,
 	ldivmod = make_divmod("__aeabi_ldivmod", even, odd);
 }
 
-static void lower_divmod(ir_node *node, ir_node *left, ir_node *right,
-                         ir_node *mem, ir_mode *mode, int res_offset)
+static void lower_divmod(ir_node *const node, ir_node *const left, ir_node *const right, ir_node *const mem, int const res_offset)
 {
 	dbg_info  *dbgi       = get_irn_dbg_info(node);
 	ir_node   *block      = get_nodes_block(node);
@@ -181,6 +184,7 @@ static void lower_divmod(ir_node *node, ir_node *left, ir_node *right,
 			break;
 		case pn_Div_res: {
 			ir_mode *low_mode = get_irn_mode(left_low);
+			ir_mode *mode     = get_node_high_mode(node);
 			if (arm_cg_config.big_endian) {
 				ir_node *res_low  = new_r_Proj(resproj, low_mode, res_offset+1);
 				ir_node *res_high = new_r_Proj(resproj, mode,     res_offset);
@@ -199,25 +203,26 @@ static void lower_divmod(ir_node *node, ir_node *left, ir_node *right,
 	}
 }
 
-static void lower64_div(ir_node *node, ir_mode *mode)
+static void lower64_div(ir_node *const node)
 {
 	ir_node *left  = get_Div_left(node);
 	ir_node *right = get_Div_right(node);
 	ir_node *mem   = get_Div_mem(node);
-	lower_divmod(node, left, right, mem, mode, 0);
+	lower_divmod(node, left, right, mem, 0);
 }
 
-static void lower64_mod(ir_node *node, ir_mode *mode)
+static void lower64_mod(ir_node *const node)
 {
 	ir_node *left  = get_Mod_left(node);
 	ir_node *right = get_Mod_right(node);
 	ir_node *mem   = get_Mod_mem(node);
-	lower_divmod(node, left, right, mem, mode, 2);
+	lower_divmod(node, left, right, mem, 2);
 }
 
-static void lower64_shl(ir_node *node, ir_mode *mode)
+static void lower64_shl(ir_node *const node)
 {
 	/* the following algo works, because we have modulo shift 256 */
+	ir_mode  *mode       = get_node_high_mode(node);
 	assert(get_mode_modulo_shift(mode) == 256);
 	dbg_info *dbgi       = get_irn_dbg_info(node);
 	ir_node  *block      = get_nodes_block(node);
@@ -248,11 +253,10 @@ static void lower64_shl(ir_node *node, ir_mode *mode)
 	ir_set_dw_lowered(node, low, or2);
 }
 
-static void lower64_shr(ir_node *node, ir_mode *mode)
+static void lower64_shr(ir_node *const node)
 {
-	(void)mode;
 	/* the following algo works, because we have modulo shift 256 */
-	assert(get_mode_modulo_shift(mode) == 256);
+	assert(get_mode_modulo_shift(get_node_high_mode(node)) == 256);
 	dbg_info *dbgi       = get_irn_dbg_info(node);
 	ir_node  *block      = get_nodes_block(node);
 	ir_node  *left       = get_Shr_left(node);
@@ -282,9 +286,9 @@ static void lower64_shr(ir_node *node, ir_mode *mode)
 	ir_set_dw_lowered(node, or2, shr3);
 }
 
-static void lower64_shrs(ir_node *node, ir_mode *mode)
+static void lower64_shrs(ir_node *const node)
 {
-	(void)mode;
+	ir_mode  *mode       = get_node_high_mode(node);
 	/* the following algo works, because we have modulo shift 256 */
 	assert(get_mode_modulo_shift(mode) == 256);
 	dbg_info *dbgi       = get_irn_dbg_info(node);

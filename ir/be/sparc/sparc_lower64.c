@@ -17,7 +17,7 @@
 #include "sparc_bearch_t.h"
 #include "sparc_nodes_attr.h"
 
-static void lower64_add(ir_node *node, ir_mode *mode)
+static void lower64_add(ir_node *const node)
 {
 	dbg_info *dbgi       = get_irn_dbg_info(node);
 	ir_node  *block      = get_nodes_block(node);
@@ -31,12 +31,13 @@ static void lower64_add(ir_node *node, ir_mode *mode)
 	                                            right_low);
 	ir_node  *res_low    = new_r_Proj(addcc, mode_Iu, pn_sparc_AddCC_t_res);
 	ir_node  *res_flags  = new_r_Proj(addcc, mode_ANY, pn_sparc_AddCC_t_flags);
+	ir_mode  *mode       = get_node_high_mode(node);
 	ir_node  *addx       = new_bd_sparc_AddX_t(dbgi, block, left_high,
 	                                           right_high, res_flags, mode);
 	ir_set_dw_lowered(node, res_low, addx);
 }
 
-static void lower64_sub(ir_node *node, ir_mode *mode)
+static void lower64_sub(ir_node *const node)
 {
 	dbg_info *dbgi       = get_irn_dbg_info(node);
 	ir_node  *block      = get_nodes_block(node);
@@ -50,12 +51,13 @@ static void lower64_sub(ir_node *node, ir_mode *mode)
 	                                            right_low);
 	ir_node  *res_low    = new_r_Proj(subcc, mode_Iu, pn_sparc_SubCC_t_res);
 	ir_node  *res_flags  = new_r_Proj(subcc, mode_ANY, pn_sparc_SubCC_t_flags);
+	ir_mode  *mode       = get_node_high_mode(node);
 	ir_node  *subx       = new_bd_sparc_SubX_t(dbgi, block, left_high,
 	                                           right_high, res_flags, mode);
 	ir_set_dw_lowered(node, res_low, subx);
 }
 
-static void lower64_minus(ir_node *node, ir_mode *mode)
+static void lower64_minus(ir_node *const node)
 {
 	dbg_info *dbgi         = get_irn_dbg_info(node);
 	ir_graph *irg          = get_irn_irg(node);
@@ -65,6 +67,7 @@ static void lower64_minus(ir_node *node, ir_mode *mode)
 	ir_node  *right_high   = get_lowered_high(op);
 	ir_mode  *low_unsigned = get_irn_mode(right_low);
 	ir_node  *left_low     = new_r_Const_null(irg, low_unsigned);
+	ir_mode  *mode         = get_node_high_mode(node);
 	ir_node  *left_high    = new_r_Const_null(irg, mode);
 	ir_node  *subcc        = new_bd_sparc_SubCC_t(dbgi, block, left_low,
 	                                              right_low);

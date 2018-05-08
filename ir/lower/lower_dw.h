@@ -43,7 +43,7 @@ void ir_prepare_dw_lowering(const lwrdw_param_t *param);
  */
 void ir_lower_dw_ops(void);
 
-typedef void (*lower_dw_func)(ir_node *node, ir_mode *mode);
+typedef void (*lower_dw_func)(ir_node *node);
 
 /**
  * register a custom lowering function.
@@ -56,6 +56,8 @@ void ir_register_dw_lower_function(ir_op *op, lower_dw_func func);
  * It registers 2 new values for the high and low part of the lowered value.
  */
 void ir_set_dw_lowered(ir_node *old, ir_node *new_low, ir_node *new_high);
+
+ir_mode *get_node_high_mode(ir_node *node);
 
 /**
  * Query lowering results of a node. In a lowering callback you can use this
@@ -74,7 +76,7 @@ static inline ir_node *get_lowered_high(ir_node *node)
 	return get_node_entry(node)->high_word;
 }
 
-void ir_default_lower_dw_Conv(ir_node *node, ir_mode *mode);
+void ir_default_lower_dw_Conv(ir_node *node);
 
 /**
  * We need a custom version of part_block_edges because during transformation
