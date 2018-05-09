@@ -58,7 +58,15 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *constraint, ident *c
 /* Determine number of operands. */
 unsigned be_count_asm_operands(ir_node const *node);
 
-ir_node *be_make_asm(ir_node const *node, ir_node **in, arch_register_req_t const **in_reqs, arch_register_req_t const **out_reqs, void *operands);
+typedef struct be_asm_info_t {
+	ir_node                   **ins;
+	arch_register_req_t const **in_reqs;
+	arch_register_req_t const **out_reqs;
+} be_asm_info_t;
+
+be_asm_info_t be_asm_prepare_info(void);
+
+ir_node *be_make_asm(ir_node const *node, be_asm_info_t const *info, void *operands);
 
 typedef void be_emit_asm_operand_func(ir_node const *asmn, char modifier, unsigned pos);
 

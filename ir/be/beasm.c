@@ -176,6 +176,19 @@ unsigned be_count_asm_operands(ir_node const *const node)
 	return n_operands;
 }
 
+be_asm_info_t be_asm_prepare_info(void)
+{
+	arch_register_req_t const **const out_reqs = NEW_ARR_F(arch_register_req_t const*, 0);
+	ir_node                   **const ins      = NEW_ARR_F(ir_node*, 0);
+	arch_register_req_t const **const in_reqs  = NEW_ARR_F(arch_register_req_t const*, 0);
+
+	return (be_asm_info_t){
+		.ins      = ins,
+		.in_reqs  = in_reqs,
+		.out_reqs = out_reqs,
+	};
+}
+
 static bool can_match(arch_register_req_t const *const in, arch_register_req_t const *const out)
 {
 	if (in->cls != out->cls)
@@ -198,8 +211,12 @@ static bool match_requirement(arch_register_req_t const **reqs, size_t const n_r
 	return false;
 }
 
-ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_t const **in_reqs, arch_register_req_t const **out_reqs, void *const operands)
+ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info, void *const operands)
 {
+	ir_node                   **in       = info->ins;
+	arch_register_req_t const **in_reqs  = info->in_reqs;
+	arch_register_req_t const **out_reqs = info->out_reqs;
+
 	assert(ARR_LEN(in) == ARR_LEN(in_reqs));
 
 	ir_graph       *const irg  = get_irn_irg(node);
@@ -322,9 +339,9 @@ ir_node *be_make_asm(ir_node const *const node, ir_node **in, arch_register_req_
 		}
 	}
 
-	backend_info_t *const info = be_get_info(new_node);
+	backend_info_t *const be_info = be_get_info(new_node);
 	for (size_t o = 0; o < n_outs; ++o) {
-		info->out_infos[o].req = out_reqs[o];
+		be_info->out_infos[o].req = out_reqs[o];
 	}
 
 	DEL_ARR_F(in);

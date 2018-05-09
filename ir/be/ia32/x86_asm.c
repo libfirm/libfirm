@@ -82,6 +82,8 @@ static void set_operand_if_invalid(x86_asm_operand_t *const op, be_asm_operand_k
 
 ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t const *const constraints)
 {
+	be_asm_info_t info = be_asm_prepare_info();
+
 	unsigned           const n_operands = be_count_asm_operands(node);
 	ir_graph          *const irg        = get_irn_irg(node);
 	struct obstack    *const obst       = get_irg_obstack(irg);
@@ -93,8 +95,6 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t cons
 	ir_asm_constraint const *const out_constraints   = get_ASM_output_constraints(node);
 
 	/* construct output constraints */
-	arch_register_req_t const **out_reqs = NEW_ARR_F(arch_register_req_t const*, 0);
-
 	for (unsigned o = 0; o < n_out_constraints; ++o) {
 		ir_asm_constraint const *const constraint = &out_constraints[o];
 
@@ -102,16 +102,14 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t cons
 		parse_asm_constraints(&parsed_constraint, constraints,
 		                      constraint->constraint, true);
 
-		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, o);
-		ARR_APP1(arch_register_req_t const*, out_reqs, req);
+		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, info.out_reqs, o);
+		ARR_APP1(arch_register_req_t const*, info.out_reqs, req);
 
 		x86_asm_operand_t *const op = &operands[constraint->pos];
 		set_operand_if_invalid(op, BE_ASM_OPERAND_OUTPUT_VALUE, o, constraint);
 	}
 
 	/* inputs + input constraints */
-	ir_node                   **in      = NEW_ARR_F(ir_node*, 0);
-	arch_register_req_t const **in_reqs = NEW_ARR_F(arch_register_req_t const*, 0);
 	for (int i = 0; i < n_inputs; ++i) {
 		ir_asm_constraint const *const constraint = &in_constraints[i];
 
@@ -130,8 +128,8 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t cons
 		}
 
 		ir_node            *const  new_pred = be_transform_node(pred);
-		unsigned            const  in_pos   = ARR_LEN(in_reqs);
-		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, in_pos);
+		unsigned            const  in_pos   = ARR_LEN(info.in_reqs);
+		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, info.out_reqs, in_pos);
 
 		set_operand_if_invalid(op, BE_ASM_OPERAND_INPUT_VALUE, in_pos, constraint);
 
@@ -142,11 +140,11 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t cons
 			/* TODO: match Load or Load/Store if memory possible is set */
 		}
 
-		ARR_APP1(arch_register_req_t const*, in_reqs, req);
-		ARR_APP1(ir_node*, in, new_pred);
+		ARR_APP1(arch_register_req_t const*, info.in_reqs, req);
+		ARR_APP1(ir_node*, info.ins, new_pred);
 	}
 
-	return be_make_asm(node, in, in_reqs, out_reqs, operands);
+	return be_make_asm(node, &info, operands);
 }
 
 void x86_set_be_asm_constraint_support(const x86_asm_constraint_list_t *constraints)

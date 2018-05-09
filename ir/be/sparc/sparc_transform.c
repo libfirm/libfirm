@@ -270,15 +270,16 @@ static bool sparc_match_immediate(sparc_asm_operand_t *const operand, ir_node *c
 
 static ir_node *gen_ASM(ir_node *node)
 {
+	be_asm_info_t info = be_asm_prepare_info();
+
 	unsigned             const n_operands = be_count_asm_operands(node);
 	ir_graph            *const irg        = get_irn_irg(node);
 	struct obstack      *const obst       = get_irg_obstack(irg);
 	sparc_asm_operand_t *const operands   = NEW_ARR_DZ(sparc_asm_operand_t, obst, n_operands);
 
 	/* construct output constraints */
-	arch_register_req_t const      **out_reqs          = NEW_ARR_F(arch_register_req_t const*, 0);
-	ir_asm_constraint   const *const out_constraints   = get_ASM_output_constraints(node);
-	size_t                     const n_out_constraints = get_ASM_n_output_constraints(node);
+	ir_asm_constraint const *const out_constraints   = get_ASM_output_constraints(node);
+	size_t                   const n_out_constraints = get_ASM_n_output_constraints(node);
 	for (size_t out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
 		const ir_asm_constraint *constraint = &out_constraints[out_idx];
 		unsigned                 pos        = constraint->pos;
@@ -286,17 +287,15 @@ static ir_node *gen_ASM(ir_node *node)
 		parse_asm_constraints(&parsed_constraint, constraint->constraint, true);
 
 		assert(parsed_constraint.immediate_type == 0);
-		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, out_idx);
-		ARR_APP1(arch_register_req_t const*, out_reqs, req);
+		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, info.out_reqs, out_idx);
+		ARR_APP1(arch_register_req_t const*, info.out_reqs, req);
 
 		be_set_asm_operand(&operands[pos].op, BE_ASM_OPERAND_OUTPUT_VALUE, out_idx);
 	}
 
 	/* inputs + input constraints */
-	ir_node                        **in             = NEW_ARR_F(ir_node*, 0);
-	arch_register_req_t const      **in_reqs        = NEW_ARR_F(arch_register_req_t const*, 0);
-	ir_asm_constraint   const *const in_constraints = get_ASM_input_constraints(node);
-	int                        const n_inputs       = get_ASM_n_inputs(node);
+	ir_asm_constraint const *const in_constraints = get_ASM_input_constraints(node);
+	int                      const n_inputs       = get_ASM_n_inputs(node);
 	for (int i = 0; i < n_inputs; ++i) {
 		ir_node                 *pred         = get_ASM_input(node, i);
 		const ir_asm_constraint *constraint   = &in_constraints[i];
@@ -314,15 +313,15 @@ static ir_node *gen_ASM(ir_node *node)
 
 		ir_node             *const new_pred = be_transform_node(pred);
 		be_asm_operand_kind_t      kind     = BE_ASM_OPERAND_INPUT_VALUE;
-		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, out_reqs, i);
+		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, info.out_reqs, i);
 		if (req == arch_no_register_req) {
 			kind = BE_ASM_OPERAND_MEMORY;
 			req  = arch_get_irn_register_req(new_pred)->cls->class_req;
 		}
 
-		be_set_asm_operand(&operand->op, kind, ARR_LEN(in));
-		ARR_APP1(ir_node*, in, new_pred);
-		ARR_APP1(arch_register_req_t const*, in_reqs, req);
+		be_set_asm_operand(&operand->op, kind, ARR_LEN(info.ins));
+		ARR_APP1(ir_node*, info.ins, new_pred);
+		ARR_APP1(arch_register_req_t const*, info.in_reqs, req);
 	}
 
 	/* Handle clobber "cc". */
@@ -330,12 +329,12 @@ static ir_node *gen_ASM(ir_node *node)
 	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
 		const char *const clobber = get_id_str(clobbers[c]);
 		if (streq(clobber, "cc")) {
-			ARR_APP1(arch_register_req_t const*, out_reqs, sparc_registers[REG_PSR].single_req);
-			ARR_APP1(arch_register_req_t const*, out_reqs, sparc_registers[REG_FSR].single_req);
+			ARR_APP1(arch_register_req_t const*, info.out_reqs, sparc_registers[REG_PSR].single_req);
+			ARR_APP1(arch_register_req_t const*, info.out_reqs, sparc_registers[REG_FSR].single_req);
 		}
 	}
 
-	return be_make_asm(node, in, in_reqs, out_reqs, operands);
+	return be_make_asm(node, &info, operands);
 }
 
 /* Transforms the left operand of a binary operation.
