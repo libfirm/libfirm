@@ -282,15 +282,11 @@ static ir_node *gen_ASM(ir_node *node)
 	size_t                   const n_out_constraints = get_ASM_n_output_constraints(node);
 	for (size_t out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
 		const ir_asm_constraint *constraint = &out_constraints[out_idx];
-		unsigned                 pos        = constraint->pos;
 		be_asm_constraint_t      parsed_constraint;
 		parse_asm_constraints(&parsed_constraint, constraint->constraint, true);
 
 		assert(parsed_constraint.immediate_type == 0);
-		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, info.out_reqs, out_idx);
-		ARR_APP1(arch_register_req_t const*, info.out_reqs, req);
-
-		be_set_asm_operand(&operands[pos].op, BE_ASM_OPERAND_OUTPUT_VALUE, out_idx);
+		be_asm_add_out(&info, &operands[constraint->pos].op, obst, &parsed_constraint, n_out_constraints, out_idx);
 	}
 
 	/* inputs + input constraints */

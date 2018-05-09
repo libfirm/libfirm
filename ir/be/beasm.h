@@ -75,6 +75,13 @@ static inline void be_asm_add_in(be_asm_info_t *const info, be_asm_operand_t *co
 	ARR_APP1(arch_register_req_t const*, info->in_reqs, req);
 }
 
+static inline void be_asm_add_out(be_asm_info_t *const info, be_asm_operand_t *const op, struct obstack *const obst, be_asm_constraint_t const *const be_constraint, size_t const n_out_constraints, int const opos)
+{
+	be_set_asm_operand(op, BE_ASM_OPERAND_OUTPUT_VALUE, opos);
+	arch_register_req_t const *const oreq = be_make_register_req(obst, be_constraint, n_out_constraints, info->out_reqs, opos);
+	ARR_APP1(arch_register_req_t const*, info->out_reqs, oreq);
+}
+
 ir_node *be_make_asm(ir_node const *node, be_asm_info_t const *info, void *operands);
 
 typedef void be_emit_asm_operand_func(ir_node const *asmn, char modifier, unsigned pos);
