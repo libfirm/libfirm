@@ -319,9 +319,7 @@ static ir_node *gen_ASM(ir_node *node)
 			req  = arch_get_irn_register_req(new_pred)->cls->class_req;
 		}
 
-		be_set_asm_operand(&operand->op, kind, ARR_LEN(info.ins));
-		ARR_APP1(ir_node*, info.ins, new_pred);
-		ARR_APP1(arch_register_req_t const*, info.in_reqs, req);
+		be_asm_add_in(&info, &operand->op, kind, new_pred, req);
 	}
 
 	/* Handle clobber "cc". */

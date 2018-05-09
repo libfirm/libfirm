@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#include "array.h"
 #include "be_types.h"
 #include "firm_types.h"
 #include "obstack.h"
@@ -65,6 +66,14 @@ typedef struct be_asm_info_t {
 } be_asm_info_t;
 
 be_asm_info_t be_asm_prepare_info(void);
+
+static inline void be_asm_add_in(be_asm_info_t *const info, be_asm_operand_t *const op, be_asm_operand_kind_t const kind, ir_node *const in, arch_register_req_t const *const req)
+{
+	assert(kind == BE_ASM_OPERAND_INPUT_VALUE || kind == BE_ASM_OPERAND_MEMORY);
+	be_set_asm_operand(op, kind, ARR_LEN(info->ins));
+	ARR_APP1(ir_node*,                   info->ins,     in);
+	ARR_APP1(arch_register_req_t const*, info->in_reqs, req);
+}
 
 ir_node *be_make_asm(ir_node const *node, be_asm_info_t const *info, void *operands);
 
