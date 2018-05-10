@@ -19,28 +19,10 @@
 #include "xmalloc.h"
 #include <ctype.h>
 
-arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_constraint_t const *const c, int const n_outs, arch_register_req_t const **const out_reqs, int const pos)
+arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_constraint_t const *const c)
 {
-	int const same_as = c->same_as;
-	if (same_as >= 0) {
-		if (same_as >= n_outs)
-			panic("invalid output number in same_as constraint");
-
-		arch_register_req_t       *const req   = OALLOCZ(obst, arch_register_req_t);
-		arch_register_req_t const *const other = out_reqs[same_as];
-		*req                = *other;
-		req->should_be_same = 1U << pos;
-
-		/* Switch constraints. This is because in firm we have same_as
-		 * constraints on the output constraints while in the gcc asm syntax
-		 * they are specified on the input constraints. */
-		out_reqs[same_as] = req;
-		return other;
-	}
-
-	/* Pure memory ops. */
-	if (!c->cls)
-		return arch_no_register_req;
+	assert(c->same_as < 0);
+	assert(c->cls);
 
 	if (c->all_registers_allowed)
 		return c->cls->class_req;
@@ -59,12 +41,18 @@ arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_con
 	return req;
 }
 
-void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, ident *const constraint_text, bool const is_output, parse_constraint_letter_func_t *const parse_constraint_letter, void const *const env)
+void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, ident *const constraint_text, parse_constraint_letter_func_t *const parse_constraint_letter, void const *const env)
 {
 	memset(constraint, 0, sizeof(*constraint));
 	constraint->same_as = -1;
 
 	char const *i = get_id_str(constraint_text);
+
+	bool is_output = false;
+	if (i[0] == '+' || i[0] == '=') {
+		++i;
+		is_output = true;
+	}
 
 	/* TODO: improve error messages with node and source info. (As users can
 	 * easily hit these) */
@@ -81,8 +69,6 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 		case '\t':
 		case '\n':
 		case '%':
-		case '=':
-		case '+':
 		case '&':
 		case '*':
 			++i;
@@ -157,28 +143,21 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 	constraint->immediate_type        = immediate_type;
 }
 
-unsigned be_count_asm_operands(ir_node const *const node)
+/* Determine number of output operands. */
+static unsigned be_count_asm_outputs(ir_node const *const node)
 {
-	unsigned n_operands = 0;
-
-	ir_asm_constraint const *const out_constraints   = get_ASM_output_constraints(node);
-	unsigned                 const n_out_constraints = get_ASM_n_output_constraints(node);
-	for (unsigned i = 0; i < n_out_constraints; ++i) {
-		n_operands = MAX(n_operands, out_constraints[i].pos + 1);
+	unsigned                       n_outputs   = 0;
+	ir_asm_constraint const *const constraints = get_ASM_constraints(node);
+	for (unsigned i = 0, n = get_ASM_n_constraints(node); i != n; ++i) {
+		n_outputs = MAX(n_outputs, (unsigned)(constraints[i].out_pos + 1));
 	}
-
-	ir_asm_constraint const *const in_constraints = get_ASM_input_constraints(node);
-	unsigned                 const n_inputs       = get_ASM_n_inputs(node);
-	for (unsigned i = 0; i < n_inputs; ++i) {
-		n_operands = MAX(n_operands, in_constraints[i].pos + 1);
-	}
-
-	return n_operands;
+	return n_outputs;
 }
 
-be_asm_info_t be_asm_prepare_info(void)
+be_asm_info_t be_asm_prepare_info(ir_node const *const node)
 {
-	arch_register_req_t const **const out_reqs = NEW_ARR_F(arch_register_req_t const*, 0);
+	unsigned                    const n_outs   = be_count_asm_outputs(node);
+	arch_register_req_t const **const out_reqs = NEW_ARR_F(arch_register_req_t const*, n_outs);
 	ir_node                   **const ins      = NEW_ARR_F(ir_node*, 0);
 	arch_register_req_t const **const in_reqs  = NEW_ARR_F(arch_register_req_t const*, 0);
 
@@ -223,11 +202,10 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	struct obstack *const obst = get_irg_obstack(irg);
 
 	/* Handle early clobbers. */
-	size_t                   const orig_n_ins        = ARR_LEN(in_reqs);
-	ir_asm_constraint const *const out_constraints   = get_ASM_output_constraints(node);
-	unsigned                 const n_out_constraints = get_ASM_n_output_constraints(node);
-	for (unsigned o = 0; o != n_out_constraints; ++o) {
-		ir_asm_constraint const *const constraint = &out_constraints[o];
+	size_t                   const orig_n_ins  = ARR_LEN(in_reqs);
+	ir_asm_constraint const *const constraints = get_ASM_constraints(node);
+	for (unsigned o = 0, n = get_ASM_n_constraints(node); o != n; ++o) {
+		ir_asm_constraint const *const constraint = &constraints[o];
 		if (strchr(get_id_str(constraint->constraint), '&')) {
 			arch_register_req_t const *const oreq = out_reqs[o];
 

@@ -15,6 +15,8 @@
 
 #include "array.h"
 #include "be_types.h"
+#include "bearch.h"
+#include "betranshlp.h"
 #include "firm_types.h"
 #include "obstack.h"
 
@@ -50,14 +52,11 @@ typedef struct be_asm_constraint_t {
 	int                          same_as;
 } be_asm_constraint_t;
 
-arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_constraint_t const *c, int n_outs, arch_register_req_t const **out_reqs, int pos);
+arch_register_req_t const *be_make_register_req(struct obstack *obst, be_asm_constraint_t const *c);
 
 typedef void parse_constraint_letter_func_t(void const *env, be_asm_constraint_t*, char l);
 
-void be_parse_asm_constraints_internal(be_asm_constraint_t *constraint, ident *constraint_text, bool is_output, parse_constraint_letter_func_t *parse_constraint_letter, void const *env);
-
-/* Determine number of operands. */
-unsigned be_count_asm_operands(ir_node const *node);
+void be_parse_asm_constraints_internal(be_asm_constraint_t *constraint, ident *constraint_text, parse_constraint_letter_func_t *parse_constraint_letter, void const *env);
 
 typedef struct be_asm_info_t {
 	ir_node                   **ins;
@@ -65,7 +64,7 @@ typedef struct be_asm_info_t {
 	arch_register_req_t const **out_reqs;
 } be_asm_info_t;
 
-be_asm_info_t be_asm_prepare_info(void);
+be_asm_info_t be_asm_prepare_info(ir_node const *node);
 
 static inline void be_asm_add_in(be_asm_info_t *const info, be_asm_operand_t *const op, be_asm_operand_kind_t const kind, ir_node *const in, arch_register_req_t const *const req)
 {
@@ -75,11 +74,29 @@ static inline void be_asm_add_in(be_asm_info_t *const info, be_asm_operand_t *co
 	ARR_APP1(arch_register_req_t const*, info->in_reqs, req);
 }
 
-static inline void be_asm_add_out(be_asm_info_t *const info, be_asm_operand_t *const op, struct obstack *const obst, be_asm_constraint_t const *const be_constraint, size_t const n_out_constraints, int const opos)
+static inline arch_register_req_t const *be_asm_make_same_req(struct obstack *const obst, arch_register_req_t const *const req, unsigned const pos)
+{
+	arch_register_req_t *const oreq = OALLOCZ(obst, arch_register_req_t);
+	*oreq                = *req;
+	oreq->should_be_same = 1U << pos;
+	return oreq;
+}
+
+static inline void be_asm_add_inout(be_asm_info_t *const info, be_asm_operand_t *const op, struct obstack *const obst, ir_node *const in, arch_register_req_t const *const ireq, int const opos)
+{
+	ir_node *const new_in = be_transform_node(in);
+	be_asm_add_in(info, op, BE_ASM_OPERAND_INPUT_VALUE, new_in, ireq);
+	if (opos >= 0) {
+		arch_register_req_t const *const oreq = be_asm_make_same_req(obst, ireq, ARR_LEN(info->in_reqs) - 1);
+		info->out_reqs[opos] = oreq;
+	}
+}
+
+static inline void be_asm_add_out(be_asm_info_t *const info, be_asm_operand_t *const op, struct obstack *const obst, be_asm_constraint_t const *const be_constraint, int const opos)
 {
 	be_set_asm_operand(op, BE_ASM_OPERAND_OUTPUT_VALUE, opos);
-	arch_register_req_t const *const oreq = be_make_register_req(obst, be_constraint, n_out_constraints, info->out_reqs, opos);
-	ARR_APP1(arch_register_req_t const*, info->out_reqs, oreq);
+	arch_register_req_t const *const oreq = be_make_register_req(obst, be_constraint);
+	info->out_reqs[opos] = oreq;
 }
 
 ir_node *be_make_asm(ir_node const *node, be_asm_info_t const *info, void *operands);

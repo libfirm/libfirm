@@ -432,79 +432,74 @@ FIRM_API ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2,
 
 /** Constructor for an ASM pseudo node.
  *
- * @param db         A pointer for debug information.
- * @param block      The block the node belong to.
- * @param mem        memory dependency
- * @param arity      The number of data inputs to the node.
- * @param in         The array of length arity of data inputs.
- * @param inputs     The array of length arity of input constraints.
- * @param n_outs     The number of data outputs to the node.
- * @param outputs    The array of length n_outs of output constraints.
- * @param n_clobber  The number of clobbered registers.
- * @param clobber    The array of length n_clobber of clobbered registers.
- * @param asm_text   The assembler text.
+ * @param db             A pointer for debug information.
+ * @param block          The block the node belong to.
+ * @param mem            memory dependency
+ * @param arity          The number of data inputs to the node.
+ * @param in             The array of length arity of data inputs.
+ * @param n_constraints  The number of constraints to the node.
+ * @param constraints    The array of length n_constraints of constraints.
+ * @param n_clobber      The number of clobbered registers.
+ * @param clobber        The array of length n_clobber of clobbered registers.
+ * @param asm_text       The assembler text.
  */
 FIRM_API ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
-                            int arity, ir_node *in[], ir_asm_constraint *inputs,
-                            size_t n_outs, ir_asm_constraint *outputs,
+                            int arity, ir_node *in[],
+                            size_t n_constraints, ir_asm_constraint *constraints,
                             size_t n_clobber, ident *clobber[],
                             ident *asm_text);
 
 /** Constructor for an ASM pseudo node.
  *
- * @param block      The block the node belong to.
- * @param mem        memory dependency
- * @param arity      The number of data inputs to the node.
- * @param in         The array of length arity of data inputs.
- * @param inputs     The array of length arity of input constraints.
- * @param n_outs     The number of data outputs to the node.
- * @param outputs    The array of length n_outs of output constraints.
- * @param n_clobber  The number of clobbered registers.
- * @param clobber    The array of length n_clobber of clobbered registers.
- * @param asm_text   The assembler text.
+ * @param block          The block the node belong to.
+ * @param mem            memory dependency
+ * @param arity          The number of data inputs to the node.
+ * @param in             The array of length arity of data inputs.
+ * @param n_constraints  The number of constraints to the node.
+ * @param constraints    The array of length n_constraints of constraints.
+ * @param n_clobber      The number of clobbered registers.
+ * @param clobber        The array of length n_clobber of clobbered registers.
+ * @param asm_text       The assembler text.
  */
 FIRM_API ir_node *new_r_ASM(ir_node *block, ir_node *mem,
-                            int arity, ir_node *in[], ir_asm_constraint *inputs,
-                            size_t n_outs, ir_asm_constraint *outputs,
+                            int arity, ir_node *in[],
+                            size_t n_constraints, ir_asm_constraint *constraints,
                             size_t n_clobber, ident *clobber[],
                             ident *asm_text);
 
 /** Constructor for an ASM pseudo node.
  *
- * @param db         A pointer for debug information.
- * @param mem        memory dependency
- * @param arity      The number of data inputs to the node.
- * @param in         The array of length arity of data inputs.
- * @param inputs     The array of length arity of input constraints.
- * @param n_outs     The number of data outputs to the node.
- * @param outputs    The array of length n_outs of output constraints.
- * @param n_clobber  The number of clobbered registers.
- * @param clobber    The array of length n_clobber of clobbered registers.
- * @param asm_text   The assembler text.
+ * @param db             A pointer for debug information.
+ * @param mem            memory dependency
+ * @param arity          The number of data inputs to the node.
+ * @param in             The array of length arity of data inputs.
+ * @param n_constraints  The number of constraints to the node.
+ * @param constraints    The array of length n_constraints of constraints.
+ * @param n_clobber      The number of clobbered registers.
+ * @param clobber        The array of length n_clobber of clobbered registers.
+ * @param asm_text       The assembler text.
  * @ingroup ASM
  */
-FIRM_API ir_node *new_d_ASM(dbg_info *db, ir_node *mem, int arity,
-                            ir_node *in[], ir_asm_constraint *inputs,
-                            size_t n_outs, ir_asm_constraint *outputs,
+FIRM_API ir_node *new_d_ASM(dbg_info *db, ir_node *mem,
+                            int arity, ir_node *in[],
+                            size_t n_constraints, ir_asm_constraint *constraints,
                             size_t n_clobber, ident *clobber[],
                             ident *asm_text);
 
 /** Constructor for an ASM pseudo node.
  *
- * @param mem        memory dependency
- * @param arity      The number of data inputs to the node.
- * @param in         The array of length arity of data inputs.
- * @param inputs     The array of length arity of input constraints.
- * @param n_outs     The number of data outputs to the node.
- * @param outputs    The array of length n_outs of output constraints.
- * @param n_clobber  The number of clobbered registers.
- * @param clobber    The array of length n_clobber of clobbered registers.
- * @param asm_text   The assembler text.
+ * @param mem            memory dependency
+ * @param arity          The number of data inputs to the node.
+ * @param in             The array of length arity of data inputs.
+ * @param n_constraints  The number of constraints to the node.
+ * @param constraints    The array of length n_constraints of constraints.
+ * @param n_clobber      The number of clobbered registers.
+ * @param clobber        The array of length n_clobber of clobbered registers.
+ * @param asm_text       The assembler text.
  * @ingroup ASM
  */
 FIRM_API ir_node *new_ASM(ir_node *mem, int arity, ir_node *in[],
-                          ir_asm_constraint *inputs, size_t n_outs,
-                          ir_asm_constraint *outputs,
+                          size_t n_constraints, ir_asm_constraint *constraints,
                           size_t n_clobber, ident *clobber[], ident *asm_text);
 
 /** @} */

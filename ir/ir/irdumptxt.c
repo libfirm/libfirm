@@ -308,18 +308,18 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 		break;
 	case iro_ASM: {
 		fprintf(F, "  assembler text: %s", get_id_str(get_ASM_text(n)));
-		fprintf(F, "\n  inputs:  ");
-		const ir_asm_constraint *in_cons = get_ASM_input_constraints(n);
-		for (int i = 0, n_inputs = get_ASM_n_inputs(n); i < n_inputs; ++i) {
-			fprintf(F, "%%%u %s ", in_cons[i].pos,
-			        get_id_str(in_cons[i].constraint));
-		}
-		fprintf(F, "\n  outputs: ");
-		const ir_asm_constraint *out_cons = get_ASM_output_constraints(n);
-		for (int i = 0, n_outputs = get_ASM_n_output_constraints(n);
-		     i < n_outputs; ++i) {
-			fprintf(F, "%%%u %s ", out_cons[i].pos,
-			        get_id_str(out_cons[i].constraint));
+		fprintf(F, "\n  constraints:");
+		char              const       *sep  = "";
+		ir_asm_constraint const *const cons = get_ASM_constraints(n);
+		for (size_t i = 0, n_cons = get_ASM_n_constraints(n); i < n_cons; sep = ",", ++i) {
+			ir_asm_constraint const *const c = &cons[i];
+			fprintf(F, "%s %%%zu: \\\"%s\\\"", sep, i, c->constraint);
+			int const in_pos = c->in_pos;
+			if (in_pos != -1)
+				fprintf(F, " [in: %d]", n_ASM_max + 1 + in_pos);
+			int const out_pos = c->out_pos;
+			if (out_pos != -1)
+				fprintf(F, " [out: %d]", out_pos);
 		}
 
 		fprintf(F, "\n  clobber: ");

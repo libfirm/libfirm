@@ -137,7 +137,7 @@ class ASM(Node):
     Example (an i386 instruction)::
 
         ASM(text="btsl %1, %0",
-            input_constraints = ["=m", "r"],
+            constraints = ["=m", "r"],
             clobbers = ["cc"])
 
     As there are no output, the %0 references the first input which is just an
@@ -159,12 +159,10 @@ class ASM(Node):
         ("mem", "memory dependency"),
     ]
     attrs = [
-        Attribute("input_constraints", type="ir_asm_constraint*",
-                  comment="input constraints"),
-        Attribute("n_output_constraints", type="size_t", noprop=True,
-                  comment="number of output constraints"),
-        Attribute("output_constraints", type="ir_asm_constraint*",
-                  comment="output constraints"),
+        Attribute("n_constraints", type="size_t", noprop=True,
+                  comment="number of constraints"),
+        Attribute("constraints", type="ir_asm_constraint*",
+                  comment="constraints"),
         Attribute("n_clobbers", type="size_t", noprop=True,
                   comment="number of clobbered registers/memory"),
         Attribute("clobbers", type="ident**",

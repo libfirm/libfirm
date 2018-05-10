@@ -2000,54 +2000,44 @@ static bool arm_match_immediate(arm_asm_operand_t *const operand, ir_node *const
 	return true;
 }
 
-static void parse_asm_constraints(be_asm_constraint_t *const constraint, ident *const constraint_text, bool const is_output)
-{
-	be_parse_asm_constraints_internal(constraint, constraint_text, is_output, &arm_parse_constraint_letter, NULL);
-}
-
 static ir_node *gen_ASM(ir_node *const node)
 {
-	be_asm_info_t info = be_asm_prepare_info();
+	be_asm_info_t info = be_asm_prepare_info(node);
 
-	unsigned           const n_operands = be_count_asm_operands(node);
-	ir_graph          *const irg        = get_irn_irg(node);
-	struct obstack    *const obst       = get_irg_obstack(irg);
-	arm_asm_operand_t *const operands   = NEW_ARR_DZ(arm_asm_operand_t, obst, n_operands);
+	ir_asm_constraint const *const constraints   = get_ASM_constraints(node);
+	size_t                   const n_constraints = get_ASM_n_constraints(node);
+	ir_graph                *const irg           = get_irn_irg(node);
+	struct obstack          *const obst          = get_irg_obstack(irg);
+	arm_asm_operand_t       *const operands      = NEW_ARR_DZ(arm_asm_operand_t, obst, n_constraints);
+	for (size_t i = 0; i != n_constraints; ++i) {
+		ir_asm_constraint const *const c = &constraints[i];
 
-	ir_asm_constraint const *const out_constraints   = get_ASM_output_constraints(node);
-	size_t                   const n_out_constraints = get_ASM_n_output_constraints(node);
-	for (size_t o = 0; o != n_out_constraints; ++o) {
-		ir_asm_constraint const *const constraint = &out_constraints[o];
-		be_asm_constraint_t            parsed_constraint;
-		parse_asm_constraints(&parsed_constraint, constraint->constraint, true);
+		be_asm_constraint_t be_constraint;
+		be_parse_asm_constraints_internal(&be_constraint, c->constraint, &arm_parse_constraint_letter, NULL);
 
-		be_asm_add_out(&info, &operands[constraint->pos].op, obst, &parsed_constraint, n_out_constraints, o);
-	}
+		arm_asm_operand_t *const op = &operands[i];
 
-	ir_asm_constraint const *const in_constraints = get_ASM_input_constraints(node);
-	int                      const n_inputs       = get_ASM_n_inputs(node);
-	for (int i = 0; i < n_inputs; ++i) {
-		ir_node                 *const pred       = get_ASM_input(node, i);
-		ir_asm_constraint const *const constraint = &in_constraints[i];
-
-		be_asm_constraint_t parsed_constraint;
-		parse_asm_constraints(&parsed_constraint, constraint->constraint, false);
-
-		arm_asm_operand_t *const operand = &operands[constraint->pos];
-
-		char const imm_type = parsed_constraint.immediate_type;
-		if (imm_type != '\0' && arm_match_immediate(operand, pred, imm_type))
-			continue;
-
-		ir_node             *const new_pred = be_transform_node(pred);
-		be_asm_operand_kind_t      kind     = BE_ASM_OPERAND_INPUT_VALUE;
-		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, info.out_reqs, i);
-		if (req == arch_no_register_req) {
-			kind = BE_ASM_OPERAND_MEMORY;
-			req  = arch_get_irn_register_req(new_pred)->cls->class_req;
+		int const in_pos = c->in_pos;
+		if (in_pos >= 0) {
+			ir_node *const in  = get_ASM_input(node, in_pos);
+			char     const imm = be_constraint.immediate_type;
+			if (imm != '\0' && arm_match_immediate(op, in, imm)) {
+				be_set_asm_operand(&op->op, BE_ASM_OPERAND_IMMEDIATE, -1);
+			} else if (be_constraint.same_as >= 0) {
+				int                        const out_pos = operands[be_constraint.same_as].op.pos;
+				arch_register_req_t const *const ireq    = info.out_reqs[out_pos];
+				be_asm_add_inout(&info, &op->op, obst, in, ireq, out_pos);
+			} else if (be_constraint.cls) {
+				arch_register_req_t const *const ireq = be_make_register_req(obst, &be_constraint);
+				be_asm_add_inout(&info, &op->op, obst, in, ireq, c->out_pos);
+			} else {
+				ir_node                   *const new_in = be_transform_node(in);
+				arch_register_req_t const *const ireq   = arch_get_irn_register_req(new_in)->cls->class_req;
+				be_asm_add_in(&info, &op->op, BE_ASM_OPERAND_MEMORY, new_in, ireq);
+			}
+		} else {
+			be_asm_add_out(&info, &op->op, obst, &be_constraint, c->out_pos);
 		}
-
-		be_asm_add_in(&info, &operand->op, kind, new_pred, req);
 	}
 
 	return be_make_asm(node, &info, operands);

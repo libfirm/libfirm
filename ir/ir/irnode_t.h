@@ -219,11 +219,10 @@ typedef struct mod_attr {
 
 /** Attributes for ASM nodes. */
 typedef struct asm_attr {
-	except_attr        exc; /**< Exception attribute. MUST be first. */
-	ident             *text;               /**< The inline assembler text. */
-	ir_asm_constraint *input_constraints;  /**< Input constraints. */
-	ir_asm_constraint *output_constraints; /**< Output constraints. */
-	ident            **clobbers;           /**< List of clobbered registers. */
+	except_attr        exc;         /**< Exception attribute. MUST be first. */
+	ident             *text;        /**< The inline assembler text. */
+	ir_asm_constraint *constraints; /**< The constraints. */
+	ident            **clobbers;    /**< List of clobbered registers. */
 } asm_attr;
 
 /** Attributes for Proj nodes. */

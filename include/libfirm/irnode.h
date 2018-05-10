@@ -352,7 +352,7 @@ FIRM_API void remove_Sync_n(ir_node *n, int i);
  */
 
 /** Returns the number of output constraints for an ASM node.  */
-FIRM_API size_t get_ASM_n_output_constraints(const ir_node *node);
+FIRM_API size_t get_ASM_n_constraints(const ir_node *node);
 /** Returns the number of clobbered registers for an ASM node.  */
 FIRM_API size_t get_ASM_n_clobbers(const ir_node *node);
 

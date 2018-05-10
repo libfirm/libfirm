@@ -399,25 +399,17 @@ static int attrs_equal_ASM(const ir_node *a, const ir_node *b)
 	if (n_inputs != get_ASM_n_inputs(b))
 		return false;
 
-	const ir_asm_constraint *in_a = get_ASM_input_constraints(a);
-	const ir_asm_constraint *in_b = get_ASM_input_constraints(b);
-	for (int i = 0; i < n_inputs; ++i) {
-		if (in_a[i].pos != in_b[i].pos
-		    || in_a[i].constraint != in_b[i].constraint
-		    || in_a[i].mode != in_b[i].mode)
-			return false;
-	}
-
-	size_t n_outputs = get_ASM_n_output_constraints(a);
-	if (n_outputs != get_ASM_n_output_constraints(b))
+	size_t const n_constraints = get_ASM_n_constraints(a);
+	if (n_constraints != get_ASM_n_constraints(b))
 		return false;
 
-	const ir_asm_constraint *out_a = get_ASM_output_constraints(a);
-	const ir_asm_constraint *out_b = get_ASM_output_constraints(b);
-	for (size_t i = 0; i < n_outputs; ++i) {
-		if (out_a[i].pos != out_b[i].pos
-		    || out_a[i].constraint != out_b[i].constraint
-		    || out_a[i].mode != out_b[i].mode)
+	ir_asm_constraint const *const cons_a = get_ASM_constraints(a);
+	ir_asm_constraint const *const cons_b = get_ASM_constraints(b);
+	for (size_t i = 0; i < n_constraints; ++i) {
+		if (cons_a[i].in_pos     != cons_b[i].in_pos ||
+		    cons_a[i].out_pos    != cons_b[i].out_pos ||
+		    cons_a[i].constraint != cons_b[i].constraint ||
+		    cons_a[i].mode       != cons_b[i].mode)
 			return false;
 	}
 
@@ -492,9 +484,8 @@ static void ASM_copy_attr(ir_graph *irg, const ir_node *old_node,
 {
 	default_copy_attr(irg, old_node, new_node);
 	struct obstack *const obst = get_irg_obstack(irg);
-	new_node->attr.assem.input_constraints  = DUP_ARR_D(ir_asm_constraint, obst, old_node->attr.assem.input_constraints);
-	new_node->attr.assem.output_constraints = DUP_ARR_D(ir_asm_constraint, obst, old_node->attr.assem.output_constraints);
-	new_node->attr.assem.clobbers           = DUP_ARR_D(ident*,            obst, old_node->attr.assem.clobbers);
+	new_node->attr.assem.constraints = DUP_ARR_D(ir_asm_constraint, obst, old_node->attr.assem.constraints);
+	new_node->attr.assem.clobbers    = DUP_ARR_D(ident*,            obst, old_node->attr.assem.clobbers);
 }
 
 static void switch_copy_attr(ir_graph *irg, const ir_node *old_node,

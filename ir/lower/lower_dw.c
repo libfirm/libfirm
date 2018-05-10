@@ -1962,18 +1962,10 @@ static void lower_Mux(ir_node *const mux)
  */
 static void lower_ASM(ir_node *const asmn)
 {
-	foreach_irn_in_r(asmn, i, op) {
-		ir_mode *op_mode = get_irn_mode(op);
-		if (needs_lowering(op_mode))
-			panic("lowering ASM 64bit input unimplemented");
-	}
-
-	ir_asm_constraint *const output_constraints = get_ASM_output_constraints(asmn);
-	size_t             const n_outs             = get_ASM_n_output_constraints(asmn);
-	for (size_t o = 0; o < n_outs; ++o) {
-		const ir_asm_constraint *constraint = &output_constraints[o];
-		if (needs_lowering(constraint->mode))
-			panic("lowering ASM 64bit output unimplemented");
+	ir_asm_constraint const *const constraints = get_ASM_constraints(asmn);
+	for (size_t i = 0, n = get_ASM_n_constraints(asmn); i < n; ++i) {
+		if (needs_lowering(constraints[i].mode))
+			panic("lowering ASM unimplemented");
 	}
 }
 

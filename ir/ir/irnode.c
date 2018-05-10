@@ -674,10 +674,10 @@ int ir_throws_exception(const ir_node *node)
 	return attr->throws_exception;
 }
 
-size_t get_ASM_n_output_constraints(const ir_node *node)
+size_t get_ASM_n_constraints(const ir_node *node)
 {
 	assert(is_ASM(node));
-	return ARR_LEN(node->attr.assem.output_constraints);
+	return ARR_LEN(node->attr.assem.constraints);
 }
 
 size_t get_ASM_n_clobbers(const ir_node *node)

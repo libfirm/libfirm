@@ -268,9 +268,10 @@ ENUM_BITSET(mtp_additional_properties)
  * @ingroup ASM
  */
 typedef struct ir_asm_constraint {
-	unsigned pos;         /**< The input/output position for this constraint. */
-	ident    *constraint; /**< The constraint for this input/output. */
-	ir_mode  *mode;       /**< The mode of the constraint. */
+	int      in_pos;     /**< The input position for this constraint. */
+	int      out_pos;    /**< The output position for this constraint. */
+	ident   *constraint; /**< The constraint for this input/output. */
+	ir_mode *mode;       /**< The mode of the constraint. */
 } ir_asm_constraint;
 
 /** Supported libFirm builtins.

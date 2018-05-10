@@ -63,85 +63,45 @@ static void x86_parse_constraint_letter(void const *const env, be_asm_constraint
 	panic("Unknown asm constraint '%c'", l);
 }
 
-static void parse_asm_constraints(be_asm_constraint_t *const constraint, x86_asm_constraint_list_t const *const constraints, ident *const constraint_text, bool const is_output)
+ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t const *const constraint_list)
 {
-	be_parse_asm_constraints_internal(constraint, constraint_text, is_output, &x86_parse_constraint_letter, constraints);
-}
+	be_asm_info_t info = be_asm_prepare_info(node);
 
-static void set_operand_if_invalid(x86_asm_operand_t *const op, be_asm_operand_kind_t const kind, unsigned const pos, ir_asm_constraint const *const constraint)
-{
-	/* Multiple constraints for same pos. This can happen for example when
-	 * a =A constraint gets lowered to two constraints: =a and =d for the
-	 * same pos. */
-	if (op->op.kind == BE_ASM_OPERAND_INVALID) {
-		be_set_asm_operand(&op->op, kind, pos);
-		op->u.mode = constraint->mode;
-		assert((unsigned)op->op.pos == pos); // Make sure we had no overflow.
-	}
-}
+	ir_asm_constraint const *const constraints   = get_ASM_constraints(node);
+	size_t                   const n_constraints = get_ASM_n_constraints(node);
+	ir_graph                *const irg           = get_irn_irg(node);
+	struct obstack          *const obst          = get_irg_obstack(irg);
+	x86_asm_operand_t       *const operands      = NEW_ARR_DZ(x86_asm_operand_t, obst, n_constraints);
+	for (size_t i = 0; i != n_constraints; ++i) {
+		ir_asm_constraint const *const c = &constraints[i];
 
-ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t const *const constraints)
-{
-	be_asm_info_t info = be_asm_prepare_info();
+		be_asm_constraint_t be_constraint;
+		be_parse_asm_constraints_internal(&be_constraint, c->constraint, &x86_parse_constraint_letter, constraint_list);
 
-	unsigned           const n_operands = be_count_asm_operands(node);
-	ir_graph          *const irg        = get_irn_irg(node);
-	struct obstack    *const obst       = get_irg_obstack(irg);
-	x86_asm_operand_t *const operands   = NEW_ARR_DZ(x86_asm_operand_t, obst, n_operands);
+		x86_asm_operand_t *const op = &operands[i];
+		op->u.mode = c->mode;
 
-	int                      const n_inputs          = get_ASM_n_inputs(node);
-	size_t                   const n_out_constraints = get_ASM_n_output_constraints(node);
-	ir_asm_constraint const *const in_constraints    = get_ASM_input_constraints(node);
-	ir_asm_constraint const *const out_constraints   = get_ASM_output_constraints(node);
-
-	/* construct output constraints */
-	for (unsigned o = 0; o < n_out_constraints; ++o) {
-		ir_asm_constraint const *const constraint = &out_constraints[o];
-
-		be_asm_constraint_t parsed_constraint;
-		parse_asm_constraints(&parsed_constraint, constraints,
-		                      constraint->constraint, true);
-
-		arch_register_req_t const *const req = be_make_register_req(obst, &parsed_constraint, n_out_constraints, info.out_reqs, o);
-		ARR_APP1(arch_register_req_t const*, info.out_reqs, req);
-
-		x86_asm_operand_t *const op = &operands[constraint->pos];
-		set_operand_if_invalid(op, BE_ASM_OPERAND_OUTPUT_VALUE, o, constraint);
-	}
-
-	/* inputs + input constraints */
-	for (int i = 0; i < n_inputs; ++i) {
-		ir_asm_constraint const *const constraint = &in_constraints[i];
-
-		be_asm_constraint_t parsed_constraint;
-		parse_asm_constraints(&parsed_constraint, constraints,
-		                      constraint->constraint, false);
-
-		/* try to match an immediate operand */
-		x86_asm_operand_t *const op       = &operands[constraint->pos];
-		ir_node           *const pred     = get_ASM_input(node, i);
-		char               const imm_type = parsed_constraint.immediate_type;
-		if (imm_type != '\0'
-		    && x86_match_immediate(&op->u.imm32, pred, imm_type)) {
-			be_set_asm_operand(&op->op, BE_ASM_OPERAND_IMMEDIATE, -1);
-			continue;
+		int const in_pos = c->in_pos;
+		if (in_pos >= 0) {
+			ir_node *const in  = get_ASM_input(node, in_pos);
+			char     const imm = be_constraint.immediate_type;
+			if (imm != '\0' && x86_match_immediate(&op->u.imm32, in, imm)) {
+				be_set_asm_operand(&op->op, BE_ASM_OPERAND_IMMEDIATE, -1);
+			} else if (be_constraint.same_as >= 0) {
+				int                        const out_pos = operands[be_constraint.same_as].op.pos;
+				arch_register_req_t const *const ireq    = info.out_reqs[out_pos];
+				be_asm_add_inout(&info, &op->op, obst, in, ireq, out_pos);
+			} else if (be_constraint.cls) {
+				arch_register_req_t const *const ireq = be_make_register_req(obst, &be_constraint);
+				be_asm_add_inout(&info, &op->op, obst, in, ireq, c->out_pos);
+			} else {
+				ir_node                   *const new_in = be_transform_node(in);
+				arch_register_req_t const *const ireq   = arch_get_irn_register_req(new_in)->cls->class_req;
+				be_asm_add_in(&info, &op->op, BE_ASM_OPERAND_MEMORY, new_in, ireq);
+			}
+		} else {
+			be_asm_add_out(&info, &op->op, obst, &be_constraint, c->out_pos);
 		}
-
-		ir_node            *const  new_pred = be_transform_node(pred);
-		unsigned            const  in_pos   = ARR_LEN(info.in_reqs);
-		arch_register_req_t const *req      = be_make_register_req(obst, &parsed_constraint, n_out_constraints, info.out_reqs, in_pos);
-
-		set_operand_if_invalid(op, BE_ASM_OPERAND_INPUT_VALUE, in_pos, constraint);
-
-		if (!parsed_constraint.cls && parsed_constraint.same_as < 0) {
-			op->op.kind = BE_ASM_OPERAND_MEMORY;
-			req = arch_get_irn_register_req(new_pred)->cls->class_req;
-		} else if (parsed_constraint.memory_possible) {
-			/* TODO: match Load or Load/Store if memory possible is set */
-		}
-
-		ARR_APP1(arch_register_req_t const*, info.in_reqs, req);
-		ARR_APP1(ir_node*, info.ins, new_pred);
 	}
 
 	return be_make_asm(node, &info, operands);

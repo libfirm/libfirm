@@ -794,22 +794,11 @@ static void write_ASM(write_env_t *env, const ir_node *node)
 
 	write_ident(env, get_ASM_text(node));
 	write_list_begin(env);
-	ir_asm_constraint *input_constraints = get_ASM_input_constraints(node);
-	int                n_inputs          = get_ASM_n_inputs(node);
-	for (int i = 0; i < n_inputs; ++i) {
-		const ir_asm_constraint *constraint = &input_constraints[i];
-		write_unsigned(env, constraint->pos);
-		write_ident(env, constraint->constraint);
-		write_mode_ref(env, constraint->mode);
-	}
-	write_list_end(env);
-
-	write_list_begin(env);
-	ir_asm_constraint *output_constraints  = get_ASM_output_constraints(node);
-	size_t            n_output_constraints = get_ASM_n_output_constraints(node);
-	for (size_t i = 0; i < n_output_constraints; ++i) {
-		const ir_asm_constraint *constraint = &output_constraints[i];
-		write_unsigned(env, constraint->pos);
+	ir_asm_constraint *const constraints = get_ASM_constraints(node);
+	for (int i = 0, n = get_ASM_n_constraints(node); i < n; ++i) {
+		ir_asm_constraint const *const constraint = &constraints[i];
+		write_int(env, constraint->in_pos);
+		write_int(env, constraint->out_pos);
 		write_ident(env, constraint->constraint);
 		write_mode_ref(env, constraint->mode);
 	}
@@ -1909,23 +1898,14 @@ static ir_node *read_ASM(read_env_t *env)
 	ident   *asm_text = read_ident(env);
 
 	expect_list_begin(env);
-	ir_asm_constraint *input_constraints = NEW_ARR_F(ir_asm_constraint, 0);
+	ir_asm_constraint *constraints = NEW_ARR_F(ir_asm_constraint, 0);
 	while (list_has_next(env)) {
 		ir_asm_constraint constraint;
-		constraint.pos        = read_unsigned(env);
+		constraint.in_pos     = read_int(env);
+		constraint.out_pos    = read_int(env);
 		constraint.constraint = read_ident(env);
 		constraint.mode       = read_mode_ref(env);
-		ARR_APP1(ir_asm_constraint, input_constraints, constraint);
-	}
-
-	expect_list_begin(env);
-	ir_asm_constraint *output_constraints = NEW_ARR_F(ir_asm_constraint, 0);
-	while (list_has_next(env)) {
-		ir_asm_constraint constraint;
-		constraint.pos        = read_unsigned(env);
-		constraint.constraint = read_ident(env);
-		constraint.mode       = read_mode_ref(env);
-		ARR_APP1(ir_asm_constraint, output_constraints, constraint);
+		ARR_APP1(ir_asm_constraint, constraints, constraint);
 	}
 
 	expect_list_begin(env);
@@ -1940,20 +1920,13 @@ static ir_node *read_ASM(read_env_t *env)
 	int       n_in = read_preds(env);
 	ir_node **in   = (ir_node**)obstack_finish(&env->preds_obst);
 
-	if (ARR_LEN(input_constraints) != (size_t)n_in) {
-		parse_error(env, "input_constraints != n_in in ir file");
-		return new_r_Bad(env->irg, mode_T);
-	}
-
 	ir_node *newnode = new_r_ASM(block, mem, n_in, in,
-	                             input_constraints, ARR_LEN(output_constraints),
-	                             output_constraints, ARR_LEN(clobbers),
-	                             clobbers, asm_text);
+	                             ARR_LEN(constraints), constraints,
+	                             ARR_LEN(clobbers), clobbers, asm_text);
 	set_irn_pinned(newnode, pinned);
 	obstack_free(&env->preds_obst, in);
 	DEL_ARR_F(clobbers);
-	DEL_ARR_F(output_constraints);
-	DEL_ARR_F(input_constraints);
+	DEL_ARR_F(constraints);
 	return newnode;
 }
 
