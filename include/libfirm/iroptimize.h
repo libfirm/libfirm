@@ -55,6 +55,12 @@ FIRM_API void opt_bool(ir_graph *irg);
 FIRM_API void conv_opt(ir_graph *irg);
 
 /**
+ * Lower the bitwidth of both operands when they have enought stable bits to shorten the mode
+ *
+ */
+FIRM_API void smallif_opt(void);
+
+/**
  * A callback that checks whether a entity is an allocation
  * routine.
  */

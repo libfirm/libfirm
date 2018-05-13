@@ -395,7 +395,8 @@ typedef enum ir_graph_properties_t {
 	IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE        = 1U << 11,
 	/** graph contains as many returns as possible */
 	IR_GRAPH_PROPERTY_MANY_RETURNS                   = 1U << 12,
-
+	/** graph contains bitwidth info for every irn **/
+	IR_GRAPH_PROPERTY_CONSISTENT_BITWIDTH_INFO       = 1U << 13,
 	/**
 	 * List of all graph properties that are only affected by control flow
 	 * changes.

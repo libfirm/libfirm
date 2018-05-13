@@ -30,6 +30,7 @@ set(SOURCES
 	ir/adt/set.c
 	ir/adt/xmalloc.c
 	ir/ana/analyze_irg_args.c
+	ir/ana/bitwidth.c
 	ir/ana/callgraph.c
 	ir/ana/cdep.c
 	ir/ana/cgana.c

@@ -13,6 +13,7 @@
 
 #include "array.h"
 #include "cgana.h"
+#include "bitwidth.h"
 #include "hashptr.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"

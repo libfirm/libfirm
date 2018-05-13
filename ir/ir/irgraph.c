@@ -29,6 +29,7 @@
 #include "type_t.h"
 #include "util.h"
 #include "xmalloc.h"
+#include "bitwidth.h"
 
 #define INITIAL_IDX_IRN_MAP_SIZE 1024
 
@@ -595,6 +596,7 @@ void assure_irg_properties(ir_graph *irg, ir_graph_properties_t props)
 		{ IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO,      assure_loopinfo },
 		{ IR_GRAPH_PROPERTY_CONSISTENT_ENTITY_USAGE,  assure_irg_entity_usage_computed },
 		{ IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE_FRONTIERS, ir_compute_dominance_frontiers },
+		{ IR_GRAPH_PROPERTY_CONSISTENT_BITWIDTH_INFO, assure_bitwidth_info },
 	};
 	for (size_t i = 0; i < ARRAY_SIZE(property_functions); ++i) {
 		ir_graph_properties_t missing = props & ~irg->properties;

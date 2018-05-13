@@ -99,6 +99,9 @@ typedef struct ir_vrp_info {
 	struct obstack    obst;
 } ir_vrp_info;
 
+typedef struct ir_bitwidth {
+	struct ir_nodemap infos;
+} ir_bitwidth;
 /**
  * An ir_graph represents the code of a function as a graph of nodes.
  */
@@ -142,6 +145,7 @@ struct ir_graph {
 	struct obstack      out_obst;    /**< Space for the Def-Use arrays. */
 	bool                out_obst_allocated;
 	ir_bitinfo          bitinfo;     /**< bit info */
+	ir_bitwidth         bitwidth;    /**< bit width info */
 	ir_vrp_info         vrp;         /**< vrp info */
 	ir_loop            *loop;        /**< The outermost loop for this graph. */
 	ir_dom_front_info_t domfront;    /**< dominance frontier analysis data */
