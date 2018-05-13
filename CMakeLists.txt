@@ -99,6 +99,9 @@ set(SOURCES
 	ir/be/beutil.c
 	ir/be/bevarargs.c
 	ir/be/beverify.c
+	ir/be/target.c
+	ir/be/machine_triple.c
+	ir/be/platform.c
 	ir/common/debug.c
 	ir/common/debugger.c
 	ir/common/firm.c
@@ -375,6 +378,24 @@ add_backend(amd64
 	ir/be/amd64/amd64_transform.c
 	ir/be/amd64/amd64_varargs.c
 	ir/be/amd64/amd64_x87.c
+	ir/be/amd64/amd64_abi.c
+)
+add_backend(mips
+	ir/be/mips/mips_bearch.c
+	ir/be/mips/mips_bearch_t.h
+	ir/be/mips/mips_cconv.c
+	ir/be/mips/mips_cconv.h
+	ir/be/mips/mips_emitter.c
+	ir/be/mips/mips_emitter.h
+	ir/be/mips/mips_lower64.c
+	ir/be/mips/mips_lower64.h
+	ir/be/mips/mips_new_nodes.c
+	ir/be/mips/mips_new_nodes_t.h
+	ir/be/mips/mips_nodes_attr.c
+	ir/be/mips/mips_nodes_attr.h
+	ir/be/mips/mips_spec.pl
+	ir/be/mips/mips_transform.c
+	ir/be/mips/mips_transform.h
 )
 add_backend(TEMPLATE
 	ir/be/TEMPLATE/TEMPLATE_bearch.c
