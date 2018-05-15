@@ -99,8 +99,8 @@ static void rewire_successor_block(ir_node *const block, int n)
 	add_edge(block, new_node);
 
 	// rewire phis inside the block
-	unsigned int const n_outs = get_irn_n_outs(block);
-	for (unsigned int i = 0; i < n_outs; ++i) {
+	unsigned const n_outs = get_irn_n_outs(block);
+	for (unsigned i = 0; i < n_outs; ++i) {
 		ir_node *const phi = get_irn_out(block, i);
 		if (is_Phi(phi)) {
 			ir_node *const pred     = get_irn_n(phi, n);
@@ -120,8 +120,8 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 	assert(get_irn_arity(node) == get_irn_arity(new_node));
 
 	// rewire the successors outside the loop
-	unsigned int const n_outs = get_irn_n_outs(node);
-	for (unsigned int i = 0; i < n_outs; ++i) {
+	unsigned const n_outs = get_irn_n_outs(node);
+	for (unsigned i = 0; i < n_outs; ++i) {
 		int n;
 		ir_node *const succ = get_irn_out_ex(node, i, &n);
 		if (get_irn_link(succ) == NULL && is_Block(succ)) {
@@ -200,8 +200,8 @@ static void duplicate_block(ir_node *const block)
 {
 	ir_node *const new_block = duplicate_node(block, NULL);
 
-	unsigned int const n_outs = get_irn_n_outs(block);
-	for (unsigned int i = 0; i < n_outs; ++i) {
+	unsigned const n_outs = get_irn_n_outs(block);
+	for (unsigned i = 0; i < n_outs; ++i) {
 		ir_node *const node = get_irn_out(block, i);
 		assert(!is_Block(node));
 		if (get_nodes_block(node) != block)
@@ -213,8 +213,8 @@ static void duplicate_block(ir_node *const block)
 static void rewire_block(ir_node *const block, ir_node *const header)
 {
 	rewire_node(block, header);
-	unsigned int const n_outs = get_irn_n_outs(block);
-	for (unsigned int i = 0; i < n_outs; ++i) {
+	unsigned const n_outs = get_irn_n_outs(block);
+	for (unsigned i = 0; i < n_outs; ++i) {
 		ir_node *const node = get_irn_out(block, i);
 		assert(!is_Block(node));
 		if (get_nodes_block(node) != block)
@@ -256,10 +256,24 @@ static void unroll_loop(ir_loop *const loop, unsigned factor)
 	}
 }
 
+static size_t count_nodes(ir_loop *const loop)
+{
+	size_t       n_nodes    = 0;
+	size_t const n_elements = get_loop_n_elements(loop);
+	for (size_t i = 0; i < n_elements; ++i) {
+		loop_element const element = get_loop_element(loop, i);
+		if (*element.kind == k_ir_node) {
+			n_nodes += get_irn_n_outs(element.node);
+		} else if (*element.kind == k_ir_loop) {
+			n_nodes += count_nodes(element.son);
+		}
+	}
+	return n_nodes;
+}
+
 static unsigned determine_unroll_factor(ir_loop *const loop)
 {
-	(void)loop;
-	return 2;
+	return count_nodes(loop) < 32 ? 1 : 0;
 }
 
 static void duplicate_innermost_loops(ir_loop *const loop, bool const outermost)
