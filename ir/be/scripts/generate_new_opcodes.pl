@@ -24,7 +24,7 @@ our %reg_classes;
 our %custom_irn_flags;
 
 # include spec file
-unless (my $return = do "./${specfile}") {
+unless (my $return = do "${specfile}") {
 	die "Fatal error: couldn't parse $specfile: $@" if $@;
 	die "Fatal error: couldn't do $specfile: $!"    unless defined $return;
 	die "Fatal error: couldn't run $specfile"       unless $return;

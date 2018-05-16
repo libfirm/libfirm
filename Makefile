@@ -92,19 +92,19 @@ $(1)_SPEC = ir/be/$(1)/$(1)_spec.pl
 
 $$(gendir)/ir/be/$(1)/gen_$(1)_emitter.h $$(gendir)/ir/be/$(1)/gen_$(1)_emitter.c: $$($(1)_SPEC) $$(EMITTER_GENERATOR)
 	@echo GEN $$@
-	$(Q)$$(EMITTER_GENERATOR) $$< $$(gendir)/ir/be/$(1)
+	$(Q)$$(EMITTER_GENERATOR) ./$$< $$(gendir)/ir/be/$(1)
 $(1)_GEN_SOURCES += ir/be/$(1)/gen_$(1)_emitter.c
 $(1)_GEN_HEADERS += $$(gendir)/ir/be/$(1)/gen_$(1)_emitter.h
 
 $$(gendir)/ir/be/$(1)/gen_$(1)_regalloc_if.h $$(gendir)/ir/be/$(1)/gen_$(1)_regalloc_if.c: $$($(1)_SPEC) $$(REGALLOC_IF_GENERATOR)
 	@echo GEN $$@
-	$(Q)$$(REGALLOC_IF_GENERATOR) $$< $$(gendir)/ir/be/$(1)
+	$(Q)$$(REGALLOC_IF_GENERATOR) ./$$< $$(gendir)/ir/be/$(1)
 $(1)_GEN_SOURCES += ir/be/$(1)/gen_$(1)_regalloc_if.c
 $(1)_GEN_HEADERS += $$(gendir)/ir/be/$(1)/gen_$(1)_regalloc_if.h
 
 $$(gendir)/ir/be/$(1)/gen_$(1)_new_nodes.h $$(gendir)/ir/be/$(1)/gen_$(1)_new_nodes.c: $$($(1)_SPEC) $$(OPCODES_GENERATOR)
 	@echo GEN $$@
-	$(Q)$$(OPCODES_GENERATOR) $$< $$(gendir)/ir/be/$(1)
+	$(Q)$$(OPCODES_GENERATOR) ./$$< $$(gendir)/ir/be/$(1)
 $(1)_GEN_SOURCES += ir/be/$(1)/gen_$(1)_new_nodes.c
 $(1)_GEN_HEADERS += $$(gendir)/ir/be/$(1)/gen_$(1)_new_nodes.h
 
