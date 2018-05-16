@@ -3062,14 +3062,17 @@ static ir_node *transform_node_Add(ir_node *n)
 
 	if (is_Const(b)) {
 		if (is_Confirm(a)) {
-			const ir_node *bound = get_Confirm_bound(a);
+			const ir_node *bound  = get_Confirm_bound(a);
 			ir_tarval     *tbound = value_of(bound);
+			ir_relation    rel    = get_Confirm_relation(a);
+			ir_tarval     *tb     = get_Const_tarval(b);
+			ir_tarval     *max    = get_mode_max(mode);
 
-			if (get_Confirm_relation(a) == ir_relation_less_equal && tarval_is_constant(tbound)) {
-				ir_tarval *tb = get_Const_tarval(b);
+			if (rel == ir_relation_less_equal && tarval_is_constant(tbound)
+			&& tarval_cmp(tbound, tarval_sub(max, tb)) == ir_relation_less) {
 				ir_tarval *tv = tarval_add(tbound, tb);
 				if (tarval_is_constant(tv)) {
-					ir_node *value = get_Confirm_value(a);
+					ir_node  *value = get_Confirm_value(a);
 					dbg_info *dbgi  = get_irn_dbg_info(n);
 					ir_graph *irg   = get_irn_irg(n);
 					ir_node  *block = get_nodes_block(n);
