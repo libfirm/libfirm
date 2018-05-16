@@ -161,7 +161,9 @@ static aggregate_spec_t classify_for_amd64(amd64_abi_state *s, ir_type const *co
 		.length = 0,
 		.modes = { },
 	};
-	DEBUG_ONLY(bool type_ended = false;)
+#ifndef NDEBUG
+	bool type_ended = false;
+#endif
 
 	/* According to the ABI, sect. 3.2.3, par. "Classification",
 	 * no. 1 (note Footnote 12!), types larger than 2 eightbytes

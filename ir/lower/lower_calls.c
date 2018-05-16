@@ -971,7 +971,9 @@ static void fix_call_compound_params(const cl_entry *entry, const ir_type *ctp)
 #define INPUT_TO_PARAM(x) ((x) - fixed_call_args + mtp_info->n_hidden)
 #define PARAM_TO_INPUT(x) ((x) + fixed_call_args - mtp_info->n_hidden)
 
-	DEBUG_ONLY(size_t max_input = PARAM_TO_INPUT(n_params_lower));
+#ifndef NDEBUG
+	size_t max_input = PARAM_TO_INPUT(n_params_lower);
+#endif
 	for (size_t h = 0; h < n_params; ++h) {
 		assert(i <= max_input);
 
