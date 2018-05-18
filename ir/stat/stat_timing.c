@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__)
 
 #include <unistd.h>
 #include <time.h>
