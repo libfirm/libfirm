@@ -215,9 +215,8 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 		}
 	}
 
-	if (arity == 2 && !rbitset_is_empty(inregs, n_regs)) {
-		DBG((dbg, LEVEL_1, "%+F is transposition\n", perm));
-		return;
+	if (rbitset_is_empty(inregs, n_regs)) {
+		goto done;
 	}
 
 	if (use_copies && free_reg == NULL) {
@@ -249,6 +248,11 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 			exchange(start->out_node, restore_copy);
 		}
 	} else {
+		if (arity == 2) {
+			DBG((dbg, LEVEL_1, "%+F is transposition\n", perm));
+			return;
+		}
+
 		/* Decompose cycles into transpositions.
 		 *
 		 * Use as many independent transpositions as possible and do not thread
