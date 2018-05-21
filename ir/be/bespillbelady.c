@@ -125,6 +125,17 @@ static void workset_bulk_fill(workset_t *workset, int count, const loc_t *locs)
 	MEMCPY(&workset->vals[0], locs, count);
 }
 
+static loc_t *workset_contains(workset_t *const ws, ir_node const *const val)
+{
+	for (unsigned i = 0, len = ws->len; i < len; ++i) {
+		loc_t *const loc = &ws->vals[i];
+		if (loc->node == val)
+			return loc;
+	}
+
+	return NULL;
+}
+
 /**
  * Inserts the value @p val into the workset, iff it is not
  * already contained. The workset must not be full.
@@ -135,13 +146,11 @@ static void workset_insert(workset_t *workset, ir_node *val, bool spilled)
 	assert(arch_irn_consider_in_reg_alloc(cls, val));
 
 	/* check if val is already contained */
-	for (unsigned i = 0, len = workset->len; i < len; ++i) {
-		loc_t *loc = &workset->vals[i];
-		if (loc->node == val) {
-			if (spilled)
-				loc->spilled = true;
-			return;
-		}
+	loc_t *const oloc = workset_contains(workset, val);
+	if (oloc) {
+		if (spilled)
+			oloc->spilled = true;
+		return;
 	}
 
 	/* insert val */
@@ -166,22 +175,9 @@ static void workset_clear(workset_t *workset)
  */
 static void workset_remove(workset_t *workset, ir_node *val)
 {
-	for (unsigned i = 0, len = workset->len; i < len; ++i) {
-		if (workset->vals[i].node == val) {
-			workset->vals[i] = workset->vals[--workset->len];
-			return;
-		}
-	}
-}
-
-static const loc_t *workset_contains(const workset_t *ws, const ir_node *val)
-{
-	for (unsigned i = 0, len = ws->len; i < len; ++i) {
-		if (ws->vals[i].node == val)
-			return &ws->vals[i];
-	}
-
-	return NULL;
+	loc_t *const loc = workset_contains(workset, val);
+	if (loc)
+		*loc = workset->vals[--workset->len];
 }
 
 static int loc_compare(const void *a, const void *b)
@@ -395,17 +391,10 @@ static available_t available_in_all_preds(workset_t* const* pred_worksets,
 			l_value = value;
 		}
 
-		bool             found     = false;
-		const workset_t *p_workset = pred_worksets[i];
-		for (int p_i = 0, p_len = workset_get_length(p_workset);
-		     p_i < p_len; ++p_i) {
-			const loc_t *p_l = &p_workset->vals[p_i];
-			if (p_l->node != l_value)
-				continue;
-
-			found = true;
+		bool found = false;
+		if (workset_contains(pred_worksets[i], l_value)) {
+			found         = true;
 			avail_nowhere = false;
-			break;
 		}
 
 		avail_everywhere &= found;
@@ -642,15 +631,9 @@ static void decide_start_workset(ir_node *const block)
 			if (pred_workset == NULL)
 				continue;
 
-			for (unsigned p = 0, p_len = workset_get_length(pred_workset);
-			     p < p_len; ++p) {
-				loc_t *l = &pred_workset->vals[p];
-				if (l->node != value)
-					continue;
-
-				if (l->spilled) {
-					spilled = true;
-				}
+			loc_t const *const pred_loc = workset_contains(pred_workset, value);
+			if (pred_loc && pred_loc->spilled) {
+				spilled = true;
 				break;
 			}
 		}
@@ -761,20 +744,10 @@ static void fix_block_borders(ir_node *block, void *data)
 		/* spill all values not used anymore */
 		ir_node *node = NULL;
 		workset_foreach(pred_end_workset, node, iter) {
-			ir_node *n2    = NULL;
-			bool     found = false;
-			workset_foreach(start_workset, n2, iter2) {
-				if (n2 == node) {
-					found = true;
-					break;
-				}
-				/* note that we do not look at phi inputs, because the values
-				 * will be either live-end and need no spill or
-				 * they have other users in which must be somewhere else in the
-				 * workset */
-			}
-
-			if (found)
+			/* Note that we do not look at phi inputs, because the values will
+			 * be either live-end and need no spill or they have other users in
+			 * which must be somewhere else in the workset. */
+			if (workset_contains(start_workset, node))
 				continue;
 
 			if (move_spills && be_is_live_in(lv, block, node)
