@@ -384,8 +384,7 @@ static available_t available_in_all_preds(workset_t* const* pred_worksets,
 	for (size_t i = 0; i < n_pred_worksets; ++i) {
 		const ir_node *l_value;
 		if (is_local_phi) {
-			assert(is_Phi(value));
-			l_value = get_irn_n(value, i);
+			l_value = get_Phi_pred(value, i);
 		} else {
 			l_value = value;
 		}
