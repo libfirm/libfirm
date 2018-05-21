@@ -366,10 +366,10 @@ static void displace(workset_t *const new_vals, bool const is_usage,
 }
 
 typedef enum available_t {
-	AVAILABLE_EVERYWHERE,
-	AVAILABLE_NOWHERE,
-	AVAILABLE_PARTLY,
-	AVAILABLE_UNKNOWN
+	AVAILABLE_UNKNOWN    = 0U,
+	AVAILABLE_EVERYWHERE = 1U << 0,
+	AVAILABLE_NOWHERE    = 1U << 1,
+	AVAILABLE_PARTLY     = AVAILABLE_EVERYWHERE | AVAILABLE_NOWHERE,
 } available_t;
 
 static available_t available_in_all_preds(workset_t* const* pred_worksets,
@@ -380,8 +380,7 @@ static available_t available_in_all_preds(workset_t* const* pred_worksets,
 	assert(n_pred_worksets > 0);
 
 	/* value available in all preds? */
-	bool avail_everywhere = true;
-	bool avail_nowhere    = true;
+	available_t available = AVAILABLE_UNKNOWN;
 	for (size_t i = 0; i < n_pred_worksets; ++i) {
 		const ir_node *l_value;
 		if (is_local_phi) {
@@ -391,23 +390,12 @@ static available_t available_in_all_preds(workset_t* const* pred_worksets,
 			l_value = value;
 		}
 
-		bool found = false;
-		if (workset_contains(pred_worksets[i], l_value)) {
-			found         = true;
-			avail_nowhere = false;
-		}
-
-		avail_everywhere &= found;
+		available |= workset_contains(pred_worksets[i], l_value) ?
+			AVAILABLE_EVERYWHERE : AVAILABLE_NOWHERE;
 	}
 
-	if (avail_everywhere) {
-		assert(!avail_nowhere);
-		return AVAILABLE_EVERYWHERE;
-	} else if (avail_nowhere) {
-		return AVAILABLE_NOWHERE;
-	} else {
-		return AVAILABLE_PARTLY;
-	}
+	assert(available != AVAILABLE_UNKNOWN);
+	return available;
 }
 
 /**
