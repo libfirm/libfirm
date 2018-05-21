@@ -503,8 +503,8 @@ set(INSTALL_HEADERS
 	include/libfirm/adt/hashptr.h
 	include/libfirm/adt/hungarian.h
 	include/libfirm/adt/list.h
-	include/libfirm/adt/obst.h
 	include/libfirm/adt/obstack.h
+	include/libfirm/adt/obst.h
 	include/libfirm/adt/pmap.h
 	include/libfirm/adt/pqueue.h
 	include/libfirm/adt/pset.h
@@ -512,23 +512,22 @@ set(INSTALL_HEADERS
 	include/libfirm/adt/unionfind.h
 	include/libfirm/adt/xmalloc.h
 	include/libfirm/analyze_irg_args.h
-	include/libfirm/be.h
 	include/libfirm/begin.h
+	include/libfirm/be.h
 	include/libfirm/callgraph.h
 	include/libfirm/cdep.h
 	include/libfirm/cgana.h
 	include/libfirm/dbginfo.h
 	include/libfirm/end.h
 	include/libfirm/execfreq.h
-	include/libfirm/firm.h
 	include/libfirm/firm_common.h
+	include/libfirm/firm.h
 	include/libfirm/firm_types.h
 	include/libfirm/heights.h
 	include/libfirm/ident.h
-	include/libfirm/irarch.h
 	include/libfirm/ircgopt.h
-	include/libfirm/ircons.h
 	include/libfirm/irconsconfirm.h
+	include/libfirm/ircons.h
 	include/libfirm/irdom.h
 	include/libfirm/irdump.h
 	include/libfirm/iredgekinds.h
@@ -550,8 +549,10 @@ set(INSTALL_HEADERS
 	include/libfirm/irprintf.h
 	include/libfirm/irprog.h
 	include/libfirm/irverify.h
+	include/libfirm/jit.h
 	include/libfirm/lowering.h
 	include/libfirm/statev.h
+	include/libfirm/target.h
 	include/libfirm/timing.h
 	include/libfirm/tv.h
 	include/libfirm/typerep.h
