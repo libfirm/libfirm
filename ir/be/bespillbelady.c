@@ -96,22 +96,22 @@ static workset_t *new_workset(void)
 }
 
 /**
- * Alloc a new instance on obstack and make it equal to @param workset
- */
-static workset_t *workset_clone(workset_t *workset)
-{
-	workset_t *res = OALLOCF(&obst, workset_t, vals, n_regs);
-	memcpy(res, workset, sizeof(*res) + n_regs * sizeof(res->vals[0]));
-	return res;
-}
-
-/**
  * Copy workset @param src to @param tgt
  */
 static void workset_copy(workset_t *dest, const workset_t *src)
 {
 	size_t size = sizeof(*src) + n_regs * sizeof(src->vals[0]);
 	memcpy(dest, src, size);
+}
+
+/**
+ * Alloc a new instance on obstack and make it equal to @param workset
+ */
+static workset_t *workset_clone(workset_t *workset)
+{
+	workset_t *res = OALLOCF(&obst, workset_t, vals, n_regs);
+	workset_copy(res, workset);
+	return res;
 }
 
 /**
