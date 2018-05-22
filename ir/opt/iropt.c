@@ -411,7 +411,7 @@ static ir_tarval *computed_value_And(const ir_node *n)
 
 	/* x&~x => 0 */
 	if (complement_values(a, b))
-		return get_mode_null(get_irn_mode(n));
+		return get_mode_one(get_irn_mode(n));
 
 	return tarval_unknown;
 }
