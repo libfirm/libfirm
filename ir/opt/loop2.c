@@ -273,8 +273,10 @@ static size_t count_nodes(ir_loop *const loop)
 
 static unsigned determine_unroll_factor(ir_loop *const loop)
 {
-	return count_nodes(loop) < 32 ? 1 : 0;
+	return count_nodes(loop) < 32 ? 3 : 0;
 }
+
+static unsigned n_loops_unrolled = 0;
 
 static void duplicate_innermost_loops(ir_loop *const loop, bool const outermost)
 {
@@ -289,8 +291,10 @@ static void duplicate_innermost_loops(ir_loop *const loop, bool const outermost)
 	}
 	if (innermost && !outermost) {
 		unsigned const factor = determine_unroll_factor(loop);
-		if (factor)
+		if (factor) {
 			unroll_loop(loop, factor);
+			++n_loops_unrolled;
+		}
 	}
 }
 
@@ -302,4 +306,5 @@ void do_loop_unrolling2(ir_graph *const irg)
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	duplicate_innermost_loops(get_irg_loop(irg), true);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	DB((dbg, LEVEL_2, "%d loops unrolled\n", n_loops_unrolled));
 }
