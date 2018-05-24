@@ -123,7 +123,7 @@ class ASM(Node):
     """executes assembler fragments of the target machine.
 
     The node contains a template for an assembler snippet. The compiler will
-    replace occurences of %0 to %9 with input/output registers,
+    replace occurrences of %0 to %9 with input/output registers,
     %% with a single % char. Some backends allow additional specifiers (for
     example %w3, %l3, %h3 on x86 to get a 16bit, 8hit low, 8bit high part
     of a register).
@@ -132,7 +132,7 @@ class ASM(Node):
     The clobber list contains names of registers which have an undefined value
     after the assembler instruction is executed; it may also contain 'memory'
     or 'cc' if global state/memory changes or the condition code registers
-    (some backends implicitely set cc, memory clobbers on all ASM statements).
+    (some backends implicitly set cc, memory clobbers on all ASM statements).
 
     Example (an i386 instruction)::
 
@@ -182,7 +182,7 @@ class Bad(Node):
 
     The typical use case for the Bad node is removing unreachable code.
     Frontends should set the current_block to Bad when it is clear that
-    following code must be unreachable (ie. after a goto or return statement).
+    following code must be unreachable (i.e. after a goto or return statement).
     Optimizations also set block predecessors to Bad when it becomes clear,
     that a control flow edge can never be executed.
 
@@ -268,7 +268,7 @@ class Builtin(Node):
 
 @op
 class Call(Node):
-    """Calls other code. Control flow is transfered to ptr, additional
+    """Calls other code. Control flow is transferred to ptr, additional
     operands are passed to the called code. Called code usually performs a
     return operation. The operands of this return operation are the result
     of the Call node."""
@@ -282,7 +282,7 @@ class Call(Node):
         ("M", "memory result"),
         ("T_result", "tuple containing all results"),
         ("X_regular", "control flow when no exception occurs"),
-        ("X_except", "control flow when exception occured"),
+        ("X_except", "control flow when exception occurred"),
     ]
     flags = ["fragile", "uses_memory"]
     attrs = [
@@ -333,7 +333,7 @@ class Cond(Node):
 
 @op
 class Switch(Node):
-    """Change control flow. The destination is choosen based on an integer
+    """Change control flow. The destination is chosen based on an integer
     input value which is looked up in a table.
 
     Backends can implement this efficiently using a jump table."""
@@ -449,7 +449,7 @@ class Div(Node):
         ("M", "memory result"),
         ("res", "result of computation"),
         ("X_regular", "control flow when no exception occurs"),
-        ("X_except", "control flow when exception occured"),
+        ("X_except", "control flow when exception occurred"),
     ]
     flags = ["fragile", "uses_memory", "const_memory"]
     attrs = [
@@ -613,7 +613,7 @@ class Mod(Node):
         ("M", "memory result"),
         ("res", "result of computation"),
         ("X_regular", "control flow when no exception occurs"),
-        ("X_except", "control flow when exception occured"),
+        ("X_except", "control flow when exception occurred"),
     ]
     flags = ["fragile", "uses_memory", "const_memory"]
     attrs = [
@@ -859,7 +859,7 @@ class Store(Node):
     outs = [
         ("M", "memory result"),
         ("X_regular", "control flow when no exception occurs"),
-        ("X_except", "control flow when exception occured"),
+        ("X_except", "control flow when exception occurred"),
     ]
     flags = ["fragile", "uses_memory"]
     pinned = "exception"
