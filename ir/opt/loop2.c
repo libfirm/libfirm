@@ -273,7 +273,7 @@ static size_t count_nodes(ir_loop *const loop)
 
 static unsigned determine_unroll_factor(ir_loop *const loop)
 {
-	return count_nodes(loop) < 32 ? 3 : 0;
+	return count_nodes(loop) < 512 ? 31 : 0;
 }
 
 static unsigned n_loops_unrolled = 0;
