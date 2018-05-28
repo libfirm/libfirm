@@ -207,7 +207,7 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	for (unsigned o = 0, n = get_ASM_n_constraints(node); o != n; ++o) {
 		ir_asm_constraint const *const constraint = &constraints[o];
 		if (strchr(get_id_str(constraint->constraint), '&')) {
-			arch_register_req_t const *const oreq = out_reqs[o];
+			arch_register_req_t const *const oreq = out_reqs[constraint->out_pos];
 
 			unsigned different = 0;
 			for (unsigned i = 0; i != orig_n_ins; ++i) {
