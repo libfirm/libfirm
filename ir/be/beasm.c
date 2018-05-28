@@ -289,6 +289,7 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 		bitset_t *const used_ins = bitset_alloca(orig_n_ins);
 		for (size_t o = pn_be_Asm_first_out; o < orig_n_outs; ++o) {
 			arch_register_req_t const *const outreq = out_reqs[o];
+			assert(outreq->cls->index < ARRAY_SIZE(add_pressure));
 			if (!match_requirement(in_reqs, orig_n_ins, used_ins, outreq))
 				add_pressure[outreq->cls->index]++;
 		}
@@ -296,6 +297,7 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 		bitset_t *const used_outs = bitset_alloca(orig_n_outs);
 		for (unsigned i = n_be_Asm_first_in; i < orig_n_ins; ++i) {
 			arch_register_req_t const *const inreq = in_reqs[i];
+			assert(inreq->cls->index < ARRAY_SIZE(add_pressure));
 			if (!match_requirement(out_reqs, orig_n_outs, used_outs, inreq))
 				add_pressure[inreq->cls->index]++;
 		}
