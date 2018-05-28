@@ -158,8 +158,11 @@ be_asm_info_t be_asm_prepare_info(ir_node const *const node)
 {
 	unsigned                    const n_outs   = be_count_asm_outputs(node);
 	arch_register_req_t const **const out_reqs = NEW_ARR_F(arch_register_req_t const*, n_outs);
-	ir_node                   **const ins      = NEW_ARR_F(ir_node*, 0);
-	arch_register_req_t const **const in_reqs  = NEW_ARR_F(arch_register_req_t const*, 0);
+
+	ir_node                   **const ins     = NEW_ARR_F(ir_node*, n_be_Asm_first_in);
+	arch_register_req_t const **const in_reqs = NEW_ARR_F(arch_register_req_t const*, n_be_Asm_first_in);
+	ins[n_be_Asm_mem]     = be_transform_node(get_ASM_mem(node));
+	in_reqs[n_be_Asm_mem] = arch_memory_req;
 
 	return (be_asm_info_t){
 		.ins      = ins,
@@ -245,7 +248,7 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 		}
 
 		/* Restrict inputs by clobbers. */
-		for (size_t i = 0, n = ARR_LEN(in_reqs); i != n; ++i) {
+		for (size_t i = n_be_Asm_first_in, n = ARR_LEN(in_reqs); i != n; ++i) {
 			arch_register_req_t   const *const req = in_reqs[i];
 			arch_register_class_t const *const cls = req->cls;
 			assert(cls->index < ARRAY_SIZE(clobber_bits));
@@ -290,16 +293,14 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 		}
 	} else {
 		bitset_t *const used_outs = bitset_alloca(orig_n_outs);
-		for (unsigned i = 0; i < orig_n_ins; ++i) {
+		for (unsigned i = n_be_Asm_first_in; i < orig_n_ins; ++i) {
 			arch_register_req_t const *const inreq = in_reqs[i];
 			if (!match_requirement(out_reqs, orig_n_outs, used_outs, inreq))
 				add_pressure[inreq->cls->index]++;
 		}
 	}
 
-	/* Add memory input and output. */
-	ARR_APP1(ir_node*, in, be_transform_node(get_ASM_mem(node)));
-	ARR_APP1(arch_register_req_t const*, in_reqs,  arch_memory_req);
+	/* Add memory output. */
 	ARR_APP1(arch_register_req_t const*, out_reqs, arch_memory_req);
 
 	dbg_info                   *const dbgi        = get_irn_dbg_info(node);

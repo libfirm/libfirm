@@ -183,6 +183,11 @@ ir_node *be_new_Phi0(ir_node *block, arch_register_req_t const *req);
  */
 ir_node *be_complete_Phi(ir_node *phi, unsigned n_ins, ir_node **ins);
 
+enum {
+	n_be_Asm_mem,
+	n_be_Asm_first_in,
+};
+
 ir_node *be_new_Asm(dbg_info *dbgi, ir_node *block, int n_ins, ir_node **ins, arch_register_req_t const **in_reqs, int n_outs, ident *text, void *operands);
 
 /**
