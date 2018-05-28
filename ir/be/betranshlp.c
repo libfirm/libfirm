@@ -175,17 +175,6 @@ static ir_node *transform_proj(ir_node *node)
 	return proj_transform(node);
 }
 
-static ir_node *transform_Proj_ASM(ir_node *const node)
-{
-  ir_node *const pred     = get_Proj_pred(node);
-  ir_node *const new_pred = be_transform_node(pred);
-  ir_mode *const mode     = get_irn_mode(node);
-  unsigned const num      = mode == mode_M ?
-    arch_get_irn_n_outs(new_pred) - 1 :
-    get_Proj_num(node);
-  return be_new_Proj(new_pred, num);
-}
-
 ir_node *be_duplicate_node(ir_node *const node)
 {
 	int       const arity = get_irn_arity(node);
@@ -476,7 +465,7 @@ void be_start_transform_setup(void)
 	be_set_transform_function(op_Proj,  transform_proj);
 	be_set_transform_function(op_Sync,  be_duplicate_node);
 
-	be_set_transform_proj_function(op_ASM,    transform_Proj_ASM);
+	be_set_transform_proj_function(op_ASM,    be_gen_Proj_default);
 	be_set_transform_proj_function(op_Cond,   be_gen_Proj_default);
 	be_set_transform_proj_function(op_Switch, be_gen_Proj_default);
 

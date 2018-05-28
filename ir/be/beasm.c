@@ -146,7 +146,7 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 /* Determine number of output operands. */
 static unsigned be_count_asm_outputs(ir_node const *const node)
 {
-	unsigned                       n_outputs   = 0;
+	unsigned                       n_outputs   = pn_be_Asm_first_out; /* At least the memory output. */
 	ir_asm_constraint const *const constraints = get_ASM_constraints(node);
 	for (unsigned i = 0, n = get_ASM_n_constraints(node); i != n; ++i) {
 		n_outputs = MAX(n_outputs, (unsigned)(constraints[i].out_pos + 1));
@@ -158,6 +158,7 @@ be_asm_info_t be_asm_prepare_info(ir_node const *const node)
 {
 	unsigned                    const n_outs   = be_count_asm_outputs(node);
 	arch_register_req_t const **const out_reqs = NEW_ARR_F(arch_register_req_t const*, n_outs);
+	out_reqs[pn_be_Asm_M] = arch_memory_req;
 
 	ir_node                   **const ins     = NEW_ARR_F(ir_node*, n_be_Asm_first_in);
 	arch_register_req_t const **const in_reqs = NEW_ARR_F(arch_register_req_t const*, n_be_Asm_first_in);
@@ -286,7 +287,7 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	memset(add_pressure, 0, sizeof(add_pressure));
 	if (orig_n_outs < orig_n_ins) {
 		bitset_t *const used_ins = bitset_alloca(orig_n_ins);
-		for (size_t o = 0; o < orig_n_outs; ++o) {
+		for (size_t o = pn_be_Asm_first_out; o < orig_n_outs; ++o) {
 			arch_register_req_t const *const outreq = out_reqs[o];
 			if (!match_requirement(in_reqs, orig_n_ins, used_ins, outreq))
 				add_pressure[outreq->cls->index]++;
@@ -299,9 +300,6 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 				add_pressure[inreq->cls->index]++;
 		}
 	}
-
-	/* Add memory output. */
-	ARR_APP1(arch_register_req_t const*, out_reqs, arch_memory_req);
 
 	dbg_info                   *const dbgi        = get_irn_dbg_info(node);
 	ir_node                    *const block       = be_transform_nodes_block(node);

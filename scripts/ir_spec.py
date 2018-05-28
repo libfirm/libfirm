@@ -158,6 +158,10 @@ class ASM(Node):
     ins = [
         ("mem", "memory dependency"),
     ]
+    outs = [
+        ("M", "memory result"),
+        ("first_out", "first output"),
+    ]
     attrs = [
         Attribute("n_constraints", type="size_t", noprop=True,
                   comment="number of constraints"),

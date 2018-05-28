@@ -188,6 +188,11 @@ enum {
 	n_be_Asm_first_in,
 };
 
+enum {
+	pn_be_Asm_M,
+	pn_be_Asm_first_out,
+};
+
 ir_node *be_new_Asm(dbg_info *dbgi, ir_node *block, int n_ins, ir_node **ins, arch_register_req_t const **in_reqs, int n_outs, ident *text, void *operands);
 
 /**
