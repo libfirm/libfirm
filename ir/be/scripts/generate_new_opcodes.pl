@@ -492,7 +492,6 @@ EOF
 		my %known_flags = map { $_ => 1 } (
 			"commutative", "cfopcode", "unknown_jump", "fragile", "forking",
 			"constlike", "keep", "start_block", "uses_memory", "dump_noblock",
-			"cse_neutral"
 		);
 		foreach my $flag (@$op_flags) {
 			if (not defined($known_flags{$flag})) {
