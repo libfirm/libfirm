@@ -262,7 +262,7 @@ my $float_unop = {
 
 my $branchcc = {
 	op_flags  => [ "cfopcode", "forking" ],
-	irn_flags => [ "has_delay_slot" ],
+	irn_flags => [ "fallthrough", "has_delay_slot" ],
 	state     => "pinned",
 	attr_type => "sparc_jmp_cond_attr_t",
 	ins       => [ "flags" ],
@@ -470,7 +470,7 @@ Ba => {
 	# Note: has_delay_slot depends on whether it is a fallthrough or not, so we
 	# have special code for this in sparc_emitter
 	template  => $xop,
-	irn_flags => [ "simple_jump" ],
+	irn_flags => [ "simple_jump", "fallthrough" ],
 },
 
 # This is a Jump instruction, but with the addition that you can add custom

@@ -74,37 +74,6 @@ typedef enum get_ip_style_t {
 
 static int get_ip_style = IA32_GET_IP_THUNK;
 
-/** Checks if the current block is a fall-through target. */
-static bool is_fallthrough(const ir_node *cfgpred)
-{
-	if (!is_Proj(cfgpred))
-		return true;
-	ir_node *pred = get_Proj_pred(cfgpred);
-	if (is_ia32_SwitchJmp(pred))
-		return false;
-	return true;
-}
-
-/**
- * returns non-zero if the given block needs a label
- * because of being a jump-target (and not a fall-through)
- */
-static bool block_needs_label(const ir_node *block)
-{
-	int n_cfgpreds = get_Block_n_cfgpreds(block);
-	if (n_cfgpreds == 0) {
-		return false;
-	} else if (n_cfgpreds == 1) {
-		ir_node *cfgpred       = get_Block_cfgpred(block, 0);
-		ir_node *cfgpred_block = get_nodes_block(cfgpred);
-		if (!is_fallthrough(cfgpred))
-			return true;
-		return be_emit_get_prev_block(block) != cfgpred_block;
-	} else {
-		return true;
-	}
-}
-
 /**
  * Add a number to a prefix. This number will not be used a second time.
  */
@@ -1315,8 +1284,7 @@ static void ia32_emit_block_header(ir_node *block)
 			ia32_emit_align_label();
 	}
 
-	const bool need_label = block_needs_label(block);
-	be_gas_begin_block(block, need_label);
+	be_gas_begin_block(block);
 }
 
 /**

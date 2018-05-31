@@ -87,10 +87,11 @@ void be_gas_emit_entity(const ir_entity *entity);
 void be_gas_emit_block_name(const ir_node *block);
 
 /**
- * Starts a basic block. Emits an assembler label "blockname:" if needs_label
- * is true, otherwise a comment with the blockname if verboseasm is enabled.
+ * Starts a basic block. Emits an assembler label "blockname:" if any control
+ * flow predecessor does not fall through, otherwise a comment with the
+ * blockname if verboseasm is enabled.
  */
-void be_gas_begin_block(const ir_node *block, bool needs_label);
+void be_gas_begin_block(ir_node const *block);
 
 /**
  * emit a string (takes care of escaping special chars)

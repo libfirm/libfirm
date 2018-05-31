@@ -578,35 +578,12 @@ static void arm_register_emitters(void)
 }
 
 /**
- * emit the block label if needed.
- */
-static void arm_emit_block_header(ir_node *block)
-{
-	int  n_cfgpreds = get_Block_n_cfgpreds(block);
-	bool need_label;
-	if (n_cfgpreds == 1) {
-		const ir_node *pred       = get_Block_cfgpred(block, 0);
-		const ir_node *pred_block = get_nodes_block(pred);
-
-		/* we don't need labels for fallthrough blocks, however switch-jmps
-		 * are no fallthroughs */
-		need_label =
-			pred_block != be_emit_get_prev_block(block) ||
-			(is_Proj(pred) && is_arm_SwitchJmp(get_Proj_pred(pred)));
-	} else {
-		need_label = true;
-	}
-
-	be_gas_begin_block(block, need_label);
-}
-
-/**
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
 static void arm_gen_block(ir_node *block)
 {
-	arm_emit_block_header(block);
+	be_gas_begin_block(block);
 	be_dwarf_location(get_irn_dbg_info(block));
 	sched_foreach(block, irn) {
 		be_emit_node(irn);

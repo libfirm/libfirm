@@ -159,7 +159,7 @@ static void TEMPLATE_register_emitters(void)
  */
 static void TEMPLATE_emit_block(ir_node *block)
 {
-	be_gas_begin_block(block, true);
+	be_gas_begin_block(block);
 
 	sched_foreach(block, node) {
 		be_emit_node(node);

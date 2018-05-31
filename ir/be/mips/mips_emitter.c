@@ -226,7 +226,7 @@ static void mips_register_emitters(void)
 
 static void mips_gen_block(ir_node *const block)
 {
-	be_gas_begin_block(block, true);
+	be_gas_begin_block(block);
 	sched_foreach(block, node) {
 		be_emit_node(node);
 	}

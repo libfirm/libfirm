@@ -198,6 +198,7 @@ static const char *get_flag_name(arch_irn_flags_t flags)
 	case arch_irn_flag_schedule_first:   return "schedule_first";
 	case arch_irn_flag_spill:            return "spill";
 	case arch_irn_flag_reload:           return "reload";
+	case arch_irn_flag_fallthrough:      return "fallthrough";
 	case arch_irn_flag_backend:
 		break;
 	}

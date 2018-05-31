@@ -946,6 +946,7 @@ CMovcc => {
 
 Jcc => {
 	state     => "pinned",
+	irn_flags => [ "fallthrough" ],
 	op_flags  => [ "cfopcode", "forking" ],
 	in_reqs   => [ "flags" ],
 	out_reqs  => [ "exec", "exec" ],
@@ -971,7 +972,7 @@ SwitchJmp => {
 
 Jmp => {
 	state     => "pinned",
-	irn_flags => [ "simple_jump" ],
+	irn_flags => [ "simple_jump", "fallthrough" ],
 	op_flags  => [ "cfopcode" ],
 	out_reqs  => [ "exec" ],
 	latency   => 1,

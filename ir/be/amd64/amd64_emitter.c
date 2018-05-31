@@ -800,7 +800,7 @@ static void amd64_register_emitters(void)
  */
 static void amd64_gen_block(ir_node *block)
 {
-	be_gas_begin_block(block, true);
+	be_gas_begin_block(block);
 
 	if (omit_fp) {
 		ir_graph *irg = get_irn_irg(block);

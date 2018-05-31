@@ -268,6 +268,7 @@ EOF
 				"simple_jump"      => "arch_irn_flag_simple_jump",
 				"schedule_first"   => "arch_irn_flag_schedule_first",
 				"not_scheduled"    => "arch_irn_flag_not_scheduled",
+				"fallthrough"      => "arch_irn_flag_fallthrough",
 			);
 			if (%custom_irn_flags) {
 				%known_irn_flags = (%known_irn_flags, %custom_irn_flags);

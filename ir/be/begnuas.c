@@ -1330,9 +1330,30 @@ void be_gas_emit_block_name(const ir_node *block)
 	}
 }
 
-void be_gas_begin_block(const ir_node *block, bool needs_label)
+static bool block_needs_label(ir_node const *const block)
 {
-	if (needs_label || get_Block_entity(block)) {
+	if (get_Block_entity(block))
+		return true;
+
+	int const n_cfgpreds = get_Block_n_cfgpreds(block);
+	if (n_cfgpreds == 0) {
+		return false;
+	} else if (n_cfgpreds == 1) {
+		ir_node *const cfgpred       = get_Block_cfgpred(block, 0);
+		ir_node *const cfgpred_block = get_nodes_block(cfgpred);
+		if (be_emit_get_prev_block(block) != cfgpred_block)
+			return true;
+
+		ir_node const *const pred = skip_Proj(cfgpred);
+		return !(arch_get_irn_flags(pred) & arch_irn_flag_fallthrough);
+	} else {
+		return true;
+	}
+}
+
+void be_gas_begin_block(ir_node const *const block)
+{
+	if (block_needs_label(block)) {
 		be_gas_emit_block_name(block);
 		be_emit_char(':');
 	} else {

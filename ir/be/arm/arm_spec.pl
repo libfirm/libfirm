@@ -414,6 +414,7 @@ Cmp => { template => $cmp_shifter_operand },
 Tst => { template => $cmp_shifter_operand },
 
 Bcc => {
+	irn_flags => [ "fallthrough" ],
 	op_flags  => [ "cfopcode", "forking" ],
 	state     => "pinned",
 	in_reqs   => [ "flags" ],
@@ -427,7 +428,7 @@ Bcc => {
 B => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
-	irn_flags => [ "simple_jump" ],
+	irn_flags => [ "simple_jump", "fallthrough" ],
 	out_reqs  => [ "exec" ],
 },
 

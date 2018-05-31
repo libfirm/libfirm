@@ -1218,31 +1218,13 @@ static void sparc_register_emitters(void)
 	be_set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
 }
 
-static bool block_needs_label(const ir_node *block)
-{
-	int n_cfgpreds = get_Block_n_cfgpreds(block);
-	if (n_cfgpreds == 0) {
-		return false;
-	} else if (n_cfgpreds == 1) {
-		ir_node *cfgpred       = get_Block_cfgpred(block, 0);
-		ir_node *cfgpred_block = get_nodes_block(cfgpred);
-		if (is_Proj(cfgpred) && is_sparc_SwitchJmp(get_Proj_pred(cfgpred)))
-			return true;
-		return be_emit_get_prev_block(block) != cfgpred_block
-		    || be_emit_get_cfop_target(cfgpred) != block;
-	} else {
-		return true;
-	}
-}
-
 /**
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
 static void sparc_emit_block(ir_node *block)
 {
-	bool needs_label = block_needs_label(block);
-	be_gas_begin_block(block, needs_label);
+	be_gas_begin_block(block);
 
 	sched_foreach(block, node) {
 		if (rbitset_is_set(delay_slot_fillers, get_irn_idx(node)))
