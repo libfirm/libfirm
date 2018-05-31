@@ -640,7 +640,7 @@ static void emit_ia32_Jcc(const ir_node *node)
 			 * as the falseblock might have no label emitted then */
 			if (fallthrough) {
 				need_parity_label = true;
-				ia32_emitf(node, "jp 1f", projs.f);
+				ia32_emitf(node, "jp 1f");
 			} else {
 				ia32_emitf(node, "jp %L", projs.f);
 			}
