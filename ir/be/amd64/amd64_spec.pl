@@ -462,7 +462,7 @@ ijmp => {
 
 jmp => {
 	state     => "pinned",
-	irn_flags => [ "simple_jump" ],
+	irn_flags => [ "simple_jump", "fallthrough" ],
 	op_flags  => [ "cfopcode" ],
 	out_reqs  => [ "exec" ],
 	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;\n"

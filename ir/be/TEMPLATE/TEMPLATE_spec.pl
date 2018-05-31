@@ -140,7 +140,7 @@ Const => {
 Jmp => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
-	irn_flags => [ "simple_jump" ],
+	irn_flags => [ "simple_jump", "fallthrough" ],
 	out_reqs  => [ "exec" ],
 },
 

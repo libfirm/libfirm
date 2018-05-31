@@ -136,13 +136,14 @@ andi => { template => $immediateOp },
 
 b => {
 	state     => "pinned",
-	irn_flags => [ "simple_jump" ],
+	irn_flags => [ "simple_jump", "fallthrough" ],
 	op_flags  => [ "cfopcode" ],
 	out_reqs  => [ "exec" ],
 },
 
 bcc => {
 	state        => "pinned",
+	irn_flags    => [ "fallthrough" ],
 	op_flags     => [ "cfopcode", "forking" ],
 	constructors => {
 		""  => { in_reqs => [ "cls-gp", "cls-gp" ], ins => [ "left", "right" ] },
