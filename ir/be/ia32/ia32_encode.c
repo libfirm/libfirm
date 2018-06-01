@@ -1279,7 +1279,7 @@ static void ia32_register_binary_emitters(void)
 	be_set_emitter(op_be_CopyKeep,        enc_copy);
 	be_set_emitter(op_be_IncSP,           enc_incsp);
 	be_set_emitter(op_be_Perm,            enc_perm);
-	be_set_emitter(op_ia32_Return,        enc_return);
+	be_set_emitter(op_ia32_Ret,           enc_return);
 	be_set_emitter(op_ia32_Bswap,         enc_bswap);
 	be_set_emitter(op_ia32_Bt,            enc_bt);
 	be_set_emitter(op_ia32_CMovcc,        enc_cmovcc);

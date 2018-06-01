@@ -1562,7 +1562,7 @@ void x86_prepare_x87_callbacks_ia32(void)
 	x86_register_x87_sim(op_ia32_FtstFnstsw,  sim_FtstFnstsw);
 	x86_register_x87_sim(op_ia32_FucomFnstsw, sim_ia32_FucomFnstsw);
 	x86_register_x87_sim(op_ia32_Fucomi,      sim_ia32_Fucomi);
-	x86_register_x87_sim(op_ia32_Return,      x86_sim_x87_ret);
+	x86_register_x87_sim(op_ia32_Ret,         x86_sim_x87_ret);
 }
 
 /**

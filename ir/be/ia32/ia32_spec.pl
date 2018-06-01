@@ -1257,7 +1257,7 @@ Popcnt => {
 	latency  => 1,
 },
 
-Return => {
+Ret => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
 	in_reqs   => "...",

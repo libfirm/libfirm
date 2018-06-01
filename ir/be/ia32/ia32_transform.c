@@ -4085,18 +4085,18 @@ static ir_node *gen_Return(ir_node *node)
 	x86_cconv_t    *cconv = current_cconv;
 
 	/* estimate number of return values */
-	unsigned       p              = n_ia32_Return_first_result;
+	unsigned       p              = n_ia32_Ret_first_result;
 	unsigned const n_callee_saves = rbitset_popcount(cconv->callee_saves, N_IA32_REGISTERS);
 	unsigned const n_ins          = p + n_res + n_callee_saves;
 
 	arch_register_req_t const **const reqs = be_allocate_in_reqs(irg, n_ins);
 	ir_node **in = ALLOCAN(ir_node*, n_ins);
 
-	in[n_ia32_Return_mem]   = new_mem;
-	reqs[n_ia32_Return_mem] = arch_memory_req;
+	in[n_ia32_Ret_mem]   = new_mem;
+	reqs[n_ia32_Ret_mem] = arch_memory_req;
 
-	in[n_ia32_Return_stack]   = sp;
-	reqs[n_ia32_Return_stack] = ia32_registers[REG_ESP].single_req;
+	in[n_ia32_Ret_stack]   = sp;
+	reqs[n_ia32_Ret_stack] = ia32_registers[REG_ESP].single_req;
 
 	/* result values */
 	for (size_t i = 0; i < n_res; ++i) {
@@ -4118,8 +4118,8 @@ static ir_node *gen_Return(ir_node *node)
 	}
 	assert(p == n_ins);
 
-	ir_node *const ret = new_bd_ia32_Return(dbgi, new_block, n_ins, in, reqs, current_cconv->sp_delta);
-	be_stack_record_chain(&stack_env, ret, n_ia32_Return_stack, NULL);
+	ir_node *const ret = new_bd_ia32_Ret(dbgi, new_block, n_ins, in, reqs, current_cconv->sp_delta);
+	be_stack_record_chain(&stack_env, ret, n_ia32_Ret_stack, NULL);
 	return ret;
 }
 

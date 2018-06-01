@@ -1131,7 +1131,7 @@ static void ia32_register_emitters(void)
 	be_set_emitter(op_be_CopyKeep,     emit_be_CopyKeep);
 	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
 	be_set_emitter(op_be_Perm,         emit_be_Perm);
-	be_set_emitter(op_ia32_Return,     emit_ia32_Return);
+	be_set_emitter(op_ia32_Ret,        emit_ia32_Return);
 	be_set_emitter(op_ia32_Conv_FP2FP, emit_ia32_Conv_FP2FP);
 	be_set_emitter(op_ia32_Conv_FP2I,  emit_ia32_Conv_FP2I);
 	be_set_emitter(op_ia32_Conv_I2FP,  emit_ia32_Conv_I2FP);

@@ -1107,7 +1107,7 @@ void ia32_peephole_optimization(ir_graph *irg)
 	register_peephole_optimization(op_be_IncSP,     peephole_be_IncSP);
 	register_peephole_optimization(op_ia32_Or,      peephole_ia32_Or);
 	register_peephole_optimization(op_ia32_Test,    peephole_ia32_Test);
-	register_peephole_optimization(op_ia32_Return,  peephole_ia32_Return);
+	register_peephole_optimization(op_ia32_Ret,     peephole_ia32_Return);
 	register_peephole_optimization(op_ia32_Xor,     peephole_ia32_Xor);
 	be_peephole_opt(irg);
 }

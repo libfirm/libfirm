@@ -956,7 +956,7 @@ static int determine_ebp_input(ir_node *ret)
 static void introduce_epilogue(ir_node *const ret, bool const omit_fp)
 {
 	ir_node        *curr_sp;
-	ir_node  *const first_sp = get_irn_n(ret, n_ia32_Return_stack);
+	ir_node  *const first_sp = get_irn_n(ret, n_ia32_Ret_stack);
 	ir_node  *const block    = get_nodes_block(ret);
 	ir_graph *const irg      = get_irn_irg(ret);
 	if (!omit_fp) {
@@ -966,7 +966,7 @@ static void introduce_epilogue(ir_node *const ret, bool const omit_fp)
 		ir_node  *restore;
 		int const n_ebp    = determine_ebp_input(ret);
 		ir_node  *curr_bp  = get_irn_n(ret, n_ebp);
-		ir_node  *curr_mem = get_irn_n(ret, n_ia32_Return_mem);
+		ir_node  *curr_mem = get_irn_n(ret, n_ia32_Ret_mem);
 		if (ia32_cg_config.use_leave) {
 			restore  = new_bd_ia32_Leave(NULL, block, curr_mem, curr_bp);
 			curr_bp  = be_new_Proj_reg(restore, pn_ia32_Leave_frame, bp);
@@ -986,15 +986,15 @@ static void introduce_epilogue(ir_node *const ret, bool const omit_fp)
 			curr_mem = be_new_Proj(restore, pn_ia32_Pop_M);
 		}
 		sched_add_before(ret, restore);
-		set_irn_n(ret, n_ia32_Return_mem, curr_mem);
-		set_irn_n(ret, n_ebp,             curr_bp);
+		set_irn_n(ret, n_ia32_Ret_mem, curr_mem);
+		set_irn_n(ret, n_ebp,          curr_bp);
 	} else {
 		ir_type *const frame_type = get_irg_frame_type(irg);
 		unsigned const frame_size = get_type_size(frame_type);
 		curr_sp = ia32_new_IncSP(block, first_sp, -(int)frame_size, true);
 		sched_add_before(ret, curr_sp);
 	}
-	set_irn_n(ret, n_ia32_Return_stack, curr_sp);
+	set_irn_n(ret, n_ia32_Ret_stack, curr_sp);
 
 	/* Keep verifier happy. */
 	if (get_irn_n_edges(first_sp) == 0 && is_Proj(first_sp))
@@ -1049,7 +1049,7 @@ static void introduce_prologue_epilogue(ir_graph *const irg, bool omit_fp)
 {
 	/* introduce epilogue for every return node */
 	foreach_irn_in(get_irg_end_block(irg), i, ret) {
-		assert(is_ia32_Return(ret));
+		assert(is_ia32_Ret(ret));
 		introduce_epilogue(ret, omit_fp);
 	}
 
