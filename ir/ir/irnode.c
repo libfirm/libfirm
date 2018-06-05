@@ -213,7 +213,7 @@ int add_irn_n(ir_node *node, ir_node *in)
 	return pos;
 }
 
-static void remove_irn_n(ir_node *node, int n)
+void remove_irn_n(ir_node *node, int n)
 {
 	ir_graph *const irg   = get_irn_irg(node);
 	int       const arity = get_irn_arity(node);
