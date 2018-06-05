@@ -319,6 +319,8 @@ struct ir_node {
 	void            *backend_info;
 	irn_edges_info_t edge_info;    /**< Everlasting out edges. */
 
+	int annot;                 /**< Annotation for use by firm2vhdl. */
+
 	/** Attributes of this node. Depends on opcode. Must be last field. */
 	ir_attr attr;
 };
