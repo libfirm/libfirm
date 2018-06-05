@@ -1,0 +1,36 @@
+This Repository contains a module to write VHDL output to a file from
+suitable IRGs.  Its intended use is to be called on IRG-turned
+subgraphs of common IRGs after identification and partitioning of
+Special Instructions.
+
+Dependencies:
+    - libfirm d065b1e or later.
+
+For testing purposes, it also contains a tool ir2vhdl that uses the
+module on all method entities found in imported IR (via, e.g., cparser
+--export-ir) and a test harness in the subdirectory test/.
+
+The test/t_*.c files are processed in two ways:
+
+   - ir2vhdl produces VHDL for all method entities in the file from
+     cparser-exported IR.
+
+   - They are compiled and linked with driver_manual.c to yield a
+     program that feeds patterns to test_atom and generates
+     std.textio-compatible input and expected output pattern files for
+     a supplied VHDL testbench.
+
+In order to verify the testcases with the VHDL testbench, you need a
+Simulator.  Currently, GHDL (free software) and ModelSim ($$$) are
+supported by the harness.
+
+There is also some support to run the testcases through the Xilinx
+tool chain.
+
+TODO:
+    - Introduce new Firm nodes Slice and Pack.
+    - Introduce Bit-granularity modes based on fp-vrp/dca to produce
+      more efficient VHDL.
+    - Generate latches for Phi nodes.
+
+BUGS:
