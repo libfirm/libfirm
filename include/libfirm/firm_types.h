@@ -261,6 +261,8 @@ typedef enum mtp_additional_properties {
 	mtp_property_inline_recommended = 1u << 11,
 	/** Marker used by opt_funccall (really a hack)... */
 	mtp_temporary                   = 1u << 12,
+	/** i-Core: __attribute__((special_instruction)). */
+	mtp_special_instruction         = 1u << 13,
 } mtp_additional_properties;
 ENUM_BITSET(mtp_additional_properties)
 
