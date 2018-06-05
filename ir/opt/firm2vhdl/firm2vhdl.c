@@ -84,7 +84,7 @@ static void emit_signals(ir_node *node, void *data)
 
   ir_fprintf(env->file, "\tsignal node%N : ", node);
 
-  fprintf(env->file, get_mode_sign(mode) ? "signed" : "unsigned");
+  fprintf(env->file, mode_is_signed(mode) ? "signed" : "unsigned");
   fprintf(env->file, "(%u downto 0)" SIGNAL_INITIALIZER ";", get_mode_size_bits(mode)-1);
   ir_fprintf(env->file, " -- %n \n", node);
 }
@@ -134,7 +134,7 @@ static void emit_process(ir_node *node, void *data)
       long proj = get_Proj_num(node);
       ir_fprintf(env->file, "node%N <= %s(%s);\t-- %n\n",
 		 node,
-		 get_mode_sign(mode) ? "signed" : "unsigned",
+		 mode_is_signed(mode) ? "signed" : "unsigned",
 		 get_input_name(proj), node);
     } else if (is_x_regular_Proj(node)) {
       if (!is_Start(get_Proj_pred(node)))
@@ -297,4 +297,3 @@ void irg2vhdl(FILE *output, ir_graph *irg)
   irg_walk_graph(irg, emit_process, 0, &env);
   fprintf(env.file, "end %s;\n", get_irg_name(irg));
 }
-

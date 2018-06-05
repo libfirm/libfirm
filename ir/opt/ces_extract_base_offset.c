@@ -19,7 +19,6 @@
 #include "firm.h"
 #include "bearch.h"
 #include "bemodule.h"
-#include "bemodule_t.h"
 
 #include <assert.h>
 #include <math.h>
@@ -119,7 +118,7 @@ int ces_extract_base_offset(ir_node* ptr, struct load_base* load_base) {
 					result=-1;
 				else
 					load_base->c3_value = get_tarval_long(get_Const_tarval(load_base->c3));
-				
+
 				result=1+5;
 			//case: base + (1*x + c3)
 			} else if( is_Proj(get_Add_left(add2)) && is_Const(get_Add_right(add2)) ) {
@@ -138,7 +137,7 @@ int ces_extract_base_offset(ir_node* ptr, struct load_base* load_base) {
 				load_base->c3 = get_Add_left(add2);
 				load_base->c3_value = get_tarval_long(get_Const_tarval(load_base->c3));
 				result=1+1+7;
-		
+
 				//case: base + (x + (2^c1) * x) == base + (3*x)
 			} else if( is_Proj(get_Add_left(add2)) && is_Shl(get_Add_right(add2)) ) {
 				//TODO: what?? assert(ces_get_original(ces_copy_map, get_Add_left(add2)) == ces_get_original(ces_copy_map, get_Shl_left(get_Add_right(add2))) );
@@ -191,7 +190,7 @@ int ces_extract_base_offset(ir_node* ptr, struct load_base* load_base) {
 					result=1+1+12;
 				}
 			}
-		} 
+		}
 	} else {
 		DBG((ces_dbg, LEVEL_3, YELLOW("could not match subgraph\n")));
 		char title[30];
@@ -211,4 +210,3 @@ int ces_extract_base_offset(ir_node* ptr, struct load_base* load_base) {
 
 	return result;
 }
-
