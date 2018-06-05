@@ -263,6 +263,8 @@ typedef enum mtp_additional_properties {
 	mtp_temporary                   = 1u << 12,
 	/** marker used for oo analyses needing info whether method is constructor or not */
 	mtp_property_is_constructor     = 1u << 13,
+	/** i-Core: __attribute__((special_instruction)). */
+	mtp_special_instruction         = 1u << 14,
 } mtp_additional_properties;
 ENUM_BITSET(mtp_additional_properties)
 
