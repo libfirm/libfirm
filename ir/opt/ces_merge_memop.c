@@ -216,7 +216,7 @@ static void ces_memop_fix_mode(ir_node* memop, struct load_base* accu) {
 		bit_count += get_mode_size_bits(get_irn_mode(pred));
 	}
 	accu->size = bit_count;
-	accu->mode = new_int_mode("pack_mode", irma_twos_complement, bit_count, 0, 32);
+	accu->mode = new_int_mode("pack_mode", bit_count, 0, 32);
 	set_irn_mode(memop, accu->mode);
 }
 
@@ -233,16 +233,16 @@ struct load_base* ces_mop_new(ir_node* memop, struct load_base* old_base, ir_nod
 	switch (get_irn_opcode(memop)) {
 	case iro_Load: {
 		ir_node *pred_proj = (is_Proj(mem_pred)||is_Sync(mem_pred))? mem_pred : new_rd_Proj(dbgi, mem_pred, get_modeM(), pn_Load_M);
-		*memop_wide = new_rd_Load(dbgi, block, pred_proj, get_memop_ptr(memop), mode_LLu, flags);
-		ir_node* proj_res = new_rd_Proj(dbgi, *memop_wide, mode_LLu, pn_Load_res);
+		*memop_wide = new_rd_Load(dbgi, block, pred_proj, get_memop_ptr(memop), mode_Lu, get_Load_type(memop), flags);
+		ir_node* proj_res = new_rd_Proj(dbgi, *memop_wide, mode_Lu, pn_Load_res);
 		set_irn_link(*memop_wide,proj_res);
 		break;
 	}
 	case iro_Store: {
 		ir_node *pred_proj = (is_Proj(mem_pred)||is_Sync(mem_pred))? mem_pred : new_rd_Proj(dbgi, mem_pred, get_modeM(), pn_Store_M);
 		ir_node* data[]= {get_Store_value(memop)};
-		ir_node* pack = new_rd_Pack(dbgi, block, 1, data, get_modeLLu() );
-		*memop_wide = new_rd_Store(dbgi, block, pred_proj, get_memop_ptr(memop), pack, flags);
+		ir_node* pack = new_rd_Pack(dbgi, block, 1, data, get_modeLu() );
+		*memop_wide = new_rd_Store(dbgi, block, pred_proj, get_memop_ptr(memop), pack, get_Store_type(memop), flags);
 		//bug hier. ein add zu viel, evtl der skip teil in de replace
 		ces_replace_memop_slice(get_Store_value(memop),memop, pack);
 		ces_replace_memop_slice(memop,*memop_wide,*memop_wide);
@@ -277,7 +277,7 @@ static void ces_add_to_mop_load(ir_node* memopQ, ir_node* memop) {
 	long slice_from = current->c3_value*bit_per_word - accu->c3_value*bit_per_word;
 	long slice_to = slice_from + current->size -1;
 	ir_node* memopQ_res = get_irn_link(memopQ);
-	ir_node* slice = new_rd_Slice(dbgi,memopQ_res, get_Load_mode(memop), slice_from , slice_to);
+	ir_node* slice = new_rd_Slice(dbgi, get_irn_irg(memopQ), memopQ_res, get_Load_mode(memop), slice_from, slice_to);
 
 	ces_replace_memop_slice(memop, slice, memopQ);
 	set_irn_mode(slice, get_memop_mode(memop));
@@ -299,7 +299,7 @@ static void ces_add_to_mop_store(ir_node* memopQ, ir_node* memop) {
 
 	if (diff > 0) {
 		add_irg_constraints(current_ir_graph,IR_GRAPH_CONSTRAINT_CONSTRUCTION);
-		ir_mode* mode = new_int_mode("pack_padding", irma_twos_complement, diff, 0, diff);
+		ir_mode* mode = new_int_mode("pack_padding", diff, 0, diff);
 		ir_tarval* tarval = new_tarval_from_long(diff, mode);
 		add_irn_n(pack, new_Const(tarval));
 		clear_irg_constraints(current_ir_graph,IR_GRAPH_CONSTRAINT_CONSTRUCTION);
