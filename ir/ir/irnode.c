@@ -661,6 +661,11 @@ void add_Sync_pred(ir_node *node, ir_node *pred)
 	add_irn_n(node, pred);
 }
 
+int (is_arg_Proj)(const ir_node *node)
+{
+	return is_arg_Proj_(node);
+}
+
 int is_x_except_Proj(const ir_node *node)
 {
 	if (!is_Proj(node))
