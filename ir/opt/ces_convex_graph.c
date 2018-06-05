@@ -94,19 +94,20 @@ void ces_convex_simple(ir_graph* new_graph, ir_graph* old_graph, ir_node* start,
   get_irg_end(old_graph);
 	get_irn_arity(start);
 
-	waitq* queue = new_waitq();
-	waitq_put(queue, stop);
+	deq_t queue;
+	deq_init(&queue);
+	deq_push_pointer_right(&queue, stop);
 	unsigned int pred_outside_bb = 0;
-	
+
 	do {
-		ir_node* node = waitq_get(queue);
+		ir_node* node = deq_pop_pointer_left(ir_node, &queue);
 		for( int i=0; i < get_irn_arity(node); i++) {
 			ir_node* pred = get_irn_n(node, i);
 			if ( get_irn_idx( pred ) != get_irn_idx(node) ) {
 				pred_outside_bb = 1;
 				break; //pred is outside BB - convexity unmet
 			} else {
-				waitq_put(queue, pred);
+				deq_push_pointer_right(&queue, pred);
 			}
 		}
 		if (pred_outside_bb)
@@ -115,7 +116,7 @@ void ces_convex_simple(ir_graph* new_graph, ir_graph* old_graph, ir_node* start,
 			ir_node* node = irn_copy_into_irg(node, new_graph);
 
 		}
-	} while( !waitq_empty(queue) );
+	} while( !deq_empty(&queue) );
 }
 
 /* /\* */
