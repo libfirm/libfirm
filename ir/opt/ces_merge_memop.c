@@ -133,7 +133,7 @@ void ces_print_QLoad(ir_node* qload) {
 	assure_irg_outs(get_irn_irg(qload));
 
 	for(unsigned int i=0; i < get_irn_n_outs(qload); i++) {
-		if (get_Proj_proj(get_irn_out(qload, i)) == pn_Load_res) {
+		if (get_Proj_num(get_irn_out(qload, i)) == pn_Load_res) {
 			DBG((ces_dbg, LEVEL_1, "qLoad %+F(%i), base:%+F, %i loads\n", qload,
 					 get_mode_size_bits(get_memop_mode(qload)), base->base, get_irn_n_outs(get_irn_out(qload, i))));
 			ces_print_load_base(qload, base);
@@ -189,11 +189,11 @@ int ces_replace_memop_slice(ir_node* from, ir_node* to, ir_node* memop) {
 		ir_node* use = get_irn_out(from, i);
 		for (int  j=0 ; j < get_irn_arity(use); j++ ) {
 			//replace with slice unless memory_edge, rewire this to load
-			if ( is_Proj(use) && (get_Proj_proj(use) == pn_Load_M || get_Proj_proj(use) == pn_Store_M ) ) {
+			if ( is_Proj(use) && (get_Proj_num(use) == pn_Load_M || get_Proj_num(use) == pn_Store_M ) ) {
 				assert(get_irn_n(use,j) == from); // if this hits analyse situation. prob. move cond. into if
 				set_irn_n(use, j, memop);
 			} else
-			if ( is_Proj(use) && (get_Proj_proj(use) == pn_Load_res) ) {
+			if ( is_Proj(use) && (get_Proj_num(use) == pn_Load_res) ) {
 				ces_replace_memop_slice(use,to,memop);
 			} else {
 				if(get_irn_n(use,j) == from)

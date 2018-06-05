@@ -131,7 +131,7 @@ static void emit_process(ir_node *node, void *data)
 
   case iro_Proj: {
     if (is_arg_Proj(node)) {
-      long proj = get_Proj_proj(node);
+      long proj = get_Proj_num(node);
       ir_fprintf(env->file, "node%N <= %s(%s);\t-- %n\n",
 		 node,
 		 get_mode_sign(mode) ? "signed" : "unsigned",
