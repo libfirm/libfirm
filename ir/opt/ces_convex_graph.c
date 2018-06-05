@@ -2,7 +2,7 @@
  * collection of algorithms to ensure convexity of a subgraph
  *
  */
-#include "pdeq.h" 
+#include "pdeq.h"
 #include "pset_new.h"
 #include "irnode.h"
 #include "irouts.h"
@@ -38,7 +38,7 @@ test_fun illegal_node_tests[] = {
 
 /* CODE */
 int is_same_BB(ir_node* node, ir_node* pred) {
-	
+
 	if (is_Const(node) || is_Const(pred))
 		return true; //FIRM 'feature': const nodes are associated with the START block
 
@@ -56,7 +56,7 @@ int is_pred_proj(ir_node* node) {
 }
 
 int is_proj_args(ir_node* node) {
-	if( !(is_Proj(node) && is_pred_proj(node)) ) 
+	if( !(is_Proj(node) && is_pred_proj(node)) )
 		return false;
 
 	ir_opcode opcode =  get_irn_opcode(get_Proj_pred(get_Proj_pred(node))) ;
@@ -91,7 +91,7 @@ void ces_convex_simple(ir_graph* new_graph, ir_graph* old_graph, ir_node* start,
 		until closure with start
 		user wait_q because it restricts the interface tu push-back & pop-front
 	*/
-  get_irg_end(old_graph);
+	get_irg_end(old_graph);
 	get_irn_arity(start);
 
 	deq_t queue;
@@ -184,7 +184,7 @@ int do_convexity_check(ir_node* node, ir_nodeset_t* loads, ir_nodeset_t* stores,
 	while( counter < get_irn_arity(node) && is_convex ) {
 		ir_node* pred=get_irn_n(node, counter);
 
-		if ( !is_same_BB(node, pred) ) { 
+		if ( !is_same_BB(node, pred) ) {
 			if (is_proj_args(pred) || is_proj_stack(pred))
 				is_convex &= true;
 			else
