@@ -754,6 +754,30 @@ class Proj(Node):
 
 
 @op
+class Slice(Node):
+    """returns a slice of <mode> of a value"""
+    ins              = [
+        ("pred", "the value from which a slice is extracted"),
+    ]
+    flags            = []
+    pinned           = "no"
+    block            = "get_nodes_block(irn_pred)"
+    attrs      = [
+        Attribute("from", type="long", comment="lower bit number"),
+        Attribute("to", type="long", comment="upper bit number"),
+    ]
+    attr_struct = "slice_attr"
+
+@op
+class Pack(Node):
+	"""Concatenates bits of predecessors."""
+	pinned        = "no"
+	arity         = "dynamic"
+	input_name    = "pred"
+	flags         = []
+	customSerializer = False
+
+@op
 class Raise(Node):
     """Raises an exception. Unconditional change of control flow. Writes an
     explicit Except variable to memory to pass it to the exception handler.
