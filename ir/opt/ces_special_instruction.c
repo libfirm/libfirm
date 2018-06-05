@@ -32,7 +32,6 @@
 
 #include "bearch.h"
 #include "bemodule.h"
-#include "bemodule_t.h"
 
 DEBUG_ONLY(firm_dbg_module_t *ces_dbg = NULL;);
 
@@ -44,11 +43,11 @@ ces_si_params_t ces_si_params = {
 };
 
 ir_graph* ces_cut_coreISA(ir_graph* si_irg, struct stream_description* streams);
-int ces_allow_ifconf(ir_node *sel, ir_node *mux_false,ir_node *mux_true);
+int ces_allow_ifconf(ir_node const *sel, ir_node const *mux_false, ir_node const *mux_true);
 static int ces_is_mux_allowed(ir_node* mux);
 static int has_si_attribute(ir_graph* irg);
 
-int ces_allow_ifconf(ir_node *sel, ir_node *mux_false,ir_node *mux_true) {
+int ces_allow_ifconf(ir_node const *sel, ir_node const *mux_false,ir_node const *mux_true) {
 	UNUSED_PARAM(sel);
 	UNUSED_PARAM(mux_false);
 	UNUSED_PARAM(mux_true);
@@ -70,10 +69,10 @@ static void node_dump_Slice(FILE *out, const ir_node *self, dump_reason_t reason
 	case dump_node_opcode_txt:
 		fprintf(out, "%s[%li..%li]", get_irn_opname(self), get_Slice_from(self), get_Slice_to(self) );
 		break;
-		
+
 	case dump_node_mode_txt:
 		mode = get_irn_mode(self);
-		
+
 		if (mode != NULL && mode != mode_BB && mode != mode_ANY && mode != mode_BAD && mode != mode_T )
 			fprintf(out, "%s", get_mode_name(mode));
 		break;
@@ -81,7 +80,7 @@ static void node_dump_Slice(FILE *out, const ir_node *self, dump_reason_t reason
 	case dump_node_nodeattr_txt:
 		//keep empty - nodenr inserted automagically
 		break;
-	
+
 	case dump_node_info_txt:
 		pred    = get_Slice_pred(self);
 		slice_from = get_Slice_from(self);
@@ -126,7 +125,7 @@ void ces_special_instruction(ir_graph *irg) {
 	DBG((ces_dbg,LEVEL_3, "found si attribute in irg:%s\n",get_irg_dump_name(irg)));
 
 
-	DBG((ces_dbg, LEVEL_3, "ces_special_instruction start (%s)\n", get_irg_dump_name(irg) ));	
+	DBG((ces_dbg, LEVEL_3, "ces_special_instruction start (%s)\n", get_irg_dump_name(irg) ));
 
 	ces_obstack = XMALLOCZ(struct obstack);
 	obstack_init(ces_obstack);
@@ -188,7 +187,7 @@ void ces_special_instruction(ir_graph *irg) {
 	DBG_DO(ces_dbg, LEVEL_3, dump_ir_graph(irg,"ces_after_si"));
 
 	stat_ev_end();
-	
+
 	// call firm2vhdl on si graph
 	//check irdo for howto
 	//delete si graph

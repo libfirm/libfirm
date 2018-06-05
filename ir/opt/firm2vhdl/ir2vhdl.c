@@ -12,7 +12,7 @@
 #include <firm.h>
 #include "firm2vhdl.h"
 
-static int true_p(ir_node *sel, ir_node *mux_false, ir_node *mux_true)
+static int true_p(ir_node const *sel, ir_node const *mux_false, ir_node const *mux_true)
 {
   return 1;
 }

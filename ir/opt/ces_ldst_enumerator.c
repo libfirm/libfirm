@@ -1,7 +1,7 @@
 /*
  * (c) Martin Haaß 2013
  * CES Henkel, KIT
- * 
+ *
  * Functions to identify a SI based on the
  * occurence of load/store operations
  */
@@ -18,8 +18,10 @@
 #include "ces_merge_memop.h"
 
 /* framework includes */
+#include "array.h"
 #include "statev.h"
 #include "debug.h"
+#include "iredges_t.h"
 #include "irnode.h"
 #include "irgwalk.h"
 #include "irdump.h"
@@ -39,7 +41,6 @@
 
 #include "bearch.h"
 #include "bemodule.h"
-#include "bemodule_t.h"
 
 /* system includes */
 #include <assert.h>
@@ -103,26 +104,9 @@ void ces_exchange(ir_node* old, ir_node* new) {
 	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION);
 	ir_node* temp = new_Dummy(get_irn_mode(old));
 
-	/* copy all dependencies from old to new */
-	add_irn_deps(temp, old);
 	edges_reroute(old, temp);
-	edges_reroute_kind(old, temp, EDGE_KIND_DEP);
-	//clear deps from old
-	for(int i=0; i < get_irn_n_deps(old); i++)
-		delete_irn_dep(old, get_irn_dep(old, i) );
-	//add deps from new to old
-	add_irn_deps(old, new);
-	//reroute edges from new to old
 	edges_reroute(new, old);
-	edges_reroute_kind(new, old, EDGE_KIND_DEP);
-	//clear deps from new
-	for(int i=0; i < get_irn_n_deps(new); i++)
-		delete_irn_dep(new, get_irn_dep(new, i) );
-	//add deps from temp to new
-	add_irn_deps(new, temp);
-	//reroute edges from temp to new
 	edges_reroute(temp, new);
-	edges_reroute_kind(temp, new, EDGE_KIND_DEP);
 	//delete temp
 	edges_node_deleted(temp);
 	/* noone is allowed to reference this node anymore */
@@ -170,7 +154,7 @@ int ces_cmp_equ(ir_node* v1, int c1, ir_node* v2, int c2) {
 }
 
 /**
- * compares two Load_nodes. 
+ * compares two Load_nodes.
  * @param Load_nodes
  * @return 1(true) if node1 value greater than node2 value
  * @return 0(true) if node1 smaller node2 value
@@ -495,9 +479,14 @@ struct stream_description* ces_analyse_bb(ir_node* basic_block, struct memLists*
 	struct stream_description* load_streams = ces_create_memory_streams(basic_block, (plist_t*)memList->loadList, "loads");
 	struct stream_description* store_streams = ces_create_memory_streams(basic_block, (plist_t*)memList->storeList, "store");
 
-	struct stream_description* all_streams = NEW_ARR_F(struct stream_description, 0);
-	ARR_APP(struct stream_description, all_streams, load_streams);
-	ARR_APP(struct stream_description, all_streams, store_streams);
+	const unsigned n_load  = ARR_LEN(load_streams);
+	const unsigned n_store = ARR_LEN(store_streams);
+
+
+	struct stream_description* all_streams = NEW_ARR_F(struct stream_description, n_load + n_store);
+	const size_t elt_size = sizeof(struct stream_description);
+	memcpy(all_streams,                     load_streams,  n_load  * elt_size);
+	memcpy(all_streams + n_load * elt_size, store_streams, n_store * elt_size);
 
 	int res = ces_check_convexity(irg, all_streams);
 	if (res)

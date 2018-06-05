@@ -7,7 +7,7 @@
 /* *\/ */
 
 #include "debug.h"
-#include "pdeq.h" 
+#include "pdeq.h"
 #include "pset_new.h"
 #include "irnode.h"
 #include "irouts.h"
@@ -16,7 +16,7 @@
 #include "irgwalk.h"
 #include "irgraph.h"
 #include "irdump.h"
-#include "irtypes.h"
+#include "irnode_t.h"
 #include "ces_si_tools.h"
 #include "irnodemap.h"
 
@@ -137,7 +137,7 @@ void ces_pattern_pred(struct pattern* pattern, ir_node* nodeU) {
 		//Pred(G, P) ∪ Pred(G, u)
 		pset_new_t* pred = obstack_alloc(ces_obstack, sizeof(pset_new_t));
 		pset_new_init(pred);
-		
+
 		ces_pattern_preds(nodeU, pred);
 		pset_new_union(pattern->pred, pred);
 
@@ -214,7 +214,7 @@ void ces_pattern_inInput(struct pattern* pattern, ir_node* nodeU) {
 	// 2.) add IPred(u)
 	for (int i = 0; i < get_irn_arity(nodeU); i++) {
 		ir_node* ipred = get_irn_n(nodeU, i);
-		
+
 		//assert(!pset_new_contains(pattern->inInput, ipred) );
 		if ( pset_new_contains(pattern->inInput, ipred) )
 			continue;
@@ -241,13 +241,13 @@ void 	ces_pattern_out(struct pattern* pattern, ir_node* node) {
 	}
 }
 
-/* 
+/*
 Paper says:
 	 IN(G,P) ={v| v∉ Vp && v ∈ V ∪ V+, u ∈ Vp, (v, u) ∈ E ∪ E+ }
 I say:
-	 equals ∀v ∈ V: ipreds ∪ ipred(v) 
+	 equals ∀v ∈ V: ipreds ∪ ipred(v)
 Paper says:
-	 IN(G,P)=InInput(G,P) ∪ PerInut(G,P) 
+	 IN(G,P)=InInput(G,P) ∪ PerInut(G,P)
 */
 void ces_pattern_in(struct pattern* pattern) {
 	pset_new_init(pattern->in);
@@ -269,7 +269,7 @@ void ces_pattern_allNodes(struct pattern* pattern, ir_node* node) {
 	block_set = ir_nodemap_get_fast(ces_block_lookup, block);
 	assert(block_set != NULL && "why u no have nodeset for this block?!");
 	pattern->allNodes = block_set;
-	
+
 }
 
 /*
@@ -284,12 +284,12 @@ void ces_pattern_add(struct pattern* pattern, ir_node* node) {
 
 	if (pset_new_contains(pattern->pattern, node) )
 		return;
-	
+
 	pset_new_insert(pattern->pattern, node);
 
 	if( pattern->irg == NULL) {
 		pattern->irg = get_irn_irg(node);
-	}	
+	}
 	assert((pattern->map != NULL) && "topo map is missing");
 
 	unsigned int node_height = (intptr_t)ir_nodemap_get_fast(pattern->map, node);
@@ -364,12 +364,12 @@ void ces_succ_intersect_in_heights(ir_node* succ, void* envPtr){
 //			printf("succ(%li)=%li\n",get_irn_node_nr(nodeU),get_irn_node_nr(succ));
 			//Step2: check if succ is !in(pattern)
 			if( pset_new_contains(pattern->in, succ) )
-				pset_new_insert(succEnv->succ, succ);//add to result - 
+				pset_new_insert(succEnv->succ, succ);//add to result -
 		}
 	}
 }
 
-			
+
 //FNS NodeFilter(P)
 pset_new_t* node_filter(struct pattern* pattern, unsigned int out_max) {
 	pset_new_iterator_t iter;
@@ -398,7 +398,7 @@ pset_new_t* node_filter(struct pattern* pattern, unsigned int out_max) {
 		if( pset_new_size(env->succ) == 0 )
 			pset_new_insert(fns, element);
 	}
-	
+
 	//DEBUG
 /*
 	foreach_pset_new(fns, ir_node*, element, iter) {
@@ -406,7 +406,7 @@ pset_new_t* node_filter(struct pattern* pattern, unsigned int out_max) {
 	}
 	printf("\n");
 */
-	//if( |out(G,P)| < OUTmax) 
+	//if( |out(G,P)| < OUTmax)
 	if (pset_new_size(pattern->out) < out_max) {
 		// FNS = FNS ∪ { v| €DISC((G,P), v>P.getOrder()};
 		pset_new_union(fns, pattern->disc);
@@ -418,16 +418,16 @@ void ces_dump_pattern(struct pattern* pattern) {
 	static int xiao_casseau_counter = 42;
 	pset_new_iterator_t iter;
 	ir_node* element;
-	
+
 	//annotates the current pattern with a "unique" number and dumps the graph
 	foreach_pset_new(pattern->pattern, ir_node* , element, iter) {
 		element->annot = xiao_casseau_counter;
 	}
-	
+
 	char filename[255];
 	snprintf(filename, 255, "xiao_casseau_%i",xiao_casseau_counter);
 	dump_ir_graph(pattern->irg, filename);
-	
+
 	DB((ces_dbg, LEVEL_3, "new pattern with %i nodes\n", (int)pset_new_size(pattern->pattern)));
 	xiao_casseau_counter++;
 }
@@ -455,7 +455,7 @@ void recursive_pattern_generator(struct pset_new_t* pattern_space, struct patter
 	ir_node* node;
 
 	pset_new_iterator_t iter;
-	
+
 	pset_new_t* filtered_nodes = node_filter(pattern,OUT_MAX);
 /*
 	printf("filtered nodes of pattern {");
@@ -472,7 +472,7 @@ void recursive_pattern_generator(struct pset_new_t* pattern_space, struct patter
 		struct pattern*	new_pattern = ces_pattern_copy( pattern);
 		ces_pattern_add(new_pattern, node);
 
-		if ( !checkConstraint(new_pattern->out, OUT_MAX) ) 
+		if ( !checkConstraint(new_pattern->out, OUT_MAX) )
 			return;
 		if( !checkConstraint(new_pattern->perInput, PERIN_MAX) )
 			return;
@@ -482,9 +482,9 @@ void recursive_pattern_generator(struct pset_new_t* pattern_space, struct patter
 		} else
 			recursive_pattern_generator(pattern_space, new_pattern);
 	}
-	
+
 }
- 
+
 //walks over the one-node-pattern-set
 void xiao_casseau_walker(ir_node* node, void* envPtr) {
 	if( is_Block(node) )
@@ -494,7 +494,7 @@ void xiao_casseau_walker(ir_node* node, void* envPtr) {
 	ir_nodemap* map = (ir_nodemap* )envPtr;
 //	ir_heights_t* heights = heights_new(get_irn_irg(node));
 	struct pset_new_t* pattern_space;
-	
+
 	pattern_space = obstack_alloc(ces_obstack, sizeof(pset_new_t));
 	pset_new_init(pattern_space);
 
@@ -503,7 +503,7 @@ void xiao_casseau_walker(ir_node* node, void* envPtr) {
 	ces_pattern_new(pattern, map);
 	pattern->start = node;
 	ces_pattern_add(pattern, node);
-	
+
 	pset_new_insert(pattern_space, pattern);
 	ces_dump_pattern(pattern);
 	recursive_pattern_generator(pattern_space, pattern );
@@ -536,14 +536,14 @@ void ces_topo_walker(ir_node *irn, void *env) {
 		counter++;
 	}
 }
-    
+
 /*
  * prepare datastrcuter with set of nodes per block
  * use with wlaker beforehands
  */
 void ces_all_nodes_walker(ir_node* node, void *env) {
 	ir_nodemap* ces_block_lookup = (ir_nodemap* )env;
-	
+
 	if( !is_Block(node) ) {
 		ir_node* block = get_irn_n(node, -1);
 		pset_new_t* block_set = ir_nodemap_get_fast(ces_block_lookup, block);

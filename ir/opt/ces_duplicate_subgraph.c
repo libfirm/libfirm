@@ -7,10 +7,11 @@
  * does not make irg global known, reuses type from current_ir_Graph
  */
 static ir_graph* new_tmp_irg(void){
-	ident *factor_id = id_mangle3("", get_entity_ident(get_irg_entity(current_ir_graph)), "_ldstana");
+	ident *factor_id = new_id_fmt("%s_ldstana", get_entity_ident(get_irg_entity(current_ir_graph)));
 	ir_type* orig_type = get_entity_type(get_irg_entity(current_ir_graph));
 
-	ir_type* tmp_type = new_type_method(get_method_n_params(orig_type),1);
+	ir_type* tmp_type = new_type_method(get_method_n_params(orig_type), 1,
+	                                    false, cc_cdecl_set, mtp_no_property);
 	set_method_res_type(tmp_type,0,get_type_for_mode(get_modeIu()));
 	for(unsigned i=0; i<get_method_n_params(orig_type); i++)
 		set_method_param_type(tmp_type,i, get_method_param_type(orig_type, i));

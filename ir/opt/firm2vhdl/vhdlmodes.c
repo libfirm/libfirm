@@ -82,8 +82,8 @@ vhdl_def_mode(63)
 vhdl_def_mode(64)
 
 #define vhdl_init_mode(bits) \
-  mode_V ## bits ## u  = new_int_mode("V" #bits "u",  irma_twos_complement, bits,   0, 32); \
-  mode_V ## bits ## u  = new_int_mode("V" #bits "s",  irma_twos_complement, bits,   1, 32);\
+  mode_V ## bits ## u  = new_int_mode("V" #bits "u",  bits,   0, 32); \
+  mode_V ## bits ## u  = new_int_mode("V" #bits "s",  bits,   1, 32);\
 
 void init_vhdl_modes(void)
 {

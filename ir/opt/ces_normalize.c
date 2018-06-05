@@ -62,7 +62,7 @@ int ces_reassociate_mul_proj(ir_node** add) {
 
 	ir_tarval* tv = get_mode_one(mode);
 	tv = get_Const_tarval(multiplicator);
-	tv = tarval_add(tv, get_tarval_one(mode)); //tarval++
+	tv = tarval_add(tv, get_mode_one(mode)); //tarval++
 
 	if (tv == tarval_bad) {
 		DBG((ces_dbg, LEVEL_3, YELLOW("reassociate failed: %+F\n"),*add));
@@ -139,7 +139,7 @@ int ces_reassociate_mul_mul(ir_node** add) {
 	ir_node* blk = get_nodes_block(mul1);
 	ir_graph* irg = get_irn_irg(blk);
 	ir_node* multiplicator = new_rd_Const(get_irn_dbg_info(mul1), irg, tv);
-	ir_node* irn = new_rd_Mul(get_irn_dbg_info(mul1), blk, get_Mul_left(mul1), multiplicator, mode);
+	ir_node* irn = new_rd_Mul(get_irn_dbg_info(mul1), blk, get_Mul_left(mul1), multiplicator);
 
 	exchange(*add, irn); //replace and delete add
 	*add = irn;
@@ -174,7 +174,7 @@ int ces_reassociate_shl(ir_node **node)
 	blk = get_nodes_block(n);
 	irg = get_irn_irg(blk);
 	c = new_r_Const(irg, tv);
-	irn = new_rd_Mul(get_irn_dbg_info(n), blk, x, c, mode);
+	irn = new_rd_Mul(get_irn_dbg_info(n), blk, x, c);
 
 	if (irn != n) {
 		exchange(n, irn);
