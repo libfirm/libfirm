@@ -325,7 +325,7 @@ ir_node* ces_load_get_proj(ir_node* load) {
 	assert(is_Load(load));
 	for(unsigned i=0; i < get_irn_n_outs(load); i++) {
 		ir_node* out = get_irn_out(load, i);
-		if (is_Proj(out) && (get_Proj_proj(out) ==  pn_Load_res) ) {
+		if (is_Proj(out) && (get_Proj_num(out) ==  pn_Load_res) ) {
 			return out;
 		}
 	}
