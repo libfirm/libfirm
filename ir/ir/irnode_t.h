@@ -230,6 +230,12 @@ typedef struct proj_attr {
 	unsigned num; /**< number of tuple sub-value which is projected */
 } proj_attr;
 
+/** Attributes for Slice nodes. */
+typedef struct slice_attr {
+	long from; /**< lower bit number */
+	long to; /**< higher bit number */
+} slice_attr;
+
 /** Attributes for Switch nodes. */
 typedef struct switch_attr {
 	unsigned         n_outs;
@@ -253,6 +259,7 @@ typedef union ir_attr {
 	store_attr     store;
 	phi_attr       phi;
 	proj_attr      proj;
+	slice_attr     slice;
 	confirm_attr   confirm;
 	except_attr    except;
 	copyb_attr     copyb;
