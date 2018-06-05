@@ -70,6 +70,11 @@ FIRM_API void set_irn_n(ir_node *node, int n, ir_node *in);
  * @returns   the number of the new input
  */
 FIRM_API int add_irn_n(ir_node *node, ir_node *in);
+/**
+ * Removes a predecessor from a node. This only works for nodes with
+ * dynamic arity! After this operation, the predecessors may be reordered.
+ */
+FIRM_API void remove_irn_n(ir_node *node, int n);
 /** Sets the mode struct of node.  */
 FIRM_API void set_irn_mode(ir_node *node, ir_mode *mode);
 /** Returns the mode struct of a node.  */
