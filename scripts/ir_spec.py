@@ -763,8 +763,8 @@ class Slice(Node):
     pinned           = "no"
     block            = "get_nodes_block(irn_pred)"
     attrs      = [
-        Attribute("from", type="long", comment="lower bit number"),
-        Attribute("to", type="long", comment="upper bit number"),
+        Attribute("from", type="unsigned", comment="lower bit number"),
+        Attribute("to", type="unsigned", comment="upper bit number"),
     ]
     attr_struct = "slice_attr"
 
