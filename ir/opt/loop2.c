@@ -233,7 +233,7 @@ static void unroll_loop(ir_loop *const loop, unsigned factor)
 	irg_walk_graph(get_irn_irg(header), firm_clear_link, NULL, NULL);
 	size_t const n_elements = get_loop_n_elements(loop);
 
-	for (unsigned j = 0; j < factor; ++j) {
+	for (unsigned j = 1; j < factor; ++j) {
 
 		// step 1: duplicate blocks
 		for (size_t i = 0; i < n_elements; ++i) {
@@ -271,40 +271,40 @@ static size_t count_nodes(ir_loop *const loop)
 	return n_nodes;
 }
 
-static unsigned determine_unroll_factor(ir_loop *const loop)
+static unsigned determine_unroll_factor(ir_loop *const loop, unsigned const factor, unsigned const maxsize)
 {
-	return count_nodes(loop) < 512 ? 31 : 0;
+	return count_nodes(loop) < maxsize ? factor : 1;
 }
 
 static unsigned n_loops_unrolled = 0;
 
-static void duplicate_innermost_loops(ir_loop *const loop, bool const outermost)
+static void duplicate_innermost_loops(ir_loop *const loop, unsigned const factor, unsigned const maxsize, bool const outermost)
 {
 	bool         innermost  = true;
 	size_t const n_elements = get_loop_n_elements(loop);
 	for (size_t i = 0; i < n_elements; ++i) {
 		loop_element const element = get_loop_element(loop, i);
 		if (*element.kind == k_ir_loop) {
-			duplicate_innermost_loops(element.son, false);
+			duplicate_innermost_loops(element.son, factor, maxsize, false);
 			innermost = false;
 		}
 	}
 	if (innermost && !outermost) {
-		unsigned const factor = determine_unroll_factor(loop);
-		if (factor) {
-			unroll_loop(loop, factor);
+		unsigned const actual_factor = determine_unroll_factor(loop, factor, maxsize);
+		if (actual_factor > 1) {
+			unroll_loop(loop, actual_factor);
 			++n_loops_unrolled;
 		}
 	}
 }
 
-void do_loop_unrolling2(ir_graph *const irg)
+void unroll_loops(ir_graph *const irg, unsigned factor, unsigned maxsize)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.loop-unrolling");
 	assure_lcssa(irg);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	duplicate_innermost_loops(get_irg_loop(irg), true);
+	duplicate_innermost_loops(get_irg_loop(irg), factor, maxsize, true);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	DB((dbg, LEVEL_2, "%d loops unrolled\n", n_loops_unrolled));
 }

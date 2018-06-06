@@ -436,8 +436,11 @@ FIRM_API void do_loop_unrolling(ir_graph *irg);
 
 /**
  * Perform loop unrolling on a given graph.
+ *
+ * @param factor    the unroll factor
+ * @param maxsize   the maximum number of nodes in a loop
  */
-FIRM_API void do_loop_unrolling2(ir_graph *irg);
+FIRM_API void unroll_loops(ir_graph *irg, unsigned factor, unsigned maxsize);
 
 /**
  * Perform loop peeling on a given graph.
