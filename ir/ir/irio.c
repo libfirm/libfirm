@@ -85,6 +85,16 @@ typedef struct id_entry {
 static set *symtbl;
 
 /**
+ * The number of types prior to calling ir_import.
+ *
+ * These were added by e.g. ir_init() and we have
+ * to go through these when we add a new type so
+ * that we don't accidentally add duplicates, leading
+ * to a bloated registry.
+ */
+static int n_initial_types;
+
+/**
  * Compare two symbol table entries.
  */
 static int symbol_cmp(const void *elt, const void *key, size_t size)
@@ -1584,6 +1594,23 @@ static ir_initializer_t *read_initializer(read_env_t *env)
 	panic("unknown initializer kind");
 }
 
+static bool type_matches(const ir_type *t, tp_opcode op, unsigned size,
+		unsigned align, ir_type_state state, unsigned flags)
+{
+	// This is only set after we deserialized the type, so we have
+	// to account for that.
+	flags |= state == layout_fixed ? tf_layout_fixed : 0;
+	return t->opcode == op
+		&& t->size == size
+		&& t->align == align
+		&& t->flags == flags;
+}
+
+static bool streq_null(const char *a, const char *b)
+{
+	return a == b || (!a == !b && streq(a, b));
+}
+
 /** Reads a type description and remembers it by its id. */
 static void read_type(read_env_t *env)
 {
@@ -1595,10 +1622,27 @@ static void read_type(read_env_t *env)
 	unsigned       flags  = (unsigned) read_long(env);
 	ir_type       *type;
 
+	// We have to be careful not to duplicate types
+	// which where initialized via ir_init().
+	// That would destroy idempotency for `ir_export . ir_import`
+	// and bloat the resulting IR files.
+
 	switch (opcode) {
 	case tpo_array: {
 		ir_type *const elemtype = read_type_ref(env);
 		unsigned const length   = read_unsigned(env);
+
+		for (int i = 0; i < n_initial_types; ++i) {
+			ir_type *other = get_irp_type(i);
+			if (type_matches(other, opcode, size, align, state, flags)
+				&& other->attr.array.element_type == elemtype
+				&& other->attr.array.size == length) {
+				printf("Matched array type: %s\n", other->name);
+				type = other;
+				goto extend_env;
+			}
+		}
+
 		type = new_type_array(elemtype, length);
 		set_type_size(type, size);
 		goto finish_type;
@@ -1606,6 +1650,16 @@ static void read_type(read_env_t *env)
 
 	case tpo_class: {
 		ident *id = read_ident_null(env);
+
+		for (int i = 0; i < n_initial_types; ++i) {
+			ir_type *other = get_irp_type(i);
+			if (type_matches(other, opcode, size, align, state, flags)
+				&& streq_null(other->name, id)) {
+				printf("Matched class type: %s\n", other->name);
+				type = other;
+				goto extend_env;
+			}
+		}
 
 		if (typenr == (long) IR_SEGMENT_GLOBAL)
 			type = get_glob_type();
@@ -1616,7 +1670,7 @@ static void read_type(read_env_t *env)
 	}
 
 	case tpo_method: {
-		unsigned                  callingconv = read_unsigned(env);
+		unsigned callingconv = read_unsigned(env);
 		mtp_additional_properties addprops
 			= (mtp_additional_properties) read_long(env);
 		size_t const nparams  = read_size_t(env);
@@ -1637,17 +1691,42 @@ static void read_type(read_env_t *env)
 			set_method_res_type(type, i, restype);
 		}
 
+		// Don't try to deduplicate methods for now. AFAICT, these are not added by
+		// ir_init(), so it won't matter wrt. idempotence.
+
 		goto finish_type;
 	}
 
 	case tpo_pointer: {
-		ir_type *pointsto = get_type(env, read_long(env));
-		type = new_type_pointer(pointsto);
+		ir_type *points_to = get_type(env, read_long(env));
+
+		for (int i = 0; i < n_initial_types; ++i) {
+			ir_type *other = get_irp_type(i);
+			if (type_matches(other, opcode, size, align, state, flags)
+				&& other->attr.pointer.points_to == points_to) {
+				printf("Matched pointer type: %s\n", other->name);
+				type = other;
+				goto extend_env;
+			}
+		}
+
+		type = new_type_pointer(points_to);
 		goto finish_type;
 	}
 
 	case tpo_primitive: {
 		ir_mode *mode = read_mode_ref(env);
+
+		for (int i = 0; i < n_initial_types; ++i) {
+			ir_type *other = get_irp_type(i);
+			if (type_matches(other, opcode, size, align, state, flags)
+				&& other->mode == mode) {
+				printf("Matched primitive type: %s\n", other->name);
+				type = other;
+				goto extend_env;
+			}
+		}
+
 		type = new_type_primitive(mode);
 		set_type_size(type, size);
 		goto finish_type;
@@ -1655,6 +1734,17 @@ static void read_type(read_env_t *env)
 
 	case tpo_struct: {
 		ident *id = read_ident_null(env);
+
+		for (int i = 0; i < n_initial_types; ++i) {
+			ir_type *other = get_irp_type(i);
+			if (type_matches(other, opcode, size, align, state, flags)
+				&& streq_null(other->name, id)) {
+				printf("Matched struct type: %s\n", other->name);
+				type = other;
+				goto extend_env;
+			}
+		}
+
 		type = new_type_struct(id);
 		set_type_size(type, size);
 		goto finish_type;
@@ -1662,6 +1752,17 @@ static void read_type(read_env_t *env)
 
 	case tpo_union: {
 		ident *id = read_ident_null(env);
+
+		for (int i = 0; i < n_initial_types; ++i) {
+			ir_type *other = get_irp_type(i);
+			if (type_matches(other, opcode, size, align, state, flags)
+				&& streq_null(other->name, id)) {
+				printf("Matched union type: %s\n", other->name);
+				type = other;
+				goto extend_env;
+			}
+		}
+
 		type = new_type_union(id);
 		set_type_size(type, size);
 		goto finish_type;
@@ -1669,6 +1770,17 @@ static void read_type(read_env_t *env)
 
 	case tpo_segment: {
 		ident *id = read_ident_null(env);
+
+		for (int i = 0; i < n_initial_types; ++i) {
+			ir_type *other = get_irp_type(i);
+			if (type_matches(other, opcode, size, align, state, flags)
+				&& streq_null(other->name, id)) {
+				printf("Matched segment type: %s\n", other->name);
+				type = other;
+				goto extend_env;
+			}
+		}
+
 		type = new_type_segment(id, 0);
 		goto finish_type;
 	}
@@ -1691,6 +1803,7 @@ finish_type:
 	if (state == layout_fixed)
 		ARR_APP1(ir_type *, env->fixedtypes, type);
 
+extend_env:
 	set_id(env, typenr, type);
 }
 
@@ -1751,12 +1864,32 @@ static void read_entity(read_env_t *env, ir_entity_kind kind)
 		}
 		break;
 	case IR_ENTITY_COMPOUND_MEMBER:
+		assert(is_compound_type(owner));
+		int         offset          = read_int(env);
+		unsigned    bitfield_offset = read_int(env);
+		unsigned    bitfield_size   = read_int(env);
+
+		// Try to deduplicate compound_members added by ir_init()
+		for (int i = 0, n = get_compound_n_members(owner); i < n; ++i) {
+			ir_entity *e = get_compound_member(owner, i);
+			if (e->type == type
+				&& streq_null(e->name, name)
+				&& streq_null(e->ld_name, ld_name)
+				&& get_entity_offset(e) == offset
+				&& get_entity_bitfield_offset(e) == bitfield_offset
+				&& get_entity_bitfield_size(e) == bitfield_size) {
+				entity = e;
+				goto skip_init;
+			}
+		}
+
 		entity = new_entity(owner, name, type);
 		if (ld_name != NULL)
 			set_entity_ld_ident(entity, ld_name);
-		set_entity_offset(entity, read_int(env));
-		set_entity_bitfield_offset(entity, read_unsigned(env));
-		set_entity_bitfield_size(entity, read_unsigned(env));
+		set_entity_offset(entity, offset);
+		set_entity_bitfield_offset(entity, bitfield_offset);
+		set_entity_bitfield_size(entity, bitfield_size);
+skip_init:
 		break;
 	case IR_ENTITY_METHOD:
 		entity = new_entity(owner, name, type);
@@ -2184,6 +2317,8 @@ int ir_import_file(FILE *input, const char *inputname)
 		skip_to(env, '\n');
 
 	set_optimize(0);
+
+	n_initial_types = get_irp_n_types();
 
 	while (true) {
 		keyword_t kw;
