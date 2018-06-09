@@ -145,6 +145,7 @@ static bool be_is_phi_argument(const ir_node *block, const ir_node *def)
  */
 static inline unsigned get_step(const ir_node *node)
 {
+	assert(!is_Block(node));
 	return (unsigned)PTR_TO_INT(get_irn_link(node));
 }
 
@@ -153,6 +154,7 @@ static inline unsigned get_step(const ir_node *node)
  */
 static inline void set_step(ir_node *node, unsigned step)
 {
+	assert(!is_Block(node));
 	set_irn_link(node, INT_TO_PTR(step));
 }
 
