@@ -204,7 +204,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	}
 
 	ir_node *node = sched_last(block);
-	unsigned step = get_step(node) + 1 + timestep + skip_from_uses;
+	unsigned step = get_step(node) + 1 - timestep + skip_from_uses;
 
 	if (be_is_phi_argument(block, def)) {
 		// TODO we really should continue searching the uses of the phi,
