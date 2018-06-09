@@ -6,9 +6,11 @@
 /**
  * @file
  * @brief   conv node optimization
- * @author  Matthias Braun, Christoph Mallon
+ * @author  Matthias Braun, Christoph Mallon, Marcel Hollerbach
  *
- * Try to minimize the number of conv nodes by changing modes of operations.
+ * Three optimizations are applied
+ *
+ * i) Try to minimize the number of conv nodes by changing modes of operations.
  * The typical example is the following structure:
  *    (some node mode_Hs)
  *            |                                       (some node_Hs)
@@ -17,6 +19,15 @@
  *          Add Is            gets transformed to           |
  *            |
  *         Conv Hs
+ *
+ * ii) Seach for patterns like:
+ *     Const  Conv
+ *        \   /
+ *         Cmp
+
+ * When Const can be expressed in the mode of the in node of Conv, then we can safely remove the Conv
+ *
+ * iii) Check if we can drag a Conv through a arithmetical node.
  *
  * TODO: * try to optimize cmp modes
  *       * decide when it is useful to move the convs through phis
@@ -30,9 +41,13 @@
 #include "irnode_t.h"
 #include "iropt_t.h"
 #include "iroptimize.h"
+#include "irouts.h"
+#include "bitwidth.h"
 #include "tv.h"
 #include "util.h"
 #include "vrp.h"
+#include "math.h"
+
 #include <stdbool.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -241,13 +256,8 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 	return new_node;
 }
 
-static void conv_opt_walker(ir_node *node, void *data)
+static void handle_conv(ir_node *node, bool *const changed)
 {
-	bool *const changed = (bool*)data;
-
-	if (!is_Conv(node))
-		return;
-
 	ir_mode *const mode = get_irn_mode(node);
 	if (mode_is_reference(mode))
 		return;
@@ -273,17 +283,245 @@ static void conv_opt_walker(ir_node *node, void *data)
 	}
 }
 
+typedef struct {
+	ir_node *conv, *konst, *pre_conv;
+	int pos_conv, pos_const;
+} Pattern_Result;
+
+static bool
+is_transition_conv(ir_node *n, ir_node **tmp)
+{
+	 if (is_Conv(n)) {
+		*tmp = n;
+		return true;
+	 } else if (is_Confirm(n)) {
+		return is_transition_conv(get_Confirm_value(n), tmp);
+	 }
+
+	 *tmp = NULL;
+
+	 return false;
+}
+
+/**
+ * Matches the following pattern
+ *
+ * (Const)   (Conv)
+ *      \     /
+ *      (start)
+ */
+static bool
+_pattern_matcher(ir_node *start, Pattern_Result *result)
+{
+	ir_node *outs[2], *tmp;
+
+	if (get_irn_arity(start) != 2)
+		return false;
+
+	outs[0] = get_irn_n(start, 0);
+	outs[1] = get_irn_n(start, 1);
+
+	result->conv = NULL;
+	result->konst = NULL;
+
+	for (int i = 0; i < 2; ++i) {
+		if (is_transition_conv(outs[i], &tmp)) {
+			result->conv = tmp;
+			result->pos_conv = i;
+		} else if (is_Const(outs[i])) {
+			result->konst = outs[i];
+			result->pos_const = i;
+		}
+	}
+
+	if (!result->conv || !result->konst)
+		return false;
+
+	result->pre_conv = get_Conv_op(result->conv);
+	assert(is_Conv(result->conv));
+	assert(is_Const(result->konst));
+	return true;
+}
+
+static bool
+is_conv_stable(ir_node *o_pre_conv, ir_node *o_conv)
+{
+	ir_mode *m_pre_conv = get_irn_mode(o_pre_conv);
+	ir_mode *m_conv = get_irn_mode(o_conv);
+	bitwidth *pre_conv = bitwidth_fetch_bitwidth(o_pre_conv);
+	bitwidth *conv = bitwidth_fetch_bitwidth(o_conv);
+
+	if (!pre_conv && !conv)
+		return false;
+
+	if (!mode_is_int(m_pre_conv) || !mode_is_int(m_conv))
+		return false;
+
+	if (mode_is_signed(m_pre_conv) && !mode_is_signed(m_conv) && !pre_conv->is_positive) {
+		//from signed to unsigned with a negative number
+		return false;
+	}
+
+	if (bitwidth_upper_bound(o_pre_conv) > bitwidth_upper_bound(o_conv)) {
+		//then the conv is definitly not stable, as the used bits are changing
+		return false;
+	}
+
+	return true;
+}
+
+static bool
+mode_check_representability(ir_mode *mode, ir_node *konst)
+{
+	unsigned int upper_bound;
+	long v;
+
+	if (!mode_is_int(mode))
+		return false;
+
+	v = get_Const_long(konst);
+
+	if (!mode_is_signed(mode) && v < 0)
+		return false;
+
+	upper_bound = (1 << (get_mode_size_bits(mode) - (mode_is_signed(mode) ? 1 : 0))) - 1;
+	if (upper_bound < v)
+		return false;
+
+	return true;
+}
+
+static bool
+is_bound_from_null(ir_node *cmp, Pattern_Result res)
+{
+	ir_relation rel = get_Cmp_relation(cmp);
+
+	if (res.pos_const == 1) {
+		return (rel == ir_relation_less || rel == ir_relation_less_equal);
+	} else {
+		return (rel == ir_relation_greater || rel == ir_relation_greater_equal);
+	}
+
+	return false;
+}
+
+static void
+handle_cmp(ir_node *node, bool *const changed)
+{
+	ir_node *new_const;
+	ir_mode *preconv_mode, *mode;
+	Pattern_Result res;
+
+	if (!is_Cmp(node)) return;
+	if (!_pattern_matcher(node, &res)) return;
+
+	assert(is_Cmp(node));
+
+	preconv_mode = get_irn_mode(res.pre_conv);
+	mode = get_irn_mode(res.conv);
+
+	//or if this conv is stable, then it can be replaced
+	if (!is_conv_stable(res.pre_conv, res.conv) ||
+		  !mode_check_representability(preconv_mode, res.konst))
+		return;
+
+	*changed = true;
+	//we just change the in of the Cmp
+	//local opt will cleanup dead nodes
+	set_irn_n(node, res.pos_conv, res.pre_conv);
+	//}
+	clear_irg_properties(get_irn_irg(node), IR_GRAPH_PROPERTY_CONSISTENT_BITWIDTH_INFO);
+	//compute_bitwidth_info(get_irn_irg(node));
+	//create a new const node
+	//renew the mode on the const
+	new_const = new_r_Const_long(get_irn_irg(node), preconv_mode, get_Const_long(res.konst));
+	set_irn_n(node, res.pos_const, new_const);
+}
+
+static bool
+is_arith(ir_node *node)
+{
+	return is_Mul(node) || is_Add_(node) || is_Minus(node) || is_Div(node);
+}
+
+static void
+handle_arith(ir_node *node, bool *const changed)
+{
+	ir_node *new_const, *new_node, *new_conv;
+	ir_mode *preconv_mode, *arith_mode;
+	Pattern_Result res;
+
+	return;
+
+	if (!is_arith(node)) return;
+	if (!_pattern_matcher(node, &res)) return;
+
+	preconv_mode = get_irn_mode(res.pre_conv);
+	arith_mode = get_irn_mode(node);
+
+	if (!is_conv_stable(res.pre_conv, res.conv)) return;
+
+	if (!mode_is_int(preconv_mode))
+		return;
+
+	if (!mode_is_int(arith_mode))
+		return;
+
+	//FIXME propebly check if the signedness stays the same
+
+	if (bitwidth_used_bits(node) > get_mode_size_bits(preconv_mode))
+		return;
+
+	if (bitwidth_used_bits(res.konst) > get_mode_size_bits(preconv_mode))
+		return;
+
+	//rebuild the structure as:
+	//  (Const) ( smth. else )
+	//      \     /
+	//       \   /
+	//    (arith-node)
+	//         |
+	//       (conv)
+	//         |
+	// (whatever comes next)
+	{
+		new_const = new_r_Const_long(get_irn_irg(node), preconv_mode, get_Const_long(res.konst));
+
+		ir_node* in[2];
+		in[res.pos_const] = new_const;
+		in[res.pos_conv] = res.pre_conv;
+		new_node = new_ir_node(NULL, get_irn_irg(node), get_block(node), get_irn_op(node), preconv_mode, 2, in);
+
+		new_conv = new_r_Conv(get_block(node), new_node, get_irn_mode(res.conv));
+
+		exchange(node, new_conv);
+	}
+	clear_irg_properties(get_irn_irg(node), IR_GRAPH_PROPERTY_CONSISTENT_BITWIDTH_INFO);
+}
+
+static void
+conv_opt_walker(ir_node *node, void *data)
+{
+	bool *const changed = (bool*)data;
+
+	if (is_Conv(node)) handle_conv(node, changed);
+	if (is_Cmp(node)) handle_cmp(node, changed);
+	if (is_arith(node)) handle_arith(node, changed);
+}
+
 void conv_opt(ir_graph *irg)
 {
+
 	FIRM_DBG_REGISTER(dbg, "firm.opt.conv");
 
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 
 	DB((dbg, LEVEL_1, "===> Performing conversion optimization on %+F\n", irg));
 
 	bool global_changed = false;
 	bool changed;
 	do {
+	  assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_BITWIDTH_INFO);
+	  assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 		changed = false;
 		irg_walk_graph(irg, NULL, conv_opt_walker, &changed);
 		if (changed)
