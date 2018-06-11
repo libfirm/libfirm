@@ -166,13 +166,9 @@ static inline void set_step(ir_node *node, unsigned step)
  * @param def             the definition of the value
  * @param skip_from_uses  if non-zero, ignore from uses
  */
-static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
+static be_next_use_t get_next_use(be_uses_t *const env, ir_node *const from,
                                   const ir_node *def, bool skip_from_uses)
 {
-	if (skip_from_uses) {
-		from = sched_next(from);
-	}
-
 	ir_node *next_use_node = NULL;
 	unsigned next_use_step = INT_MAX;
 	unsigned timestep      = get_step(from);
@@ -187,7 +183,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 			continue;
 
 		unsigned node_step = get_step(node);
-		if (node_step < timestep)
+		if (node_step < timestep + skip_from_uses)
 			continue;
 		if (node_step < next_use_step) {
 			next_use_node = node;
@@ -197,14 +193,14 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 
 	if (next_use_node != NULL) {
 		be_next_use_t result;
-		result.time           = next_use_step - timestep + skip_from_uses;
+		result.time           = next_use_step - timestep;
 		result.outermost_loop = get_loop_depth(get_irn_loop(block));
 		result.before         = next_use_node;
 		return result;
 	}
 
 	ir_node *node = sched_last(block);
-	unsigned step = get_step(node) + 1 - timestep + skip_from_uses;
+	unsigned step = get_step(node) + 1 - timestep;
 
 	if (be_is_phi_argument(block, def)) {
 		// TODO we really should continue searching the uses of the phi,
