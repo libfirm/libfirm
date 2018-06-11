@@ -322,10 +322,10 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 				fprintf(F, " [out: %d]", out_pos);
 		}
 
-		fprintf(F, "\n  clobber: ");
+		fprintf(F, "\n  clobber:");
 		ident **clobber = get_ASM_clobbers(n);
 		for (int i = 0, n_clobbers = get_ASM_n_clobbers(n); i < n_clobbers; ++i)
-			fprintf(F, "%s ", get_id_str(clobber[i]));
+			fprintf(F, " %s", get_id_str(clobber[i]));
 		if (get_irn_pinned(n))
 			fprintf(F, "\n  volatile");
 		fprintf(F, "\n");
