@@ -288,9 +288,8 @@ static void lower64_shr(ir_node *const node)
 
 static void lower64_shrs(ir_node *const node)
 {
-	ir_mode  *mode       = get_node_high_mode(node);
 	/* the following algo works, because we have modulo shift 256 */
-	assert(get_mode_modulo_shift(mode) == 256);
+	assert(get_mode_modulo_shift(get_node_high_mode(node)) == 256);
 	dbg_info *dbgi       = get_irn_dbg_info(node);
 	ir_node  *block      = get_nodes_block(node);
 	ir_node  *left       = get_Shrs_left(node);
