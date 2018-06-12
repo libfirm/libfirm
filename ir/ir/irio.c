@@ -1637,7 +1637,6 @@ static void read_type(read_env_t *env)
 			if (type_matches(other, opcode, size, align, state, flags)
 				&& other->attr.array.element_type == elemtype
 				&& other->attr.array.size == length) {
-				printf("Matched array type: %s\n", other->name);
 				type = other;
 				goto extend_env;
 			}
@@ -1655,7 +1654,6 @@ static void read_type(read_env_t *env)
 			ir_type *other = get_irp_type(i);
 			if (type_matches(other, opcode, size, align, state, flags)
 				&& streq_null(other->name, id)) {
-				printf("Matched class type: %s\n", other->name);
 				type = other;
 				goto extend_env;
 			}
@@ -1704,7 +1702,6 @@ static void read_type(read_env_t *env)
 			ir_type *other = get_irp_type(i);
 			if (type_matches(other, opcode, size, align, state, flags)
 				&& other->attr.pointer.points_to == points_to) {
-				printf("Matched pointer type: %s\n", other->name);
 				type = other;
 				goto extend_env;
 			}
@@ -1721,7 +1718,6 @@ static void read_type(read_env_t *env)
 			ir_type *other = get_irp_type(i);
 			if (type_matches(other, opcode, size, align, state, flags)
 				&& other->mode == mode) {
-				printf("Matched primitive type: %s\n", other->name);
 				type = other;
 				goto extend_env;
 			}
@@ -1739,7 +1735,6 @@ static void read_type(read_env_t *env)
 			ir_type *other = get_irp_type(i);
 			if (type_matches(other, opcode, size, align, state, flags)
 				&& streq_null(other->name, id)) {
-				printf("Matched struct type: %s\n", other->name);
 				type = other;
 				goto extend_env;
 			}
@@ -1757,7 +1752,6 @@ static void read_type(read_env_t *env)
 			ir_type *other = get_irp_type(i);
 			if (type_matches(other, opcode, size, align, state, flags)
 				&& streq_null(other->name, id)) {
-				printf("Matched union type: %s\n", other->name);
 				type = other;
 				goto extend_env;
 			}
@@ -1775,7 +1769,6 @@ static void read_type(read_env_t *env)
 			ir_type *other = get_irp_type(i);
 			if (type_matches(other, opcode, size, align, state, flags)
 				&& streq_null(other->name, id)) {
-				printf("Matched segment type: %s\n", other->name);
 				type = other;
 				goto extend_env;
 			}
