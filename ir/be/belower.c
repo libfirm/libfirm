@@ -204,10 +204,14 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 			exchange(p->out_node, copy);
 
 			const unsigned new_k = p->in_reg->index;
-			if (oregmap[new_k] == NULL) {
+			if (!oregmap[new_k] && !free_reg) {
 				/* The invariant of Perm nodes allows us to overwrite
-				 * the first register in a chain with an arbitrary value. */
-				free_reg = p->in_reg;
+				 * the first register in a chain with an arbitrary value.
+				 * Only consider this source register if it is allocatable, otherwise it
+				 * might be a special register, e.g. a null register. */
+				be_irg_t const *const birg = be_birg_from_irg(get_irn_irg(perm));
+				if (rbitset_is_set(birg->allocatable_regs, p->in_reg->global_index))
+					free_reg = p->in_reg;
 			}
 			k = new_k;
 
