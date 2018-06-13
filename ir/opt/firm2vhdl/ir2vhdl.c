@@ -43,20 +43,20 @@ static void irp2vhdl(char *filename)
     if (! strcmp("test_atom", get_entity_ld_name(get_irg_entity(irg))))
       set_entity_ld_ident(get_irg_entity(irg), new_id_from_str(filename));
 
-    dump_ir_graph(irg, "-imported");
+    dump_ir_graph(irg, "imported");
 
     firm_init_loop_opt();
     do_loop_unrolling(irg);
-    dump_ir_graph(irg, "-unrolled");
+    dump_ir_graph(irg, "unrolled");
 
     opt_if_conv_cb(irg, &true_p);
-    dump_ir_graph(irg, "-if_conv");
+    dump_ir_graph(irg, "if_conv");
 
     local_optimize_graph(irg);
-    dump_ir_graph(irg, "-local_opts");
+    dump_ir_graph(irg, "local_opts");
 
     optimize_cf(irg);
-    dump_ir_graph(irg, "-cf");
+    dump_ir_graph(irg, "cf");
 
     conv_opt(irg);
 
