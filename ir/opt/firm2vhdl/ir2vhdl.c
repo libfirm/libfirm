@@ -59,6 +59,7 @@ static void irp2vhdl(char *filename)
     dump_ir_graph(irg, "cf");
 
     conv_opt(irg);
+    dump_ir_graph(irg, "conv");
 
     irg2vhdl(out, irg);
   };
