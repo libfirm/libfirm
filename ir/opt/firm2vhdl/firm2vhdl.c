@@ -207,7 +207,7 @@ static void emit_process(ir_node *node, void *data)
 
   case iro_Shl:
     assert(is_Const(get_Shl_right(node)));
-    ir_fprintf(env->file, "node%N <= shift_left(node%N, %u);\t-- %n\n",
+    ir_fprintf(env->file, "node%N <= shift_left(unsigned(node%N), %u);\t-- %n\n",
 	       node,
 	       get_Shl_left(node),
 	       get_tarval_long(get_Const_tarval(get_Shl_right(node))),
@@ -217,10 +217,9 @@ static void emit_process(ir_node *node, void *data)
 
   case iro_Shr:
     assert(is_Const(get_Shr_right(node)));
-    ir_fprintf(env->file, "node%N <= %s(shift_right(%s(node%N), %u));\t-- %n\n",
+    ir_fprintf(env->file, "node%N <= %s(shift_right(unsigned(node%N), %u));\t-- %n\n",
 	       node,
 	       mode_is_signed(mode) ? "signed" : "",
-	       mode_is_signed(get_irn_mode(get_Shr_right(node))) ? "unsigned" : "",
 	       get_Shr_left(node),
 	       get_tarval_long(get_Const_tarval(get_Shr_right(node))),
 	       node);
@@ -228,10 +227,9 @@ static void emit_process(ir_node *node, void *data)
 
   case iro_Shrs:
     assert(is_Const(get_Shrs_right(node)));
-    ir_fprintf(env->file, "node%N <= %s(shift_right(%s(node%N), %u));\t-- %n\n",
+    ir_fprintf(env->file, "node%N <= %s(shift_right(signed(node%N), %u));\t-- %n\n",
 	       node,
 	       mode_is_signed(mode) ? "" : "unsigned",
-	       mode_is_signed(get_irn_mode(get_Shrs_right(node))) ? "" : "signed",
 	       get_Shrs_left(node),
 	       get_tarval_long(get_Const_tarval(get_Shrs_right(node))),
 	       node);
