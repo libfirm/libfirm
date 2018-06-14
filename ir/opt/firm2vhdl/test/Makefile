@@ -57,7 +57,7 @@ t_%.ghdl: t_%.vhd test_atom.vhd testbench.vhd t_%.in t_%.expect
 	[ -d $(GHDLWD) ] || mkdir $(GHDLWD)
 	cd $(GHDLWD) && ghdl -a $(GHDLCFLAGS) ../test_atom.vhd ../$< ../testbench.vhd
 	cd $(GHDLWD) && ghdl -e  $(GHDLCFLAGS) -o ../$@ testbench
-	./$@ --vcd=$@.vcd < $(basename $<).in > $(basename $<).out
+	./$@ --ieee-asserts=disable --vcd=$@.vcd < $(basename $<).in > $(basename $<).out
 	diff $(basename $<).expect  $(basename $<).out
 
 # Default to testing with ghdl
