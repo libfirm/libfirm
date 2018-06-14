@@ -12,8 +12,6 @@ uint32_t test_atom(uint8_t control, uint32_t input0, uint32_t input1)
 
 	if (0 == control) {
 		c0 = 1;
-	} else if (1 == control) {
-		c0 = 0;
 	} else {
 		c0 = 0;
 	}
