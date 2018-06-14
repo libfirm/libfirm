@@ -67,13 +67,13 @@ const char *get_output_name(int argument_number)
 }
 
 
-static void emit_signals(ir_node *node, void *data)
+static void emit_variables(ir_node *node, void *data)
 {
   struct env *env = data;
   ir_mode *mode = get_irn_mode(node);
 
   if (mode == mode_b) {
-    ir_fprintf(env->file, "\tsignal node%N : boolean;\t-- %n \n", node, node);
+    ir_fprintf(env->file, "\tvariable node%N : boolean;\t-- %n \n", node, node);
     return;
   }
 
@@ -82,7 +82,7 @@ static void emit_signals(ir_node *node, void *data)
 
   assert(get_mode_arithmetic(mode) == irma_twos_complement);
 
-  ir_fprintf(env->file, "\tsignal node%N : ", node);
+  ir_fprintf(env->file, "\tvariable node%N : ", node);
 
   fprintf(env->file, mode_is_signed(mode) ? "signed" : "unsigned");
   fprintf(env->file, "(%u downto 0)" SIGNAL_INITIALIZER ";", get_mode_size_bits(mode)-1);
@@ -132,7 +132,7 @@ static void emit_process(ir_node *node, void *data)
   case iro_Proj: {
     if (is_arg_Proj(node)) {
       long proj = get_Proj_num(node);
-      ir_fprintf(env->file, "node%N <= %s(%s);\t-- %n\n",
+      ir_fprintf(env->file, "node%N := %s(%s);\t-- %n\n",
 		 node,
 		 mode_is_signed(mode) ? "signed" : "unsigned",
 		 get_input_name(proj), node);
@@ -152,7 +152,7 @@ static void emit_process(ir_node *node, void *data)
     break;
 
 #define BINOP(op) \
-  ir_fprintf(env->file, "node%N <= node%N " #op " node%N;\t-- %n\n", \
+  ir_fprintf(env->file, "node%N := node%N " #op " node%N;\t-- %n\n", \
 	     node, get_binop_left(node), get_binop_right(node), node)
 
   case iro_Add: BINOP(+);   break;
@@ -164,22 +164,22 @@ static void emit_process(ir_node *node, void *data)
 #undef BINOP
 
   case iro_Mul:
-    ir_fprintf(env->file, "node%N <= resize(node%N * node%N, %u);\t-- %n\n",	\
+    ir_fprintf(env->file, "node%N := resize(node%N * node%N, %u);\t-- %n\n",
 	       node, get_binop_left(node), get_binop_right(node),
 	       get_mode_size_bits(mode), node);
     break;
   case iro_Not:
-    ir_fprintf(env->file, "node%N <= not node%N;\t-- %n\n",
+    ir_fprintf(env->file, "node%N := not node%N;\t-- %n\n",
 	       node, get_Not_op(node), node);
       break;
 
   case iro_Minus:
-    ir_fprintf(env->file, "node%N <= - node%N;\t-- %n\n",
+    ir_fprintf(env->file, "node%N := - node%N;\t-- %n\n",
 	       node, get_Minus_op(node), node);
       break;
 
   case iro_Const:
-    ir_fprintf(env->file, "node%N <= ", node);
+    ir_fprintf(env->file, "node%N := ", node);
     fprintf(env->file, "to_%s(%ld, %u);",
 	    mode_is_signed(mode) ? "signed" : "unsigned",
 	    get_tarval_long(get_Const_tarval(node)),
@@ -188,16 +188,17 @@ static void emit_process(ir_node *node, void *data)
       break;
 
   case iro_Mux:
-    ir_fprintf(env->file, "node%N <= node%N when node%N else node%N;\t-- %n\n",
-	       node,
-	       get_Mux_true(node),
-	       get_Mux_sel(node),
-	       get_Mux_false(node),
+    ir_fprintf(env->file, "if node%N then node%N := node%N; else node%N := node%N; end if;\t-- %n\n",
+               get_Mux_sel(node),
+               node,
+               get_Mux_true(node),
+               node,
+               get_Mux_false(node),
 	       node);
     break;
 
   case iro_Cmp:
-    ir_fprintf(env->file, "node%N <= node%N %s node%N;\t-- %n\n",
+    ir_fprintf(env->file, "node%N := node%N %s node%N;\t-- %n\n",
 	       node,
 	       get_Cmp_left(node),
 	       format_relation(get_Cmp_relation(node)),
@@ -207,7 +208,7 @@ static void emit_process(ir_node *node, void *data)
 
   case iro_Shl:
     assert(is_Const(get_Shl_right(node)));
-    ir_fprintf(env->file, "node%N <= shift_left(unsigned(node%N), %u);\t-- %n\n",
+    ir_fprintf(env->file, "node%N := shift_left(unsigned(node%N), %u);\t-- %n\n",
 	       node,
 	       get_Shl_left(node),
 	       get_tarval_long(get_Const_tarval(get_Shl_right(node))),
@@ -217,7 +218,7 @@ static void emit_process(ir_node *node, void *data)
 
   case iro_Shr:
     assert(is_Const(get_Shr_right(node)));
-    ir_fprintf(env->file, "node%N <= %s(shift_right(unsigned(node%N), %u));\t-- %n\n",
+    ir_fprintf(env->file, "node%N := %s(shift_right(unsigned(node%N), %u));\t-- %n\n",
 	       node,
 	       mode_is_signed(mode) ? "signed" : "",
 	       get_Shr_left(node),
@@ -227,7 +228,7 @@ static void emit_process(ir_node *node, void *data)
 
   case iro_Shrs:
     assert(is_Const(get_Shrs_right(node)));
-    ir_fprintf(env->file, "node%N <= %s(shift_right(signed(node%N), %u));\t-- %n\n",
+    ir_fprintf(env->file, "node%N := %s(shift_right(signed(node%N), %u));\t-- %n\n",
 	       node,
 	       mode_is_signed(mode) ? "" : "unsigned",
 	       get_Shrs_left(node),
@@ -242,14 +243,14 @@ static void emit_process(ir_node *node, void *data)
     if (is_downconv(pred_mode, mode) && mode_is_signed(pred_mode)) {
       /* IEEE.numeric_std transplants the sign bit on downconv from a
 	 signed type.  Avoid this case to maintain C semantics. */
-      ir_fprintf(env->file, "node%N <= %s(resize(unsigned(node%N),%u));\t-- %n\n",
+      ir_fprintf(env->file, "node%N := %s(resize(unsigned(node%N),%u));\t-- %n\n",
 		 node,
 		 (mode_is_signed(mode) ? "signed" : ""),
 		 pred,
 		 get_mode_size_bits(mode),
 		 node);
     } else {
-      ir_fprintf(env->file, "node%N <= %s(resize(node%N,%u));\t-- %n\n",
+      ir_fprintf(env->file, "node%N := %s(resize(node%N,%u));\t-- %n\n",
 		 node,
 		 (mode_is_signed(mode) == mode_is_signed(pred_mode)) ? "" :
 		 (mode_is_signed(mode) ? "signed" : "unsigned "),
@@ -290,8 +291,11 @@ void irg2vhdl(FILE *output, ir_graph *irg)
   env.file = output;
 
   fprintf(env.file, "architecture %s of test_atom is\n", get_irg_name(irg));
-  irg_walk_graph(irg, emit_signals, 0, &env);
   fprintf(env.file, "begin\n");
-  irg_walk_graph(irg, emit_process, 0, &env);
+  fprintf(env.file, "process (clk)\n", get_irg_name(irg));
+  irg_walk_blkwise_graph(irg, 0, emit_variables, &env);
+  fprintf(env.file, "begin\n");
+  irg_walk_blkwise_graph(irg, 0, emit_process, &env);
+  fprintf(env.file, "end process;\n");
   fprintf(env.file, "end %s;\n", get_irg_name(irg));
 }
