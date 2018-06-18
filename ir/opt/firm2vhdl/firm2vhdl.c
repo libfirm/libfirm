@@ -164,8 +164,12 @@ static void emit_process(ir_node *node, void *data)
 #undef BINOP
 
   case iro_Mul:
-    ir_fprintf(env->file, "node%N := resize(node%N * node%N, %u);\t-- %n\n",
-	       node, get_binop_left(node), get_binop_right(node),
+    // Convert to unsigned to get the correct MSB of the result.
+    // (VHDL preserves the sign bit when resizing signed values)
+    ir_fprintf(env->file, "node%N := %s(std_logic_vector(resize(unsigned(std_logic_vector(node%N * node%N)), %u)));\t-- %n\n",
+	       node,
+               mode_is_signed(mode) ? "signed" : "unsigned",
+               get_binop_left(node), get_binop_right(node),
 	       get_mode_size_bits(mode), node);
     break;
   case iro_Not:
