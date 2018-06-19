@@ -297,7 +297,7 @@ void irg2vhdl(FILE *output, ir_graph *irg)
 
   fprintf(env.file, "architecture %s of test_atom is\n", get_irg_name(irg));
   fprintf(env.file, "begin\n");
-  fprintf(env.file, "process (clk)\n", get_irg_name(irg));
+  fprintf(env.file, "process (clk)\n");
   irg_walk_blkwise_graph(irg, 0, emit_variables, &env);
   fprintf(env.file, "begin\n");
   irg_walk_blkwise_graph(irg, 0, emit_process, &env);
