@@ -182,14 +182,14 @@ static void emit_process(ir_node *node, void *data)
 	       node, get_Minus_op(node), node);
       break;
 
-  case iro_Const:
+  case iro_PinnedConst:
     ir_fprintf(env->file, "node%N := ", node);
     fprintf(env->file, "to_%s(%ld, %u);",
 	    mode_is_signed(mode) ? "signed" : "unsigned",
-	    get_tarval_long(get_Const_tarval(node)),
+            get_tarval_long(get_PinnedConst_tarval(node)),
 	    get_mode_size_bits(mode));
     ir_fprintf(env->file, "\t-- %n\n", node);
-      break;
+    break;
 
   case iro_Mux:
     ir_fprintf(env->file, "if node%N then node%N := node%N; else node%N := node%N; end if;\t-- %n\n",
@@ -211,32 +211,32 @@ static void emit_process(ir_node *node, void *data)
     break;
 
   case iro_Shl:
-    assert(is_Const(get_Shl_right(node)));
+    assert(is_PinnedConst(get_Shl_right(node)));
     ir_fprintf(env->file, "node%N := shift_left(unsigned(node%N), %u);\t-- %n\n",
 	       node,
 	       get_Shl_left(node),
-	       get_tarval_long(get_Const_tarval(get_Shl_right(node))),
+	       get_tarval_long(get_PinnedConst_tarval(get_Shl_right(node))),
 	       node);
     break;
 
 
   case iro_Shr:
-    assert(is_Const(get_Shr_right(node)));
+    assert(is_PinnedConst(get_Shr_right(node)));
     ir_fprintf(env->file, "node%N := %s(shift_right(unsigned(node%N), %u));\t-- %n\n",
 	       node,
 	       mode_is_signed(mode) ? "signed" : "",
 	       get_Shr_left(node),
-	       get_tarval_long(get_Const_tarval(get_Shr_right(node))),
+	       get_tarval_long(get_PinnedConst_tarval(get_Shr_right(node))),
 	       node);
     break;
 
   case iro_Shrs:
-    assert(is_Const(get_Shrs_right(node)));
+    assert(is_PinnedConst(get_Shrs_right(node)));
     ir_fprintf(env->file, "node%N := %s(shift_right(signed(node%N), %u));\t-- %n\n",
 	       node,
 	       mode_is_signed(mode) ? "" : "unsigned",
 	       get_Shrs_left(node),
-	       get_tarval_long(get_Const_tarval(get_Shrs_right(node))),
+	       get_tarval_long(get_PinnedConst_tarval(get_Shrs_right(node))),
 	       node);
     break;
 
