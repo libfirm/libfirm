@@ -8,4 +8,4 @@
 
 #include <firm.h>
 
-void place_consts(ir_graph *irg);
+void lower_for_vhdl(ir_graph *irg);

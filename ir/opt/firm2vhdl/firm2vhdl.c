@@ -10,6 +10,7 @@
 #include "firm2vhdl.h"
 
 #include <assert.h>
+#include <stdlib.h>
 
 struct env {
   FILE *file;
