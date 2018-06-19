@@ -600,11 +600,12 @@ void firm_init_op(void)
 	set_op_attrs_equal(op_Store,   attrs_equal_Store);
 	set_op_attrs_equal(op_Unknown, attrs_equal_false);
 
-	set_op_hash(op_Address, hash_entconst);
-	set_op_hash(op_Align,   hash_typeconst);
-	set_op_hash(op_Const,   hash_Const);
-	set_op_hash(op_Offset,  hash_entconst);
-	set_op_hash(op_Size,    hash_typeconst);
+	set_op_hash(op_Address,     hash_entconst);
+	set_op_hash(op_Align,       hash_typeconst);
+	set_op_hash(op_Const,       hash_Const);
+	set_op_hash(op_Offset,      hash_entconst);
+	set_op_hash(op_PinnedConst, hash_Const);
+	set_op_hash(op_Size,        hash_typeconst);
 
 	set_op_copy_attr(op_Call,   call_copy_attr);
 	set_op_copy_attr(op_Block,  block_copy_attr);
