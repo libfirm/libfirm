@@ -11,6 +11,7 @@
 
 #include <firm.h>
 #include "firm2vhdl.h"
+#include "place-consts.h"
 
 static int true_p(ir_node const *sel, ir_node const *mux_false, ir_node const *mux_true)
 {
@@ -60,6 +61,9 @@ static void irp2vhdl(char *filename)
 
     conv_opt(irg);
     dump_ir_graph(irg, "conv");
+
+    place_consts(irg);
+    dump_ir_graph(irg, "place-consts");
 
     irg2vhdl(out, irg);
   };
