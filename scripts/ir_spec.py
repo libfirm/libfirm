@@ -738,6 +738,19 @@ class Pin(Node):
 
 
 @op
+class PinnedConst(Node):
+    """A Const node that is pinned to a specific block."""
+    flags = []
+    mode = "get_tarval_mode(tarval)"
+    attrs = [
+        Attribute("tarval", type="ir_tarval*",
+                  comment="constant value (a tarval object)"),
+    ]
+    attr_struct = "const_attr"
+    attrs_name = "con"
+
+
+@op
 class Proj(Node):
     """returns an entry of a tuple value"""
     ins = [
