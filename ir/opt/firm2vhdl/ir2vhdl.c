@@ -11,7 +11,7 @@
 
 #include <firm.h>
 #include "firm2vhdl.h"
-#include "place-consts.h"
+#include "lower-for-vhdl.h"
 
 static int true_p(ir_node const *sel, ir_node const *mux_false, ir_node const *mux_true)
 {
@@ -46,6 +46,8 @@ static void irp2vhdl(char *filename)
 
     dump_ir_graph(irg, "imported");
 
+    // Optimizations
+
     firm_init_loop_opt();
     do_loop_unrolling(irg);
     dump_ir_graph(irg, "unrolled");
@@ -62,9 +64,7 @@ static void irp2vhdl(char *filename)
     conv_opt(irg);
     dump_ir_graph(irg, "conv");
 
-    place_consts(irg);
-    dump_ir_graph(irg, "place-consts");
-
+    lower_for_vhdl(irg);
     irg2vhdl(out, irg);
   };
 }
