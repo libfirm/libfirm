@@ -82,6 +82,7 @@ static ir_node *duplicate_node(ir_node *const node, ir_node *const new_block)
 	ir_node *const new_node = exact_copy(node);
 	if (!is_Block(new_node))
 		set_nodes_block(new_node, new_block);
+	// link the original node and the most recent copy to the new node
 	ir_node *const link = get_irn_link(node);
 	if (link)
 		set_irn_link(link, new_node);
@@ -184,7 +185,6 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 		return;
 	}
 
-	// TODO: use foreach_irn_in
 	int const arity = get_irn_arity(new_node);
 	for (int i = 0; i < arity; ++i) {
 		ir_node *const pred     = get_irn_n(new_node, i);

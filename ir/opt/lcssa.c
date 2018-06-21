@@ -183,6 +183,9 @@ void assure_loop_lcssa(ir_graph *const irg, ir_loop *const loop)
 	FIRM_DBG_REGISTER(dbg, "firm.opt.lcssa");
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	inc_irg_visited(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 	insert_phis_for_loop(loop);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 }
