@@ -1,3 +1,13 @@
+/*
+ * This file is part of libFirm.
+ * Copyright (C) 2018 Karlsruhe Institute of Technology
+ */
+
+/**
+ * @file
+ * @brief   loop unrolling using LCSSA form
+ * @author  Elias Aebi
+ */
 #include "lcssa_t.h"
 #include "irtools.h"
 #include "xmalloc.h"

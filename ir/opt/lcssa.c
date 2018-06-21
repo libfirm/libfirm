@@ -1,3 +1,13 @@
+/*
+ * This file is part of libFirm.
+ * Copyright (C) 2018 Karlsruhe Institute of Technology
+ */
+
+/**
+ * @file
+ * @brief   loop-closed SSA transformation
+ * @author  Elias Aebi
+ */
 #include "lcssa_t.h"
 #include "irtools.h"
 #include "xmalloc.h"
