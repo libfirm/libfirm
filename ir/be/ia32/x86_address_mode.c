@@ -65,11 +65,13 @@ static bool eat_imm(x86_address_t *const addr, ir_node const *const node,
 		return true;
 
 	case iro_Const: {
-		/* Add the value to the offset. */
+		/* Use the value for the offset. */
+		if (addr->imm.offset != 0)
+			return false;
 		ir_tarval *const tv = get_Const_tarval(node);
 		if (!tarval_possible(tv))
 			return false;
-		addr->imm.offset += get_tarval_long(tv);
+		addr->imm.offset = get_tarval_long(tv);
 		return true;
 	}
 
