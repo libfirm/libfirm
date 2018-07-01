@@ -39,12 +39,12 @@
 /**
  * convert an integer into pointer
  */
-#define INT_TO_PTR(v)   ((void *)((char *)0 + (v)))
+#define INT_TO_PTR(v) ((void*)(intptr_t)(v))
 
 /**
  * convert a pointer into an integer
  */
-#define PTR_TO_INT(v)   (((char *)(v) - (char *)0))
+#define PTR_TO_INT(v) ((intptr_t)(v))
 
 #define QSORT(base, n, cmp) (qsort((base), (n), sizeof(*(base)), cmp))
 
