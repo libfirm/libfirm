@@ -5784,12 +5784,12 @@ static ir_node *transform_node_Block(ir_node *block)
 			if (is_Address(target)) {
 				ir_entity *const entity = get_Address_entity(target);
 				if (entity == get_Block_entity(block)) {
-					/* BB[x](..., IJmp(Adress[x]), ...)  ==>  BB[x](..., Jmp, ...) */
+					/* BB[x](..., IJmp(Address[x]), ...)  ==>  BB[x](..., Jmp, ...) */
 					dbg_info *const dbgi = get_irn_dbg_info(pred);
 					ir_node*  const jmp  = new_rd_Jmp(dbgi, get_nodes_block(pred));
 					set_irn_n(block, i, jmp);
 				} else {
-					/* BB[x](..., IJmp(Adress[y]), ...), x != y  ==>  BB[x](..., Bad, ...) */
+					/* BB[x](..., IJmp(Address[y]), ...), x != y  ==>  BB[x](..., Bad, ...) */
 bad:
 					if (!bad)
 						bad = new_r_Bad(irg, mode_X);
