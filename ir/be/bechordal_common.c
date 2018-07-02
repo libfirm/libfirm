@@ -27,14 +27,14 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static inline border_t *border_add(be_chordal_env_t *const env, struct list_head *const head, ir_node *const irn, unsigned const step, unsigned const is_def, unsigned const is_real)
+static inline border_t *border_add(be_chordal_env_t *const env, struct list_head *const head, ir_node *const irn, unsigned const is_def, unsigned const is_real)
 {
 	border_t *const b = OALLOC(&env->obst, border_t);
 	b->is_def  = is_def;
 	b->is_real = is_real;
 	b->irn     = irn;
 	list_add_tail(&b->list, head);
-	DBG((dbg, LEVEL_5, "\t\t%s adding %+F, step: %d\n", is_def ? "def" : "use", irn, step));
+	DBG((dbg, LEVEL_5, "\t\t%s adding %+F\n", is_def ? "def" : "use", irn));
 
 	return b;
 }
@@ -42,16 +42,15 @@ static inline border_t *border_add(be_chordal_env_t *const env, struct list_head
 void create_borders(ir_node *block, void *env_ptr)
 {
 /* Convenience macro for a def */
-#define border_def(irn, step, real) \
-	border_add(env, head, irn, step, 1, real)
+#define border_def(irn, real) \
+	border_add(env, head, irn, 1, real)
 
 /* Convenience macro for a use */
-#define border_use(irn, step, real) \
-	border_add(env, head, irn, step, 0, real)
+#define border_use(irn, real) \
+	border_add(env, head, irn, 0, real)
 
 	be_chordal_env_t *const env = (be_chordal_env_t*)env_ptr;
 
-	unsigned step = 0;
 	struct list_head *head;
 
 	/* Set up the border list in the block info */
@@ -72,9 +71,8 @@ void create_borders(ir_node *block, void *env_ptr)
 	be_lv_foreach_cls(lv, block, be_lv_state_end, env->cls, irn) {
 		DB((dbg, LEVEL_3, "\tMaking live: %+F\n", irn));
 		ir_nodeset_insert(&live, irn);
-		border_use(irn, step, 0);
+		border_use(irn, 0);
 	}
-	++step;
 
 	/*
 	 * Determine the last uses of a value inside the block, since they are
@@ -89,7 +87,7 @@ void create_borders(ir_node *block, void *env_ptr)
 			 * register of the current class, make a border for it.
 			 */
 			ir_nodeset_remove(&live, def);
-			border_def(def, step, 1);
+			border_def(def, 1);
 		);
 
 		/* If the node is no phi node we can examine the uses. */
@@ -98,21 +96,20 @@ void create_borders(ir_node *block, void *env_ptr)
 				DEBUG_ONLY(char msg = '-';)
 
 				if (ir_nodeset_insert(&live, op)) {
-					border_use(op, step, 1);
+					border_use(op, 1);
 					DEBUG_ONLY(msg = 'X';)
 				}
 
 				DB((dbg, LEVEL_4, "\t\t%c pos: %d, use: %+F\n", msg, i_, op));
 			);
 		}
-		++step;
 	}
 
 	/* Process live-ins last. In particular all Phis are handled before, so when
 	 * iterating the borders the live-ins come before all Phis ("live-start"). */
 	foreach_ir_nodeset(&live, irn, iter) {
 		assert(be_is_live_in(lv, block, irn));
-		border_def(irn, step, 0);
+		border_def(irn, 0);
 	}
 
 	ir_nodeset_destroy(&live);
