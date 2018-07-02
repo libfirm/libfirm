@@ -27,7 +27,6 @@
 struct border_t {
 	struct list_head  list;         /**< list head for queuing. */
 	ir_node          *irn;          /**< The node. */
-	unsigned         step;          /**< The number equal to the interval border. */
 	unsigned         is_def  : 1;   /**< Does this border denote a use or a def. */
 	unsigned         is_real : 1;   /**< Is the def/use real? Or is it just
 	                                     inserted at block beginnings or ends

@@ -33,7 +33,6 @@ static inline border_t *border_add(be_chordal_env_t *const env, struct list_head
 	b->is_def  = is_def;
 	b->is_real = is_real;
 	b->irn     = irn;
-	b->step    = step;
 	list_add_tail(&b->list, head);
 	DBG((dbg, LEVEL_5, "\t\t%s adding %+F, step: %d\n", is_def ? "def" : "use", irn, step));
 
