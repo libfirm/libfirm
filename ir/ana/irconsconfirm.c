@@ -28,6 +28,7 @@
  * Walker environment.
  */
 typedef struct env_t {
+	bool optimize;          /**< Do other optimizations as well as inserting Confirms. */
 	unsigned num_confirms;  /**< Number of inserted Confirm nodes. */
 	unsigned num_consts;    /**< Number of constants placed. */
 	unsigned num_eq;        /**< Number of equalities placed. */
@@ -88,6 +89,10 @@ static ir_node *get_case_value(ir_node *switchn, unsigned pn)
  */
 static void handle_case(ir_node *block, ir_node *switchn, unsigned pn, env_t *env)
 {
+	if (!env->optimize) {
+		return;
+	}
+
 	ir_node *c        = NULL;
 	ir_node *selector = get_Switch_selector(switchn);
 
@@ -130,6 +135,10 @@ static void handle_case(ir_node *block, ir_node *switchn, unsigned pn, env_t *en
  */
 static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *env)
 {
+	if (!env->optimize) {
+		return;
+	}
+
 	ir_node *other_blk = NULL;
 	ir_node *con       = NULL;
 	ir_node *c_b       = NULL;
@@ -270,7 +279,7 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 	 * First case: both values are identical.
 	 * replace the left one by the right (potentially const) one.
 	 */
-	if (rel == ir_relation_equal) {
+	if (env->optimize && rel == ir_relation_equal) {
 		ir_node *cond_block = get_Block_cfgpred_block(block, 0);
 		foreach_out_edge_safe(left, edge) {
 			ir_node *user = get_edge_src_irn(edge);
@@ -515,7 +524,7 @@ static void insert_Confirm(ir_node *node, void *data)
 	}
 }
 
-void construct_confirms(ir_graph *irg)
+static void do_construct_confirms(ir_graph *irg, bool optimize)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.ana.confirm");
 
@@ -528,6 +537,7 @@ void construct_confirms(ir_graph *irg)
 	assert(get_irg_pinned(irg) == op_pin_state_pinned);
 
 	env_t env;
+	env.optimize     = optimize;
 	env.num_confirms = 0;
 	env.num_consts   = 0;
 	env.num_eq       = 0;
@@ -547,6 +557,16 @@ void construct_confirms(ir_graph *irg)
 	DB((dbg, LEVEL_1, "# non-null Confirms : %u\n", env.num_non_null));
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_CONTROL_FLOW);
+}
+
+void construct_confirms(ir_graph *irg)
+{
+	do_construct_confirms(irg, true);
+}
+
+void construct_confirms_only(ir_graph *irg)
+{
+	do_construct_confirms(irg, false);
 }
 
 static void remove_confirm(ir_node *n, void *env)
