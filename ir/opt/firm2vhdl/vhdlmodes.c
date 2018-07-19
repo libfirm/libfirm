@@ -10,11 +10,11 @@
 
 #include <firm.h>
 
-#define vhdl_def_mode(bits) \
-  ir_mode *mode_V ## bits ## u;						\
-  ir_mode *get_modeV ## bits ## u (void) { return mode_V ## bits ## u; } \
-  ir_mode *mode_V ## bits ## s;						\
-  ir_mode *get_modeV ## bits ## s (void) { return mode_V ## bits ## s; } \
+#define vhdl_def_mode(bits)                                                    \
+	ir_mode *mode_V ## bits ## u;                                          \
+	ir_mode *get_modeV ## bits ## u (void) { return mode_V ## bits ## u; } \
+	ir_mode *mode_V ## bits ## s;                                          \
+	ir_mode *get_modeV ## bits ## s (void) { return mode_V ## bits ## s; } \
 
 vhdl_def_mode(1)
 vhdl_def_mode(2)
@@ -81,9 +81,9 @@ vhdl_def_mode(62)
 vhdl_def_mode(63)
 vhdl_def_mode(64)
 
-#define vhdl_init_mode(bits) \
-  mode_V ## bits ## u  = new_int_mode("V" #bits "u",  bits,   0, 32); \
-  mode_V ## bits ## u  = new_int_mode("V" #bits "s",  bits,   1, 32);\
+#define vhdl_init_mode(bits)                                                \
+	mode_V ## bits ## u  = new_int_mode("V" #bits "u",  bits,   0, 32); \
+	mode_V ## bits ## u  = new_int_mode("V" #bits "s",  bits,   1, 32); \
 
 void init_vhdl_modes(void)
 {
