@@ -212,35 +212,38 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	for (unsigned o = 0, n = get_ASM_n_constraints(node); o != n; ++o) {
 		ir_asm_constraint const *const constraint = &constraints[o];
 		if (strchr(get_id_str(constraint->constraint), '&')) {
-			arch_register_req_t   const **const oslot = &out_reqs[constraint->out_pos];
-			arch_register_req_t   const  *const oreq  = *oslot;
-			arch_register_class_t const  *const cls   = oreq->cls;
+			int const out_pos = constraint->out_pos;
+			if (out_pos >= 0) {
+				arch_register_req_t   const **const oslot = &out_reqs[out_pos];
+				arch_register_req_t   const  *const oreq  = *oslot;
+				arch_register_class_t const  *const cls   = oreq->cls;
 
-			unsigned different = 0;
+				unsigned different = 0;
 
-			/* Add each input in the same register class. */
-			for (unsigned i = 0; i != orig_n_ins; ++i) {
-				if (in_reqs[i]->cls == cls)
-					different |= 1U << i;
-			}
-
-			/* Remove each input which has a matching output.
-			 * The output already ensures that the register is different than the
-			 * early clobber output. */
-			for (unsigned i = 0; i != orig_n_outs; ++i) {
-				arch_register_req_t const *const other_oreq = out_reqs[i];
-				if (other_oreq->cls == cls) {
-					unsigned const same_as = other_oreq->should_be_same;
-					assert(is_po2_or_zero(same_as));
-					different &= ~same_as;
+				/* Add each input in the same register class. */
+				for (unsigned i = 0; i != orig_n_ins; ++i) {
+					if (in_reqs[i]->cls == cls)
+						different |= 1U << i;
 				}
-			}
 
-			if (different != 0) {
-				arch_register_req_t *const req = OALLOCZ(obst, arch_register_req_t);
-				*req                   = *oreq;
-				req->must_be_different = different;
-				*oslot                 = req;
+				/* Remove each input which has a matching output.
+				 * The output already ensures that the register is different than the
+				 * early clobber output. */
+				for (unsigned i = 0; i != orig_n_outs; ++i) {
+					arch_register_req_t const *const other_oreq = out_reqs[i];
+					if (other_oreq->cls == cls) {
+						unsigned const same_as = other_oreq->should_be_same;
+						assert(is_po2_or_zero(same_as));
+						different &= ~same_as;
+					}
+				}
+
+				if (different != 0) {
+					arch_register_req_t *const req = OALLOCZ(obst, arch_register_req_t);
+					*req                   = *oreq;
+					req->must_be_different = different;
+					*oslot                 = req;
+				}
 			}
 		}
 	}
