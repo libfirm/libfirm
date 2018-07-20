@@ -207,17 +207,33 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 
 	/* Handle early clobbers. */
 	size_t                   const orig_n_ins  = ARR_LEN(in_reqs);
+	size_t                         orig_n_outs = ARR_LEN(out_reqs);
 	ir_asm_constraint const *const constraints = get_ASM_constraints(node);
 	for (unsigned o = 0, n = get_ASM_n_constraints(node); o != n; ++o) {
 		ir_asm_constraint const *const constraint = &constraints[o];
 		if (strchr(get_id_str(constraint->constraint), '&')) {
-			arch_register_req_t const **const oslot = &out_reqs[constraint->out_pos];
-			arch_register_req_t const  *const oreq  = *oslot;
+			arch_register_req_t   const **const oslot = &out_reqs[constraint->out_pos];
+			arch_register_req_t   const  *const oreq  = *oslot;
+			arch_register_class_t const  *const cls   = oreq->cls;
 
 			unsigned different = 0;
+
+			/* Add each input in the same register class. */
 			for (unsigned i = 0; i != orig_n_ins; ++i) {
-				if (in_reqs[i]->cls == oreq->cls)
+				if (in_reqs[i]->cls == cls)
 					different |= 1U << i;
+			}
+
+			/* Remove each input which has a matching output.
+			 * The output already ensures that the register is different than the
+			 * early clobber output. */
+			for (unsigned i = 0; i != orig_n_outs; ++i) {
+				arch_register_req_t const *const other_oreq = out_reqs[i];
+				if (other_oreq->cls == cls) {
+					unsigned const same_as = other_oreq->should_be_same;
+					assert(is_po2_or_zero(same_as));
+					different &= ~same_as;
+				}
 			}
 
 			if (different != 0) {
@@ -283,8 +299,8 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	 *        before...
 	 * FIXME: need to do this per register class...
 	 */
-	size_t const orig_n_outs = ARR_LEN(out_reqs);
-	uint8_t      add_pressure[ir_target.isa->n_register_classes];
+	orig_n_outs = ARR_LEN(out_reqs); // Clobbers might add further outputs.
+	uint8_t add_pressure[ir_target.isa->n_register_classes];
 	memset(add_pressure, 0, sizeof(add_pressure));
 	if (orig_n_outs < orig_n_ins) {
 		bitset_t *const used_ins = bitset_alloca(orig_n_ins);
