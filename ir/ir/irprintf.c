@@ -67,6 +67,15 @@ int ir_vsnprintf(char *buf, size_t len, const char *fmt, va_list args)
 	return lc_evsnprintf(firm_get_arg_env(), buf, len, fmt, args);
 }
 
+int ir_obst_printf(struct obstack *obst, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	int res = lc_evoprintf(firm_get_arg_env(), obst, fmt, args);
+	va_end(args);
+	return res;
+}
+
 int ir_obst_vprintf(struct obstack *obst, const char *fmt, va_list args)
 {
 	return lc_evoprintf(firm_get_arg_env(), obst, fmt, args);
