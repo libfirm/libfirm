@@ -105,6 +105,17 @@ static void emit_exec_signals(ir_node *node, void *data)
 	}
 }
 
+static void emit_start(FILE *file, ir_graph *irg)
+{
+	fprintf(file, "\nprocess (clk)\n");
+	fprintf(file, "begin\n");
+	fprintf(file, "\tif rising_edge(START) then\n");
+	ir_fprintf(file, "\t\texec%N <= START;\n", get_irg_start_block(irg));
+	fprintf(file, "\t\tREADY <= '0';\n");
+	fprintf(file, "\tend if;\n");
+	fprintf(file, "end process;\n");
+}
+
 static void emit_variable(struct obstack *obst, ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
@@ -213,6 +224,7 @@ static void emit_process(ir_node *node, void *data)
 		for (int n = 0; n < get_Return_n_ress(node); n++) {
 			ir_obst_printf(obst, "\t\t%s <= std_logic_vector(node%N);\t-- %+F\n",
 			               get_output_name(n), get_Return_res(node, n), node);
+			ir_obst_printf(obst, "\t\tREADY <= '1';\n");
 		}
 	}
 		break;
@@ -418,10 +430,14 @@ void irg2vhdl(FILE *output, ir_graph *irg)
 	irg_walk_graph(irg, 0, emit_phi_signals, &env);
 	irg_walk_graph(irg, 0, emit_exec_signals, &env);
 	fprintf(env.file, "begin\n");
+
+	emit_start(output, irg);
+
 	struct block_env blkenv;
 	blkenv.file = output;
 	blkenv.block = NULL;
 	blkenv.valid = false;
 	irg_walk_blkwise_graph(irg, 0, emit_process, &blkenv);
+
 	fprintf(env.file, "end %s;\n", get_irg_name(irg));
 }
