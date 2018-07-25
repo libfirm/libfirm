@@ -8,7 +8,7 @@ CPPFLAGS ?= -I$(HOME)/projects/firm/cparser/libfirm/include/libfirm
 
 all: ir2vhdl
 
-ir2vhdl: $(LIBFIRM_ARCHIVE) ir2vhdl.o vhdlmodes.o firm2vhdl.o vhdlops.o lower-for-vhdl.o -lm
+ir2vhdl: $(LIBFIRM_ARCHIVE) ir2vhdl.o vhdlmodes.o firm2vhdl.o lower-for-vhdl.o -lm
 
 *.o: Makefile config.mak
 
