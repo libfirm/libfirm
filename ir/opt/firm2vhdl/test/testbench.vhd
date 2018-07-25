@@ -15,7 +15,9 @@ architecture testbench of testbench is
           clk     : in  std_logic;
           input0  : in  std_logic_vector(31 downto 0);
           input1  : in  std_logic_vector(31 downto 0);
-          output0 : out std_logic_vector(31 downto 0));
+          output0 : out std_logic_vector(31 downto 0);
+          start   : in  std_logic;
+          ready   : out std_logic);
       end component test_atom;
 
       signal a_clk: std_logic := '0';
@@ -23,8 +25,10 @@ architecture testbench of testbench is
       signal a_input0 : std_logic_vector(31 downto 0) := (others=>'0');
       signal a_input1 : std_logic_vector(31 downto 0) := (others=>'0');
       signal a_output0 : std_logic_vector(31 downto 0) := (others=>'0');
+      signal a_start: std_logic := '0';
+      signal a_ready: std_logic := '0';
 begin
-  testee: test_atom port map(a_control, a_clk, a_input0, a_input1, a_output0);
+  testee: test_atom port map(a_control, a_clk, a_input0, a_input1, a_output0, a_start, a_ready);
 
   process
   variable iline,oline : line;
@@ -43,18 +47,26 @@ begin
       exit when not good;
 
 
-      a_clk <= '1';
+      a_clk <= '0';
       -- apply signals
       wait for 1 ns;
       a_control <= std_logic_vector(to_signed(control, 8));
       a_input0 <=  std_logic_vector(to_signed(input0, 32));
       a_input1 <= std_logic_vector(to_signed(input1, 32));
-      wait for 1 ns;
-      a_clk <= '0';
+
+      a_start <= '1';
       wait for 1 ns;
       a_clk <= '1';
       wait for 1 ns;
-      
+      a_start <= '0';
+
+      while a_ready /= '1' loop
+        wait for 1 ns;
+        a_clk <= '0';
+        wait for 1 ns;
+        a_clk <= '1';
+      end loop;
+
       write(oline, to_integer(signed(a_output0)));
       writeline(OUTPUT, oline);
     end loop;

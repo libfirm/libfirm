@@ -7,7 +7,9 @@ entity test_atom is
     clk     : in  std_logic;
     input0  : in  std_logic_vector(31 downto 0);
     input1  : in  std_logic_vector(31 downto 0);
-    output0 : out std_logic_vector(31 downto 0)
+    output0 : out std_logic_vector(31 downto 0);
+    start   : in  std_logic;
+    ready   : out std_logic
     );
 
   --attribute mult_style         : string;
