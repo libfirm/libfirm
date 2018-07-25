@@ -65,6 +65,7 @@ static void irp2vhdl(char *filename)
 		dump_ir_graph(irg, "conv");
 
 		lower_for_vhdl(irg);
+		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 		irg2vhdl(out, irg);
 	};
 }
