@@ -92,7 +92,7 @@ static void emit_phi_signals(ir_node *node, void *data)
 		ir_fprintf(env->file, "\tsignal phi%N : ", node);
 		fprintf(env->file, mode_is_signed(mode) ? "signed" : "unsigned");
 		fprintf(env->file, "(%u downto 0)" SIGNAL_INITIALIZER ";", get_mode_size_bits(mode)-1);
-		ir_fprintf(env->file, "-- %n \n", node);
+		ir_fprintf(env->file, "-- %+F \n", node);
 	}
 }
 
@@ -110,7 +110,7 @@ static void emit_variable(struct obstack *obst, ir_node *node)
 	ir_mode *mode = get_irn_mode(node);
 
 	if (mode == mode_b) {
-		ir_obst_printf(obst, "\tvariable node%N : boolean;\t-- %n \n", node, node);
+		ir_obst_printf(obst, "\tvariable node%N : boolean;\t-- %+F \n", node, node);
 		return;
 	}
 
@@ -122,7 +122,7 @@ static void emit_variable(struct obstack *obst, ir_node *node)
 	ir_obst_printf(obst, "\tvariable node%N : ", node);
 	obstack_printf(obst, mode_is_signed(mode) ? "signed" : "unsigned");
 	obstack_printf(obst, "(%u downto 0)" SIGNAL_INITIALIZER ";", get_mode_size_bits(mode)-1);
-	ir_obst_printf(obst, " -- %n \n", node);
+	ir_obst_printf(obst, " -- %+F \n", node);
 }
 
 static const char *format_relation(ir_relation rel)
@@ -165,12 +165,14 @@ static void finish_block(struct block_env *env)
 		fprintf(env->file, "%s", variables);
 
 		fprintf(env->file, "begin\n");
-		ir_fprintf(env->file, "\texec%N <= '0';\n", env->block);
+		ir_fprintf(env->file, "\tif rising_edge(exec%N) then\n", env->block);
+		ir_fprintf(env->file, "\t\texec%N <= '0';\n", env->block);
 
 		obstack_1grow(&env->process_obst, '\0');
 		char *process = obstack_finish(&env->process_obst);
 		fprintf(env->file, "%s", process);
 
+		fprintf(env->file, "\tend if;\n");
 		fprintf(env->file, "end process;\n");
 
 		obstack_free(&env->variable_obst, NULL);
@@ -196,7 +198,7 @@ static void emit_process(ir_node *node, void *data)
 	case iro_Proj: {
 		if (is_arg_Proj(node)) {
 			long proj = get_Proj_num(node);
-			ir_obst_printf(obst, "\tnode%N := %s(%s);\t-- %n\n",
+			ir_obst_printf(obst, "\t\tnode%N := %s(%s);\t-- %+F\n",
 			               node,
 			               mode_is_signed(mode) ? "signed" : "unsigned",
 			               get_input_name(proj), node);
@@ -209,14 +211,14 @@ static void emit_process(ir_node *node, void *data)
 
 	case iro_Return: {
 		for (int n = 0; n < get_Return_n_ress(node); n++) {
-			ir_obst_printf(obst, "\t%s <= std_logic_vector(node%N);\t-- %n\n",
+			ir_obst_printf(obst, "\t\t%s <= std_logic_vector(node%N);\t-- %+F\n",
 			               get_output_name(n), get_Return_res(node, n), node);
 		}
 	}
 		break;
 
 #define BINOP(op) \
-		ir_obst_printf(obst, "\tnode%N := node%N " #op " node%N;\t-- %n\n", \
+		ir_obst_printf(obst, "\t\tnode%N := node%N " #op " node%N;\t-- %+F\n", \
 		               node, get_binop_left(node), get_binop_right(node), node)
 
 	case iro_Add: BINOP(+);   break;
@@ -230,33 +232,33 @@ static void emit_process(ir_node *node, void *data)
 	case iro_Mul:
 		// Convert to unsigned to get the correct MSB of the result.
 		// (VHDL preserves the sign bit when resizing signed values)
-		ir_obst_printf(obst, "\tnode%N := %s(std_logic_vector(resize(unsigned(std_logic_vector(node%N * node%N)), %u)));\t-- %n\n",
+		ir_obst_printf(obst, "\tnode%N := %s(std_logic_vector(resize(unsigned(std_logic_vector(node%N * node%N)), %u)));\t-- %+F\n",
 		               node,
 		               mode_is_signed(mode) ? "signed" : "unsigned",
 		               get_binop_left(node), get_binop_right(node),
 		               get_mode_size_bits(mode), node);
 		break;
 	case iro_Not:
-		ir_obst_printf(obst, "\tnode%N := not node%N;\t-- %n\n",
+		ir_obst_printf(obst, "\t\tnode%N := not node%N;\t-- %+F\n",
 		               node, get_Not_op(node), node);
 		break;
 
 	case iro_Minus:
-		ir_obst_printf(obst, "\tnode%N := - node%N;\t-- %n\n",
+		ir_obst_printf(obst, "\t\tnode%N := - node%N;\t-- %+F\n",
 		               node, get_Minus_op(node), node);
 		break;
 
 	case iro_PinnedConst:
-		ir_obst_printf(obst, "\tnode%N := ", node);
+		ir_obst_printf(obst, "\t\tnode%N := ", node);
 		obstack_printf(obst, "to_%s(%ld, %u);",
 		               mode_is_signed(mode) ? "signed" : "unsigned",
 		               get_tarval_long(get_PinnedConst_tarval(node)),
 		               get_mode_size_bits(mode));
-		ir_obst_printf(obst, "\t-- %n\n", node);
+		ir_obst_printf(obst, "\t-- %+F\n", node);
 		break;
 
 	case iro_Mux:
-		ir_obst_printf(obst, "if node%N then node%N := node%N; else node%N := node%N; end if;\t-- %n\n",
+		ir_obst_printf(obst, "\t\tif node%N then node%N := node%N; else node%N := node%N; end if;\t-- %+F\n",
 		               get_Mux_sel(node),
 		               node,
 		               get_Mux_true(node),
@@ -266,7 +268,7 @@ static void emit_process(ir_node *node, void *data)
 		break;
 
 	case iro_Cmp:
-		ir_obst_printf(obst, "\tnode%N := node%N %s node%N;\t-- %n\n",
+		ir_obst_printf(obst, "\t\tnode%N := node%N %s node%N;\t-- %+F\n",
 		               node,
 		               get_Cmp_left(node),
 		               format_relation(get_Cmp_relation(node)),
@@ -276,7 +278,7 @@ static void emit_process(ir_node *node, void *data)
 
 	case iro_Shl:
 		assert(is_PinnedConst(get_Shl_right(node)));
-		ir_obst_printf(obst, "\tnode%N := shift_left(unsigned(node%N), %u);\t-- %n\n",
+		ir_obst_printf(obst, "\t\tnode%N := shift_left(unsigned(node%N), %u);\t-- %+F\n",
 		               node,
 		               get_Shl_left(node),
 		               get_tarval_long(get_PinnedConst_tarval(get_Shl_right(node))),
@@ -286,7 +288,7 @@ static void emit_process(ir_node *node, void *data)
 
 	case iro_Shr:
 		assert(is_PinnedConst(get_Shr_right(node)));
-		ir_obst_printf(obst, "\tnode%N := %s(shift_right(unsigned(node%N), %u));\t-- %n\n",
+		ir_obst_printf(obst, "\t\tnode%N := %s(shift_right(unsigned(node%N), %u));\t-- %+F\n",
 		               node,
 		               mode_is_signed(mode) ? "signed" : "",
 		               get_Shr_left(node),
@@ -296,7 +298,7 @@ static void emit_process(ir_node *node, void *data)
 
 	case iro_Shrs:
 		assert(is_PinnedConst(get_Shrs_right(node)));
-		ir_obst_printf(obst, "\tnode%N := %s(shift_right(signed(node%N), %u));\t-- %n\n",
+		ir_obst_printf(obst, "\t\tnode%N := %s(shift_right(signed(node%N), %u));\t-- %+F\n",
 		               node,
 		               mode_is_signed(mode) ? "" : "unsigned",
 		               get_Shrs_left(node),
@@ -311,14 +313,14 @@ static void emit_process(ir_node *node, void *data)
 		if (is_downconv(pred_mode, mode) && mode_is_signed(pred_mode)) {
 			/* IEEE.numeric_std transplants the sign bit on downconv from a
 			   signed type.  Avoid this case to maintain C semantics. */
-			ir_obst_printf(obst, "\tnode%N := %s(resize(unsigned(node%N),%u));\t-- %n\n",
+			ir_obst_printf(obst, "\t\tnode%N := %s(resize(unsigned(node%N),%u));\t-- %+F\n",
 			               node,
 			               (mode_is_signed(mode) ? "signed" : ""),
 			               pred,
 			               get_mode_size_bits(mode),
 			               node);
 		} else {
-			ir_obst_printf(obst, "\tnode%N := %s(resize(node%N,%u));\t-- %n\n",
+			ir_obst_printf(obst, "\t\tnode%N := %s(resize(node%N,%u));\t-- %+F\n",
 			               node,
 			               (mode_is_signed(mode) == mode_is_signed(pred_mode)) ? "" :
 			               (mode_is_signed(mode) ? "signed" : "unsigned "),
@@ -331,7 +333,7 @@ static void emit_process(ir_node *node, void *data)
 
 	case iro_Phi: {
 		if (get_irn_mode(node) != mode_M) {
-			ir_obst_printf(obst, "\tnode%N := phi%N;\t-- %n\n", node, node, node);
+			ir_obst_printf(obst, "\t\tnode%N := phi%N;\t-- %+F\n", node, node, node);
 		}
 	}
 		break;
@@ -339,7 +341,7 @@ static void emit_process(ir_node *node, void *data)
 	case iro_Jmp: {
 		assert(get_irn_n_outs(node) == 1);
 		ir_node *next_block = get_irn_out(node, 0);
-		ir_obst_printf(obst, "\texec%N <= '1';\n", next_block);
+		ir_obst_printf(obst, "\t\texec%N <= '1';\n", next_block);
 	}
 		break;
 
@@ -352,9 +354,9 @@ static void emit_process(ir_node *node, void *data)
 			ir_node *next_block = get_irn_out(proj, 0);
 
 			if (pn == pn_Cond_true) {
-				ir_obst_printf(obst, "\texec%N <= '1' when node%N else '0';\n", next_block, node);
+				ir_obst_printf(obst, "\t\texec%N <= '1' when node%N else '0';\n", next_block, node);
 			} else if (pn == pn_Cond_false) {
-				ir_obst_printf(obst, "\texec%N <= '0' when node%N else '1';\n", next_block, node);
+				ir_obst_printf(obst, "\t\texec%N <= '0' when node%N else '1';\n", next_block, node);
 			} else {
 				fatal("Unexpected Proj(Cond)");
 			}
@@ -391,7 +393,7 @@ static void emit_process(ir_node *node, void *data)
 			if (is_Phi(user)) {
 				if (!pmap_contains(env->phis_assigned, user)) {
 					pmap_insert(env->phis_assigned, user, node);
-					ir_obst_printf(obst, "\tphi%N <= node%N;\n", user, node);
+					ir_obst_printf(obst, "\t\tphi%N <= node%N;\n", user, node);
 				}
 				// We may see one Phi node multiple times, but only as a user
 				// of the same value
