@@ -974,14 +974,19 @@ static void melt_copykeeps(constraint_env_t *cenv)
 	foreach_ir_nodehashmap(&cenv->op_set, map_entry, map_iter) {
 		op_copy_assoc_t *entry = (op_copy_assoc_t*)map_entry.data;
 
+		DB((dbg_constr, LEVEL_1, "CopyKeeps at %+F:\n", map_entry.node));
+
 		/* collect all copykeeps */
 		unsigned num_ck = 0;
 		foreach_ir_nodeset(&entry->copies, cp, iter) {
 			if (be_is_CopyKeep(cp)) {
+				DB((dbg_constr, LEVEL_1, "\t%+F\n", cp));
 				obstack_grow(&obst, &cp, sizeof(cp));
 				++num_ck;
 			}
 		}
+
+		DB((dbg_constr, LEVEL_1, "\n"));
 
 		/* compare each copykeep with all other copykeeps */
 		ir_node **ck_arr = (ir_node **)obstack_finish(&obst);
@@ -1039,7 +1044,7 @@ static void melt_copykeeps(constraint_env_t *cenv)
 				/* find scheduling point */
 				ir_node *const sched_pt = be_move_after_schedule_first(ref_mode_T);
 				sched_add_after(sched_pt, new_ck);
-				DB((dbg_constr, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
+				DB((dbg_constr, LEVEL_1, "created %+F, scheduled after %+F\n", new_ck, sched_pt));
 
 				/* finally: kill the reference copykeep */
 				kill_node(ref);
