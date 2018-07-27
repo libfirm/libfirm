@@ -82,12 +82,21 @@ static inline arch_register_req_t const *be_asm_make_same_req(struct obstack *co
 	return oreq;
 }
 
-static inline void be_asm_add_inout(be_asm_info_t *const info, be_asm_operand_t *const op, struct obstack *const obst, ir_node *const in, arch_register_req_t const *const ireq, int const opos)
+static inline void be_asm_add_inout(be_asm_info_t *const info, be_asm_operand_t *const op, struct obstack *const obst, ir_node *const in, arch_register_req_t const *const orig_ireq, int const opos)
 {
+	arch_register_req_t const *ireq = orig_ireq;
+	if (opos >= 0) {
+		/* Ensure that the matching output can use the same register by marking the
+		 * input as 'kills_value'. */
+		arch_register_req_t *const new_ireq = OALLOC(obst, arch_register_req_t);
+		*new_ireq             = *ireq;
+		new_ireq->kills_value = true;
+		ireq = new_ireq;
+	}
 	ir_node *const new_in = be_transform_node(in);
 	be_asm_add_in(info, op, BE_ASM_OPERAND_INPUT_VALUE, new_in, ireq);
 	if (opos >= 0) {
-		arch_register_req_t const *const oreq = be_asm_make_same_req(obst, ireq, ARR_LEN(info->in_reqs) - 1);
+		arch_register_req_t const *const oreq = be_asm_make_same_req(obst, orig_ireq, ARR_LEN(info->in_reqs) - 1);
 		info->out_reqs[opos] = oreq;
 	}
 }
