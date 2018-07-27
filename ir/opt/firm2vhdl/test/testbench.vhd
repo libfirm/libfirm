@@ -55,16 +55,17 @@ begin
       a_input1 <= std_logic_vector(to_signed(input1, 32));
 
       a_start <= '1';
-      wait for 1 ns;
       a_clk <= '1';
       wait for 1 ns;
       a_start <= '0';
+      a_clk <= '0';
+      wait for 1 ns;
 
       while a_ready /= '1' loop
+        a_clk <= '1';
         wait for 1 ns;
         a_clk <= '0';
         wait for 1 ns;
-        a_clk <= '1';
       end loop;
 
       write(oline, to_integer(signed(a_output0)));
