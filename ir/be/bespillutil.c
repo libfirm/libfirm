@@ -1012,38 +1012,39 @@ static void melt_copykeeps(constraint_env_t *cenv)
 			}
 			ck_arr[idx] = NULL;
 
+			ir_node **const melt_arr = (ir_node **)obstack_finish(&obst);
+
 			/* check, if we found some candidates for melting */
 			if (n_melt == 1) {
 				DB((dbg_constr, LEVEL_1, "\tno candidate found\n"));
-				continue;
+			} else {
+				ir_nodeset_remove(&entry->copies, ref);
+				sched_remove(ref);
+
+				/* melt all found copykeeps */
+				ir_node **new_ck_in = ALLOCAN(ir_node*,n_melt);
+				for (unsigned j = 0; j < n_melt; ++j) {
+					new_ck_in[j] = get_irn_n(melt_arr[j], 1);
+
+					/* now, we can kill the melted keep, except the */
+					/* ref one, we still need some information      */
+					if (melt_arr[j] != ref)
+						kill_node(melt_arr[j]);
+				}
+
+				ir_node *const new_ck = be_new_CopyKeep(get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in);
+
+				ir_nodeset_insert(&entry->copies, new_ck);
+
+				/* find scheduling point */
+				ir_node *const sched_pt = be_move_after_schedule_first(ref_mode_T);
+				sched_add_after(sched_pt, new_ck);
+				DB((dbg_constr, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
+
+				/* finally: kill the reference copykeep */
+				kill_node(ref);
 			}
-
-			ir_nodeset_remove(&entry->copies, ref);
-			sched_remove(ref);
-
-			ir_node **melt_arr = (ir_node **)obstack_finish(&obst);
-			/* melt all found copykeeps */
-			ir_node **new_ck_in = ALLOCAN(ir_node*,n_melt);
-			for (unsigned j = 0; j < n_melt; ++j) {
-				new_ck_in[j] = get_irn_n(melt_arr[j], 1);
-
-				/* now, we can kill the melted keep, except the */
-				/* ref one, we still need some information      */
-				if (melt_arr[j] != ref)
-					kill_node(melt_arr[j]);
-			}
-
-			ir_node *const new_ck = be_new_CopyKeep(get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in);
-
-			ir_nodeset_insert(&entry->copies, new_ck);
-
-			/* find scheduling point */
-			ir_node *const sched_pt = be_move_after_schedule_first(ref_mode_T);
-			sched_add_after(sched_pt, new_ck);
-			DB((dbg_constr, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
-
-			/* finally: kill the reference copykeep */
-			kill_node(ref);
+			obstack_free(&obst, melt_arr);
 		}
 		obstack_free(&obst, ck_arr);
 	}
