@@ -880,7 +880,6 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	DB((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
 
 	/* insert copy and keep into schedule */
-	assert(sched_is_scheduled(irn) && "need schedule to assure constraints");
 	if (!sched_is_scheduled(cpy))
 		sched_add_before(skip_Proj(irn), cpy);
 	sched_add_after(skip_Proj(irn), keep);
