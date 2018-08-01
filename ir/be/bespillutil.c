@@ -846,11 +846,11 @@ typedef struct {
 	ir_nodeset_t copies; /**< all non-spillable copies of this irn */
 } op_copy_assoc_t;
 
-static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env)
+static void gen_assure_different_pattern(ir_node *const value, ir_node *const irn, ir_node *const other_different, constraint_env_t *const env)
 {
 	arch_register_req_t const *const req = arch_get_irn_register_req(other_different);
 	if (req->ignore) {
-		DB((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore\n", irn));
+		DB((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore\n", value));
 		return;
 	}
 
@@ -863,7 +863,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* The copy is optimized later if not needed         */
 
 	/* check if already exists such a copy in the schedule immediately before */
-	ir_node *cpy = find_copy(skip_Proj(irn), other_different);
+	ir_node *cpy = find_copy(irn, other_different);
 	if (cpy == NULL) {
 		cpy = be_new_Copy(block, other_different);
 		arch_add_irn_flags(cpy, arch_irn_flag_dont_spill);
@@ -874,15 +874,15 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 
 	/* Add the Keep resp. CopyKeep and reroute the users */
 	/* of the other_different irn in case of CopyKeep.   */
-	ir_node *const in[] = { irn };
+	ir_node *const in[] = { value };
 	ir_node *const keep = be_new_CopyKeep(block, cpy, ARRAY_SIZE(in), in);
 
-	DB((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
+	DB((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, value, cpy));
 
 	/* insert copy and keep into schedule */
 	if (!sched_is_scheduled(cpy))
-		sched_add_before(skip_Proj(irn), cpy);
-	sched_add_after(skip_Proj(irn), keep);
+		sched_add_before(irn, cpy);
+	sched_add_after(irn, keep);
 
 	/* insert the other different and its copies into the map */
 	op_copy_assoc_t *entry
@@ -930,7 +930,7 @@ static void assure_different_constraints(ir_node *const value, ir_node *const ir
 	for (unsigned i = 0; 1U << i <= other; ++i) {
 		if (other & (1U << i)) {
 			ir_node *const different_from = get_irn_n(irn, i);
-			gen_assure_different_pattern(value, different_from, env);
+			gen_assure_different_pattern(value, irn, different_from, env);
 		}
 	}
 }
