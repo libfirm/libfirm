@@ -952,7 +952,7 @@ static void assure_constraints_walker(ir_node *block, void *walk_env)
 {
 	constraint_env_t *env = (constraint_env_t*)walk_env;
 
-	sched_foreach_reverse(block, irn) {
+	sched_foreach_non_phi_reverse(block, irn) {
 		be_foreach_value(irn, value,
 			assure_different_constraints(value, irn, env);
 		);
