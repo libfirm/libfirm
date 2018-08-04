@@ -824,17 +824,6 @@ static void add_missing_copies_in_block(ir_node *block, void *data)
 	}
 }
 
-static ir_node *find_copy(ir_node *irn, ir_node *op)
-{
-	for (ir_node *cur_node = irn;;) {
-		cur_node = sched_prev(cur_node);
-		if (!be_is_Copy(cur_node))
-			return NULL;
-		if (be_get_Copy_op(cur_node) == op && arch_irn_is(cur_node, dont_spill))
-			return cur_node;
-	}
-}
-
 /** Environment for constraints. */
 typedef struct {
 	ir_nodehashmap_t op_set;
@@ -843,6 +832,7 @@ typedef struct {
 
 /** Associates an ir_node with its copy and CopyKeep. */
 typedef struct {
+	ir_node     *current_irn;
 	ir_nodeset_t copies; /**< all non-spillable copies of this irn */
 } op_copy_assoc_t;
 
@@ -862,12 +852,18 @@ static void gen_assure_different_pattern(ir_node *const value, ir_node *const ir
 	/* in block far far away                             */
 	/* The copy is optimized later if not needed         */
 
-	/* check if already exists such a copy in the schedule immediately before */
-	if (find_copy(irn, other_different)) {
+	op_copy_assoc_t *entry = ir_nodehashmap_get(op_copy_assoc_t, op_set, other_different);
+	if (!entry) {
+		entry = OALLOC(&env->obst, op_copy_assoc_t);
+		ir_nodeset_init(&entry->copies);
+
+		ir_nodehashmap_insert(op_set, other_different, entry);
+	} else if (entry->current_irn == irn) {
 		/* A non-spillable copy for this value was already inserted for this node. */
 		DB((dbg_constr, LEVEL_1, "%+F already has copy for value %+F\n", irn, other_different));
 		return;
 	}
+	entry->current_irn = irn;
 
 	ir_node *const cpy = be_new_Copy(block, other_different);
 	arch_add_irn_flags(cpy, arch_irn_flag_dont_spill);
@@ -884,16 +880,6 @@ static void gen_assure_different_pattern(ir_node *const value, ir_node *const ir
 	if (!sched_is_scheduled(cpy))
 		sched_add_before(irn, cpy);
 	sched_add_after(irn, keep);
-
-	/* insert the other different and its copies into the map */
-	op_copy_assoc_t *entry
-		= ir_nodehashmap_get(op_copy_assoc_t, op_set, other_different);
-	if (entry == NULL) {
-		entry = OALLOC(&env->obst, op_copy_assoc_t);
-		ir_nodeset_init(&entry->copies);
-
-		ir_nodehashmap_insert(op_set, other_different, entry);
-	}
 
 	/* insert copy */
 	ir_nodeset_insert(&entry->copies, cpy);
