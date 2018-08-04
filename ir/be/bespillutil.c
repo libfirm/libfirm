@@ -863,14 +863,15 @@ static void gen_assure_different_pattern(ir_node *const value, ir_node *const ir
 	/* The copy is optimized later if not needed         */
 
 	/* check if already exists such a copy in the schedule immediately before */
-	ir_node *cpy = find_copy(irn, other_different);
-	if (cpy == NULL) {
-		cpy = be_new_Copy(block, other_different);
-		arch_add_irn_flags(cpy, arch_irn_flag_dont_spill);
-		DB((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
-	} else {
-		DB((dbg_constr, LEVEL_1, "using already existing %+F for value %+F\n", cpy, other_different));
+	if (find_copy(irn, other_different)) {
+		/* A non-spillable copy for this value was already inserted for this node. */
+		DB((dbg_constr, LEVEL_1, "%+F already has copy for value %+F\n", irn, other_different));
+		return;
 	}
+
+	ir_node *const cpy = be_new_Copy(block, other_different);
+	arch_add_irn_flags(cpy, arch_irn_flag_dont_spill);
+	DB((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
 
 	/* Add the Keep resp. CopyKeep and reroute the users */
 	/* of the other_different irn in case of CopyKeep.   */
