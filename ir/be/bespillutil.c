@@ -954,103 +954,6 @@ static void assure_constraints_walker(ir_node *block, void *walk_env)
 }
 
 /**
- * Melt all copykeeps pointing to the same node
- * (or Projs of the same node), copying the same operand.
- */
-static void melt_copykeeps(constraint_env_t *cenv)
-{
-	struct obstack obst;
-	obstack_init(&obst);
-
-	/* for all */
-	ir_nodehashmap_entry_t    map_entry;
-	ir_nodehashmap_iterator_t map_iter;
-	foreach_ir_nodehashmap(&cenv->op_set, map_entry, map_iter) {
-		op_copy_assoc_t *entry = (op_copy_assoc_t*)map_entry.data;
-
-		DB((dbg_constr, LEVEL_1, "CopyKeeps at %+F:\n", map_entry.node));
-
-		/* collect all copykeeps */
-		unsigned num_ck = 0;
-		foreach_ir_nodeset(&entry->copies, cp, iter) {
-			if (be_is_CopyKeep(cp)) {
-				DB((dbg_constr, LEVEL_1, "\t%+F\n", cp));
-				obstack_grow(&obst, &cp, sizeof(cp));
-				++num_ck;
-			}
-		}
-
-		DB((dbg_constr, LEVEL_1, "\n"));
-
-		/* compare each copykeep with all other copykeeps */
-		ir_node **ck_arr = (ir_node **)obstack_finish(&obst);
-		for (unsigned idx = 0; idx < num_ck; ++idx) {
-			if (ck_arr[idx] == NULL)
-				continue;
-			unsigned n_melt     = 1;
-			ir_node *ref        = ck_arr[idx];
-			ir_node *ref_mode_T = skip_Proj(get_irn_n(ref, 1));
-			obstack_grow(&obst, &ref, sizeof(ref));
-
-			DB((dbg_constr, LEVEL_1, "Trying to melt %+F:\n", ref));
-
-			/* check for copykeeps pointing to the same mode_T node as the reference copykeep */
-			for (unsigned j = 0; j < num_ck; ++j) {
-				if (j == idx)
-					continue;
-				ir_node *cur_ck = ck_arr[j];
-				if (cur_ck == NULL || skip_Proj(get_irn_n(cur_ck, 1)) != ref_mode_T)
-					continue;
-
-				obstack_grow(&obst, &cur_ck, sizeof(cur_ck));
-				ir_nodeset_remove(&entry->copies, cur_ck);
-				DB((dbg_constr, LEVEL_1, "\t%+F\n", cur_ck));
-				ck_arr[j] = NULL;
-				++n_melt;
-				sched_remove(cur_ck);
-			}
-			ck_arr[idx] = NULL;
-
-			ir_node **const melt_arr = (ir_node **)obstack_finish(&obst);
-
-			/* check, if we found some candidates for melting */
-			if (n_melt == 1) {
-				DB((dbg_constr, LEVEL_1, "\tno candidate found\n"));
-			} else {
-				ir_nodeset_remove(&entry->copies, ref);
-				sched_remove(ref);
-
-				/* melt all found copykeeps */
-				ir_node **new_ck_in = ALLOCAN(ir_node*,n_melt);
-				for (unsigned j = 0; j < n_melt; ++j) {
-					new_ck_in[j] = get_irn_n(melt_arr[j], 1);
-
-					/* now, we can kill the melted keep, except the */
-					/* ref one, we still need some information      */
-					if (melt_arr[j] != ref)
-						kill_node(melt_arr[j]);
-				}
-
-				ir_node *const new_ck = be_new_CopyKeep(get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in);
-
-				ir_nodeset_insert(&entry->copies, new_ck);
-
-				/* find scheduling point */
-				ir_node *const sched_pt = be_move_after_schedule_first(ref_mode_T);
-				sched_add_after(sched_pt, new_ck);
-				DB((dbg_constr, LEVEL_1, "created %+F, scheduled after %+F\n", new_ck, sched_pt));
-
-				/* finally: kill the reference copykeep */
-				kill_node(ref);
-			}
-			obstack_free(&obst, melt_arr);
-		}
-		obstack_free(&obst, ck_arr);
-	}
-	obstack_free(&obst, NULL);
-}
-
-/**
  * Tests whether a node has a real user and is not just kept by the End or
  * Anchor node
  */
@@ -1129,11 +1032,6 @@ void be_spill_prepare_for_constraints(ir_graph *irg)
 	obstack_init(&cenv.obst);
 
 	irg_block_walk_graph(irg, NULL, assure_constraints_walker, &cenv);
-
-	/* melt copykeeps, pointing to projs of */
-	/* the same mode_T node and keeping the */
-	/* same operand                         */
-	melt_copykeeps(&cenv);
 
 	/* for all */
 	ir_nodehashmap_iterator_t map_iter;
