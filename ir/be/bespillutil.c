@@ -905,38 +905,32 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
  * Checks if node has a must_be_different constraint in output and adds a Keep
  * then to assure the constraint.
  *
- * @param irn          the node to check
- * @param skipped_irn  if irn is a Proj node, its predecessor, else irn
- * @param env          the constraint environment
+ * @param value  the node to check
+ * @param irn    if value is a Proj node, its predecessor, else value
+ * @param env    the constraint environment
  */
-static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, constraint_env_t *env)
+static void assure_different_constraints(ir_node *const value, ir_node *const irn, constraint_env_t *const env)
 {
-	const arch_register_req_t *req = arch_get_irn_register_req(irn);
+	arch_register_req_t const *const req = arch_get_irn_register_req(value);
 
-	if (req->must_be_different != 0) {
-		const unsigned other = req->must_be_different;
+	unsigned const other = req->must_be_different;
+	if (other == 0)
+		return;
 
-		if (req->should_be_same != 0) {
-			const unsigned same = req->should_be_same;
+	/* We can safely ignore a should_be_same x must_be_different y
+	 * IFF both inputs are equal! */
+	unsigned const same = req->should_be_same;
+	if (same != 0 && is_po2_or_zero(other) && is_po2_or_zero(same)) {
+		int const idx_other = ntz(other);
+		int const idx_same  = ntz(same);
+		if (get_irn_n(irn, idx_other) == get_irn_n(irn, idx_same))
+			return;
+	}
 
-			if (is_po2_or_zero(other) && is_po2_or_zero(same)) {
-				int idx_other = ntz(other);
-				int idx_same  = ntz(same);
-
-				/*
-				 * We can safely ignore a should_be_same x must_be_different y
-				 * IFF both inputs are equal!
-				 */
-				if (get_irn_n(skipped_irn, idx_other) == get_irn_n(skipped_irn, idx_same)) {
-					return;
-				}
-			}
-		}
-		for (unsigned i = 0; 1U << i <= other; ++i) {
-			if (other & (1U << i)) {
-				ir_node *different_from = get_irn_n(skipped_irn, i);
-				gen_assure_different_pattern(irn, different_from, env);
-			}
+	for (unsigned i = 0; 1U << i <= other; ++i) {
+		if (other & (1U << i)) {
+			ir_node *const different_from = get_irn_n(irn, i);
+			gen_assure_different_pattern(value, different_from, env);
 		}
 	}
 }
