@@ -844,15 +844,12 @@ static void gen_assure_different_pattern(ir_node *const value, ir_node *const ir
 		return;
 	}
 
-	ir_nodehashmap_t *op_set = &env->op_set;
-	ir_node          *block  = get_nodes_block(irn);
+	/* Make a not spillable copy of the different node.
+	 * This is needed because the different irn could be in block far far away.
+	 * The copy is optimized later if not needed. */
 
-	/* Make a not spillable copy of the different node   */
-	/* this is needed because the different irn could be */
-	/* in block far far away                             */
-	/* The copy is optimized later if not needed         */
-
-	op_copy_assoc_t *entry = ir_nodehashmap_get(op_copy_assoc_t, op_set, other_different);
+	ir_nodehashmap_t *const op_set = &env->op_set;
+	op_copy_assoc_t        *entry  = ir_nodehashmap_get(op_copy_assoc_t, op_set, other_different);
 	if (!entry) {
 		entry = OALLOC(&env->obst, op_copy_assoc_t);
 		ir_nodeset_init(&entry->copies);
@@ -865,26 +862,22 @@ static void gen_assure_different_pattern(ir_node *const value, ir_node *const ir
 	}
 	entry->current_irn = irn;
 
-	ir_node *const cpy = be_new_Copy(block, other_different);
-	arch_add_irn_flags(cpy, arch_irn_flag_dont_spill);
-	DB((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
+	ir_node *const block = get_nodes_block(irn);
+	ir_node *const copy  = be_new_Copy(block, other_different);
+	arch_add_irn_flags(copy, arch_irn_flag_dont_spill);
+	sched_add_before(irn, copy);
+	DB((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", copy, other_different));
 
-	/* Add the Keep resp. CopyKeep and reroute the users */
-	/* of the other_different irn in case of CopyKeep.   */
+	/* Add the CopyKeep. */
 	ir_node *const in[] = { value };
-	ir_node *const keep = be_new_CopyKeep(block, cpy, ARRAY_SIZE(in), in);
-
-	DB((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, value, cpy));
-
-	/* insert copy and keep into schedule */
-	if (!sched_is_scheduled(cpy))
-		sched_add_before(irn, cpy);
+	ir_node *const keep = be_new_CopyKeep(block, copy, ARRAY_SIZE(in), in);
 	sched_add_after(irn, keep);
 
-	/* insert copy */
-	ir_nodeset_insert(&entry->copies, cpy);
+	DB((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, value, copy));
 
-	/* insert keep in case of CopyKeep */
+	/* Remember the Copy and CopyKeep for later rerouting of the users of
+	 * other_different. */
+	ir_nodeset_insert(&entry->copies, copy);
 	ir_nodeset_insert(&entry->copies, keep);
 }
 
