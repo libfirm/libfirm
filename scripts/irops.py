@@ -300,8 +300,6 @@ def arity(node):
     arity = node.arity
     if arity == "dynamic":
         return "oparity_dynamic"
-    if arity == "variable":
-        return "oparity_variable"
     return "oparity_any"
 
 

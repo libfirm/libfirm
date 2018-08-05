@@ -508,9 +508,8 @@ EOF
 	}
 
 	my $state     = $n{state} // "floats";
-	my $op_arity  = translate_arity($arity);
 	my $attr_size = $attr_type ne "" ? "sizeof($attr_type)" : "0";
-	$obst_new_irop .= "\top = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_$state, $op_flags_joined, $op_arity, -1, $attr_size);\n";
+	$obst_new_irop .= "\top = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_$state, $op_flags_joined, oparity_any, -1, $attr_size);\n";
 
 	if ($mem >= 0) {
 		$obst_new_irop .= "\tir_op_set_memory_index(op, $mem);";
@@ -662,22 +661,6 @@ $obst_proj
 #endif
 EOF
 close($out_h);
-
-###
-# Translates numeric arity into string constant.
-###
-sub translate_arity
-{
-	my ($arity) = @_;
-
-	if ($arity =~ /^\d+$/) {
-		return "oparity_any";
-	} elsif ($arity == $ARITY_VARIABLE) {
-		return "oparity_variable";
-	} else {
-		die "Fatal error: Unknown arity $arity";
-	}
-}
 
 sub mangle_requirements
 {

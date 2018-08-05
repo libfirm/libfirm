@@ -29,12 +29,11 @@
 typedef enum {
 	oparity_invalid = 0,
 	oparity_binary,             /**< A binary operator  -- considering 'numeric' arguments.*/
-	oparity_variable,           /**< The arity is not fixed by opcode, but statically
-	                                 known.  E.g., number of arguments to call. */
 	oparity_dynamic,            /**< The arity depends on state of Firm representation.
 	                                 Can be changed by optimizations...
 	                                 We must allocate a dynamic in array for the node! */
-	oparity_any                 /**< Any other arity. */
+	/** Any other arity, either fixed for the opcode or known when creating the node. */
+	oparity_any
 } op_arity;
 
 
