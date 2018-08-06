@@ -2143,11 +2143,9 @@ static void lower_reduce_builtin(ir_node *const builtin)
 		break;
 	}
 	case ir_bk_parity: {
-		ir_node *parity_high = new_rd_Builtin(dbgi, block, mem, 1, in_high, kind, lowered_type_high);
-		ir_node *high        = new_r_Proj(parity_high, result_mode, pn_Builtin_max+1);
-		ir_node *parity_low  = new_rd_Builtin(dbgi, block, mem, 1, in_low, kind, lowered_type_low);
-		ir_node *low         = new_r_Proj(parity_low, result_mode, pn_Builtin_max+1);
-		res = new_rd_Eor(dbgi, block, high, low);
+		ir_node *const in[]   = { new_rd_Eor(dbgi, block, in_high[0], in_low[0]) };
+		ir_node *const parity = new_rd_Builtin(dbgi, block, mem, 1, in, kind, lowered_type_high);
+		res = new_r_Proj(parity, result_mode, pn_Builtin_max + 1);
 		break;
 	}
 	default:
