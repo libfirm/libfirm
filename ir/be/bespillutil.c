@@ -832,8 +832,8 @@ typedef struct {
 
 /** Associates an ir_node with its copy and CopyKeep. */
 typedef struct {
-	ir_node     *current_irn;
-	ir_nodeset_t copies; /**< all non-spillable copies of this irn */
+	ir_node  *current_irn;
+	ir_node **copies; /**< all copies of this irn */
 } op_copy_assoc_t;
 
 static void gen_assure_different_pattern(ir_node *const value, ir_node *const irn, ir_node *const other_different, constraint_env_t *const env)
@@ -852,7 +852,7 @@ static void gen_assure_different_pattern(ir_node *const value, ir_node *const ir
 	op_copy_assoc_t        *entry  = ir_nodehashmap_get(op_copy_assoc_t, op_set, other_different);
 	if (!entry) {
 		entry = OALLOC(&env->obst, op_copy_assoc_t);
-		ir_nodeset_init(&entry->copies);
+		entry->copies = NEW_ARR_F(ir_node*, 0);
 
 		ir_nodehashmap_insert(op_set, other_different, entry);
 	} else if (entry->current_irn == irn) {
@@ -877,8 +877,8 @@ static void gen_assure_different_pattern(ir_node *const value, ir_node *const ir
 
 	/* Remember the Copy and CopyKeep for later rerouting of the users of
 	 * other_different. */
-	ir_nodeset_insert(&entry->copies, copy);
-	ir_nodeset_insert(&entry->copies, keep);
+	ARR_APP1(ir_node*, entry->copies, copy);
+	ARR_APP1(ir_node*, entry->copies, keep);
 }
 
 /**
@@ -1016,33 +1016,24 @@ void be_spill_prepare_for_constraints(ir_graph *irg)
 	ir_nodehashmap_iterator_t map_iter;
 	ir_nodehashmap_entry_t    map_entry;
 	foreach_ir_nodehashmap(&cenv.op_set, map_entry, map_iter) {
-		op_copy_assoc_t *entry    = (op_copy_assoc_t*)map_entry.data;
-		size_t           n_copies = ir_nodeset_size(&entry->copies);
-		ir_node        **nodes    = ALLOCAN(ir_node*, n_copies);
+		op_copy_assoc_t const *const entry    = (op_copy_assoc_t const*)map_entry.data;
+		ir_node              **const copies   = entry->copies;
+		size_t                 const n_copies = ARR_LEN(copies);
 
-		/* put the node in an array */
-		DBG((dbg_constr, LEVEL_1, "introduce copies for %+F ", map_entry.node));
-
-		/* collect all copies */
-		size_t n = 0;
-		foreach_ir_nodeset(&entry->copies, cp, iter) {
-			nodes[n++] = cp;
-			DB((dbg_constr, LEVEL_1, ", %+F ", cp));
-		}
-
-		DB((dbg_constr, LEVEL_1, "\n"));
+		DBG((dbg_constr, LEVEL_1, "introduce %zu copies for %+F\n", n_copies, map_entry.node));
 
 		/* introduce the copies for the operand and its copies */
 		be_ssa_construction_env_t senv;
 		be_ssa_construction_init(&senv, irg);
 		be_ssa_construction_add_copy(&senv, map_entry.node);
-		be_ssa_construction_add_copies(&senv, nodes, n);
+		be_ssa_construction_add_copies(&senv, copies, n_copies);
 		be_ssa_construction_fix_users(&senv, map_entry.node);
 		be_ssa_construction_destroy(&senv);
 
-		/* Could be that not all CopyKeeps are really needed, */
-		/* so we transform unnecessary ones into Keeps.       */
-		foreach_ir_nodeset(&entry->copies, cp, iter) {
+		/* Could be that not all CopyKeeps are really needed,
+		 * so we transform unnecessary ones into Keeps. */
+		for (size_t i = 0; i != n_copies; ++i) {
+			ir_node *const cp = copies[i];
 			if (be_is_CopyKeep(cp) && get_irn_n_edges(cp) == 0) {
 				int      arity = get_irn_arity(cp);
 				ir_node *block = get_nodes_block(cp);
@@ -1054,7 +1045,7 @@ void be_spill_prepare_for_constraints(ir_graph *irg)
 			}
 		}
 
-		ir_nodeset_destroy(&entry->copies);
+		DEL_ARR_F(copies);
 	}
 
 	ir_nodehashmap_destroy(&cenv.op_set);
