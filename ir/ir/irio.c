@@ -1627,21 +1627,23 @@ static void read_type(read_env_t *env)
 	// That would destroy idempotency for `ir_export . ir_import`
 	// and bloat the resulting IR files.
 
+	for (int i = 0; i < n_initial_types; ++i) {
+		ir_type *t = get_irp_type(i);
+		if (typenr != get_type_nr(t)) {
+			continue;
+		}
+		type = t;
+		// There are potentially more fields to compare, but this should
+		// be indicative enough if anything went wrong.
+		assert(type_matches(type, opcode, size, align, state, flags));
+		skip_to(env, '\n');
+		goto extend_env;
+	}
+
 	switch (opcode) {
 	case tpo_array: {
 		ir_type *const elemtype = read_type_ref(env);
 		unsigned const length   = read_unsigned(env);
-
-		for (int i = 0; i < n_initial_types; ++i) {
-			ir_type *other = get_irp_type(i);
-			if (type_matches(other, opcode, size, align, state, flags)
-				&& other->attr.array.element_type == elemtype
-				&& other->attr.array.size == length) {
-				type = other;
-				goto extend_env;
-			}
-		}
-
 		type = new_type_array(elemtype, length);
 		set_type_size(type, size);
 		goto finish_type;
@@ -1649,15 +1651,6 @@ static void read_type(read_env_t *env)
 
 	case tpo_class: {
 		ident *id = read_ident_null(env);
-
-		for (int i = 0; i < n_initial_types; ++i) {
-			ir_type *other = get_irp_type(i);
-			if (type_matches(other, opcode, size, align, state, flags)
-				&& streq_null(other->name, id)) {
-				type = other;
-				goto extend_env;
-			}
-		}
 
 		if (typenr == (long) IR_SEGMENT_GLOBAL)
 			type = get_glob_type();
@@ -1689,40 +1682,17 @@ static void read_type(read_env_t *env)
 			set_method_res_type(type, i, restype);
 		}
 
-		// Don't try to deduplicate methods for now. AFAICT, these are not added by
-		// ir_init(), so it won't matter wrt. idempotence.
-
 		goto finish_type;
 	}
 
 	case tpo_pointer: {
 		ir_type *points_to = get_type(env, read_long(env));
-
-		for (int i = 0; i < n_initial_types; ++i) {
-			ir_type *other = get_irp_type(i);
-			if (type_matches(other, opcode, size, align, state, flags)
-				&& other->attr.pointer.points_to == points_to) {
-				type = other;
-				goto extend_env;
-			}
-		}
-
 		type = new_type_pointer(points_to);
 		goto finish_type;
 	}
 
 	case tpo_primitive: {
 		ir_mode *mode = read_mode_ref(env);
-
-		for (int i = 0; i < n_initial_types; ++i) {
-			ir_type *other = get_irp_type(i);
-			if (type_matches(other, opcode, size, align, state, flags)
-				&& other->mode == mode) {
-				type = other;
-				goto extend_env;
-			}
-		}
-
 		type = new_type_primitive(mode);
 		set_type_size(type, size);
 		goto finish_type;
@@ -1730,16 +1700,6 @@ static void read_type(read_env_t *env)
 
 	case tpo_struct: {
 		ident *id = read_ident_null(env);
-
-		for (int i = 0; i < n_initial_types; ++i) {
-			ir_type *other = get_irp_type(i);
-			if (type_matches(other, opcode, size, align, state, flags)
-				&& streq_null(other->name, id)) {
-				type = other;
-				goto extend_env;
-			}
-		}
-
 		type = new_type_struct(id);
 		set_type_size(type, size);
 		goto finish_type;
@@ -1747,16 +1707,6 @@ static void read_type(read_env_t *env)
 
 	case tpo_union: {
 		ident *id = read_ident_null(env);
-
-		for (int i = 0; i < n_initial_types; ++i) {
-			ir_type *other = get_irp_type(i);
-			if (type_matches(other, opcode, size, align, state, flags)
-				&& streq_null(other->name, id)) {
-				type = other;
-				goto extend_env;
-			}
-		}
-
 		type = new_type_union(id);
 		set_type_size(type, size);
 		goto finish_type;
@@ -1764,16 +1714,6 @@ static void read_type(read_env_t *env)
 
 	case tpo_segment: {
 		ident *id = read_ident_null(env);
-
-		for (int i = 0; i < n_initial_types; ++i) {
-			ir_type *other = get_irp_type(i);
-			if (type_matches(other, opcode, size, align, state, flags)
-				&& streq_null(other->name, id)) {
-				type = other;
-				goto extend_env;
-			}
-		}
-
 		type = new_type_segment(id, 0);
 		goto finish_type;
 	}
@@ -2171,10 +2111,13 @@ next_delayed_pred: ;
 
 static ir_graph *read_irg(read_env_t *env)
 {
-	ir_entity *irgent = get_entity(env, read_long(env));
-	ir_graph  *irg    = new_ir_graph(irgent, 0);
-	ir_type   *frame  = read_type_ref(env);
+	ir_entity *irgent    = get_entity(env, read_long(env));
+	ir_graph  *irg       = new_ir_graph(irgent, 0);
+	ir_type   *frame     = read_type_ref(env);
+	ir_type   *old_frame = get_irg_frame_type(irg);
 	set_irg_frame_type(irg, frame);
+	// Free the old frame type in order to retain idempotency
+	free_type(old_frame);
 	read_graph(env, irg);
 	irg_finalize_cons(irg);
 	return irg;
