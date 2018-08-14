@@ -1037,6 +1037,38 @@ static void lower_Minus(ir_node *const node)
 	}
 }
 
+static void lower_binop_additive(ir_node *const node, ir_node *(*const cons)(dbg_info*, ir_node*, ir_node*, ir_node*), ir_relation const relation)
+{
+	dbg_info *const dbg   = get_irn_dbg_info(node);
+	ir_node  *const block = get_nodes_block(node);
+
+	ir_node               *const left        = get_binop_left(node);
+	lower64_entry_t const *const left_entry  = get_node_entry(left);
+	ir_node               *const right       = get_binop_right(node);
+	lower64_entry_t const *const right_entry = get_node_entry(right);
+
+	ir_node  *const res_low   = cons(dbg, block, left_entry->low_word, right_entry->low_word);
+	ir_node  *const cmp_carry = new_rd_Cmp(dbg, block, res_low, left_entry->low_word, relation);
+	ir_graph *const irg       = get_irn_irg(node);
+	ir_mode  *const mode      = get_node_high_mode(node);
+	ir_node  *const one       = new_r_Const(irg, get_mode_one(mode));
+	ir_node  *const zero      = new_r_Const(irg, get_mode_null(mode));
+	ir_node  *const carry     = new_rd_Mux(dbg, block, cmp_carry, zero, one);
+	ir_node  *const sum_high  = cons(dbg, block, left_entry->high_word, right_entry->high_word);
+	ir_node  *const res_high  = cons(dbg, block, sum_high, carry);
+	ir_set_dw_lowered(node, res_low, res_high);
+}
+
+static void lower_Add(ir_node *const node)
+{
+	lower_binop_additive(node, new_rd_Add, ir_relation_less);
+}
+
+static void lower_Sub(ir_node *const node)
+{
+	lower_binop_additive(node, new_rd_Sub, ir_relation_greater);
+}
+
 /**
  * Translate a logical binop by creating two logical binops.
  */
@@ -2441,7 +2473,7 @@ void ir_prepare_dw_lowering(const lwrdw_param_t *params)
 
 	ir_clear_opcodes_generic_func();
 	ir_register_dw_lower_function(op_ASM,     lower_ASM);
-	ir_register_dw_lower_function(op_Add,     lower_binop);
+	ir_register_dw_lower_function(op_Add,     lower_Add);
 	ir_register_dw_lower_function(op_And,     lower_And);
 	ir_register_dw_lower_function(op_Bad,     lower_Bad);
 	ir_register_dw_lower_function(op_Bitcast, lower_Bitcast);
@@ -2467,7 +2499,7 @@ void ir_prepare_dw_lowering(const lwrdw_param_t *params)
 	ir_register_dw_lower_function(op_Shrs,    lower_Shrs);
 	ir_register_dw_lower_function(op_Start,   lower_Start);
 	ir_register_dw_lower_function(op_Store,   lower_Store);
-	ir_register_dw_lower_function(op_Sub,     lower_binop);
+	ir_register_dw_lower_function(op_Sub,     lower_Sub);
 	ir_register_dw_lower_function(op_Switch,  lower_Switch);
 	ir_register_dw_lower_function(op_Unknown, lower_Unknown);
 }
