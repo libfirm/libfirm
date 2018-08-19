@@ -180,6 +180,15 @@ arch_register_req_t const *be_create_reg_req(ir_graph *const irg, arch_register_
 	return req;
 }
 
+int be_get_input_pos_for_req(ir_node const *const irn, arch_register_req_t const *const req)
+{
+	for (int i = 0, n = get_irn_arity(irn); i != n; ++i) {
+		if (arch_get_irn_register_req_in(irn, i) == req)
+			return i;
+	}
+	return -1;
+}
+
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch)
 void be_init_arch(void)
 {

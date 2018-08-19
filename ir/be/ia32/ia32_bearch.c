@@ -548,10 +548,9 @@ static bool ia32_try_replace_flags(ir_node *consumers, ir_node *flags, ir_node *
 		x86_condition_code_t cc = get_ia32_condcode(c);
 		set_ia32_condcode(c, x86_invert_condition_code(cc));
 
-		for (int i = 0, arity = get_irn_arity(c); i < arity; ++i) {
-			if (arch_get_irn_register_req_in(c, i) == &ia32_class_reg_req_flags)
-				set_irn_n(c, i, proj);
-		}
+		int const pos = be_get_input_pos_for_req(c, &ia32_class_reg_req_flags);
+		assert(pos >= 0);
+		set_irn_n(c, pos, proj);
 	}
 	return true;
 }
@@ -943,16 +942,6 @@ request_entity:;
 	be_load_needs_frame_entity(env, node, size, po2align);
 }
 
-static int determine_ebp_input(ir_node *ret)
-{
-	const arch_register_t *bp = &ia32_registers[REG_EBP];
-	foreach_irn_in(ret, i, input) {
-		if (arch_get_irn_register(input) == bp)
-			return i;
-	}
-	panic("no ebp input found at %+F", ret);
-}
-
 static void introduce_epilogue(ir_node *const ret, bool const omit_fp)
 {
 	ir_node        *curr_sp;
@@ -963,8 +952,10 @@ static void introduce_epilogue(ir_node *const ret, bool const omit_fp)
 		arch_register_t const *const sp = &ia32_registers[REG_ESP];
 		arch_register_t const *const bp = &ia32_registers[REG_EBP];
 
+		int const n_ebp = be_get_input_pos_for_req(ret, &ia32_single_reg_req_gp_ebp);
+		assert(n_ebp >= 0);
+
 		ir_node  *restore;
-		int const n_ebp    = determine_ebp_input(ret);
 		ir_node  *curr_bp  = get_irn_n(ret, n_ebp);
 		ir_node  *curr_mem = get_irn_n(ret, n_ia32_Ret_mem);
 		if (ia32_cg_config.use_leave) {

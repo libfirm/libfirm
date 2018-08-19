@@ -404,16 +404,6 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 	}
 }
 
-static int determine_rbp_input(ir_node *ret)
-{
-	arch_register_t const *const bp = &amd64_registers[REG_RBP];
-	foreach_irn_in(ret, i, input) {
-		if (arch_get_irn_register(input) == bp)
-			return i;
-	}
-	panic("no rbp input found at %+F", ret);
-}
-
 /**
  * prepare graph and perform code selection.
  */
@@ -440,7 +430,9 @@ static void introduce_epilogue(ir_node *ret, bool omit_fp)
 	ir_node  *curr_sp  = first_sp;
 
 	if (!omit_fp) {
-		int      const n_rbp    = determine_rbp_input(ret);
+		int const n_rbp = be_get_input_pos_for_req(ret, &amd64_single_reg_req_gp_rbp);
+		assert(n_rbp >= 0);
+
 		ir_node       *curr_bp  = get_irn_n(ret, n_rbp);
 		ir_node       *curr_mem = get_irn_n(ret, n_amd64_ret_mem);
 		ir_node *const leave    = new_bd_amd64_leave(NULL, block, curr_bp, curr_mem);

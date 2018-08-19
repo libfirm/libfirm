@@ -404,4 +404,6 @@ static inline void arch_set_irn_register_idx(ir_node *const irn, unsigned const 
 	arch_set_irn_register(irn, reg);
 }
 
+int be_get_input_pos_for_req(ir_node const *irn, arch_register_req_t const *req);
+
 #endif

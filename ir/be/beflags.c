@@ -164,14 +164,10 @@ static bool rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 
 	ir_node *n = flag_consumers;
 	do {
-		for (int i = 0, arity = get_irn_arity(n); i < arity; ++i) {
-			/* Assume that each node has at most one flag
-			 * input. */
-			if (arch_get_irn_register_req_in(n, i) == flags_req) {
-				set_irn_n(n, i, value);
-				break;
-			}
-		}
+		/* Assume that each node has at most one flag input. */
+		int const pos = be_get_input_pos_for_req(n, flags_req);
+		assert(pos >= 0);
+		set_irn_n(n, pos, value);
 		n = (ir_node*)get_irn_link(n);
 	} while (n != NULL);
 
@@ -213,20 +209,14 @@ static void fix_flags_walker(ir_node *block, void *env)
 		}
 
 		/* test whether the current node needs flags */
-		ir_node *new_flags_needed = NULL;
-		foreach_irn_in(node, i, pred) {
-			if (arch_get_irn_register_req_in(node, i) == flags_req) {
-				assert(new_flags_needed == NULL);
-				new_flags_needed = pred;
-			}
-		}
-
-		if (new_flags_needed == NULL)
+		int const flags_pos = be_get_input_pos_for_req(node, flags_req);
+		if (flags_pos < 0)
 			continue;
 
 		/* spiller can't (correctly) remat flag consumers at the moment */
 		assert(!arch_irn_is(node, rematerializable));
 
+		ir_node *const new_flags_needed = get_irn_n(node, flags_pos);
 		if (skip_Proj(new_flags_needed) != flags_needed) {
 			if (flags_needed != NULL) {
 				/* rematerialize node */
