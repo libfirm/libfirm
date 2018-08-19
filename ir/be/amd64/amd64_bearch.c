@@ -24,7 +24,6 @@
 #include "bespillslots.h"
 #include "bestack.h"
 #include "beutil.h"
-#include "debug.h"
 #include "gen_amd64_regalloc_if.h"
 #include "irarch.h"
 #include "ircons.h"
@@ -43,8 +42,6 @@
 #include "panic.h"
 #include "platform_t.h"
 #include "target_t.h"
-
-DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 pmap *amd64_constants;
 
@@ -830,8 +827,6 @@ arch_isa_if_t const amd64_isa_if = {
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)
 void be_init_arch_amd64(void)
 {
-	FIRM_DBG_REGISTER(dbg, "firm.be.amd64.cg");
-
 	static const lc_opt_table_entry_t options[] = {
 		LC_OPT_ENT_BOOL("no-red-zone", "gcc compatibility",                &amd64_use_red_zone),
 		LC_OPT_LAST

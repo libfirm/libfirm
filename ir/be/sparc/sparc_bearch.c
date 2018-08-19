@@ -19,7 +19,6 @@
 #include "besched.h"
 #include "betranshlp.h"
 #include "bevarargs.h"
-#include "debug.h"
 #include "gen_sparc_regalloc_if.h"
 #include "irarch.h"
 #include "ircons_t.h"
@@ -43,8 +42,6 @@
 #include "sparc_transform.h"
 #include "target_t.h"
 #include "util.h"
-
-DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 pmap *sparc_constants;
 
@@ -577,7 +574,6 @@ void be_init_arch_sparc(void)
 
 	lc_opt_add_table(sparc_grp, sparc_options);
 
-	FIRM_DBG_REGISTER(dbg, "firm.be.sparc.cg");
 	sparc_init_transform();
 	sparc_init_emitter();
 }
