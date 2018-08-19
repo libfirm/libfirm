@@ -1683,7 +1683,7 @@ static ir_node *gen_Return(ir_node *const node)
 	reqs[n_amd64_ret_mem] = arch_memory_req;
 
 	in[n_amd64_ret_stack]   = get_initial_sp(irg);
-	reqs[n_amd64_ret_stack] = amd64_registers[REG_RSP].single_req;
+	reqs[n_amd64_ret_stack] = &amd64_single_reg_req_gp_rsp;
 
 	/* result values */
 	for (size_t i = 0; i < n_res; ++i) {
@@ -1866,14 +1866,14 @@ no_call_mem:;
 	sync_arity = 0;
 
 	int const call_sp_pos = in_arity++;
-	in_req[call_sp_pos]   = amd64_registers[REG_RSP].single_req;
+	in_req[call_sp_pos]   = &amd64_single_reg_req_gp_rsp;
 	in[call_sp_pos]       = callframe;
 
 	/* vararg calls need the number of SSE registers used */
 	if (is_method_variadic(type)) {
 		ir_node *const nxmm = make_const(dbgi, new_block, cconv->n_xmm_regs);
-		in_req[in_arity] = amd64_registers[REG_RAX].single_req;
-		in[in_arity] = nxmm;
+		in_req[in_arity] = &amd64_single_reg_req_gp_rax;
+		in[in_arity]     = nxmm;
 		++in_arity;
 	}
 

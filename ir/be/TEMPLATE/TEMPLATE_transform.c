@@ -243,7 +243,7 @@ static ir_node *gen_Return(ir_node *node)
 	reqs[n_TEMPLATE_Return_mem] = arch_memory_req;
 
 	in[n_TEMPLATE_Return_stack]   = get_irg_frame(irg);
-	reqs[n_TEMPLATE_Return_stack] = TEMPLATE_registers[REG_SP].single_req;
+	reqs[n_TEMPLATE_Return_stack] = &TEMPLATE_single_reg_req_gp_sp;
 
 	for (unsigned i = 0; i != n_res; ++p, ++i) {
 		ir_node *const res = get_Return_res(node, i);

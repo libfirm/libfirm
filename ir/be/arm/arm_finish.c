@@ -57,7 +57,7 @@ static void arm_set_frame_entity(ir_node *node, ir_entity *entity,
 
 static void introduce_epilog(ir_node *ret)
 {
-	assert(arch_get_irn_register_req_in(ret, n_arm_Return_sp) == arm_registers[REG_SP].single_req);
+	assert(arch_get_irn_register_req_in(ret, n_arm_Return_sp) == &arm_single_reg_req_gp_sp);
 
 	ir_node  *const sp         = get_irn_n(ret, n_arm_Return_sp);
 	ir_node  *const block      = get_nodes_block(ret);

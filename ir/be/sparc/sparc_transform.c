@@ -38,15 +38,14 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static const arch_register_t *sp_reg = &sparc_registers[REG_SP];
-static calling_convention_t  *current_cconv = NULL;
-static be_stack_env_t         stack_env;
-static ir_mode               *mode_gp;
-static ir_mode               *mode_fp;
-static ir_mode               *mode_fp2;
-//static ir_mode               *mode_fp4;
-static ir_node               *frame_base;
-static ir_node               *initial_va_list;
+static calling_convention_t *current_cconv = NULL;
+static be_stack_env_t        stack_env;
+static ir_mode              *mode_gp;
+static ir_mode              *mode_fp;
+static ir_mode              *mode_fp2;
+//static ir_mode              *mode_fp4;
+static ir_node              *frame_base;
+static ir_node              *initial_va_list;
 
 static const arch_register_t *const omit_fp_callee_saves[] = {
 	&sparc_registers[REG_L0],
@@ -308,8 +307,8 @@ static ir_node *gen_ASM(ir_node *node)
 	for (size_t c = 0; c < get_ASM_n_clobbers(node); ++c) {
 		const char *const clobber = get_id_str(clobbers[c]);
 		if (streq(clobber, "cc")) {
-			ARR_APP1(arch_register_req_t const*, info.out_reqs, sparc_registers[REG_PSR].single_req);
-			ARR_APP1(arch_register_req_t const*, info.out_reqs, sparc_registers[REG_FSR].single_req);
+			ARR_APP1(arch_register_req_t const*, info.out_reqs, &sparc_single_reg_req_flags_psr);
+			ARR_APP1(arch_register_req_t const*, info.out_reqs, &sparc_single_reg_req_fpflags_fsr);
 		}
 	}
 
@@ -1504,7 +1503,7 @@ static ir_node *gen_Return(ir_node *node)
 	reqs[n_sparc_Return_mem] = arch_memory_req;
 
 	in[n_sparc_Return_sp]   = get_initial_sp(irg);
-	reqs[n_sparc_Return_sp] = sp_reg->single_req;
+	reqs[n_sparc_Return_sp] = &sparc_single_reg_req_gp_sp;
 
 	/* result values */
 	for (size_t i = 0; i < n_res; ++i) {
@@ -1654,7 +1653,7 @@ static ir_node *gen_Call(ir_node *node)
 	 * aligned even if we don't push arguments on it */
 	ir_node *const new_frame = get_initial_sp(irg);
 	ir_node *const callframe = be_new_IncSP(new_block, new_frame, cconv->param_stack_size, false);
-	in_req[in_arity] = sp_reg->single_req;
+	in_req[in_arity] = &sparc_single_reg_req_gp_sp;
 	in[in_arity]     = callframe;
 	++in_arity;
 
@@ -1810,7 +1809,7 @@ static ir_node *gen_Alloc(ir_node *node)
 		subsp = new_bd_sparc_SubSP_reg(dbgi, new_block, new_mem, stack_pred, new_size);
 	}
 
-	ir_node *const stack_proj = be_new_Proj_reg(subsp, pn_sparc_SubSP_stack, sp_reg);
+	ir_node *const stack_proj = be_new_Proj_reg(subsp, pn_sparc_SubSP_stack, &sparc_registers[REG_SP]);
 	be_stack_record_chain(&stack_env, subsp, n_sparc_SubSP_stack, stack_proj);
 
 	return subsp;

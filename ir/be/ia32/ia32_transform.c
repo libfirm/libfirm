@@ -4096,7 +4096,7 @@ static ir_node *gen_Return(ir_node *node)
 	reqs[n_ia32_Ret_mem] = arch_memory_req;
 
 	in[n_ia32_Ret_stack]   = sp;
-	reqs[n_ia32_Ret_stack] = ia32_registers[REG_ESP].single_req;
+	reqs[n_ia32_Ret_stack] = &ia32_single_reg_req_gp_esp;
 
 	/* result values */
 	for (size_t i = 0; i < n_res; ++i) {
@@ -4686,10 +4686,6 @@ static bool callee_is_plt(ir_node *callee)
 
 static ir_node *gen_Call(ir_node *node)
 {
-	arch_register_req_t const *const req_gp = &ia32_class_reg_req_gp;
-	arch_register_t     const *const sp     = &ia32_registers[REG_ESP];
-	arch_register_t     const *const fpcw   = &ia32_registers[REG_FPCW];
-
 	/* Construct arguments. */
 	ia32_address_mode_t am;
 	ir_node      *const old_block = get_nodes_block(node);
@@ -4711,6 +4707,7 @@ static ir_node *gen_Call(ir_node *node)
 
 	record_returns_twice(irg, type);
 
+	arch_register_req_t const *const req_gp = &ia32_class_reg_req_gp;
 	in[n_ia32_Call_base]       = am.addr.base;
 	in_req[n_ia32_Call_base]   = req_gp;
 	in[n_ia32_Call_index]      = am.addr.index;
@@ -4725,12 +4722,12 @@ static ir_node *gen_Call(ir_node *node)
 	/* Always construct an IncSP, so calls do not accidentally CSE. */
 	ir_node *const callframe       = ia32_new_IncSP(block, stack, param_stacksize, false);
 	in[n_ia32_Call_stack]     = callframe;
-	in_req[n_ia32_Call_stack] = sp->single_req;
+	in_req[n_ia32_Call_stack] = &ia32_single_reg_req_gp_esp;
 
 	if (has_fpcw) {
 		unsigned const fpcwi = in_arity++;
 		in[fpcwi]     = get_initial_fpcw(irg);
-		in_req[fpcwi] = fpcw->single_req;
+		in_req[fpcwi] = &ia32_single_reg_req_fpcw_fpcw;
 	}
 
 	uint8_t         add_pressure = 0;
@@ -4781,7 +4778,7 @@ static ir_node *gen_Call(ir_node *node)
 	if (is_plt) {
 		unsigned goti = in_arity++;
 		in[goti]      = ia32_get_pic_base(irg);
-		in_req[goti]  = ia32_registers[REG_EBX].single_req;
+		in_req[goti]  = &ia32_single_reg_req_gp_ebx;
 		/* We cannot pair up the "ebx" with any output, causing additional
 		 * register pressure */
 		++add_pressure;

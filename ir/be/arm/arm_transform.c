@@ -36,9 +36,8 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static const arch_register_t *sp_reg = &arm_registers[REG_SP];
-static be_stack_env_t         stack_env;
-static calling_convention_t  *cconv = NULL;
+static be_stack_env_t        stack_env;
+static calling_convention_t *cconv = NULL;
 
 static const arch_register_t *const callee_saves[] = {
 	&arm_registers[REG_R4],
@@ -1717,7 +1716,7 @@ static ir_node *gen_Return(ir_node *node)
 	reqs[n_arm_Return_mem] = arch_memory_req;
 
 	in[n_arm_Return_sp]   = get_initial_sp(irg);
-	reqs[n_arm_Return_sp] = sp_reg->single_req;
+	reqs[n_arm_Return_sp] = &arm_single_reg_req_gp_sp;
 
 	/* result values */
 	for (size_t i = 0; i < n_res; ++i) {
@@ -1776,7 +1775,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node *const new_frame = get_initial_sp(irg);
 	ir_node *const callframe = be_new_IncSP(new_block, new_frame, cconv->param_stack_size, false);
 	int sp_pos = in_arity++;
-	in_req[sp_pos] = sp_reg->single_req;
+	in_req[sp_pos] = &arm_single_reg_req_gp_sp;
 	in[sp_pos]     = callframe;
 
 	/* parameters */
