@@ -283,33 +283,56 @@ static void emit_process(ir_node *node, void *data)
 		break;
 
 	case iro_Shl:
-		assert(is_PinnedConst(get_Shl_right(node)));
-		ir_obst_printf(obst, "\t\t\tnode%N := shift_left(unsigned(node%N), %u);\t-- %+F\n",
-		               node,
-		               get_Shl_left(node),
-		               get_tarval_long(get_PinnedConst_tarval(get_Shl_right(node))),
-		               node);
+		if (is_PinnedConst(get_Shl_right(node))) {
+			ir_obst_printf(obst, "\t\t\tnode%N := shift_left(unsigned(node%N), %u);\t-- %+F\n",
+			               node,
+			               get_Shl_left(node),
+			               get_tarval_long(get_PinnedConst_tarval(get_Shl_right(node))),
+			               node);
+		} else {
+			ir_obst_printf(obst, "\t\t\tnode%N := barrel_left(unsigned(node%N), node%N);\t-- %+F\n",
+			               node,
+			               get_Shl_left(node),
+			               get_Shl_right(node),
+			               node);
+		}
 		break;
 
 
 	case iro_Shr:
-		assert(is_PinnedConst(get_Shr_right(node)));
-		ir_obst_printf(obst, "\t\t\tnode%N := %s(shift_right(unsigned(node%N), %u));\t-- %+F\n",
-		               node,
-		               mode_is_signed(mode) ? "signed" : "",
-		               get_Shr_left(node),
-		               get_tarval_long(get_PinnedConst_tarval(get_Shr_right(node))),
-		               node);
+		if (is_PinnedConst(get_Shr_right(node))) {
+			ir_obst_printf(obst, "\t\t\tnode%N := %s(shift_right(unsigned(node%N), %u));\t-- %+F\n",
+			               node,
+			               mode_is_signed(mode) ? "signed" : "",
+			               get_Shr_left(node),
+			               get_tarval_long(get_PinnedConst_tarval(get_Shr_right(node))),
+			               node);
+		} else {
+			ir_obst_printf(obst, "\t\t\tnode%N := %s(barrel_unsigned_right(unsigned(node%N), node%N));\t-- %+F\n",
+			               node,
+			               mode_is_signed(mode) ? "signed" : "",
+			               get_Shr_left(node),
+			               get_Shr_right(node),
+			               node);
+		}
 		break;
 
 	case iro_Shrs:
-		assert(is_PinnedConst(get_Shrs_right(node)));
-		ir_obst_printf(obst, "\t\t\tnode%N := %s(shift_right(signed(node%N), %u));\t-- %+F\n",
-		               node,
-		               mode_is_signed(mode) ? "" : "unsigned",
-		               get_Shrs_left(node),
-		               get_tarval_long(get_PinnedConst_tarval(get_Shrs_right(node))),
-		               node);
+		if (is_PinnedConst(get_Shrs_right(node))) {
+			ir_obst_printf(obst, "\t\t\tnode%N := %s(shift_right(signed(node%N), %u));\t-- %+F\n",
+			               node,
+			               mode_is_signed(mode) ? "" : "unsigned",
+			               get_Shrs_left(node),
+			               get_tarval_long(get_PinnedConst_tarval(get_Shrs_right(node))),
+			               node);
+		} else {
+			ir_obst_printf(obst, "\t\t\tnode%N := %s(barrel_signed_right(signed(node%N), node%N));\t-- %+F\n",
+			               node,
+			               mode_is_signed(mode) ? "" : "unsigned",
+			               get_Shrs_left(node),
+			               get_Shrs_right(node),
+			               node);
+		}
 		break;
 
 	case iro_Conv: {
@@ -435,6 +458,90 @@ void irg2vhdl(FILE *output, ir_graph *irg)
 	fprintf(env.file, "architecture %s of test_atom is\n", get_irg_name(irg));
 	irg_walk_graph(irg, 0, emit_phi_signals, &env);
 	irg_walk_graph(irg, 0, emit_exec_signals, &env);
+	fprintf(env.file,
+	        "\n"
+	        "\tfunction barrel_left(x : unsigned; n : unsigned) return unsigned is\n"
+	        "\t\tvariable xvec : std_logic_vector(x'length-1 downto 0);\n"
+	        "\t\tvariable nvec : std_logic_vector(4 downto 0);\n"
+	        "\t\tvariable result : std_logic_vector(31 downto 0);\n"
+	        "\tbegin\n"
+	        "\t\txvec := std_logic_vector(x);\n"
+	        "\t\tnvec := std_logic_vector(n(4 downto 0));\n"
+	        "\t\tresult := xvec;\n"
+	        "\t\tif nvec(4) = '1' then\n"
+	        "\t\t\tresult := result(15 downto 0) & \"0000000000000000\";\n"
+	        "\t\tend if;\n"
+	        "\t\tif nvec(3) = '1' then\n"
+	        "\t\t\tresult := result(23 downto 0) & \"00000000\";\n"
+	        "\t\tend if;\n"
+	        "\t\tif nvec(2) = '1' then\n"
+	        "\t\t\tresult := result(27 downto 0) & \"0000\";\n"
+	        "\t\tend if;\n"
+	        "\t\tif nvec(1) = '1' then\n"
+	        "\t\t\tresult := result(29 downto 0) & \"00\";\n"
+	        "\t\tend if;\n"
+	        "\t\tif nvec(0) = '1' then\n"
+	        "\t\t\tresult := result(30 downto 0) & \"0\";\n"
+	        "\t\tend if;\n"
+	        "\t\treturn unsigned(result);\n"
+	        "\tend barrel_left;\n");
+	fprintf(env.file,
+	        "\n"
+	        "\tfunction barrel_unsigned_right(x : unsigned; n : unsigned) return unsigned is\n"
+	        "\t\tvariable xvec : std_logic_vector(x'length-1 downto 0);\n"
+	        "\t\tvariable nvec : std_logic_vector(4 downto 0);\n"
+	        "\t\tvariable result : std_logic_vector(31 downto 0);\n"
+	        "\tbegin\n"
+	        "\t\txvec := std_logic_vector(x);\n"
+	        "\t\tnvec := std_logic_vector(n(4 downto 0));\n"
+	        "\t\tresult := xvec;\n"
+	        "\t\tif nvec(4) = '1' then\n"
+	        "\t\t\tresult := \"0000000000000000\" & result(31 downto 16);\n"
+	        "\t\tend if;\n"
+	        "\t\tif nvec(3) = '1' then\n"
+	        "\t\t\tresult := \"00000000\" & result(31 downto 8);\n"
+	        "\t\tend if;\n"
+	        "\t\tif nvec(2) = '1' then\n"
+	        "\t\t\tresult := \"0000\" & result(31 downto 4);\n"
+	        "\t\tend if;\n"
+	        "\t\tif nvec(1) = '1' then\n"
+	        "\t\t\tresult := \"00\" & result(31 downto 2);\n"
+	        "\t\tend if;\n"
+	        "\t\tif nvec(0) = '1' then\n"
+	        "\t\t\tresult := \"0\" & result(31 downto 1);\n"
+	        "\t\tend if;\n"
+	        "\t\treturn unsigned(result);\n"
+	        "\tend barrel_unsigned_right;\n");
+	fprintf(env.file,
+	        "\n"
+	        "\tfunction barrel_signed_right(x : signed; n : unsigned) return signed is\n"
+	        "\t\tvariable xvec : std_logic_vector(x'length-1 downto 0);\n"
+	        "\t\tvariable nvec : std_logic_vector(4 downto 0);\n"
+	        "\t\tvariable result : std_logic_vector(31 downto 0);\n"
+	        "\t\tvariable signbit : std_logic_vector(31 downto 0);\n"
+	        "\tbegin\n"
+	        "\t\txvec := std_logic_vector(x);\n"
+	        "\t\tnvec := std_logic_vector(n(4 downto 0));\n"
+	        "\t\tresult := xvec;\n"
+	        "\t\tsignbit := (others => xvec(x'length-1));\n"
+	        "\t\tif nvec(4) = '1' then\n"
+	        "\t\t\tresult := signbit(15 downto 0) & result(31 downto 16);\n"
+	        "\t\tend if;\n"
+	        "\t\tif nvec(3) = '1' then\n"
+	        "\t\t\tresult := signbit(7 downto 0) & result(31 downto 8);\n"
+	        "\t\tend if;\n"
+	        "\t\tif nvec(2) = '1' then\n"
+	        "\t\t\tresult := signbit(3 downto 0) & result(31 downto 4);\n"
+	        "\t\tend if;\n"
+	        "\t\tif nvec(1) = '1' then\n"
+	        "\t\t\tresult := signbit(1 downto 0) & result(31 downto 2);\n"
+	        "\t\tend if;\n"
+	        "\t\tif nvec(0) = '1' then\n"
+	        "\t\t\tresult := signbit(0 downto 0) & result(31 downto 1);\n"
+	        "\t\tend if;\n"
+	        "\t\treturn signed(result);\n"
+	        "\tend barrel_signed_right;\n");
+
 	fprintf(env.file, "begin\n");
 
 	fprintf(env.file, "\nprocess (clk)\n");
