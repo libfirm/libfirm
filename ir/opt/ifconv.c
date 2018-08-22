@@ -86,11 +86,13 @@ static ir_node *walk_to_projx(ir_node *start, const ir_node *dependency)
 
 
 /**
- * Recursively copies the DAG starting at node to the i-th predecessor
+ * Recursively copies/moves the DAG starting at node to the i-th predecessor
  * block of src_block
  * - if node isn't in the src_block, recursion ends and node is returned
  * - if node is a Phi in the src_block, the i-th predecessor of this Phi is
  *   returned and recursion ends
+ * - if node transitively does not depend on a Phi in the source block,
+ *   moves node to the immediate dominator of the source block
  * otherwise returns a copy of the passed node created in the i-th predecessor of
  * src_block.
  *
@@ -99,34 +101,47 @@ static ir_node *walk_to_projx(ir_node *start, const ir_node *dependency)
  * @param i          the position of the predecessor the DAG
  *                   is moved to
  *
- * @return  the root of the copied DAG
+ * @return  the root of the copied/moved DAG
  */
-static ir_node *copy_to(ir_node *node, ir_node *src_block, int i)
+static ir_node *copy_or_move(ir_node *node, ir_node *src_block, int i)
 {
 	if (get_nodes_block(node) != src_block) {
 		/* already outside src_block, do not copy */
+		DB((dbg, LEVEL_1, "copy_or_move: %+F outside src_block %+F\n", node, src_block));
 		return node;
 	}
 	if (is_Phi(node)) {
 		/* move through the Phi to the i-th predecessor */
+		DB((dbg, LEVEL_1, "copy_or_move: %+F is Phi, returning argument %+F\n", node, get_irn_n(node, i)));
 		return get_irn_n(node, i);
 	}
 
-	/* else really need a copy */
-	ir_node *copy      = exact_copy(node);
-	ir_node *dst_block = get_Block_cfgpred_block(src_block, i);
-	set_nodes_block(copy, dst_block);
+	bool can_move = true;
 
-	DB((dbg, LEVEL_1, "Copying node %+F to block %+F, copy is %+F\n",
-		node, dst_block, copy));
+	unsigned n = get_irn_arity(node);
+	ir_node **new_preds = ALLOCAN(ir_node*, n);
 
-	/* move recursively all predecessors */
 	foreach_irn_in_r(node, j, pred) {
-		ir_node *const copy_pred = copy_to(pred, src_block, i);
-		set_irn_n(copy, j, copy_pred);
-		DB((dbg, LEVEL_2, "-- pred %d is %+F\n", j, copy_pred));
+		ir_node *copy_pred = copy_or_move(pred, src_block, i);
+		can_move &= copy_pred == pred;
+		new_preds[j] = copy_pred;
 	}
-	return copy;
+
+	if (can_move) {
+		ir_node *idom = get_Block_idom(src_block);
+		set_nodes_block(node, idom);
+
+		DB((dbg, LEVEL_1, "copy_or_move: moving %+F to idom %+F\n", node, idom));
+		return node;
+	} else {
+		ir_node *copy      = exact_copy(node);
+		ir_node *dst_block = get_Block_cfgpred_block(src_block, i);
+		set_nodes_block(copy, dst_block);
+		set_irn_in(copy, n, new_preds);
+
+		DB((dbg, LEVEL_1, "copy_or_move: copying %+F to predecessor %+F, copy is %+F\n", node, dst_block, copy));
+		return copy;
+	}
 }
 
 
@@ -168,7 +183,7 @@ static void split_block(ir_node *block, int i, int j)
 	DB((dbg, LEVEL_1, "Splitting predecessor %d of predecessor %d of %+F\n", j, i, block));
 
 	for (ir_node *phi = get_Block_phis(block); phi != NULL; phi = get_Phi_next(phi)) {
-		ir_node *copy = copy_to(get_irn_n(phi, i), pred_block, j);
+		ir_node *copy = copy_or_move(get_irn_n(phi, i), pred_block, j);
 
 		int k;
 		for (k = 0; k < i; ++k) ins[k] = get_irn_n(phi, k);
@@ -440,7 +455,8 @@ void opt_if_conv_cb(ir_graph *irg, arch_allow_ifconv_func callback)
 		IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES
 		| IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
 		| IR_GRAPH_PROPERTY_NO_BADS
-		| IR_GRAPH_PROPERTY_ONE_RETURN);
+		| IR_GRAPH_PROPERTY_ONE_RETURN
+		| IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ifconv");
 
