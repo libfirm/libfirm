@@ -24,8 +24,8 @@ typedef struct x87_attr_t {
 	/** True if result is in the explicit register operand, %st0 otherwise. */
 	bool                   res_in_reg;
 	bool                   pop;        /**< Emit a pop suffix. */
-	bool                   reverse;    /**< Use reverse variant of binop
-	                                        (i.e. fsubr instead of fsub) */
+	/** Use reverse variant of binop (e.g. fsubr instead of fsub) */
+	bool                   reverse;
 } x87_attr_t;
 
 typedef struct x87_simulator_config_t {

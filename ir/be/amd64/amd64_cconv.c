@@ -179,7 +179,7 @@ x86_cconv_t *amd64_decide_calling_convention(ir_type *function_type,
 		const arch_register_t *reg;
 		if (result_mode == x86_mode_E) {
 			if (res_x87_regnum >= n_x87_result_regs)
-				panic("too manu x87 floating point results");
+				panic("too many x87 floating point results");
 			reg = x87_result_regs[res_x87_regnum++];
 		} else if (mode_is_float(result_mode)) {
 			if (res_float_regnum >= n_float_result_regs) {
