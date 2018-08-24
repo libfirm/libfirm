@@ -4386,7 +4386,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	 * transform the ProjMs yet (with the exception of loads whose result is
 	 * not used)
 	 */
-	if (is_Load(pred) && pn == pn_Load_M && get_irn_n_edges(pred) > 1) {
+	if (pn == pn_Load_M && get_irn_n_edges(pred) > 1) {
 		/* this is needed, because sometimes we have loops that are only
 		   reachable through the ProjM */
 		be_enqueue_operands(node);
