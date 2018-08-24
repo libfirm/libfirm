@@ -4450,16 +4450,6 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		case pn_Load_X_regular:
 			return be_new_Proj(new_pred, pn_ia32_fld_X_regular);
 		}
-	} else {
-		/* can happen for ProJMs when source address mode happened for the
-		   node */
-
-		/* however it should not be the result proj, as that would mean the
-		   load had multiple users and should not have been used for
-		   SourceAM */
-		if (pn != pn_Load_M)
-			panic("internal error: transformed node not a Load");
-		return new_r_Proj(new_pred, mode_M, 1);
 	}
 
 	panic("no idea how to transform Proj(Load) %+F", node);
