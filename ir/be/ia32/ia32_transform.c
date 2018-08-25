@@ -2180,11 +2180,11 @@ static ir_node *get_flags_node(ir_node *cmp, x86_condition_code_t *cc_out)
  */
 static ir_node *gen_Load(ir_node *node)
 {
-	ir_node  *block   = be_transform_nodes_block(node);
-	ir_node  *ptr     = get_Load_ptr(node);
-	ir_node  *mem     = get_Load_mem(node);
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_mode  *mode    = get_Load_mode(node);
+	ir_node  *const block   = be_transform_nodes_block(node);
+	ir_node  *const ptr     = get_Load_ptr(node);
+	ir_node  *const mem     = get_Load_mem(node);
+	dbg_info *const dbgi    = get_irn_dbg_info(node);
+	ir_mode  *const mode    = get_Load_mode(node);
 
 	/* construct load address */
 	x86_address_t addr;
@@ -2211,7 +2211,6 @@ static ir_node *gen_Load(ir_node *node)
 		} else {
 			new_node = new_bd_ia32_Load(dbgi, block, base, idx, new_mem, size,
 			                            false);
-			mode     = ia32_mode_gp;
 		}
 	}
 	int throws_exception = ir_throws_exception(node);
