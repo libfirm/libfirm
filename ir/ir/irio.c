@@ -95,6 +95,16 @@ static set *symtbl;
 static int n_initial_types;
 
 /**
+ * True, if we may still be looking at one of the initial types common
+ * to every program.
+ *
+ * As soon as the types diverge (because exporter and importer have
+ * initialized FIRM differently), we set this to false and stop
+ * deduplicating.
+ */
+static bool maybe_initial_type;
+
+/**
  * Compare two symbol table entries.
  */
 static int symbol_cmp(const void *elt, const void *key, size_t size)
@@ -1627,17 +1637,22 @@ static void read_type(read_env_t *env)
 	// That would destroy idempotency for `ir_export . ir_import`
 	// and bloat the resulting IR files.
 
-	for (int i = 0; i < n_initial_types; ++i) {
-		ir_type *t = get_irp_type(i);
-		if (typenr != get_type_nr(t)) {
-			continue;
+	if (maybe_initial_type) {
+		ir_type *candidate = NULL;
+		for (int i = 0; i < n_initial_types; ++i) {
+			ir_type *t = get_irp_type(i);
+			if (get_type_nr(t) == typenr) {
+				candidate = t;
+				break;
+			}
 		}
-		type = t;
-		// There are potentially more fields to compare, but this should
-		// be indicative enough if anything went wrong.
-		assert(type_matches(type, opcode, size, align, state, flags));
-		skip_to(env, '\n');
-		goto extend_env;
+		if (candidate && type_matches(candidate, opcode, size, align, state, flags)) {
+			type = candidate;
+			skip_to(env, '\n');
+			goto extend_env;
+		} else {
+			maybe_initial_type = false;
+		}
 	}
 
 	switch (opcode) {
@@ -2255,6 +2270,7 @@ int ir_import_file(FILE *input, const char *inputname)
 	set_optimize(0);
 
 	n_initial_types = get_irp_n_types();
+	maybe_initial_type = true;
 
 	while (true) {
 		keyword_t kw;
