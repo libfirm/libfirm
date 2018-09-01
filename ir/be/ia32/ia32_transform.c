@@ -4348,11 +4348,8 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 		ir_node *const index = new_bd_ia32_Shr(dbgi, block, new_val_high, count, X86_SIZE_32);
 		ir_node *const noreg = ia32_new_NoReg_fp(irg);
 		ir_node *const fpcw  = get_initial_fpcw(irg);
-		ir_node *const fadd  = new_bd_ia32_fadd(dbgi, block, base, index, nomem, res, noreg, fpcw, X86_SIZE_32);
-		set_indexed_ent(fadd, 2, ia32_gen_fp_known_const(ia32_ULLBIAS));
-
-		set_irn_mode(fadd, mode_T);
-		res = be_new_Proj(fadd, pn_ia32_fadd_res);
+		res = new_bd_ia32_fadd(dbgi, block, base, index, nomem, res, noreg, fpcw, X86_SIZE_32);
+		set_indexed_ent(res, 2, ia32_gen_fp_known_const(ia32_ULLBIAS));
 	}
 	return res;
 }
