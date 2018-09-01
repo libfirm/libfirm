@@ -3348,6 +3348,20 @@ static ir_node *create_Conv_I2I(dbg_info *dbgi, ir_node *block, ir_node *base,
 	return func(dbgi, block, base, index, mem, val, size, sign_extend);
 }
 
+static void set_indexed_ent(ir_node *const node, unsigned const scale, ir_entity *const ent)
+{
+	x86_address_t const addr = {
+		.variant = ir_platform.pic_style != BE_PIC_NONE ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
+		.scale   = scale,
+		.imm     = {
+			.kind   = lconst_imm_kind,
+			.entity = ent,
+		},
+	};
+	set_address(node, &addr);
+	set_ia32_op_type(node, ia32_AddrModeS);
+}
+
 /**
  * Transforms a Mux node into some code sequence.
  *
@@ -3437,37 +3451,15 @@ static ir_node *gen_Mux(ir_node *node)
 				panic("unsupported constant size");
 			}
 
-			x86_insn_size_t const size = x86_size_from_mode(new_mode);
-			ir_graph       *const irg  = get_irn_irg(new_block);
-			ia32_address_mode_t am = {
-				.addr = {
-					.imm = {
-						.kind   = lconst_imm_kind,
-						.entity = array,
-					},
-					.variant = ir_platform.pic_style != BE_PIC_NONE
-					           ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
-					.base    = get_global_base(irg),
-					.index   = new_node,
-					.mem     = nomem,
-					.scale   = log_scale,
-				},
-				.size        = size,
-				.op_type     = ia32_AddrModeS,
-				.pinned      = false,
-				.commutative = true,
-			};
+			typedef ir_node *(cons_t)(dbg_info*, ir_node*, ir_node*, ir_node*, ir_node*, x86_insn_size_t);
 
-			ir_node *load;
-			if (ia32_cg_config.use_sse2) {
-				load = new_bd_ia32_xLoad(dbgi, new_block, am.addr.base,
-				                         am.addr.index, am.addr.mem, am.size);
-			} else {
-				load = new_bd_ia32_fld(dbgi, new_block, am.addr.base,
-				                       am.addr.index, am.addr.mem, am.size);
-			}
+			cons_t         *const cons = ia32_cg_config.use_sse2 ? &new_bd_ia32_xLoad : &new_bd_ia32_fld;
+			ir_graph       *const irg  = get_irn_irg(new_block);
+			ir_node        *const base = get_global_base(irg);
+			x86_insn_size_t const size = x86_size_from_mode(new_mode);
+			ir_node        *const load = cons(dbgi, new_block, base, new_node, nomem, size);
 			set_irn_pinned(load, false);
-			set_am_attributes(load, &am);
+			set_indexed_ent(load, log_scale, array);
 
 			return be_new_Proj(load, pn_ia32_res);
 		}
@@ -4351,36 +4343,13 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 	ir_node *res = be_new_Proj(fild, pn_ia32_fild_res);
 
 	if (!mode_is_signed(get_irn_mode(val_high))) {
+		ir_node *const base  = get_global_base(irg);
 		ir_node *const count = ia32_create_Immediate(irg, 31);
-
-		ia32_address_mode_t am = {
-			.addr = {
-				.variant = ir_platform.pic_style != BE_PIC_NONE
-				           ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
-				.base    = get_global_base(irg),
-				.index   = new_bd_ia32_Shr(dbgi, block, new_val_high, count,
-				                           X86_SIZE_32),
-				.mem     = nomem,
-				.imm     = {
-					.kind   = lconst_imm_kind,
-					.entity = ia32_gen_fp_known_const(ia32_ULLBIAS),
-				},
-				.scale = 2,
-			},
-			.size        = X86_SIZE_32,
-			.op_type     = ia32_AddrModeS,
-			.new_op1     = res,
-			.new_op2     = ia32_new_NoReg_fp(irg),
-			.pinned      = false,
-			.commutative = true,
-		};
-
-		ir_node *fpcw = get_initial_fpcw(irg);
-		ir_node *fadd = new_bd_ia32_fadd(dbgi, block, am.addr.base,
-		                                 am.addr.index, am.addr.mem,
-		                                 am.new_op1, am.new_op2, fpcw,
-		                                 X86_SIZE_32);
-		set_am_attributes(fadd, &am);
+		ir_node *const index = new_bd_ia32_Shr(dbgi, block, new_val_high, count, X86_SIZE_32);
+		ir_node *const noreg = ia32_new_NoReg_fp(irg);
+		ir_node *const fpcw  = get_initial_fpcw(irg);
+		ir_node *const fadd  = new_bd_ia32_fadd(dbgi, block, base, index, nomem, res, noreg, fpcw, X86_SIZE_32);
+		set_indexed_ent(fadd, 2, ia32_gen_fp_known_const(ia32_ULLBIAS));
 
 		set_irn_mode(fadd, mode_T);
 		res = be_new_Proj(fadd, pn_ia32_fadd_res);
