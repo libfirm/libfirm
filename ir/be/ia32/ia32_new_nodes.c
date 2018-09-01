@@ -398,12 +398,6 @@ void set_ia32_commutative(ir_node *node)
 	attr->is_commutative = 1;
 }
 
-void clear_ia32_commutative(ir_node *node)
-{
-	ia32_attr_t *const attr = get_ia32_attr(node);
-	attr->is_commutative = 0;
-}
-
 int is_ia32_commutative(const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);

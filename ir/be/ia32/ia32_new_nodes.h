@@ -106,11 +106,6 @@ void ia32_copy_am_attrs(ir_node *to, const ir_node *from);
 void set_ia32_commutative(ir_node *node);
 
 /**
- * Sets node to non-commutative.
- */
-void clear_ia32_commutative(ir_node *node);
-
-/**
  * Checks if node is commutative.
  */
 int is_ia32_commutative(const ir_node *node);
