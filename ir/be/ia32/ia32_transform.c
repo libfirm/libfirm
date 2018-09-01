@@ -5012,12 +5012,12 @@ static ir_node *gen_prefetch(ir_node *node)
 /**
  * Transform bsf like node
  */
-static ir_node *gen_unop_AM(ir_node *node, construct_binop_dest_func *func)
+static ir_node *gen_unop_AM(ir_node *const node, construct_binop_dest_func *const func, match_flags_t const flags)
 {
 	ir_node            *param = get_Builtin_param(node, 0);
 	ir_node            *block = get_nodes_block(node);
 	ia32_address_mode_t am;
-	match_arguments(&am, block, NULL, param, NULL, match_am);
+	match_arguments(&am, block, NULL, param, NULL, flags);
 
 	dbg_info       *const dbgi      = get_irn_dbg_info(node);
 	ir_node        *const new_block = be_transform_node(block);
@@ -5034,7 +5034,7 @@ static ir_node *gen_unop_AM(ir_node *node, construct_binop_dest_func *func)
  */
 static ir_node *gen_ffs(ir_node *node)
 {
-	ir_node *bsf  = gen_unop_AM(node, new_bd_ia32_Bsf);
+	ir_node *bsf  = gen_unop_AM(node, new_bd_ia32_Bsf, match_am);
 	ir_node *real = skip_Proj(bsf);
 
 	/* bsf x */
@@ -5072,7 +5072,7 @@ static ir_node *gen_ffs(ir_node *node)
  */
 static ir_node *gen_clz(ir_node *node)
 {
-	ir_node  *bsr   = gen_unop_AM(node, new_bd_ia32_Bsr);
+	ir_node  *bsr   = gen_unop_AM(node, new_bd_ia32_Bsr, match_am);
 	ir_node  *real  = skip_Proj(bsr);
 	dbg_info *dbgi  = get_irn_dbg_info(real);
 	ir_node  *block = get_nodes_block(real);
@@ -5088,7 +5088,7 @@ static ir_node *gen_clz(ir_node *node)
  */
 static ir_node *gen_ctz(ir_node *node)
 {
-	return gen_unop_AM(node, new_bd_ia32_Bsf);
+	return gen_unop_AM(node, new_bd_ia32_Bsf, match_am);
 }
 
 /**
@@ -5134,19 +5134,7 @@ static ir_node *gen_popcount(ir_node *node)
 	/* builtin lowerer should have replaced the popcount if !use_popcount */
 	assert(ia32_cg_config.use_popcnt);
 
-	ir_node            *param = get_Builtin_param(node, 0);
-	ir_node            *block = get_nodes_block(node);
-	ia32_address_mode_t am;
-	match_arguments(&am, block, NULL, param, NULL, match_am | match_16bit_am | match_zero_ext);
-
-	x86_address_t *addr = &am.addr;
-	dbg_info       *dbgi      = get_irn_dbg_info(node);
-	ir_node        *new_block = be_transform_node(block);
-	x86_insn_size_t size      = x86_size_from_mode(get_irn_mode(param));
-	ir_node *cnt = new_bd_ia32_Popcnt(dbgi, new_block, addr->base, addr->index,
-	                                  addr->mem, am.new_op2, size);
-	set_am_attributes(cnt, &am);
-	return fix_mem_proj(cnt, &am);
+	return gen_unop_AM(node, new_bd_ia32_Popcnt, match_am | match_16bit_am | match_zero_ext);
 }
 
 /**
