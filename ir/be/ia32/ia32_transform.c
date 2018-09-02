@@ -384,14 +384,7 @@ negate:
 				ir_node *base = get_global_base(irg);
 				ir_node *load = new_bd_ia32_fld(dbgi, block, base, noreg_GP,
 				                                nomem, size);
-				ia32_attr_t *const attr = get_ia32_attr(load);
-				attr->addr = (x86_addr_t) {
-					.immediate = {
-						.kind   = lconst_imm_kind,
-						.entity = floatent,
-					},
-					.variant = lconst_variant,
-				};
+				set_am_const_entity(load, floatent);
 				set_ia32_op_type(load, ia32_AddrModeS);
 				arch_add_irn_flags(load, arch_irn_flag_rematerializable);
 				res = be_new_Proj(load, pn_ia32_fld_res);
