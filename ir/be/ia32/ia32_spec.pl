@@ -881,7 +881,6 @@ Cmp => {
 
 XorHighLow => {
 	irn_flags => [ "modify_flags", "rematerializable" ],
-	state     => "exc_pinned",
 	in_reqs   => [ "eax ebx ecx edx" ],
 	out_reqs  => [ "eax ebx ecx edx in_r0", "flags" ],
 	fixed     => "x86_insn_size_t const size = X86_SIZE_8;",
@@ -1127,7 +1126,6 @@ Push => {
 },
 
 PushEax => {
-	state    => "exc_pinned",
 	in_reqs  => [ "esp" ],
 	out_reqs => [ "esp:I" ],
 	ins      => [ "stack" ],
@@ -1152,7 +1150,6 @@ Pop => {
 },
 
 CopyEbpEsp => {
-	state    => "exc_pinned",
 	in_reqs  => [ "ebp" ],
 	out_reqs => [ "esp:I" ],
 	ins      => [ "ebp" ],
@@ -1190,7 +1187,6 @@ Leave => {
 	encode   => "ia32_enc_simple(0xC9)",
 	outs     => [ "frame", "M", "stack" ],
 	latency  => 3,
-	state    => "exc_pinned",
 },
 
 AddSP => {
@@ -1230,7 +1226,6 @@ LdTls => {
 Bt => {
 	# only CF is set, but the other flags are undefined
 	irn_flags => [ "modify_flags", "rematerializable" ],
-	state     => "exc_pinned",
 	in_reqs   => [ "gp", "gp" ],
 	out_reqs  => [ "flags" ],
 	ins       => [ "left", "right" ],
@@ -1560,7 +1555,6 @@ CopyB_i => {
 },
 
 Cwtl => {
-	state    => "exc_pinned",
 	in_reqs  => [ "eax" ],
 	out_reqs => [ "eax" ],
 	ins      => [ "val" ],
