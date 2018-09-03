@@ -791,6 +791,20 @@ static void set_address(ir_node *node, const x86_address_t *addr)
 		set_ia32_frame_use(node, IA32_FRAME_USE_AUTO);
 }
 
+static void set_indexed_ent(ir_node *const node, unsigned const scale, ir_entity *const ent)
+{
+	x86_address_t const addr = {
+		.variant = ir_platform.pic_style != BE_PIC_NONE ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
+		.scale   = scale,
+		.imm     = {
+			.kind   = lconst_imm_kind,
+			.entity = ent,
+		},
+	};
+	set_address(node, &addr);
+	set_ia32_op_type(node, ia32_AddrModeS);
+}
+
 /**
  * Apply attributes of a given address mode to a node.
  */
@@ -2795,17 +2809,7 @@ static ir_node *gen_Switch(ir_node *node)
 		switchjmp = new_bd_ia32_SwitchJmp(dbgi, block, add, noreg_GP, n_outs,
 		                                  table, entity);
 	}
-	ia32_attr_t *attr = get_ia32_attr(table_am);
-	attr->addr = (x86_addr_t) {
-		.immediate = {
-			.kind   = lconst_imm_kind,
-			.entity = entity,
-		},
-		.log_scale = 2,
-		.variant   = ir_platform.pic_style != BE_PIC_NONE
-		           ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
-	};
-	set_ia32_op_type(table_am, ia32_AddrModeS);
+	set_indexed_ent(table_am, 2, entity);
 	return switchjmp;
 }
 
@@ -3338,20 +3342,6 @@ static ir_node *create_Conv_I2I(dbg_info *dbgi, ir_node *block, ir_node *base,
 	func = size == X86_SIZE_8 ? new_bd_ia32_Conv_I2I_8bit
 	                          : new_bd_ia32_Conv_I2I;
 	return func(dbgi, block, base, index, mem, val, size, sign_extend);
-}
-
-static void set_indexed_ent(ir_node *const node, unsigned const scale, ir_entity *const ent)
-{
-	x86_address_t const addr = {
-		.variant = ir_platform.pic_style != BE_PIC_NONE ? X86_ADDR_BASE_INDEX : X86_ADDR_INDEX,
-		.scale   = scale,
-		.imm     = {
-			.kind   = lconst_imm_kind,
-			.entity = ent,
-		},
-	};
-	set_address(node, &addr);
-	set_ia32_op_type(node, ia32_AddrModeS);
 }
 
 /**
