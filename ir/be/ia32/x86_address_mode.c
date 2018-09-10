@@ -206,8 +206,9 @@ static bool eat_shl(x86_address_t *addr, ir_node *node)
 	if (x86_is_non_address_mode_node(node))
 		return false;
 
-	addr->scale = val;
-	addr->index = shifted_val;
+	addr->variant = X86_ADDR_INDEX;
+	addr->scale   = val;
+	addr->index   = shifted_val;
 	return true;
 }
 
@@ -273,8 +274,6 @@ void x86_create_address_mode(x86_address_t *addr, ir_node *node,
 				addr->variant = X86_ADDR_BASE_INDEX;
 				addr->scale   = 0;
 				addr->base    = addr->index;
-			} else {
-				addr->variant = X86_ADDR_INDEX;
 			}
 			return;
 		}
