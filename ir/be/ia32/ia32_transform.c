@@ -965,7 +965,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		am->addr.base    = noreg_GP;
 		am->addr.index   = noreg_GP;
 		am->addr.mem     = nomem;
-		am->addr.variant = X86_ADDR_INVALID;
+		am->addr.variant = X86_ADDR_REG;
 
 		if (flags & match_try_am) {
 			am->new_op1 = NULL;
