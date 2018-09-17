@@ -2794,7 +2794,6 @@ static ir_node *gen_Switch(ir_node *node)
 		table_am = add;
 		switchjmp = new_bd_ia32_SwitchJmp(dbgi, block, add, noreg_GP, n_outs,
 		                                  table, entity);
-		set_ia32_op_type(switchjmp, ia32_Normal);
 	}
 	ia32_attr_t *attr = get_ia32_attr(table_am);
 	attr->addr = (x86_addr_t) {
