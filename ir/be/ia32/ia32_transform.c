@@ -3184,14 +3184,16 @@ enum setcc_transform_insn {
 	SETCC_TR_OR,
 };
 
+typedef struct setcc_step_t {
+	enum setcc_transform_insn transform;
+	int32_t                   val;
+	unsigned                  log_scale;
+} setcc_step_t;
+
 typedef struct setcc_transform {
 	unsigned             num_steps;
 	x86_condition_code_t cc;
-	struct {
-		enum setcc_transform_insn transform;
-		int32_t                   val;
-		unsigned                  log_scale;
-	} steps[4];
+	setcc_step_t steps[4];
 } setcc_transform_t;
 
 /**
@@ -3497,9 +3499,10 @@ static ir_node *gen_Mux(ir_node *node)
 			find_const_transform(cc, tv_true, tv_false, &res);
 			new_node = node;
 			for (unsigned step = res.num_steps; step-- != 0;) {
-				switch (res.steps[step].transform) {
+				setcc_step_t const *const s = &res.steps[step];
+				switch (s->transform) {
 				case SETCC_TR_ADD: {
-					new_node = create_lea(dbgi, new_block, new_node, noreg_GP, 0, res.steps[step].val);
+					new_node = create_lea(dbgi, new_block, new_node, noreg_GP, 0, s->val);
 					continue;
 				}
 
@@ -3507,20 +3510,20 @@ static ir_node *gen_Mux(ir_node *node)
 					new_node = new_bd_ia32_Lea(dbgi, new_block, noreg_GP, new_node);
 					ia32_attr_t *const attr = get_ia32_attr(new_node);
 					attr->addr.variant          = X86_ADDR_INDEX;
-					attr->addr.log_scale        = res.steps[step].log_scale;
-					attr->addr.immediate.offset = res.steps[step].val;
+					attr->addr.log_scale        = s->log_scale;
+					attr->addr.immediate.offset = s->val;
 					continue;
 				}
 
 				case SETCC_TR_LEAxx: {
-					new_node = create_lea(dbgi, new_block, new_node, new_node, res.steps[step].log_scale, res.steps[step].val);
+					new_node = create_lea(dbgi, new_block, new_node, new_node, s->log_scale, s->val);
 					continue;
 				}
 
 				case SETCC_TR_SHL: {
 					ir_graph *const irg = get_irn_irg(new_block);
 					ir_node  *const imm
-						= ia32_create_Immediate(irg, res.steps[step].log_scale);
+						= ia32_create_Immediate(irg, s->log_scale);
 					new_node = new_bd_ia32_Shl(dbgi, new_block, new_node, imm,
 					                           X86_SIZE_32);
 					continue;
@@ -3538,7 +3541,7 @@ static ir_node *gen_Mux(ir_node *node)
 
 				case SETCC_TR_AND: {
 					ir_graph *const irg = get_irn_irg(new_block);
-					ir_node  *const imm = ia32_create_Immediate(irg, res.steps[step].val);
+					ir_node  *const imm = ia32_create_Immediate(irg, s->val);
 					new_node = new_bd_ia32_And(dbgi, new_block, noreg_GP,
 					                           noreg_GP, nomem, new_node, imm,
 					                           X86_SIZE_32);
@@ -3551,7 +3554,7 @@ static ir_node *gen_Mux(ir_node *node)
 
 				case SETCC_TR_OR: {
 					ir_graph *const irg = get_irn_irg(new_block);
-					ir_node  *const imm = ia32_create_Immediate(irg, res.steps[step].val);
+					ir_node  *const imm = ia32_create_Immediate(irg, s->val);
 					new_node = new_bd_ia32_Or(dbgi, new_block, noreg_GP,
 					                          noreg_GP, nomem, new_node, imm,
 					                          X86_SIZE_32);
