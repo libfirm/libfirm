@@ -4468,27 +4468,19 @@ static ir_node *gen_Proj_Load(ir_node *node)
 
 static ir_node *create_proj_for_store(ir_node *store, pn_Store pn)
 {
-	if (is_ia32_Store(store) || is_ia32_fist(store) || is_ia32_fistp(store) || is_ia32_fisttp(store) || is_ia32_xStore(store) || is_ia32_fst(store) || is_ia32_fstp(store)) {
+	if (get_irn_mode(store) == mode_M) {
+		if (pn == pn_Store_M)
+			return store;
+	} else if (is_ia32_Store(store) || is_ia32_fist(store) || is_ia32_fistp(store) || is_ia32_fisttp(store) || is_ia32_xStore(store) || is_ia32_fst(store) || is_ia32_fstp(store)) {
 		switch (pn) {
 		case pn_Store_M:         return be_new_Proj(store, pn_ia32_st_M);
 		case pn_Store_X_except:  return be_new_Proj(store, pn_ia32_st_X_except);
 		case pn_Store_X_regular: return be_new_Proj(store, pn_ia32_st_X_regular);
 		}
-	} else if (is_Sync(store)) {
-		/* hack for the case that gen_float_const_Store produced a Sync */
-		if (pn == pn_Store_M) {
-			return store;
-		}
-		panic("exception control flow not implemented yet");
 	} else if (get_ia32_op_type(store) == ia32_AddrModeD) {
 		/* destination address mode */
-		if (pn == pn_Store_M) {
-			if (get_irn_mode(store) == mode_T) {
-				return be_new_Proj(store, pn_ia32_M);
-			} else {
-				return store;
-			}
-		}
+		if (pn == pn_Store_M)
+			return be_new_Proj(store, pn_ia32_M);
 		panic("exception control flow for destination AM not implemented yet");
 	}
 
