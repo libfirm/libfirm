@@ -4396,60 +4396,23 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	}
 
 	/* renumber the proj */
-	ir_node *new_pred = be_transform_node(pred);
-	if (is_ia32_Load(new_pred)) {
-		switch ((pn_Load)pn) {
-		case pn_Load_res:
-			return be_new_Proj(new_pred, pn_ia32_Load_res);
-		case pn_Load_M:
-			return be_new_Proj(new_pred, pn_ia32_Load_M);
-		case pn_Load_X_except:
-			/* This Load might raise an exception. Mark it. */
-			set_ia32_exc_label(new_pred, 1);
-			return be_new_Proj(new_pred, pn_ia32_Load_X_except);
-		case pn_Load_X_regular:
-			return be_new_Proj(new_pred, pn_ia32_Load_X_regular);
-		}
-	} else if (is_ia32_Conv_I2I(new_pred)) {
-		set_irn_mode(new_pred, mode_T);
-		switch ((pn_Load)pn) {
-		case pn_Load_res:
-			return be_new_Proj(new_pred, pn_ia32_res);
-		case pn_Load_M:
-			return be_new_Proj(new_pred, pn_ia32_M);
-		case pn_Load_X_except:
-			/* This Load might raise an exception. Mark it. */
-			set_ia32_exc_label(new_pred, 1);
-			return be_new_Proj(new_pred, pn_ia32_Conv_I2I_X_except);
-		case pn_Load_X_regular:
-			return be_new_Proj(new_pred, pn_ia32_Conv_I2I_X_regular);
-		}
-	} else if (is_ia32_xLoad(new_pred)) {
-		switch ((pn_Load)pn) {
-		case pn_Load_res:
-			return be_new_Proj(new_pred, pn_ia32_xLoad_res);
-		case pn_Load_M:
-			return be_new_Proj(new_pred, pn_ia32_xLoad_M);
-		case pn_Load_X_except:
-			/* This Load might raise an exception. Mark it. */
-			set_ia32_exc_label(new_pred, 1);
-			return be_new_Proj(new_pred, pn_ia32_xLoad_X_except);
-		case pn_Load_X_regular:
-			return be_new_Proj(new_pred, pn_ia32_xLoad_X_regular);
-		}
-	} else if (is_ia32_fld(new_pred)) {
-		switch ((pn_Load)pn) {
-		case pn_Load_res:
-			return be_new_Proj(new_pred, pn_ia32_fld_res);
-		case pn_Load_M:
-			return be_new_Proj(new_pred, pn_ia32_fld_M);
-		case pn_Load_X_except:
-			/* This Load might raise an exception. Mark it. */
-			set_ia32_exc_label(new_pred, 1);
-			return be_new_Proj(new_pred, pn_ia32_fld_X_except);
-		case pn_Load_X_regular:
-			return be_new_Proj(new_pred, pn_ia32_fld_X_regular);
-		}
+	ir_node *const new_pred = be_transform_node(pred);
+	assert(is_ia32_Conv_I2I(new_pred) || is_ia32_Load(new_pred) || is_ia32_fld(new_pred) || is_ia32_xLoad(new_pred));
+
+	/* Conv_I2I is not mode_T by default. */
+	set_irn_mode(new_pred, mode_T);
+
+	switch ((pn_Load)pn) {
+	case pn_Load_res:
+		return be_new_Proj(new_pred, pn_ia32_res);
+	case pn_Load_M:
+		return be_new_Proj(new_pred, pn_ia32_M);
+	case pn_Load_X_except:
+		/* This Load might raise an exception. Mark it. */
+		set_ia32_exc_label(new_pred, 1);
+		return be_new_Proj(new_pred, pn_ia32_X_except);
+	case pn_Load_X_regular:
+		return be_new_Proj(new_pred, pn_ia32_X_regular);
 	}
 
 	panic("no idea how to transform Proj(Load) %+F", node);

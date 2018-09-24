@@ -32,6 +32,8 @@ enum {
 	pn_ia32_res          = 0,
 	pn_ia32_flags        = 1,
 	pn_ia32_M            = 2,
+	pn_ia32_X_regular    = 3,
+	pn_ia32_X_except     = 4,
 	pn_ia32_st_M         = 0,
 	pn_ia32_st_X_regular = 1,
 	pn_ia32_st_X_except  = 2,
