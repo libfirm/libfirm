@@ -2208,6 +2208,8 @@ static ir_node *gen_Load(ir_node *node)
 			bool sign_extend = mode_is_signed(mode);
 			new_node = new_bd_ia32_Conv_I2I(dbgi, block, base, idx, new_mem,
 			                                noreg_GP, size, sign_extend);
+			/* Conv_I2I is not mode_T by default. */
+			set_irn_mode(new_node, mode_T);
 		} else {
 			new_node = new_bd_ia32_Load(dbgi, block, base, idx, new_mem, size,
 			                            false);
@@ -4409,9 +4411,6 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	/* renumber the proj */
 	ir_node *const new_pred = be_transform_node(pred);
 	assert(is_ia32_Conv_I2I(new_pred) || is_ia32_Load(new_pred) || is_ia32_fld(new_pred) || is_ia32_xLoad(new_pred));
-
-	/* Conv_I2I is not mode_T by default. */
-	set_irn_mode(new_pred, mode_T);
 
 	switch ((pn_Load)pn) {
 	case pn_Load_res:
