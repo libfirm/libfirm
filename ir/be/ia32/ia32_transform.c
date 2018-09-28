@@ -2230,40 +2230,40 @@ static ir_node *gen_Load(ir_node *node)
 	return new_node;
 }
 
-static bool use_dest_am(ir_node *block, ir_node *node, ir_node *mem,
-                        ir_node *ptr, ir_node *other, match_flags_t flags)
+static ir_node *use_dest_am(ir_node *block, ir_node *node, ir_node *mem,
+                            ir_node *ptr, ir_node *other, match_flags_t flags)
 {
 	if (!is_Proj(node))
-		return false;
+		return NULL;
 
 	/* we only use address mode if we're the only user of the load
 	 * or the users will be merged later anyway */
 	if (get_irn_n_edges(node) != (flags & match_two_users ? 2 : 1) &&
 	    !users_will_merge(node))
-		return false;
+		return NULL;
 
-	ir_node *load = get_Proj_pred(node);
+	ir_node *const load = get_Proj_pred(node);
 	if (!is_Load(load))
-		return false;
+		return NULL;
 	if (get_nodes_block(load) != block)
-		return false;
+		return NULL;
 
 	/* store should have the same pointer as the load */
 	if (get_Load_ptr(load) != ptr)
-		return false;
+		return NULL;
 
 	/* don't do AM if other node inputs depend on the load (via mem-proj) */
 	if (other != NULL                   &&
 	    get_nodes_block(other) == block &&
 	    heights_reachable_in_block(heights, other, load)) {
-		return false;
+		return NULL;
 	}
 
 	if (prevents_AM(block, load, mem))
-		return false;
+		return NULL;
 	/* Store should be attached to the load via mem */
 	assert(heights_reachable_in_block(heights, mem, load));
-	return true;
+	return load;
 }
 
 static ir_node *start_dest_am(ia32_address_mode_t *const am, ir_node *const block, ir_node *const op, ir_node *const mem)
@@ -2273,13 +2273,21 @@ static ir_node *start_dest_am(ia32_address_mode_t *const am, ir_node *const bloc
 	return transform_AM_mem(block, op, mem, am->addr.mem);
 }
 
-static void finish_dest_am(ir_node *const new_node, ia32_address_mode_t const *const am)
+static void finish_dest_am(ir_node *const new_node, ir_node *const load, ia32_address_mode_t const *const am)
 {
 	set_address(new_node, &am->addr);
 	set_ia32_op_type(new_node, ia32_AddrModeD);
 
-	ir_node *const new_proj = be_new_Proj(new_node, pn_ia32_M);
-	be_set_transformed_node(am->mem_proj, new_proj);
+	/* The Proj M of the Load can have other users.  This might cause the the Load
+	 * and its Proj M are transformmed twice -- as part of the RWM operation and
+	 * by itself.
+	 * Transform the Proj M of the Load and attach it to the RMW operation to
+	 * ensure that the Proj M of the Load and the one of the Store are both
+	 * transformed into the same Proj M. */
+	be_set_transformed_node(load, new_node);
+	ir_node *const load_M     = get_Proj_for_pn(load, pn_Load_M);
+	ir_node *const new_load_M = be_transform_node(load_M);
+	set_Proj_pred(new_load_M, new_node);
 }
 
 static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
@@ -2291,13 +2299,15 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	assert(flags & match_immediate); /* there is no destam node without... */
 
 	ir_node *const src_block = get_nodes_block(node);
-	if (!use_dest_am(src_block, op1, mem, ptr, op2, flags)) {
+	ir_node       *load      = use_dest_am(src_block, op1, mem, ptr, op2, flags);
+	if (!load) {
 		if (!(flags & match_commutative))
 			return NULL;
 		ir_node *const tmp = op1;
 		op1 = op2;
 		op2 = tmp;
-		if (!use_dest_am(src_block, op1, mem, ptr, op2, flags))
+		load = use_dest_am(src_block, op1, mem, ptr, op2, flags);
+		if (!load)
 			return NULL;
 	}
 
@@ -2308,7 +2318,7 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	dbg_info                  *const dbgi     = get_irn_dbg_info(node);
 	construct_binop_dest_func *const cons     = size == X86_SIZE_8 ? func8bit : func;
 	ir_node                   *const new_node = cons(dbgi, block, am.addr.base, am.addr.index, new_mem, new_op, size);
-	finish_dest_am(new_node, &am);
+	finish_dest_am(new_node, load, &am);
 	be_set_transformed_node(node, new_node);
 	return new_node;
 }
@@ -2318,7 +2328,8 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
                              construct_unop_dest_func *func)
 {
 	ir_node *const src_block = get_nodes_block(node);
-	if (!use_dest_am(src_block, op, mem, ptr, NULL, match_none))
+	ir_node *const load      = use_dest_am(src_block, op, mem, ptr, NULL, match_none);
+	if (!load)
 		return NULL;
 
 	ia32_address_mode_t am;
@@ -2327,7 +2338,7 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 	dbg_info     *const dbgi     = get_irn_dbg_info(node);
 	ir_node      *const new_node = func(dbgi, block, am.addr.base,
 	                                    am.addr.index, new_mem, size);
-	finish_dest_am(new_node, &am);
+	finish_dest_am(new_node, load, &am);
 	return new_node;
 }
 
@@ -4430,9 +4441,11 @@ static ir_node *create_proj_for_store(ir_node *store, pn_Store pn)
 		case pn_Store_X_regular: return be_new_Proj(store, pn_ia32_st_X_regular);
 		}
 	} else if (get_ia32_op_type(store) == ia32_AddrModeD) {
-		/* destination address mode */
-		if (pn == pn_Store_M)
-			return be_new_Proj(store, pn_ia32_M);
+		if (pn == pn_Store_M) {
+			/* A Proj M for the RMW operation was created by finish_dest_am() already,
+			 * so just fetch it. */
+			return get_Proj_for_pn(store, pn_ia32_M);
+		}
 		panic("exception control flow for destination AM not implemented yet");
 	}
 
