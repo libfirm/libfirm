@@ -47,17 +47,11 @@ static void lower_mux_node(ir_node* mux)
 	part_block(mux);
 	ir_node *upper_block = get_nodes_block(mux);
 
-	/* Create a cond node with two projs and a phi as mux replacement. The
-	 * true proj jumps directly to the lower block, the false proj uses a
-	 * block in-between, so that the phi can be used to select the result
-	 * value from the old mux node in the lower block. */
+	/* Create a cond node with two projs and a phi as mux replacement. */
 	ir_node  *cond        = new_r_Cond(upper_block, get_Mux_sel(mux));
 	ir_node  *trueProj    = new_r_Proj(cond, mode_X, pn_Cond_true);
 	ir_node  *falseProj   = new_r_Proj(cond, mode_X, pn_Cond_false);
-	ir_graph *irg         = get_irn_irg(mux);
-	ir_node  *falseBlock  = new_r_Block(irg, 1, &falseProj);
-	ir_node  *mux_jmps[]  = { trueProj, new_r_Jmp(falseBlock) };
-
+	ir_node  *mux_jmps[]  = { trueProj, falseProj };
 	/* Kill the jump from upper to lower block and replace the in array. */
 	assert(get_Block_n_cfgpreds(lower_block) == 1);
 	kill_node(get_Block_cfgpred(lower_block, 0));
