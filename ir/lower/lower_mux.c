@@ -103,7 +103,7 @@ void lower_mux(ir_graph *irg, lower_mux_callback *cb_func)
 		/* Cleanup, verify the graph. */
 		ir_free_resources(irg, resources);
 
-		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+		clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE | IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES);
 	}
 	DEL_ARR_F(env.muxes);
 }
