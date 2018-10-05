@@ -1322,12 +1322,8 @@ static int ia32_is_mux_allowed(ir_node const *const sel,
 			return false;
 	}
 
-	/* did we disable cmov generation? */
-	if (!ia32_cg_config.use_cmov)
-		return false;
-
-	/* we can use a cmov */
-	return true;
+	/* can we use cmov instructions? */
+	return ia32_cg_config.use_cmov;
 }
 
 /**

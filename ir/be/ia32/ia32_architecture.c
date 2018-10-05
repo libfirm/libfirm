@@ -140,6 +140,7 @@ ENUM_BITSET(cpu_arch_features)
 static bool              opt_size             = false;
 static bool              emit_machcode        = false;
 static bool              use_softfloat        = false;
+static bool              use_cmov             = false;
 static bool              use_sse              = false;
 static bool              use_sse2             = false;
 static bool              use_sse3             = false;
@@ -249,6 +250,7 @@ static const lc_opt_table_entry_t ia32_architecture_options[] = {
 	LC_OPT_ENT_BOOL    ("unsafe_floatconv", "do unsafe floating point controlword optimizations", &opt_unsafe_floatconv),
 	LC_OPT_ENT_BOOL    ("machcode",         "output machine code instead of assembler",           &emit_machcode),
 	LC_OPT_ENT_BOOL    ("soft-float",       "equivalent to fpmath=softfloat",                     &use_softfloat),
+	LC_OPT_ENT_BOOL    ("cmov",             "use conditional move",                               &use_cmov),
 	LC_OPT_ENT_BOOL    ("sse",              "gcc compatibility",                                  &use_sse),
 	LC_OPT_ENT_BOOL    ("sse2",             "gcc compatibility",                                  &use_sse2),
 	LC_OPT_ENT_BOOL    ("sse3",             "gcc compatibility",                                  &use_sse3),
@@ -897,7 +899,7 @@ void ia32_setup_cg_config(void)
 	c->use_ffreep           = flags(opt_arch, arch_athlon_plus);
 	c->use_femms            = flags(opt_arch, arch_athlon_plus) && flags(arch, arch_feature_3DNow);
 	c->use_fucomi           = flags(arch, arch_feature_p6_insn);
-	c->use_cmov             = flags(arch, arch_feature_cmov);
+	c->use_cmov             = flags(arch, arch_feature_cmov) && use_cmov;
 	c->use_modeD_moves      = flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro | arch_geode);
 	c->use_add_esp_4        = flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 |             arch_geode)                         && !opt_size;
 	c->use_add_esp_8        = flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro | arch_geode | arch_i386 | arch_i486) && !opt_size;
