@@ -162,6 +162,21 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 	if (!mode_is_int(mode))
 		return NULL;
 
+	/* special case: both Cmp compare with the same constant */
+	if (tarval_cmp(tv_lo, tv_hi) == ir_relation_equal) {
+		ir_relation rel = rel_lo & rel_hi;
+		if (rel == ir_relation_false) {
+			ir_node *const t = new_r_Const(irg, tarval_b_false);
+			return t;
+		}
+		if (rel == rel_lo) {
+			return cmp_lo;
+		} else if (rel == rel_hi) {
+			return cmp_hi;
+		} else {
+			return make_Cmp(dst_block, cmp_hi, rel);
+		}
+	}
 	/* Beware of NaN's, we can only check for (ordered) != here (which is Lg, not Ne) */
 	if ((rel_lo == ir_relation_less || rel_lo == ir_relation_less_equal || rel_lo == ir_relation_equal) &&
 	    (rel_hi == ir_relation_equal || rel_hi == ir_relation_greater_equal || rel_hi == ir_relation_greater)) {
@@ -293,6 +308,21 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 	if (!mode_is_int(mode))
 		return NULL;
 
+	/* special case: both Cmp compare with the same constant */
+	if (tarval_cmp(tv_lo, tv_hi) == ir_relation_equal) {
+		ir_relation rel = rel_lo | rel_hi;
+		if (rel == ir_relation_true) {
+			ir_node *const t = new_r_Const(irg, tarval_b_true);
+			return t;
+		}
+		if (rel == rel_lo) {
+			return cmp_lo;
+		} else if (rel == rel_hi) {
+			return cmp_hi;
+		} else {
+			return make_Cmp(dst_block, cmp_hi, rel);
+		}
+	}
 	/* Beware of NaN's, we can only check for (ordered) != here (which is Lg, not Ne) */
 	if ((rel_lo == ir_relation_greater_equal || rel_lo == ir_relation_greater || rel_lo == ir_relation_less_greater) &&
 	    (rel_hi == ir_relation_less || rel_hi == ir_relation_less_equal || rel_hi == ir_relation_less_greater)) {
