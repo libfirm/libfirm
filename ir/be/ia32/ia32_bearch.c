@@ -1617,7 +1617,7 @@ static void ia32_lower_for_target(void)
 
 	foreach_irp_irg(i, irg) {
 		/* lower for mode_b stuff */
-		ir_lower_mode_b(irg, ia32_mode_gp);
+		ir_lower_mode_b(irg, mode_Bu);
 		be_after_transform(irg, "lower-modeb");
 		lower_alloc(irg, ir_platform.ia32_po2_stackalign);
 		be_after_transform(irg, "lower-alloc");

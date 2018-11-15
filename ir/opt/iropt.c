@@ -1717,6 +1717,7 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 
 		/* Mux(a == 0, 0, -a) ==> 0 */
 		if (is_irn_null(f) && is_Minus(t) && is_relation_equal && is_irn_null(cmp_r) && cmp_l == get_Minus_op(t)) {
+			DBG_OPT_ALGSIM0(oldn, f);
 			return f;
 		}
 

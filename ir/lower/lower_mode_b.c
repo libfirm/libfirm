@@ -24,6 +24,7 @@
 #include "panic.h"
 #include "tv.h"
 #include "util.h"
+#include "target_t.h"
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -60,15 +61,27 @@ static ir_node *convert_to_modeb(ir_node *node)
  */
 static ir_node *create_cond_set(ir_node *cond_value, ir_mode *dest_mode)
 {
-	ir_node *lower_block = part_block_edges(cond_value);
+	arch_allow_ifconv_func allow_ifconv = ir_target.allow_ifconv;
+
 	ir_node *upper_block = get_nodes_block(cond_value);
-	foreach_out_edge_safe(upper_block, edge) {
-		/* The cached nodes might belong to the lower block, so we have
-		 * to clear the cache for moved nodes to avoid dominance problems. */
-		ir_node *node = get_edge_src_irn(edge);
-		set_irn_link(node, NULL);
-	}
+
 	ir_graph *irg         = get_irn_irg(cond_value);
+
+	ir_node *mux_true = new_r_Const_one(irg, dest_mode);
+	ir_node *mux_false = new_r_Const_null(irg, dest_mode);
+
+	if (allow_ifconv(cond_value, mux_false, mux_true)) {
+		assert(is_Cmp(cond_value));
+		ir_node *mux = new_r_Mux(upper_block, cond_value, mux_false, mux_true);
+		return mux;
+	}
+	ir_node *lower_block = part_block_edges(cond_value);
+	foreach_out_edge_safe(upper_block, edge) {
+			/* The cached nodes might belong to the lower block, so we have
+			 * to clear the cache for moved nodes to avoid dominance problems. */
+			ir_node *node = get_edge_src_irn(edge);
+			set_irn_link(node, NULL);
+	}
 	ir_node  *cond        = new_r_Cond(upper_block, cond_value);
 	ir_node  *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
 	ir_node  *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
