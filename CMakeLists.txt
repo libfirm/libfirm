@@ -256,10 +256,7 @@ set(TESTS
 
 # Codegenerators
 #
-# In order for superprojects such as cparser to find the generated nodes.h
-# header, GEN_DIR is just the current BINARY_DIR. Feel free to change this back
-# to BINARY_DIR/gen when you figure out how to share the location with
-# cparser's CMakeLists.txt without duplication.
+# If you change GEN_DIR, be sure to adjust cparser's CMakeLists accordingly.
 set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/gen")
 set(GEN_IR_DIR "${PROJECT_SOURCE_DIR}/scripts")
 set(IR_SPEC "${PROJECT_SOURCE_DIR}/scripts/ir_spec.py")
