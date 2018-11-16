@@ -255,7 +255,12 @@ set(TESTS
 )
 
 # Codegenerators
-set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/gen")
+#
+# In order for superprojects such as cparser to find the generated nodes.h
+# header, GEN_DIR is just the current BINARY_DIR. Feel free to change this back
+# to BINARY_DIR/gen when you figure out how to share the location with
+# cparser's CMakeLists.txt without duplication.
+set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 set(GEN_IR_DIR "${PROJECT_SOURCE_DIR}/scripts")
 set(IR_SPEC "${PROJECT_SOURCE_DIR}/scripts/ir_spec.py")
 set(GEN_TEMPLATEDIR "${PROJECT_SOURCE_DIR}/scripts/templates")
@@ -325,6 +330,7 @@ foreach(file
 endforeach(file)
 include_directories(
 	${GEN_DIR}/include/libfirm
+	${GEN_DIR}/include
 	${GEN_DIR}/ir/ir
 )
 
@@ -536,7 +542,7 @@ foreach(header ${INSTALL_HEADERS})
 	get_filename_component(DIR ${header} DIRECTORY)
 	install(FILES ${header} DESTINATION ${DIR})
 endforeach(header)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gen/include/libfirm/nodes.h DESTINATION include/libfirm)
+install(FILES ${GEN_DIR}/include/libfirm/nodes.h DESTINATION include/libfirm)
 
 # Generate cmake Config file
 include(CMakePackageConfigHelpers)
