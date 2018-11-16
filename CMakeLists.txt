@@ -397,6 +397,15 @@ add_backend(mips
 	ir/be/mips/mips_transform.c
 	ir/be/mips/mips_transform.h
 )
+add_backend(riscv
+	ir/be/riscv/riscv_bearch.c
+	ir/be/riscv/riscv_cconv.c
+	ir/be/riscv/riscv_emitter.c
+	ir/be/riscv/riscv_lower64.c
+	ir/be/riscv/riscv_new_nodes.c
+	ir/be/riscv/riscv_nodes_attr.c
+	ir/be/riscv/riscv_transform.c
+)
 add_backend(TEMPLATE
 	ir/be/TEMPLATE/TEMPLATE_bearch.c
 	ir/be/TEMPLATE/TEMPLATE_emitter.c
