@@ -142,7 +142,7 @@ $(gendir)/include/libfirm/% : scripts/templates/% $(IR_SPEC_GENERATOR_DEPS) $(IR
 	@echo GEN $@
 	$(Q)$(IR_SPEC_GENERATOR) $(IR_SPEC) "$<" > "$@"
 
-libfirm_GEN_DIRS += ir/ir include/ include/libfirm
+libfirm_GEN_DIRS += ir/ir include/libfirm
 
 $(libfirm_a): $(libfirm_OBJECTS)
 	@echo AR $@
