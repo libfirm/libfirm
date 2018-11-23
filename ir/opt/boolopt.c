@@ -587,23 +587,33 @@ static void normalize_cmp(ir_node **io_cmp, ir_relation *io_rel, ir_tarval **io_
 	}
 }
 
-static bool boolean_expression_in_block(ir_node *block, ir_node *start)
+/**
+ * Count the number of instructions within block needed to compute the result of start.
+ * Rejects non-boolean instructions (result -1)
+ *
+ * @param block only count pred nodes in this block
+ * @param start start node (included in count)
+ * @return count, -1 if we do not want to perform the optimization for this start node
+ */
+static int boolean_expression_size(ir_node *block, ir_node *start)
 {
-	assert(get_irn_mode(start) == mode_b);
-	/*if (get_nodes_block(start) != block) {
-		return false;
-	}*/
-	if (is_Cmp(start) && is_Const(get_Cmp_right(start))) {
-		return true;
-	} else if (is_Cmp(start)) {
-		return false;
-	} else {
-		bool result = true;
+	if (get_nodes_block(start) != block || is_Const(start)) {
+		return 0;
+	}
+	if (is_Cmp(start) || is_Or(start) || is_And(start) || is_Eor(start)) {
+		int sum = 0;
 		int arity = get_irn_arity(start);
 		for (int i = 0; i < arity; ++i) {
-			result = result && boolean_expression_in_block(block, get_irn_n(start, i));
+			int result = boolean_expression_size(block, get_irn_n(start, i));
+			if (result < 0) {
+				return -1;
+			} else {
+				sum += result;
+			}
 		}
-		return result;
+		return sum + 1;
+	} else {
+		return -1;
 	}
 }
 
@@ -698,6 +708,8 @@ restart:
 				continue;
 
 			ir_node *const upper_cond_selector = get_Cond_selector(upper_cond);
+			bool expected_true_case_to_jump = false;
+			bool fuse_blocks = false;
 			if (find_cond_pair(cond_selector, upper_cond_selector, &cpair)) {
 				/* normalize pncs: we need the true case to jump into the
 				 * common block (i.e. conjunctive normal form) */
@@ -719,47 +731,44 @@ restart:
 				/* can we optimize the case? */
 				replacement = bool_or(&cpair, upper_block);
 				if (replacement != NULL) {
-					env->changed = 1;
-
-					DB((dbg, LEVEL_1, "boolopt: %+F: fusing (ub %+F lb %+F)\n",
-							get_irn_irg(upper_block), upper_block, lower_block));
-
-					/* move all expressions on the path to lower/upper block */
-					move_nodes_to_block(get_Block_cfgpred(block, up_idx), upper_block);
-					move_nodes_to_block(get_Block_cfgpred(block, low_idx), lower_block);
-
-					/* move all nodes from lower block to upper block */
-					exchange(lower_block, upper_block);
-
-					remove_block_input(block, up_idx);
-					--n_cfgpreds;
-
-					/* the optimizations expected the true case to jump */
-					if (get_Proj_num(lower_cf) == pn_Cond_false) {
-						ir_node *block = get_nodes_block(replacement);
-						replacement = new_r_Not(block, replacement);
-					}
-					set_Cond_selector(cond, replacement);
-
-					goto restart;
+					env->changed = true;
+					expected_true_case_to_jump = true;
+					fuse_blocks = true;
 				}
 			}
 			/*
-			 * find_cond_pair() did not find the required pattern. Try to transform control flow into
-			 * boolean expressions if the expressions are simple and have no side effects.
+			 * find_cond_pair() did not find the required pattern or could not optimize it.
+			 * Try to transform control flow into boolean expressions if the expressions are simple
+			 * and have no side effects.
 			 */
-			ir_node *lower_selector_block = get_nodes_block(cond_selector);
-			if (boolean_expression_in_block(lower_selector_block, cond_selector) && boolean_expression_in_block(upper_block, upper_cond_selector)) {
-				if (get_Proj_num(upper_cf) == pn_Cond_false && get_Proj_num(lower_cf) == pn_Cond_false) {
-					replacement = new_r_And(upper_block, upper_cond_selector, cond_selector);
-				} else if (get_Proj_num(upper_cf) == pn_Cond_true && get_Proj_num(lower_cf) == pn_Cond_true) {
-					replacement = new_r_Or(upper_block, upper_cond_selector, cond_selector);
-				} else {
-					continue;
-				}
-				ir_printf("changed: upperblock %+F, new %+F\n", upper_block, replacement);
-				env->changed = 1;
+			if (!fuse_blocks) {
+				ir_node *lower_selector_block = get_nodes_block(cond_selector);
 
+				int expression_size = -1;
+				int expression_size_lower = boolean_expression_size(lower_selector_block, cond_selector);
+				int expression_size_upper = boolean_expression_size(upper_block, upper_cond_selector);
+				if (expression_size_lower >= 0 && expression_size_upper >= 0) {
+					expression_size = expression_size_lower + expression_size_upper;
+				}
+				int expr_limit = 8;
+
+				if (expression_size >= 0 && expression_size <= expr_limit) {
+					if (get_Proj_num(upper_cf) == pn_Cond_false && get_Proj_num(lower_cf) == pn_Cond_false) {
+						replacement = new_r_And(upper_block, upper_cond_selector, cond_selector);
+					} else if (get_Proj_num(upper_cf) == pn_Cond_true && get_Proj_num(lower_cf) == pn_Cond_true) {
+						replacement = new_r_Or(upper_block, upper_cond_selector, cond_selector);
+					} else {
+						continue;
+					}
+
+					env->changed = true;
+					fuse_blocks = true;
+					DB((dbg, LEVEL_2, "build new %+F in upper %+F (calculated expr size= &d",
+							replacement, upper_block, expression_size));
+				}
+			}
+
+			if (fuse_blocks) {
 				DB((dbg, LEVEL_1, "boolopt: %+F: fusing (ub %+F lb %+F)\n",
 						get_irn_irg(upper_block), upper_block, lower_block));
 
@@ -773,6 +782,11 @@ restart:
 				remove_block_input(block, up_idx);
 				--n_cfgpreds;
 
+				/* the optimizations expected the true case to jump */
+				if (expected_true_case_to_jump && get_Proj_num(lower_cf) == pn_Cond_false) {
+					ir_node *block = get_nodes_block(replacement);
+					replacement = new_r_Not(block, replacement);
+				}
 				set_Cond_selector(cond, replacement);
 				goto restart;
 			}
@@ -794,6 +808,9 @@ void opt_bool(ir_graph *const irg)
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 
+	int opt = get_optimize();
+	set_optimize(0);
+
 	/* now more complicated cases: find control flow And/Or and optimize. */
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
 	irg_walk_graph(irg, clear_block_infos, collect_phis, NULL);
@@ -802,6 +819,7 @@ void opt_bool(ir_graph *const irg)
 		irg_block_walk_graph(irg, NULL, find_cf_and_or_walker, &env);
 	} while (env.changed);
 
+	set_optimize(opt);
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
 
 	confirm_irg_properties(irg,
