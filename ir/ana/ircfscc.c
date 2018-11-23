@@ -306,7 +306,7 @@ static int is_head(ir_node *n, ir_node *root)
 			some_in_loop = true;
 		}
 	}
-	return some_outof_loop & some_in_loop;
+	return some_outof_loop && some_in_loop;
 }
 
 
