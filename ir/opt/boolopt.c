@@ -18,6 +18,7 @@
 #include "iroptimize.h"
 #include "tv.h"
 #include <assert.h>
+#include <stdbool.h>
 
 /** Describes a pair of relative conditions lo < hi, lo rel_lo x, hi rel_hi x */
 typedef struct cond_pair {
@@ -32,7 +33,7 @@ typedef struct cond_pair {
 
 /** Environment for all walker in boolopt. */
 typedef struct {
-	int changed;  /**< Set if the graph was changed. */
+	bool changed;  /**< Set if the graph was changed. */
 } bool_opt_env_t;
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -420,7 +421,7 @@ static void bool_walk(ir_node *n, void *ctx)
 		replacement = bool_and(&cpair, get_nodes_block(n));
 		if (replacement) {
 			exchange(n, replacement);
-			env->changed = 1;
+			env->changed = true;
 		}
 	} else if (is_Or(n)) {
 		ir_node *const l = get_Or_left(n);
@@ -432,7 +433,7 @@ static void bool_walk(ir_node *n, void *ctx)
 		replacement = bool_or(&cpair, get_nodes_block(n));
 		if (replacement) {
 			exchange(n, replacement);
-			env->changed = 1;
+			env->changed = true;
 		}
 	}
 }
@@ -500,15 +501,15 @@ static ir_node *skip_empty_blocks(ir_node *node)
  * This can be done, if block contains no Phi node that depends on
  * different inputs idx_i and idx_j.
  */
-static int can_fuse_block_inputs(const ir_node *block, int idx_i, int idx_j)
+static bool can_fuse_block_inputs(const ir_node *block, int idx_i, int idx_j)
 {
 	const ir_node *phi;
 
 	for (phi = get_Block_phis(block); phi != NULL; phi = get_Phi_next(phi)) {
 		if (get_Phi_pred(phi, idx_i) != get_Phi_pred(phi, idx_j))
-			return 0;
+			return false;
 	}
-	return 1;
+	return true;
 }
 
 /**
@@ -637,8 +638,6 @@ static int boolean_expression_size(ir_node *block, ir_node *start)
 static void find_cf_and_or_walker(ir_node *block, void *ctx)
 {
 	bool_opt_env_t *env = (bool_opt_env_t*)ctx;
-	int low_idx, up_idx;
-	int n_cfgpreds;
 
 	/* because we modify the graph in regions we might not visited yet,
 	 * Id nodes might arise here. Ignore them.
@@ -646,12 +645,12 @@ static void find_cf_and_or_walker(ir_node *block, void *ctx)
 	if (is_Id(block))
 		return;
 
-	n_cfgpreds = get_Block_n_cfgpreds(block);
+	int n_cfgpreds = get_Block_n_cfgpreds(block);
 restart:
 	if (n_cfgpreds < 2)
 		return;
 
-	for (low_idx = 0; low_idx < n_cfgpreds; ++low_idx) {
+	for (int low_idx = 0; low_idx < n_cfgpreds; ++low_idx) {
 		ir_node      *lower_block;
 		ir_node      *lower_cf;
 		ir_node      *cond;
@@ -680,7 +679,7 @@ restart:
 		ir_node *const lower_pred = get_Block_cfgpred_block(lower_block, 0);
 		if (lower_pred == NULL)
 			continue;
-		for (up_idx = 0; up_idx < n_cfgpreds; ++up_idx) {
+		for (int up_idx = 0; up_idx < n_cfgpreds; ++up_idx) {
 			ir_node   *upper_block;
 			ir_node   *upper_cf;
 			ir_node   *replacement = NULL;
@@ -751,7 +750,7 @@ restart:
 					expression_size = expression_size_lower + expression_size_upper;
 				}
 				int expr_limit = 8;
-
+				//TODO add option for setting limit
 				if (expression_size >= 0 && expression_size <= expr_limit) {
 					if (get_Proj_num(upper_cf) == pn_Cond_false && get_Proj_num(lower_cf) == pn_Cond_false) {
 						replacement = new_r_And(upper_block, upper_cond_selector, cond_selector);
@@ -784,8 +783,8 @@ restart:
 
 				/* the optimizations expected the true case to jump */
 				if (expected_true_case_to_jump && get_Proj_num(lower_cf) == pn_Cond_false) {
-					ir_node *block = get_nodes_block(replacement);
-					replacement = new_r_Not(block, replacement);
+					ir_node *replacement_block = get_nodes_block(replacement);
+					replacement = new_r_Not(replacement_block, replacement);
 				}
 				set_Cond_selector(cond, replacement);
 				goto restart;
