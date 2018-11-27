@@ -19,15 +19,15 @@
 /**
  * @defgroup ir_entity Entities
  *
- * An entity is the representation of program known objects in Firm.
+ * An entity is the Firm representation of an object known to the program.
  * The primary concept of entities is to represent members of complex
  * types, i.e., fields and methods of classes.  As not all programming
- * language model all variables and methods as members of some class,
+ * languages model all variables and methods as members of some class,
  * the concept of entities is extended to cover also local and global
  * variables, and arbitrary procedures.
  *
  * An entity always specifies the type of the object it represents and
- * the type of the object it is a part of, the owner of the entity.
+ * the type of the object it is a part of, the "owner" of the entity.
  * Originally this is the type of the class of which the entity is a
  * member.
  * The owner of local variables is the procedure they are defined in.
@@ -37,7 +37,7 @@
  * enclosing procedure.
  *
  * The type ir_entity is an abstract data type to represent program entities.
- * If contains the following attributes:
+ * It contains the following attributes:
  *
  *   - owner:      A compound type this entity is a part of.
  *   - type:       The type of this entity.
@@ -67,14 +67,15 @@
  * If a Sel node selects an entity that is overwritten by other entities it
  * must return a pointer to the entity of the dynamic type of the pointer
  * that is passed to it.  Lowering of the Sel node must assure this.
- * Overwrittenby is the inverse of overwrites.  Both add routines add
- * both relations, they only differ in the order of arguments.
+ * Overwrittenby is the inverse of overwrites.  Both add_entity_overwrites()
+ * and add_entity_overwrittenby() update both lists, they only differ in the
+ * order of arguments.
  *
  * @{
  */
 
 /**
- * Visibility classed for entities.
+ * Visibility classes for entities.
  */
 typedef enum {
 	/**
@@ -185,7 +186,7 @@ FIRM_API void set_entity_visibility(ir_entity *entity, ir_visibility visibility)
 /**
  * Returns 1 if the entity is visible outside the current compilation unit
  * or to unknown callers (like asm statements).
- * (The entity might still be accessible indirectly through pointers)
+ * If invisible, the entity might still be accessible indirectly through pointers.
  * This is a convenience function and does the same as
  * get_entity_visibility(entity) != ir_visibility_local ||
  * (get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER)
@@ -218,7 +219,8 @@ FIRM_API ir_entity *new_global_entity(ir_type *segment, ident *ld_name,
 
 /**
  * Creates a new entity corresponding to a function parameter.
- * This must be created on an irgs frame_type
+ * The owner must be an ir_graph's frame_type.
+ * @sa get_irg_frame_type()
  */
 FIRM_API ir_entity *new_parameter_entity(ir_type *owner, size_t pos,
                                          ir_type *type);
@@ -233,7 +235,7 @@ FIRM_API ir_entity *new_parameter_entity(ir_type *owner, size_t pos,
  * @param owner  owning type (must be a global segment)
  * @param name   name of the entity
  * @param alias  entity that is aliased
- * @param type   type of the aliased entity, should but need not be the same
+ * @param type   type of the aliasing entity, should but need not be the same
  *               type as the one of the aliased entity
  * @param visibility  visibility of the entity
  * @return       the newly created entity
@@ -243,7 +245,7 @@ FIRM_API ir_entity *new_alias_entity(ir_type *owner, ident *name,
                                      ir_visibility visibility);
 
 /**
- * Sets the entity an alias entity aliases.
+ * Sets the aliased entity of an alias entity.
  */
 FIRM_API void set_entity_alias(ir_entity *alias, ir_entity *aliased);
 
@@ -262,8 +264,8 @@ FIRM_API int check_entity(const ir_entity *ent);
 /**
  * Create a new entity with attributes copied from an existing entity.
  *
- * Does not copy the overwrites/overwritte_by, visited an dusage fields, sets
- * a new name and inserts the entity into \p owner.
+ * Does not copy the overwrites, overwritten_by, visited and usage fields, sets
+ * a new name and inserts the entity into @p owner.
  */
 FIRM_API ir_entity *clone_entity(ir_entity const *old, ident *name,
                                  ir_type *owner);
@@ -367,8 +369,11 @@ FIRM_API void set_entity_aligned(ir_entity *ent, ir_align a);
 /** Returns the name of the alignment. */
 FIRM_API const char *get_align_name(ir_align a);
 
-/** Returns the offset of an entity (in a compound) in bytes. Only set if
- * layout = fixed. */
+/**
+ * Returns the offset of an entity (in a compound) in bytes. Only set if
+ * the layout of the entity's owner has been fixed.
+ * @sa get_type_state()
+ */
 FIRM_API int get_entity_offset(const ir_entity *entity);
 
 /** Sets the offset of an entity (in a compound) in bytes. */
@@ -394,7 +399,7 @@ FIRM_API void set_entity_link(ir_entity *ent, void *l);
 
 /**
  * Return the method graph of a method entity.
- * @warning If it is a weak symbol, then this is not necessarily the final code
+ * @warning If the entity has IR_LINKAGE_WEAK, then this is not necessarily the final code
  *          bound to the entity. If you are writing an analysis use
  *          get_entity_linktime_irg()!
  */
@@ -463,8 +468,7 @@ FIRM_API void set_entity_dbg_info(ir_entity *ent, dbg_info *db);
  * Sepcial parameter number which can be used for parameter entities to
  * indicate the first non-declared parameter in a procedure with variable
  * arguments.
- * We assumes that all additional parameters for variable parameters are on the
- * stack. Starting from this address you can walk the stack to find all other
+ * Starting from this address you can walk the stack to find further
  * parameters.
  */
 #define IR_VA_START_PARAMETER_NUMBER  ((size_t)-1)
@@ -476,12 +480,12 @@ FIRM_API void set_entity_dbg_info(ir_entity *ent, dbg_info *db);
 FIRM_API int is_parameter_entity(const ir_entity *entity);
 
 /**
- * returns number of parameter a parameter entitiy represents
+ * Returns the parameter number of the parameter which @p entity represents.
  */
 FIRM_API size_t get_entity_parameter_number(const ir_entity *entity);
 
 /**
- * set number of parameter an entity represents
+ * Sets the parameter number of the parameter which @p entity represents.
  */
 FIRM_API void set_entity_parameter_number(ir_entity *entity, size_t n);
 
@@ -497,18 +501,18 @@ typedef enum ir_initializer_kind_t {
 	IR_INITIALIZER_TARVAL,
 	/** initializes type with default values (usually 0) */
 	IR_INITIALIZER_NULL,
-	/** list of initializers used to initializer a compound or array type */
+	/** list of initializers used to initialize a compound or array type */
 	IR_INITIALIZER_COMPOUND
 } ir_initializer_kind_t;
 
-/** Returns kind of an initializer */
+/** Returns the kind of an initializer */
 FIRM_API ir_initializer_kind_t get_initializer_kind(const ir_initializer_t *initializer);
 
 /** Returns the name of the initializer kind. */
 FIRM_API const char *get_initializer_kind_name(ir_initializer_kind_t ini);
 
 /**
- * Returns the null initializer (there's only one instance of it in a program )
+ * Returns the null initializer (there is only one instance of it in a program )
  */
 FIRM_API ir_initializer_t *get_initializer_null(void);
 
@@ -521,10 +525,10 @@ FIRM_API ir_initializer_t *create_initializer_const(ir_node *value);
 /** Creates an initializer containing a single tarval value */
 FIRM_API ir_initializer_t *create_initializer_tarval(ir_tarval *tv);
 
-/** Returns value contained in a const initializer */
+/** Returns the value contained in a const initializer */
 FIRM_API ir_node *get_initializer_const_value(const ir_initializer_t *initializer);
 
-/** Returns value contained in a tarval initializer */
+/** Returns the value contained in a tarval initializer */
 FIRM_API ir_tarval *get_initializer_tarval_value(const ir_initializer_t *initialzier);
 
 /** Creates a compound initializer which holds @p n_entries entries */
@@ -544,10 +548,10 @@ FIRM_API ir_initializer_t *get_initializer_compound_value(
 
 /** @} */
 
-/** Sets the new style initializers of an entity. */
+/** Sets the initializer of an entity. */
 FIRM_API void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer);
 
-/** Returns the new style initializers of an entity. */
+/** Returns the initializer of an entity. */
 FIRM_API ir_initializer_t *get_entity_initializer(const ir_entity *entity);
 
 /** Adds entity @p ent to the list of entities that overwrite @p overwritten. */
@@ -590,10 +594,7 @@ FIRM_API int is_method_entity(const ir_entity *ent);
 /** Returns true if the entity is an alias entity. */
 FIRM_API int is_alias_entity(const ir_entity *ent);
 
-/** Outputs a unique number for this entity if libfirm is compiled for
- *  debugging, (configure with --enable-debug) else returns the address
- *  of the type cast to long.
- */
+/** Outputs a unique number for this entity. */
 FIRM_API long get_entity_nr(const ir_entity *ent);
 
 /** Returns the entities visited counter.
@@ -729,10 +730,11 @@ FIRM_API int is_SubClass_of(const ir_type *low, const ir_type *high);
 
 /** Subclass check for pointers to classes.
  *
- *  Dereferences at both types the same amount of pointer types (as
- *  many as possible).  If the remaining types are both class types
- *  and subclasses, returns true, else false.  Can also be called with
- *  two class types.  */
+ *  Dereferences both types the same number of times (as much as possible).
+ *  If the remaining types are both class types and subclasses, returns
+ *  true, else false.  Can also be called with two class types.
+ *  @sa is_SubClass_of()
+ */
 FIRM_API int is_SubClass_ptr_of(ir_type *low, ir_type *high);
 
 /** Returns true if high is superclass of low.
@@ -745,13 +747,12 @@ FIRM_API int is_SubClass_ptr_of(ir_type *low, ir_type *high);
 
 /** Superclass check for pointers to classes.
  *
- *  Dereferences at both types the same amount of pointer types (as
- *  many as possible).  If the remaining types are both class types
- *  and superclasses, returns true, else false.  Can also be called with
- *  two class types.  */
+ *  Dereferences both types the same number of times (as much as possible).
+ *  If the remaining types are both class types and superclasses, returns
+ *  true, else false.  Can also be called with two class types.  */
 #define is_SuperClass_ptr_of(low, high) is_SubClass_ptr_of(high, low)
 
-/** Returns true if high is (transitive) overwritten by low.
+/** Returns true if high is (transitively) overwritten by low.
  *
  *  Returns false if high == low. */
 FIRM_API int is_overwritten_by(ir_entity *high, ir_entity *low);
@@ -850,7 +851,7 @@ FIRM_API ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent);
 
 
 /**
- * Checks a type.
+ * Checks a type for memory corruption, dangling pointers and consistency.
  *
  * @return non-zero if no errors were found
  */
@@ -993,16 +994,17 @@ FIRM_API long get_type_nr(const ir_type *tp);
  *
  *  If the type opcode is set to type_class the type represents class
  *  types.  A list of fields and methods is associated with a class.
- *  Further a class can inherit from and bequest to other classes.
+ *  Furthermore, a class can inherit from and bequest to other classes.
  *
  *  The following attributes are private to this type kind:
- *  - member:     All entities belonging to this class.  This are method entities
- *                which have type_method or fields that can have any of the
+ *  - member:     All entities belonging to this class.  These are method entities
+ *                which have type kind type_method or fields that can have any of the
  *                following type kinds: type_class, type_struct, type_union,
  *                type_array, type_pointer, type_primitive.
  *
- *  The following two are dynamic lists that can be grown with an "add_" function,
- *  but not shrinked:
+ *  The following two are dynamic lists that can be grown with add_class_subtype() and
+ *  add_class_supertype() respectively but not shrunk (remove_class_subtype() and
+ *  remove_class_supertype() will not free memory):
  *
  *  - subtypes:    A list of direct subclasses.
  *
@@ -1102,10 +1104,6 @@ FIRM_API int is_Class_type(const ir_type *clss);
  *             that can have any of the following types:  type_class,
  *             type_struct, type_union, type_array, type_pointer,
  *             type_primitive.
- *             This is a dynamic list that can be grown with an "add_" function,
- *             but not shrinked.
- *             This is a dynamic list that can be grown with an "add_" function,
- *             but not shrinked.
  * @{
  */
 
@@ -1133,12 +1131,10 @@ FIRM_API int is_Struct_type(const ir_type *strct);
  *
  *   The union type represents union types.  Note that this representation
  *   resembles the C union type.  For tagged variant types like in Pascal or
- *   Modula a combination of a struct and a union type must be used.
+ *   Modula, a combination of a struct and a union type must be used.
  *
- *   - n_types:     Number of unioned types.
- *   - members:     Entities for unioned types.  Fixed length array.
- *                  This is a dynamic list that can be grown with an "add_"
- *                  function, but not shrinked.
+ *   - n_types:     Number of alternatives.
+ *   - members:     Entities for the alternatives.
  * @{
  */
 /** Creates a new type union. */
@@ -1165,9 +1161,10 @@ FIRM_API int is_Union_type(const ir_type *uni);
  * A method type represents a method, function or procedure type.
  * It contains a list of the parameter and result types, as these
  * are part of the type description.  These lists should not
- * be changed by a optimization, as a change creates a new method
- * type.  Therefore optimizations should allocated new method types.
- * The set_ routines are only for construction by a frontend.
+ * be changed by an optimization, as a change creates a new method
+ * type.  Therefore optimizations should allocate new method types.
+ * set_method_param_type() and set_method_res_type() are only for
+ * construction by a frontend.
  *
  * - n_params:   Number of parameters to the procedure.
  *               A procedure in FIRM has only call by value parameters.
@@ -1177,7 +1174,7 @@ FIRM_API int is_Union_type(const ir_type *uni);
  *               in the parameter tuple that is a result of the start node.
  *               (See ircons.h for more information.)
  *
- * - value_param_ents
+ * - value_param_ents:
  *               A list of entities (whose owner is a struct private to the
  *               method type) that represent parameters passed by value.
  *
@@ -1198,7 +1195,7 @@ FIRM_API int is_Union_type(const ir_type *uni);
  * @param cc_mask        the calling convention
  * @param property_mask  the mask of the additional graph properties
  *
- * The arrays for the parameter and result types are not initialized by
+ * The arrays for the parameter and result types are not populated by
  * the constructor.
  */
 FIRM_API ir_type *new_type_method(size_t n_param, size_t n_res, int is_variadic, unsigned cc_mask, mtp_additional_properties property_mask);
@@ -1303,13 +1300,13 @@ FIRM_API int is_Method_type(const ir_type *method);
  *
  * The array type represents linear arrangement of objects of the same type.
  *
- * - *size:           number of elements in the array.
- * - *element_type:   The type of the array elements.
+ * - size:           The number of elements in the array.
+ * - element_type:   The type of the array elements.
  * @{
  */
 
 /**
- * Create a new type array with the given number of elements.
+ * Create a new array type with @p n_elements of type @p element_type.
  *
  * 0 elements designates an array of unknown length.
  */
@@ -1409,6 +1406,13 @@ FIRM_API int is_atomic_type(const ir_type *tp);
 /**
  * @defgroup compound_type Compound
  *
+ * These functions are common to classes, structs and unions,
+ * collectively known as "compound types".
+ *
+ * Note that there is no function to add a member to a compound
+ * type. Instead, create an entity with the compound type as its owner
+ * or use set_entity_owner() to make it a member of the compound type.
+ *
  * @{
  */
 
@@ -1451,7 +1455,9 @@ FIRM_API size_t get_compound_member_index(ir_type const *tp,
 FIRM_API void remove_compound_member(ir_type *compound, ir_entity *entity);
 
 /**
- * layout members of a struct/union or class type in a default way.
+ * Layout members of a compound type in the default way (as determined
+ * by the target ABI). The compound type may not contain bitfield
+ * members, in which case it must be laid out by hand.
  */
 FIRM_API void default_layout_compound_type(ir_type *tp);
 
@@ -1484,7 +1490,7 @@ FIRM_API int is_frame_type(const ir_type *tp);
 
 /**
  * Makes a clone of a frame type.
- * Sets entity links from old frame entities to new onces and
+ * Sets entity links from old frame entities to new ones and
  * vice versa.
  */
 FIRM_API ir_type *clone_frame_type(ir_type *type);
