@@ -42,9 +42,15 @@ FIRM_API void opt_jumpthreading(ir_graph* irg);
  * Simplifies boolean expression in the given ir graph.
  * eg. x < 5 && x < 6 becomes x < 5
  *
+ * Converts control flow into simple boolean expressions if possible by
+ * ignoring short circuit evaluation. limit parameter can be used to regulate the
+ * size (number of instructions) of the generated expressions. Setting this limit to 0
+ * disables this part of the optimization.
+ *
  * @param irg  the graph
+ * @param limit size limit for generated boolean expressions
  */
-FIRM_API void opt_bool(ir_graph *irg);
+FIRM_API void opt_bool(ir_graph *irg, unsigned limit);
 
 /**
  * Reduces the number of Conv nodes in the given ir graph.
