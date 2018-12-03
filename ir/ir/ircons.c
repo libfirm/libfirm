@@ -442,12 +442,18 @@ ir_node *(get_cur_block)(void)
 	return get_r_cur_block(current_ir_graph);
 }
 
+ir_node *get_b_value(ir_node *block, int pos, ir_mode *mode)
+{
+	ir_graph *irg = get_irn_irg(block);
+	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
+	assert(pos >= 0);
+	return get_r_value_internal(block, pos + 1, mode);
+}
+
 ir_node *get_r_value(ir_graph *irg, int pos, ir_mode *mode)
 {
 	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
-	assert(pos >= 0);
-
-	return get_r_value_internal(irg->current_block, pos + 1, mode);
+	return get_b_value(irg->current_block, pos + 1, mode);
 }
 
 ir_node *get_value(int pos, ir_mode *mode)
@@ -504,13 +510,20 @@ ir_mode *ir_guess_mode(int pos)
 	return ir_r_guess_mode(current_ir_graph, pos);
 }
 
-void set_r_value(ir_graph *irg, int pos, ir_node *value)
+void set_b_value(ir_node *block, int pos, ir_node *value)
 {
+	ir_graph *irg = get_irn_irg(block);
 	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	assert(pos >= 0);
 	assert(pos + 1 < irg->n_loc);
 	assert(value->kind == k_ir_node);
-	irg->current_block->attr.block.graph_arr[pos + 1] = value;
+	block->attr.block.graph_arr[pos + 1] = value;
+}
+
+void set_r_value(ir_graph *irg, int pos, ir_node *value)
+{
+	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
+	set_b_value(irg->current_block, pos, value);
 }
 
 void set_value(int pos, ir_node *value)

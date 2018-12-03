@@ -601,6 +601,9 @@ FIRM_API ir_node *get_value(int pos, ir_mode *mode);
 /** Returns the current value of a local variable in given graph
  * @see get_value() */
 FIRM_API ir_node *get_r_value(ir_graph *irg, int pos, ir_mode *mode);
+/** Returns the current value of a local variable in given block
+ * @see get_value() */
+FIRM_API ir_node *get_b_value(ir_node *block, int pos, ir_mode *mode);
 
 /**
  * Try to guess the mode of a local variable.
@@ -629,6 +632,8 @@ FIRM_API ir_mode *ir_r_guess_mode(ir_graph *irg, int pos);
 FIRM_API void set_value(int pos, ir_node *value);
 /** Sets current value of a variable in a given graph */
 FIRM_API void set_r_value(ir_graph *irg, int pos, ir_node *value);
+/** Sets current value of a variable in a given block */
+FIRM_API void set_b_value(ir_node *block, int pos, ir_node *value);
 
 /** Returns the current memory state.
  *
