@@ -28,6 +28,7 @@
 #include "irprog_t.h"
 #include "irverify.h"
 #include "util.h"
+#include "debug.h"
 
 /**
  * Language dependent variable initialization callback.
@@ -444,7 +445,7 @@ ir_node *(get_cur_block)(void)
 
 ir_node *get_b_value(ir_node *block, int pos, ir_mode *mode)
 {
-	ir_graph *irg = get_irn_irg(block);
+	DEBUG_ONLY(ir_graph *irg = get_irn_irg(block);)
 	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	assert(pos >= 0);
 	return get_r_value_internal(block, pos + 1, mode);
@@ -512,7 +513,7 @@ ir_mode *ir_guess_mode(int pos)
 
 void set_b_value(ir_node *block, int pos, ir_node *value)
 {
-	ir_graph *irg = get_irn_irg(block);
+	DEBUG_ONLY(ir_graph *irg = get_irn_irg(block);)
 	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	assert(pos >= 0);
 	assert(pos + 1 < irg->n_loc);
