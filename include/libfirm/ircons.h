@@ -645,6 +645,9 @@ FIRM_API ir_node *get_store(void);
 /** Returns current memory state for a given graph
  * @see get_store() */
 FIRM_API ir_node *get_r_store(ir_graph *irg);
+/** Returns current memory state for a given block
+ * @see get_store() */
+FIRM_API ir_node *get_b_store(ir_node *block);
 
 /** Memorize a new definition of the memory state.
  *
@@ -657,6 +660,9 @@ FIRM_API void set_store(ir_node *store);
 /** Sets current memory state for a given graph
  * @see set_store() */
 FIRM_API void set_r_store(ir_graph *irg, ir_node *store);
+/** Sets current memory state for a given block
+ * @see set_store() */
+FIRM_API void set_b_store(ir_node *block, ir_node *store);
 
 /** keep this node alive even if End is not control-reachable from it
  *

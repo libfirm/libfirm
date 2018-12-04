@@ -532,10 +532,17 @@ void set_value(int pos, ir_node *value)
 	set_r_value(current_ir_graph, pos, value);
 }
 
+ir_node *get_b_store(ir_node *block)
+{
+	DEBUG_ONLY(ir_graph *irg = get_irn_irg(block);)
+	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
+	return get_r_value_internal(block, 0, mode_M);
+}
+
 ir_node *get_r_store(ir_graph *irg)
 {
 	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
-	return get_r_value_internal(irg->current_block, 0, mode_M);
+	return get_b_store(irg->current_block);
 }
 
 ir_node *get_store(void)
@@ -543,11 +550,18 @@ ir_node *get_store(void)
 	return get_r_store(current_ir_graph);
 }
 
+void set_b_store(ir_node *block, ir_node *store)
+{
+	DEBUG_ONLY(ir_graph *irg = get_irn_irg(block);)
+	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
+	assert(get_irn_mode(store) == mode_M && "storing non-memory node");
+	block->attr.block.graph_arr[0] = store;
+}
+
 void set_r_store(ir_graph *const irg, ir_node *store)
 {
 	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
-	assert(get_irn_mode(store) == mode_M && "storing non-memory node");
-	irg->current_block->attr.block.graph_arr[0] = store;
+	set_b_store(irg->current_block, store);
 }
 
 void set_store(ir_node *store)
