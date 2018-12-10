@@ -454,7 +454,7 @@ ir_node *get_b_value(ir_node *block, int pos, ir_mode *mode)
 ir_node *get_r_value(ir_graph *irg, int pos, ir_mode *mode)
 {
 	assert(irg_is_constrained(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
-	return get_b_value(irg->current_block, pos + 1, mode);
+	return get_b_value(irg->current_block, pos, mode);
 }
 
 ir_node *get_value(int pos, ir_mode *mode)
