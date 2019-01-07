@@ -128,6 +128,7 @@ static void emit_riscv_asm_operand(ir_node const *const node, char const modifie
 				emit_register(&riscv_registers[REG_ZERO]);
 				return;
 			} else {
+				/* fallthrough */
 		default:
 				prefix = NULL;
 				break;

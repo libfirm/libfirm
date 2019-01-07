@@ -313,6 +313,8 @@ static char *read_int(const char *s, int *value)
 int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
                  va_list args)
 {
+	(void)args;
+
 	int         res  = 0;
 	const char *last = fmt + strlen(fmt);
 
