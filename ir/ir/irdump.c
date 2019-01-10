@@ -1052,10 +1052,12 @@ static void dump_ir_block_edge(FILE *F, const ir_node *n)
 static void print_data_edge_vcgattr(FILE *F, const ir_node *from, int to)
 {
 	/*
-	 * do not use get_nodes_block() here, will fail
-	 * if the irg is not pinned.
+	 * The target node of this operation may be a block if we are
+	 * looking at the edge from Anchor to End block. We will treat
+	 * these as inter-block.
 	 */
-	if (get_nodes_block(from) == get_nodes_block(get_irn_n(from, to)))
+	ir_node *target = get_irn_n(from, to);
+	if (!is_Block(target) && get_nodes_block(from) == get_nodes_block(target))
 		fprintf(F, INTRA_DATA_EDGE_ATTR);
 	else
 		fprintf(F, INTER_DATA_EDGE_ATTR);
@@ -1064,8 +1066,8 @@ static void print_data_edge_vcgattr(FILE *F, const ir_node *from, int to)
 static void print_mem_edge_vcgattr(FILE *F, const ir_node *from, int to)
 {
 	/*
-	 * do not use get_nodes_block() here, will fail
-	 * if the irg is not pinned.
+	 * There should be no memory edges beginning or ending at a
+	 * block, even when taking the Anchor into account.
 	 */
 	if (get_nodes_block(from) == get_nodes_block(get_irn_n(from, to)))
 		fprintf(F, INTRA_MEM_EDGE_ATTR);
