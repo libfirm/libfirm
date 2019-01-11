@@ -2992,6 +2992,7 @@ static ir_node *gen_ffs(ir_node *const node)
 		},
 	};
 	ir_node *or     = new_bd_amd64_or(dbgi, block, ARRAY_SIZE(or_in), or_in, amd64_reg_reg_reqs, &or_attr);
+	arch_set_irn_register_req_out(or, 0, &amd64_requirement_gp_same_0);
 	ir_node *or_res = be_new_Proj(or, pn_amd64_or_res);
 
 	/* add $1, result */
@@ -3015,6 +3016,7 @@ static ir_node *gen_ffs(ir_node *const node)
 		},
 	};
 	ir_node *inc = new_bd_amd64_add(dbgi, block, ARRAY_SIZE(inc_in), inc_in, reg_reqs, &inc_attr);
+	arch_set_irn_register_req_out(inc, 0, &amd64_requirement_gp_same_0);
 	return be_new_Proj(inc, pn_amd64_add_res);
 }
 
