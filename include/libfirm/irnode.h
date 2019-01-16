@@ -143,6 +143,25 @@ FIRM_API ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block,
                               int arity, ir_node *const *in);
 
 /**
+ * Creates an exact copy of @p node with same inputs and attributes in the
+ * same block. The copied node will not be optimized (so no CSE is performed).
+ *
+ * @param node the node to copy
+ */
+FIRM_API ir_node *exact_copy(const ir_node *node);
+
+/**
+ * Create an exact copy of @p node with same inputs and attributes in
+ * the same block but stored in the graph @p irg. The copied node will
+ * still point to inputs and a block in the graph of the original
+ * node. You must fix up these pointers after copying the node.
+ *
+ * @param node the node to copy
+ * @param irg the graph in which to store the copied node
+ */
+FIRM_API ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg);
+
+/**
  * Returns the block the node belongs to.  This is only
  * possible for pinned nodes or if the graph is in pinned state.
  * Otherwise the block may be incorrect.  This condition is
