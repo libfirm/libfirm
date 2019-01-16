@@ -39,6 +39,12 @@ FIRM_API ir_node *get_Block_idom(const ir_node *block);
 /** return immediate postdominator of a block */
 FIRM_API ir_node *get_Block_ipostdom(const ir_node *block);
 
+/** @return Depth of the given block in the dominator tree. */
+int get_Block_dom_depth(const ir_node *bl);
+
+/** @return Depth of the given block in the postdominator tree. */
+int get_Block_postdom_depth(const ir_node *bl);
+
 /**
  * Check, if a block dominates another block.
  *
