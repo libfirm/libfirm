@@ -21,6 +21,7 @@
 #include "irhooks.h"
 #include "irnode_t.h"
 #include "irprog_t.h"
+#include "irnodeset.h"
 #include "panic.h"
 #include "pset_new.h"
 #include <stdlib.h>
@@ -244,28 +245,43 @@ void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre,
 	irg_walk_in_or_dep(get_irg_end(irg), pre, post, env);
 }
 
-static void walk_topo_helper(ir_node *irn, irg_walk_func *walker, void *env)
+static void walk_topo_helper(ir_node *irn, ir_nodeset_t *walker_called, irg_walk_func *walker, void *env)
 {
-	if (irn_visited(irn))
+	if (irn_visited(irn)) {
+		if (!ir_nodeset_contains(walker_called, irn)) {
+			/* We have already visited this node, but not
+			 * yet called the walker with it. Now, we are
+			 * seeing it a second time, therefore we have
+			 * gone around a loop and are now seeing the
+			 * loop breaker. We must call the walker now
+			 * or the node one recursion above us will be
+			 * called before one of its arguments. */
+			walker(irn, env);
+			ir_nodeset_insert(walker_called, irn);
+		}
 		return;
+	}
 
-	/* only break loops at phi/block nodes */
+	/* Break loops at phi/block nodes. Mark them visited, so
+	 * recursion will stop, but don't call the walker yet. */
 	const bool is_loop_breaker = is_Phi(irn) || is_Block(irn);
 	if (is_loop_breaker)
 		mark_irn_visited(irn);
 
 	if (!is_Block(irn)) {
 		ir_node *const block = get_nodes_block(irn);
-		walk_topo_helper(block, walker, env);
+		walk_topo_helper(block, walker_called, walker, env);
 	}
 
 	for (int i = 0; i < get_irn_arity(irn); ++i) {
 		ir_node *const pred = get_irn_n(irn, i);
-		walk_topo_helper(pred, walker, env);
+		walk_topo_helper(pred, walker_called, walker, env);
 	}
 
-	if (is_loop_breaker || !irn_visited(irn))
+	if (!ir_nodeset_contains(walker_called, irn)) {
 		walker(irn, env);
+		ir_nodeset_insert(walker_called, irn);
+	}
 
 	mark_irn_visited(irn);
 }
@@ -273,7 +289,9 @@ static void walk_topo_helper(ir_node *irn, irg_walk_func *walker, void *env)
 void irg_walk_topological(ir_graph *irg, irg_walk_func *walker, void *env)
 {
 	inc_irg_visited(irg);
-	walk_topo_helper(get_irg_end(irg), walker, env);
+	ir_nodeset_t walker_called;
+	ir_nodeset_init(&walker_called);
+	walk_topo_helper(get_irg_end(irg), &walker_called, walker, env);
 }
 
 /** Walks back from n until it finds a real cf op. */
