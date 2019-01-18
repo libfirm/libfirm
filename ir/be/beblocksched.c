@@ -17,8 +17,11 @@
  * possible as we don't need and want them anymore now. The algorithms then try
  * to change as many edges to fallthroughs as possible, this is done by setting
  * a next and prev pointers on blocks. The greedy algorithm sorts the edges by
- * execution frequencies and tries to transform them to fallthroughs in this order
+ * execution frequencies and tries to transform them to fallthroughs in this order.
+ *
+ * The random algorithm schedules the blocks in a non-deterministic pseudorandom order.
  */
+
 #include "beblocksched.h"
 
 #include "bearch.h"
@@ -33,6 +36,7 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "pdeq.h"
+#include <sys/time.h>
 #include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -561,6 +565,57 @@ static ir_node **be_create_normal_block_schedule(ir_graph *irg)
 	return block_list;
 }
 
+
+static ir_node *start_block, *end_block;
+
+static void count_blocks(ir_node *irn, void *env)
+{
+	if (irn == end_block) return;
+	unsigned int *counter = (unsigned int*) env;
+	(*counter)++;
+}
+
+static void collect_blocks(ir_node *irn, void *env)
+{
+	if (irn == start_block || irn == end_block) return;
+	ir_node ***next = (ir_node***) env;
+	**next = irn;
+	(*next)++;
+}
+
+static ir_node **be_create_random_block_schedule(ir_graph *irg)
+{
+	start_block = get_irg_start_block(irg);
+	end_block = get_irg_end_block(irg);
+
+	// count basic blocks
+	unsigned int block_count = 0;
+	irg_block_walk_graph(irg, count_blocks, NULL, &block_count);
+
+	// create list of basic blocks
+	struct obstack *const obst = be_get_be_obst(irg);
+	ir_node **const block_list = NEW_ARR_D(ir_node*, obst, block_count);
+	ir_node **next = block_list;
+	*next++ = start_block; // schedules have to begin with start_block
+	irg_block_walk_graph(irg, collect_blocks, NULL, &next);
+
+	// shuffle list
+	for (size_t i=1; i < block_count-1; i++) {
+		size_t j = i + rand() / (RAND_MAX / (block_count - i) + 1);
+		ir_node *t = block_list[j];
+		block_list[j] = block_list[i];
+		block_list[i] = t;
+	}
+	// debug output
+	DB((dbg, LEVEL_1, "Random blockschedule:\n"));
+	DB((dbg, LEVEL_1, "(start: %+F, end: %+F)\n", start_block, end_block));
+	for (size_t i=0; i < block_count; i++) {
+		DB((dbg, LEVEL_1, "\t%+F\n", block_list[i]));
+	}
+	return block_list;
+}
+
+
 // list of available block schedulers
 static be_module_list_entry_t *block_schedulers;
 
@@ -579,6 +634,8 @@ void be_init_blocksched(void)
 	// add block schedulers
 	be_add_module_to_list(&block_schedulers, "normal",
 		(void*)be_create_normal_block_schedule);
+	be_add_module_to_list(&block_schedulers, "random",
+		(void*)be_create_random_block_schedule);
 	// set standard scheduler
 	scheduler = (void*)be_create_normal_block_schedule;
 	// register option
@@ -586,4 +643,8 @@ void be_init_blocksched(void)
 	be_add_module_list_opt(be_grp, "block-scheduler",
 		"basic block scheduling algorithm", &block_schedulers,
 		(void**)&scheduler);
+	// seed random number generator with current milliseconds
+	struct timeval time;
+    gettimeofday(&time, NULL);
+    srand((time.tv_sec * 1000) + (time.tv_usec / 1000));
 }
