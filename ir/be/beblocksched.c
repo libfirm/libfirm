@@ -29,6 +29,7 @@
 #include "execfreq.h"
 #include "iredges_t.h"
 #include "irgmod.h"
+#include "irtools.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "pdeq.h"
@@ -532,7 +533,7 @@ static ir_node **create_blocksched_array(blocksched_env_t *const env)
 	return block_list;
 }
 
-ir_node **be_create_block_schedule(ir_graph *irg)
+static ir_node **be_create_normal_block_schedule(ir_graph *irg)
 {
 	blocksched_env_t env = {
 		.irg        = irg,
@@ -560,8 +561,29 @@ ir_node **be_create_block_schedule(ir_graph *irg)
 	return block_list;
 }
 
+// list of available block schedulers
+static be_module_list_entry_t *block_schedulers;
+
+// selected block scheduler
+static ir_node** (*scheduler)(ir_graph*);
+
+ir_node **be_create_block_schedule(ir_graph *irg)
+{
+	return scheduler(irg);
+}
+
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_blocksched)
 void be_init_blocksched(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.blocksched");
+	// add block schedulers
+	be_add_module_to_list(&block_schedulers, "normal",
+		(void*)be_create_normal_block_schedule);
+	// set standard scheduler
+	scheduler = (void*)be_create_normal_block_schedule;
+	// register option
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	be_add_module_list_opt(be_grp, "block-scheduler",
+		"basic block scheduling algorithm", &block_schedulers,
+		(void**)&scheduler);
 }
