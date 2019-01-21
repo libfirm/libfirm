@@ -49,22 +49,6 @@ void firm_clear_block_phis(ir_node *node, void *env);
 void firm_collect_block_phis(ir_node *node, void *env);
 
 /**
- * Creates an exact copy of a node with same inputs and attributes in the
- * same block. The copied node will not be optimized (so no CSE is performed).
- *
- * @param node   the node to copy
- */
-ir_node *exact_copy(const ir_node *node);
-
-/**
- * Create an exact copy of a node with same inputs and attributes in the same
- * block but puts the node on a graph which might be different than the graph
- * of the original node.
- * Note: You have to fixup the inputs/block later
- */
-ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg);
-
-/**
  * This is a helper function used by some routines copying irg graphs
  * This assumes that we have "old" nodes which have been copied to "new"
  * nodes; The inputs of the new nodes still point to old nodes.

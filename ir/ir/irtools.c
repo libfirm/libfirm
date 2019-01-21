@@ -49,27 +49,6 @@ void firm_collect_block_phis(ir_node *node, void *env)
 		add_Block_phi(get_nodes_block(node), node);
 }
 
-ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg)
-{
-	ir_op    *op    = get_irn_op(node);
-	ir_node  *block = op != op_Block ? get_nodes_block(node) : NULL;
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_mode  *mode  = get_irn_mode(node);
-	ir_node **ins   = get_irn_in(node);
-	int       arity = get_irn_arity(node);
-	ir_node  *res   = new_ir_node(dbgi, irg, block, op, mode, arity, ins);
-
-	/* copy the attributes */
-	copy_node_attr(irg, node, res);
-
-	return res;
-}
-
-ir_node *exact_copy(const ir_node *node)
-{
-	return irn_copy_into_irg(node, get_irn_irg(node));
-}
-
 static ir_node *get_new_node(const ir_node *old_node)
 {
 	return (ir_node*) get_irn_link(old_node);
