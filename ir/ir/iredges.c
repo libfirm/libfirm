@@ -44,7 +44,7 @@ void ir_edgeset_init_size(ir_edgeset_t *self, size_t size);
 #define hashset_destroy         ir_edgeset_destroy
 #define hashset_insert          ir_edgeset_insert
 #define hashset_remove          ir_edgeset_remove
-ir_edge_t *ir_edgeset_find(const ir_edgeset_t *self, const ir_edge_t*);
+ir_edge_t *ir_edgeset_find(const ir_edgeset_t *self, const ir_edge_t* key);
 #define hashset_find            ir_edgeset_find
 size_t ir_edgeset_size(const ir_edgeset_t *self);
 #define hashset_size            ir_edgeset_size

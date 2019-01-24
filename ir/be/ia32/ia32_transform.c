@@ -132,8 +132,7 @@ typedef ir_node *construct_binop_float_func(dbg_info *db, ir_node *block,
 typedef ir_node *construct_unop_func(dbg_info *db, ir_node *block, ir_node *op,
                                      x86_insn_size_t size);
 
-static ir_node *create_immediate_or_transform(ir_node *node,
-                                              const char immediate_mode);
+static ir_node *create_immediate_or_transform(ir_node *node, char immediate_mode);
 
 static ir_node *create_I2I_Conv(ir_mode *src_mode, dbg_info *dbgi, ir_node *block, ir_node *op);
 

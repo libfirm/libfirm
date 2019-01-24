@@ -78,7 +78,7 @@ static void push_right(deq_t *deq, unsigned n, char *refp)
 	}
 }
 
-static void pop_left(deq_t *deq, unsigned n, char *refp)
+static void pop_left(deq_t *deq, unsigned n, const char *refp)
 {
 	for (unsigned i = 0; i < n; ++i) {
 		assert(!deq_empty(deq));
@@ -87,7 +87,7 @@ static void pop_left(deq_t *deq, unsigned n, char *refp)
 	}
 }
 
-static void pop_right(deq_t *deq, unsigned n, char *refp)
+static void pop_right(deq_t *deq, unsigned n, const char *refp)
 {
 	for (unsigned i = 0; i < n; ++i) {
 		assert(!deq_empty(deq));

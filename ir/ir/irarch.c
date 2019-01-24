@@ -197,7 +197,7 @@ static unsigned char *value_to_condensed(mul_env *env, ir_tarval *tv, int *pr)
 /**
  * Calculate the gain when using the generalized complementary technique
  */
-static int calculate_gain(unsigned char *R, int r)
+static int calculate_gain(const unsigned char *R, int r)
 {
 	int max_gain = 0;
 	int gain     = 2 - 3 - R[0];
@@ -217,7 +217,7 @@ static int calculate_gain(unsigned char *R, int r)
 /**
  * Calculates the condensed complement of a given (R,r) tuple
  */
-static unsigned char *complement_condensed(mul_env *env, unsigned char *R,
+static unsigned char *complement_condensed(mul_env *env, const unsigned char *R,
                                            int gain, int *prs)
 {
 	unsigned char *value = OALLOCNZ(&env->obst, unsigned char, env->bits);
@@ -255,7 +255,7 @@ static unsigned char *complement_condensed(mul_env *env, unsigned char *R,
 /**
  * creates a tarval from a condensed representation.
  */
-static ir_tarval *condensed_to_value(mul_env *env, unsigned char *R, int r)
+static ir_tarval *condensed_to_value(mul_env *env, const unsigned char *R, int r)
 {
 	ir_tarval *tv  = get_mode_one(env->mode);
 	ir_tarval *res = NULL;

@@ -1381,7 +1381,7 @@ static const regalloc_if_t ia32_regalloc_if = {
 	.perform_memory_operand = ia32_perform_memory_operand,
 };
 
-static bool lower_for_emit(ir_graph *const irg, unsigned *const sp_is_non_ssa)
+static bool lower_for_emit(ir_graph *const irg, const unsigned *const sp_is_non_ssa)
 {
 	if (!be_step_first(irg))
 		return false;

@@ -69,7 +69,7 @@ static ir_mode *fold_classes(ir_mode *c1, ir_mode *c2)
 	}
 }
 
-static ir_mode *classify_slice_for_amd64(ir_type const *const tp, unsigned min, unsigned max);
+static ir_mode *classify_slice_for_amd64(ir_type const *tp, unsigned min, unsigned max);
 
 static ir_mode *classify_compound_by_members(ir_type const *const tp, unsigned min, unsigned max)
 {

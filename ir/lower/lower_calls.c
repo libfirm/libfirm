@@ -113,7 +113,7 @@ static how_to_pass_t how_to_pass(aggregate_spec_t const *const spec)
 	return PASS_AS_VALUES;
 }
 
-static unsigned higher_arg_number(unsigned *arg_map, unsigned lower_arg)
+static unsigned higher_arg_number(const unsigned *arg_map, unsigned lower_arg)
 {
 	for (unsigned i = 0; arg_map[i] <= lower_arg; i++) {
 		if (arg_map[i] == lower_arg) {
