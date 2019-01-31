@@ -189,6 +189,8 @@ set(SOURCES
 	ir/opt/jumpthreading.c
 	ir/opt/ldstopt.c
 	ir/opt/loop.c
+	ir/opt/lcssa.c
+	ir/opt/loop_unrolling.c
 	ir/opt/occult_const.c
 	ir/opt/opt_blocks.c
 	ir/opt/opt_confirms.c
