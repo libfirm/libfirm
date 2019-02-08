@@ -13,6 +13,7 @@
 #include "xmalloc.h"
 #include "debug.h"
 #include <assert.h>
+#include <math.h>
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -98,7 +99,7 @@ static ir_node *duplicate_node(ir_node *const node, ir_node *const new_block)
 		set_irn_link(link, new_node);
 	set_irn_link(node, new_node);
 	set_irn_link(new_node, node);
-	DB((dbg, LEVEL_3, "duplicating node %N (%n), new node %N\n", node, node, new_node));
+	DB((dbg, LEVEL_3, "\tduplicating node %N (%n), new node %N\n", node, node, new_node));
 	return new_node;
 }
 
@@ -233,13 +234,137 @@ static void rewire_block(ir_node *const block, ir_node *const header)
 	}
 }
 
+static unsigned find_optimal_factor(long number, unsigned max) {
+	if (number <= max) {
+		// loop can be unrolled completely
+		return (unsigned) number;
+	}
+	int i;
+	for (i = 2; i <= number / 2; i++) {
+		if (number % i == 0) {
+			// found a small divisor i -> number/i is a large divisor of number
+			if ((number / i) <= max) {
+				unsigned candidate = (unsigned) number / i;
+				// limit to powers of two for now
+				if((candidate != 0) && ((candidate &(candidate - 1)) == 0)) {
+					return candidate;
+				}
+
+			}
+		}
+	}
+	return max;
+}
+
+static unsigned find_suitable_factor(ir_node *const header, unsigned max) {
+
+	unsigned const n_outs = get_irn_n_outs(header);
+	unsigned factor = 1;
+	for (unsigned i = 0; i < n_outs; ++i) {
+		ir_node *const node = get_irn_out(header, i);
+		assert(!is_Block(node));
+		if (get_nodes_block(node) != header)
+			continue;
+
+		if (is_Cmp(node)) {
+
+			if (get_Cmp_relation(node) != ir_relation_less_equal) {
+				return 0;
+			}
+
+			ir_tarval *tv_init = NULL;
+			ir_tarval *tv_step = NULL;
+			ir_tarval *tv_limit = NULL;
+
+			ir_node *phi;
+			ir_node *cmp_right = get_Cmp_right(node);
+			if (is_Const(cmp_right) && mode_is_int(get_irn_mode(cmp_right))) {
+				if (!is_Phi(get_Cmp_left(node))) {
+					return 0;
+				}
+				// found Cmp(?, const)
+				phi = get_Cmp_left(node);
+				tv_limit = get_Const_tarval(get_Cmp_right(node));
+			} else if (is_Const(get_Cmp_left(node))) {
+				if (!is_Phi(get_Cmp_right(node))) {
+					return 0;
+				}
+				// found Cmp(const, ?)
+				phi = get_Cmp_right(node);
+				tv_limit = get_Const_tarval(get_Cmp_left(node));
+			} else {
+				return 0;
+			}
+			int phi_preds = get_Phi_n_preds(phi);
+			for (int j = 0; j < phi_preds; j++) {
+				ir_node *phi_pred = get_Phi_pred(phi, j);
+				if (is_Const(phi_pred)) {
+					// found constant init for (possible) counter
+					tv_init = get_Const_tarval(phi_pred);
+					continue;
+				}
+				// is_binop() would find more cases, but we currently can only optimize further if we have an Add here
+				if (is_Add(phi_pred)) {
+					ir_node *left = get_binop_left(phi_pred);
+					ir_node *right = get_binop_right(phi_pred);
+					if (is_Const(right) && is_Phi(left)) {
+						// found Add(phi, const)
+						// LCSSA construction builds an additional phi, so this needs to be checked
+						if (left == phi || (get_Phi_n_preds(left) == 1 && get_Phi_pred(left, 0) == phi)) {
+							// found constant step
+							tv_step = get_Const_tarval(right);
+							continue;
+						}
+					}
+					return 0;
+				} else {
+					return 0;
+				}
+			}
+
+			assert(tv_limit != NULL && tv_init != NULL && tv_step != NULL);
+
+			// normalize: init <= limit
+			if (tarval_cmp(tv_init, tv_limit) == ir_relation_greater) {
+				ir_tarval *tmp = tv_init;
+				tv_init = tv_limit;
+				tv_limit = tmp;
+				tv_step = tarval_neg(tv_step);
+			}
+
+			tv_limit = tarval_add(tv_limit, tv_step);
+			ir_tarval *tv_interval = tarval_sub(tv_limit, tv_init);
+
+			long limit = get_tarval_long(tv_limit);
+			long step = get_tarval_long(tv_step);
+			long init = get_tarval_long(tv_init);
+			long interval = get_tarval_long(tv_interval);
+			long loop_count = interval / step;
+			DB((dbg, LEVEL_3 , "\tinit: %ld, step: %ld, limit: %ld, loop count: %ld\n", init, step, limit, loop_count));
+			factor = find_optimal_factor(loop_count, max);
+			break;
+		}
+	}
+	return factor;
+}
+
+static unsigned n_loops_unrolled = 0;
+
 static void unroll_loop(ir_loop *const loop, unsigned factor)
 {
 	ir_node *const header = get_loop_header(loop);
 	if (header == NULL)
 		return;
 
-	DB((dbg, LEVEL_3, "found loop header %N\n", header));
+	DB((dbg, LEVEL_3, "\tfound loop header %N\n", header));
+
+	factor = find_suitable_factor(header, factor);
+	if (factor <= 1) {
+		return;
+	}
+	DB((dbg, LEVEL_2, "unroll loop %+F\n", loop));
+	DB((dbg, LEVEL_3, "\tuse %d as unroll factor\n", factor));
+
 	irg_walk_graph(get_irn_irg(header), firm_clear_link, NULL, NULL);
 	size_t const n_elements = get_loop_n_elements(loop);
 
@@ -264,6 +389,7 @@ static void unroll_loop(ir_loop *const loop, unsigned factor)
 		}
 
 	}
+	++n_loops_unrolled;
 }
 
 static size_t count_nodes(ir_loop *const loop)
@@ -286,8 +412,6 @@ static unsigned determine_unroll_factor(ir_loop *const loop, unsigned const fact
 	return count_nodes(loop) < maxsize ? factor : 1;
 }
 
-static unsigned n_loops_unrolled = 0;
-
 static void duplicate_innermost_loops(ir_loop *const loop, unsigned const factor, unsigned const maxsize, bool const outermost)
 {
 	bool         innermost  = true;
@@ -303,7 +427,6 @@ static void duplicate_innermost_loops(ir_loop *const loop, unsigned const factor
 		unsigned const actual_factor = determine_unroll_factor(loop, factor, maxsize);
 		if (actual_factor > 1) {
 			unroll_loop(loop, actual_factor);
-			++n_loops_unrolled;
 		}
 	}
 }
@@ -311,10 +434,11 @@ static void duplicate_innermost_loops(ir_loop *const loop, unsigned const factor
 void unroll_loops(ir_graph *const irg, unsigned factor, unsigned maxsize)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.loop-unrolling");
+	n_loops_unrolled = 0;
 	assure_lcssa(irg);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	duplicate_innermost_loops(get_irg_loop(irg), factor, maxsize, true);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-	DB((dbg, LEVEL_2, "%d loops unrolled\n", n_loops_unrolled));
+	DB((dbg, LEVEL_1, "%+F: %d loops unrolled\n", irg, n_loops_unrolled));
 }
