@@ -50,7 +50,7 @@
 #define EPSILON          1e-5
 #define UNDEF(x)         (fabs(x) < EPSILON)
 #define KEEP_FAC         0.1
-
+#define LOOP_WEIGHT      10.0
 #define MAX_INT_FREQ 1000000
 
 static hook_entry_t hook;
@@ -265,6 +265,13 @@ static double get_cf_probability(const ir_node *bb, int pos,
 	return cur/sum;
 }
 
+double get_edge_probability(const ir_edge_t *edge)
+{
+	ir_node *block = get_edge_src_irn(edge);
+	int pos = get_edge_src_pos(edge);
+	return get_cf_probability(block, pos, 1.0/LOOP_WEIGHT);
+}
+
 static double *freqs;
 static double  min_non_zero;
 static double  max_freq;
@@ -437,7 +444,7 @@ static void free_properties_and_dfs(ir_graph *const irg, dfs_t *const dfs) {
 
 void ir_estimate_execfreq(ir_graph *irg)
 {
-	double loop_weight = 10.0;
+	double loop_weight = LOOP_WEIGHT;
 
 	assure_irg_properties(irg,
 		IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES
