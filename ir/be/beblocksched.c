@@ -672,7 +672,7 @@ struct exttsp_edge_t {
 
 struct exttsp_block_t {
 	unsigned int size;         // code size in bytes
-	unsigned int addr;         // address of block in memory relative to chain
+	unsigned int addr_offset;  // address of block in memory relative to chain
 	exttsp_block_t *succ;      // next block in chain
 	exttsp_edge_t *first_edge; // first outgoing cfg edge
 	exttsp_chain_t *chain;     // chain the block is in
@@ -683,6 +683,8 @@ struct exttsp_chain_t {
 	exttsp_block_t *first;     // first block of chain
 	exttsp_block_t *last;      // last block of chain
 	unsigned int length;       // number of blocks in chain
+	unsigned int bytes;        // length of blocks in chain in byte
+	unsigned int addr_base;    // address of the chain in memory
 	exttsp_score_t score;      // cached score of the chain
 	bool contains_start;       // if the chain begins with the start block
 };
@@ -711,28 +713,31 @@ const unsigned int BACKWARD_DISTANCE = 640;
 /*
  * Calculate the contribution of an edge to the ExtTSP score of a chain.
  */
-static exttsp_score_t exttsp_rate_edge(exttsp_edge_t *edge)
+static exttsp_score_t exttsp_rate_edge(const exttsp_edge_t *edge)
 {
-	unsigned int jump_addr = edge->src->addr + edge->src->size;
-	unsigned int dest_addr = edge->dest->addr;
-	double freq = edge->freq;
+	const exttsp_block_t *s = edge->src;
+	const exttsp_block_t *d = edge->dest;
+	const unsigned int jump_addr = s->chain->addr_base + s->addr_offset + s->size;
+	const unsigned int dest_addr = d->chain->addr_base + d->addr_offset;
+	const double freq = edge->freq;
+	double probability;
 	// fallthrough edge
 	if (jump_addr == dest_addr) {
 		return freq * FALLTHROUGH_WEIGHT;
 	}
 	// forward edge
 	else if (jump_addr < dest_addr) {
-		unsigned int distance = dest_addr - jump_addr;
+		const unsigned int distance = dest_addr - jump_addr;
 		if (distance <= FORWARD_DISTANCE) {
-			double probability = 1.0 - ((double)distance)/((double)FORWARD_DISTANCE);
+			probability = 1.0 - ((double)distance)/((double)FORWARD_DISTANCE);
 			return freq * FORWARD_WEIGHT * probability;
 		}
 		return 0;
 	}
 	// backward edge
-	unsigned int distance = jump_addr - dest_addr;
+	const unsigned int distance = jump_addr - dest_addr;
 	if (distance <= BACKWARD_DISTANCE) {
-		double probability = 1.0 - ((double)distance)/((double)BACKWARD_DISTANCE);
+		probability = 1.0 - ((double)distance)/((double)BACKWARD_DISTANCE);
 		return freq * BACKWARD_WEIGHT * probability;
 	}
 	return 0;
@@ -740,8 +745,10 @@ static exttsp_score_t exttsp_rate_edge(exttsp_edge_t *edge)
 
 /*
  * Calculate the ExtTSP score for a chain.
+ * Only jumps within the chain or to jump_{a,b} are considered.
  */
-static exttsp_score_t exttsp_rate_chain(exttsp_chain_t *chain)
+static exttsp_score_t exttsp_rate_chain(exttsp_chain_t *chain,
+	exttsp_chain_t *jump_a, exttsp_chain_t *jump_b)
 {
 	exttsp_block_t *block = chain->first;
 	exttsp_edge_t *edge;
@@ -749,7 +756,8 @@ static exttsp_score_t exttsp_rate_chain(exttsp_chain_t *chain)
 	while (block != NULL) {
 		edge = block->first_edge;
 		while (edge != NULL) {
-			if (edge->dest->chain == chain) { // ignore jumps leaving the chain
+			exttsp_chain_t *c = edge->dest->chain;
+			if (c == chain || c == jump_a || c == jump_b) {
 				score += exttsp_rate_edge(edge);
 			}
 			edge = edge->next;
@@ -792,7 +800,7 @@ static void exttsp_create_chains(ir_node *block, void *env)
 		b = &(e->blocks[e->block_count++]);
 	}
 	b->size = get_block_size(block);
-	b->addr = 0;
+	b->addr_offset = 0;
 	b->succ = NULL;
 	b->first_edge = NULL;
 	b->irn = block;
@@ -801,6 +809,8 @@ static void exttsp_create_chains(ir_node *block, void *env)
 	exttsp_chain_t *c = &(e->chains[e->chain_count++]);
 	c->first = c->last = b;
 	c->length = 1;
+	c->bytes = b->size;
+	c->addr_base = 0;
 	c->contains_start = (block == get_irg_start_block(e->irg));
 	b->chain = c;
 	// create outgoing edges
@@ -825,7 +835,6 @@ static void exttsp_create_chains(ir_node *block, void *env)
 		succ_edge->next = NULL; // list of edges is NULL terminated
 		succ_edge->freq = get_edge_execfreq(edge);
 	}
-	c->score = exttsp_rate_chain(c);
 }
 
 /*
@@ -842,29 +851,16 @@ static exttsp_score_t exttsp_compute_merge_gain(exttsp_chain_t *a, exttsp_chain_
 		a->last->succ = b->first;
 		a->last = b->last;
 		a->length += b->length;
-		// recalculate block addresses and set chain of second half
-		// TODO possible to avoid this?
-		unsigned int addr = save.last->addr + save.last->size;
-		exttsp_block_t *cur = b->first;
-		while (cur != NULL) {
-			cur->addr = addr;
-			addr += cur->size;
-			cur->chain = a;
-			cur = cur->succ;
-		}
-		exttsp_score_t new_score = exttsp_rate_chain(a);
-		// restore a
+		// move b behind a
+		a->addr_base = 0;
+		b->addr_base = a->bytes;
+		// calc score
+		exttsp_score_t new_score = exttsp_rate_chain(a, b, NULL);
+		// restore a and b
 		*a = save;
 		a->last->succ = NULL;
-		// restore block addresses and chain of second half
-		addr = 0;
-		cur = b->first;
-		while (cur != NULL) {
-			cur->addr = addr;
-			addr += cur->size;
-			cur->chain = b;
-			cur = cur->succ;
-		}
+		b->addr_base = 0;
+		// new score?
 		new_score -= a->score + b->score; // gain
 		if (new_score > score) {
 			score = new_score;
@@ -885,8 +881,8 @@ static exttsp_score_t exttsp_compute_merge_gain(exttsp_chain_t *a, exttsp_chain_
 		ARR_LEN(env.blocks), env.edge_count, ARR_LEN(env.edges)));                   \
 	for (size_t x=0; x<ARR_LEN(env.chains); x++) {                                   \
 		if (env.chains[x].length == 0) continue;                                     \
-		DB((dbg, LEVEL_1, "\t chain: %zu \t length: %u \t score: %f \t start: %d\n", \
-			x, env.chains[x].length, env.chains[x].score,                            \
+		DB((dbg, LEVEL_1, "\t chain: %zu \t length: %u \t bytes: %u  \t score: %f \t start: %d\n", \
+			x, env.chains[x].length, env.chains[x].bytes, env.chains[x].score,                            \
 			env.chains[x].contains_start));                                          \
 	}                                                                                \
 }
@@ -921,6 +917,8 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 	env.chain_count = env.block_count = env.edge_count = 0;
 	irg_block_walk_graph(irg, exttsp_create_chains, NULL, &env);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	for (size_t i=0; i<ARR_LEN(env.chains); i++)
+		env.chains[i].score = exttsp_rate_chain(&env.chains[i], NULL, NULL);
 
 	// compute initial merge gains
 	for (size_t i=0; i<ARR_LEN(env.chains); i++) {
@@ -929,7 +927,6 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 			gains[i][j] = exttsp_compute_merge_gain(&env.chains[i], &env.chains[j]);
 		}
 	}
-
 	// chain merging
 	int max_i, max_j;
 	exttsp_score_t max;
@@ -955,6 +952,7 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 		exttsp_chain_t *chain_j = &env.chains[max_j];
 		assert(!chain_j->contains_start && "start block is not kept at begin!");
 		chain_i->length += chain_j->length;
+		chain_i->bytes += chain_j->bytes;
 		chain_i->contains_start =
 			chain_i->contains_start || chain_j->contains_start;
 		chain_i->last->succ = chain_j->first;
@@ -964,25 +962,24 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 		unsigned int addr = 0;
 		exttsp_block_t *cur = chain_i->first;
 		while (cur != NULL) {
-			cur->addr = addr;
+			cur->addr_offset = addr;
 			addr += cur->size;
 			cur->chain = chain_i; // set new chain!
 			cur = cur->succ;
 		}
-		chain_i->score = exttsp_rate_chain(chain_i);
+		chain_i->score = exttsp_rate_chain(chain_i, NULL, NULL);
 		// invalidate chain j
 		chain_j->length = 0;
+		chain_j->bytes = 0;
 		chain_j->first = NULL;
 		chain_j->last = NULL;
 		chain_j->score = 0;
 		chain_j->contains_start = false;
+		// recalculate gains affected by new chain i
 		for (size_t n=0; n<ARR_LEN(env.chains); n++) {
 			gains[max_j][n] = 0;
 			gains[n][max_j] = 0;
-		}
-		// recalculate gains affected by new chain i
-		for (size_t n=0; n<ARR_LEN(env.chains); n++) {
-			if (n == (unsigned int)max_i || env.chains[n].length == 0) continue;
+			if (n == (size_t)max_i || env.chains[n].length == 0) continue;
 			gains[max_i][n] = exttsp_compute_merge_gain(&env.chains[max_i],
 								&env.chains[n]);
 			gains[n][max_i] = exttsp_compute_merge_gain(&env.chains[n],
