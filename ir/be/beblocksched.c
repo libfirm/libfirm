@@ -906,6 +906,8 @@ static exttsp_score_t exttsp_compute_merge_gain(exttsp_chain_t *a, exttsp_chain_
 			env.chains[x].contains_start));                                          \
 	}                                                                                \
 }
+// Redefine for time measurement
+ #define EXTTSP_DEBUG_OUTPUT_CHAINS {}
 
 /*
  * Create block schedule using the ExtTSP algorithm.
@@ -1017,6 +1019,7 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 		}
 	}
 	assert(final_chain != NULL && final_chain->length == env.block_count);
+	DB((dbg, LEVEL_1, "Final chain ExtTSP score: %f\n", final_chain->score));
 	// create block schedule from remaining chain
 	struct obstack *const irg_obst = be_get_be_obst(irg);
 	ir_node **const block_list = NEW_ARR_D(ir_node*, irg_obst, env.block_count);
@@ -1039,9 +1042,11 @@ static ir_node** (*scheduler)(ir_graph*);
 
 ir_node **be_create_block_schedule(ir_graph *irg)
 {
-	DB((dbg, LEVEL_1, "Creating block schedule for '%F'\n", irg));
+	DB((dbg, LEVEL_1, "\nCreating block schedule for '%F'\n", irg));
+	be_timer_push(T_BLOCKSCHED);
 	ir_node **block_list = scheduler(irg);
-	DB((dbg, LEVEL_1, "Created blockschedule:\n"));
+	be_timer_pop(T_BLOCKSCHED);
+	DB((dbg, LEVEL_1, "Created block schedule:\n"));
 	for (size_t i=0; i < ARR_LEN(block_list); i++) {
 		DB((dbg, LEVEL_1, "\t%+F\n", block_list[i]));
 	}

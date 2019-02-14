@@ -397,6 +397,7 @@ static const char *get_timer_name(be_timer_id_t id)
 {
 	switch (id) {
 	case T_ABI:            return "abi";
+	case T_BLOCKSCHED:     return "blocksched";
 	case T_CODEGEN:        return "codegen";
 	case T_RA_PREPARATION: return "ra_preparation";
 	case T_SCHED:          return "sched";
