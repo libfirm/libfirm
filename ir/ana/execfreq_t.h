@@ -32,5 +32,5 @@ void ir_calculate_execfreq_int_factors(ir_execfreq_int_factors *factors,
 int get_block_execfreq_int(const ir_execfreq_int_factors *factors,
                            const ir_node *block);
 
-double get_edge_probability(const ir_edge_t *edge);
+double get_edge_execfreq(const ir_edge_t *edge);
 #endif

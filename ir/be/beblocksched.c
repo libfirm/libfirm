@@ -611,14 +611,6 @@ static ir_node **be_create_random_block_schedule(ir_graph *irg)
 	return block_list;
 }
 
-static unsigned int get_edgefreq_int(ir_execfreq_int_factors *factors,
-	ir_node *dest, const ir_edge_t *edge)
-{
-	int int_freq = get_block_execfreq_int(factors, dest);
-	double prob = get_edge_probability(edge);
-	return (unsigned int) round(int_freq * prob);
-}
-
 // TODO replace with better size estimation
 static unsigned int get_block_size(ir_node *block)
 {
@@ -633,25 +625,18 @@ static unsigned int get_block_size(ir_node *block)
 // ****************************************************************************
 // TODO remove graphviz debug code
 // ****************************************************************************
-static ir_execfreq_int_factors *execfreq_factors_graphviz;
 static FILE *dump_file_graphviz;
 
 static void print_block_graphviz(ir_node *block, void *env)
 {
-	int int_freq = get_block_execfreq_int(execfreq_factors_graphviz, block);
 	ir_fprintf(dump_file_graphviz,
-		"\t\"%+F\" [label=\"%+F\\n(freq:%f, int:%d)\\n size: %d bytes %s %s\"]\n",
-		block, block, get_block_execfreq(block),
-		int_freq,
-		get_block_size(block),
+		"\t\"%+F\" [label=\"%+F\\n freq:%f\\n size: %d bytes %s %s\"]\n",
+		block, block, get_block_execfreq(block), get_block_size(block),
 		get_irg_start_block((ir_graph*)env)==block ? "\\nSTART" : "",
 		get_irg_end_block((ir_graph*)env)==block ? "\\nEND" : "");
 	foreach_block_succ(block, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
-		ir_fprintf(dump_file_graphviz, "\t\"%+F\" -> \"%+F\"[label=\"p:%f\\n f:%f\\n%d\"]\n",
-			block, succ, get_edge_probability(edge),
-			get_block_execfreq(block)*get_edge_probability(edge),
-			get_edgefreq_int(execfreq_factors_graphviz, block, edge));
+		ir_fprintf(dump_file_graphviz, "\t\"%+F\" -> \"%+F\"[label=\"%f\"]\n",
+			block, get_edge_src_irn(edge), get_edge_execfreq(edge));
 	}
 }
 
@@ -682,7 +667,7 @@ struct exttsp_edge_t {
 	exttsp_block_t *src;       // cfg source of edge
 	exttsp_block_t *dest;      // cfg destination of edge
 	exttsp_edge_t *next;       // next edge of corresponding block
-	unsigned int freq;         // frequency of edge
+	double freq;               // frequency of edge
 };
 
 struct exttsp_block_t {
@@ -705,7 +690,6 @@ struct exttsp_chain_t {
 struct exttsp_env_t {          // data needed by graph walkers
 	ir_graph *irg;
 	struct obstack obst;
-	ir_execfreq_int_factors execfreq_factors;
 	exttsp_chain_t *chains;
 	unsigned int chain_count;
 	exttsp_block_t *blocks;
@@ -731,7 +715,7 @@ static exttsp_score_t exttsp_rate_edge(exttsp_edge_t *edge)
 {
 	unsigned int jump_addr = edge->src->addr + edge->src->size;
 	unsigned int dest_addr = edge->dest->addr;
-	unsigned int freq = edge->freq;
+	double freq = edge->freq;
 	// fallthrough edge
 	if (jump_addr == dest_addr) {
 		return freq * FALLTHROUGH_WEIGHT;
@@ -839,7 +823,7 @@ static void exttsp_create_chains(ir_node *block, void *env)
 		}
 		last = succ_edge;
 		succ_edge->next = NULL; // list of edges is NULL terminated
-		succ_edge->freq = get_edgefreq_int(&(e->execfreq_factors), block, edge);
+		succ_edge->freq = get_edge_execfreq(edge);
 	}
 	c->score = exttsp_rate_chain(c);
 }
@@ -931,9 +915,6 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 	for (size_t i=0; i<ARR_LEN(env.chains); i++)
 		gains[i] = OALLOCNZ(&env.obst, exttsp_score_t, ARR_LEN(env.chains));
 
-	// estimate execution frequencies
-	ir_calculate_execfreq_int_factors(&(env.execfreq_factors), irg);
-	execfreq_factors_graphviz = &(env.execfreq_factors); // TODO remove graphviz
 	dump_cfg_graphviz(irg); // TODO remove graphviz
 
 	// initial chain creation

@@ -265,11 +265,16 @@ static double get_cf_probability(const ir_node *bb, int pos,
 	return cur/sum;
 }
 
-double get_edge_probability(const ir_edge_t *edge)
+double get_edge_execfreq(const ir_edge_t *edge)
 {
-	ir_node *block = get_edge_src_irn(edge);
-	int pos = get_edge_src_pos(edge);
-	return get_cf_probability(block, pos, 1.0/LOOP_WEIGHT);
+	const ir_node *src = get_edge_src_irn(edge);
+	const int      pos = get_edge_src_pos(edge);
+	const ir_node *dst = get_Block_cfgpred_block(src, pos);
+	if (dst == NULL)
+		return 0;
+	const double dst_freq  = get_block_execfreq(dst);
+	const double edge_prob = get_cf_probability(src, pos, 1.0/LOOP_WEIGHT);
+	return dst_freq * edge_prob;
 }
 
 static double *freqs;
