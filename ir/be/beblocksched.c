@@ -698,6 +698,7 @@ struct exttsp_env_t {          // data needed by graph walkers
 	int chain_count;
 	int block_count;
 	int edge_count;
+	char **adjacent;
 };
 
 /*
@@ -835,6 +836,13 @@ static void exttsp_create_chains(ir_node *block, void *env)
 		last = succ_edge;
 		succ_edge->next = NULL; // list of edges is NULL terminated
 		succ_edge->freq = get_edge_execfreq(edge);
+		// fill adjacency matrix
+		if (b != succ_block) {
+			int x = b - e->blocks;
+			int y = succ_block - e->blocks;
+			e->adjacent[x][y] = 1;
+			e->adjacent[y][x] = 1;
+		}
 	}
 }
 
@@ -1023,8 +1031,7 @@ static void exttsp_merge_chains(exttsp_chain_t *a, exttsp_chain_t *b,
 	b->contains_start = false;
 }
 
-// generate debug output for each iteration of the main loop
-#define EXTTSP_DEBUG_OUTPUT_CHAINS {                                                 \
+#define EXTTSP_DB_CHAINS {                                                           \
 	DB((dbg, LEVEL_1, "\n%d(%ld) chains, %d(%ld) blocks, %d(%ld) edges\n",           \
 		env.chain_count, ARR_LEN(env.chains),env.block_count,                        \
 		ARR_LEN(env.blocks), env.edge_count, ARR_LEN(env.edges)));                   \
@@ -1036,8 +1043,20 @@ static void exttsp_merge_chains(exttsp_chain_t *a, exttsp_chain_t *b,
 			env.chains[x].contains_start));                                          \
 	}                                                                                \
 }
-// undefine for time measurement
- #define EXTTSP_DEBUG_OUTPUT_CHAINS {}
+
+#define EXTTSP_DB_ADJACENCY_MATRIX {                               \
+DB((dbg, LEVEL_1, "adjacency matrix:\n"));                         \
+	for (size_t i=0; i<ARR_LEN(env.chains); i++)                   \
+		DB((dbg, LEVEL_1, " %d", i%10));                           \
+	DB((dbg, LEVEL_1, "\n"));                                      \
+	for (size_t i=0; i<ARR_LEN(env.chains); i++) {                 \
+		DB((dbg, LEVEL_1, "%d", i%10));                            \
+		for (size_t j=0; j<ARR_LEN(env.chains); j++) {             \
+			DB((dbg, LEVEL_1, "%c ", env.adjacent[i][j]?'X':' ')); \
+		}                                                          \
+		DB((dbg, LEVEL_1, "\n"));                                  \
+	}                                                              \
+}
 
 /*
  * Create block schedule using the ExtTSP algorithm.
@@ -1069,11 +1088,13 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 	env.chains = NEW_ARR_D(exttsp_chain_t, &obst, env.chain_count);
 	env.blocks = NEW_ARR_D(exttsp_block_t, &obst, env.block_count);
 	env.edges  = NEW_ARR_D(exttsp_edge_t,  &obst, env.edge_count);
+	env.adjacent           = OALLOCN(&obst, char*,           env.chain_count);
 	exttsp_score_t **gains = OALLOCN(&obst, exttsp_score_t*, env.chain_count);
 	int **merge_types      = OALLOCN(&obst, int*,            env.chain_count);
 	for (int i=0; i<env.chain_count; i++) {
-		gains[i]       = OALLOCNZ(&obst, exttsp_score_t, env.chain_count);
-		merge_types[i] = OALLOCNZ(&obst, int,            env.chain_count);
+		env.adjacent[i] = OALLOCNZ(&obst, char,           env.chain_count);
+		gains[i]        = OALLOCNZ(&obst, exttsp_score_t, env.chain_count);
+		merge_types[i]  = OALLOCNZ(&obst, int,            env.chain_count);
 	}
 
 	//dump_cfg_graphviz(irg); // TODO remove graphviz
@@ -1090,9 +1111,9 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 	ir_timer_start(timer_initial_cmg);
 	for (int i=0; i<env.chain_count; i++) {
 		for (int j=0; j<env.chain_count; j++) {
-			if (i == j) continue;
-			gains[i][j] = exttsp_compute_merge_gain(&env.chains[i],
-							&env.chains[j], &merge_types[i][j]);
+			if (env.adjacent[i][j])
+				gains[i][j] = exttsp_compute_merge_gain(&env.chains[i],
+				               &env.chains[j], &merge_types[i][j]);
 		}
 	}
 	ir_timer_stop(timer_initial_cmg);
@@ -1101,7 +1122,6 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 	int max_i, max_j;
 	exttsp_score_t max;
 	while (env.chain_count > 1) {
-		EXTTSP_DEBUG_OUTPUT_CHAINS;
 		// find maximum merge gain
 		ir_timer_start(timer_max_search);
 		max_i = max_j = -1;
@@ -1126,21 +1146,29 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 			merge_types[max_i][max_j]);
 		ir_timer_stop(timer_merging);
 
+		// fix adjacency matrix
+		for (size_t n=0; n<ARR_LEN(env.chains); n++) {
+			if (env.adjacent[max_j][n]) {
+				env.adjacent[max_i][n] = env.adjacent[n][max_i] = 1;
+				env.adjacent[max_j][n] = env.adjacent[n][max_j] = 0;
+			}
+		}
+		env.adjacent[max_i][max_i] = 0;
+
 		// recalculate gains affected by new chain i
 		ir_timer_start(timer_loop_cmg);
+		gains[max_i][max_j] = gains[max_j][max_i] = 0;
 		for (size_t n=0; n<ARR_LEN(env.chains); n++) {
-			gains[max_j][n] = 0;
-			gains[n][max_j] = 0;
-			if (n == (size_t)max_i || env.chains[n].length == 0) continue;
+			gains[max_j][n] = gains[n][max_j] = 0;
+			if (!env.adjacent[max_i][n]) continue;
 			gains[max_i][n] = exttsp_compute_merge_gain(&env.chains[max_i],
-								&env.chains[n], &merge_types[max_i][n]);
+			                    &env.chains[n], &merge_types[max_i][n]);
 			gains[n][max_i] = exttsp_compute_merge_gain(&env.chains[n],
-								&env.chains[max_i], &merge_types[n][max_i]);
+			                    &env.chains[max_i], &merge_types[n][max_i]);
 		}
 		ir_timer_stop(timer_loop_cmg);
 		env.chain_count--;
 	}
-	EXTTSP_DEBUG_OUTPUT_CHAINS;
 	ir_timer_start(timer_shutdown);
 	// get remaining chain which contains the schedule
 	exttsp_chain_t *final_chain = NULL;
