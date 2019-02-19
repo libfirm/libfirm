@@ -589,6 +589,7 @@ static void collect_blocks(ir_node *irn, void *env)
 
 static ir_node **be_create_random_block_schedule(ir_graph *irg)
 {
+	remove_empty_blocks(irg);
 	start_block = get_irg_start_block(irg);
 	end_block = get_irg_end_block(irg);
 
@@ -1087,6 +1088,9 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 	exttsp_env_t env;
 	struct obstack obst;
 	env.irg = irg;
+
+	// remove blocks that just contain a jump instruction
+	remove_empty_blocks(irg);
 
 	// count blocks and edges
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
