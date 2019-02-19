@@ -27,6 +27,7 @@
 #include "bearch.h"
 #include "beirg.h"
 #include "bemodule.h"
+#include "benode.h"
 #include "besched.h"
 #include "debug.h"
 #include "execfreq.h"
@@ -40,6 +41,7 @@
 #include "pdeq.h"
 #include "irprintf.h"
 #include <sys/time.h>
+#include "target_t.h"
 #include "util.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -611,15 +613,23 @@ static ir_node **be_create_random_block_schedule(ir_graph *irg)
 	return block_list;
 }
 
-
-// TODO replace with better size estimation
+/*
+ * Estimate size of block in machine code in bytes.
+ */
 static int get_block_size(ir_node *block)
 {
 	// try to estimate block size in final binary
 	int size = 0;
+	//DB((dbg, LEVEL_1, "estimating size of %+F:\n", block));
 	sched_foreach(block, node) {
-		size += 4; // 32 bit per node
+		ir_op *const op = get_irn_op(node);
+		if (op == op_Phi || op == op_be_Keep || op == op_be_Start
+				||op == op_be_Unknown) continue;
+		unsigned int node_size = ir_target.isa->get_op_estimated_size(node);
+		//DB((dbg, LEVEL_1, "\t%+F : %d\n", node, node_size/8));
+		size += node_size/8;
 	}
+	//DB((dbg, LEVEL_1, "===> %d byte\n", size));
 	return size;
 }
 

@@ -301,6 +301,12 @@ static unsigned mips_get_op_estimated_cost(ir_node const *const node)
 	return 1;
 }
 
+static unsigned mips_get_op_estimated_size(const ir_node *node)
+{
+	(void)node; // all instructions consist of 32 byte
+	return 32;
+}
+
 arch_isa_if_t const mips_isa_if = {
 	.name                  = "mips",
 	.pointer_size          = 4,
@@ -318,6 +324,7 @@ arch_isa_if_t const mips_isa_if = {
 	.lower_for_target      = mips_lower_for_target,
 	.register_prefix       = '$',
 	.get_op_estimated_cost = mips_get_op_estimated_cost,
+	.get_op_estimated_size = mips_get_op_estimated_size,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_mips)

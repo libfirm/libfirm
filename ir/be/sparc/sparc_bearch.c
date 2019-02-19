@@ -547,6 +547,12 @@ static unsigned sparc_get_op_estimated_cost(const ir_node *node)
 	return 1;
 }
 
+static unsigned sparc_get_op_estimated_size(const ir_node *node)
+{
+	(void)node; // all instructions consist of 32 bit
+	return 32;
+}
+
 arch_isa_if_t const sparc_isa_if = {
 	.name                  = "sparc",
 	.pointer_size          = 4,
@@ -564,6 +570,7 @@ arch_isa_if_t const sparc_isa_if = {
 	.lower_for_target      = sparc_lower_for_target,
 	.handle_intrinsics     = sparc_handle_intrinsics,
 	.get_op_estimated_cost = sparc_get_op_estimated_cost,
+	.get_op_estimated_size = sparc_get_op_estimated_size,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc)

@@ -322,6 +322,12 @@ struct arch_isa_if_t {
 	 * number of cycles necessary to execute the instruction.
 	 */
 	unsigned (*get_op_estimated_cost)(const ir_node *irn);
+
+	/**
+	 * Get a size estimation for node @p irn. The size should be similar to the
+	 * number of bits necessary to represent the instruction in machine code.
+	 */
+	unsigned (*get_op_estimated_size)(const ir_node *irn);
 };
 
 static inline bool arch_irn_is_ignore(const ir_node *irn)

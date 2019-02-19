@@ -141,6 +141,12 @@ static unsigned TEMPLATE_get_op_estimated_cost(const ir_node *node)
 	return 1;
 }
 
+static unsigned TEMPLATE_get_op_estimated_size(const ir_node *node)
+{
+	(void)node;
+	return 32;
+}
+
 arch_isa_if_t const TEMPLATE_isa_if = {
 	.name                  = "TEMPLATE",
 	.pointer_size          = 4,
@@ -157,6 +163,7 @@ arch_isa_if_t const TEMPLATE_isa_if = {
 	.generate_code         = TEMPLATE_generate_code,
 	.lower_for_target      = TEMPLATE_lower_for_target,
 	.get_op_estimated_cost = TEMPLATE_get_op_estimated_cost,
+	.get_op_estimated_size = TEMPLATE_get_op_estimated_size,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)

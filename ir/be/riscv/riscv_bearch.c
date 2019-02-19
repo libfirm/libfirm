@@ -308,6 +308,12 @@ static unsigned riscv_get_op_estimated_cost(ir_node const *const node)
 	return 1;
 }
 
+static unsigned riscv_get_op_estimated_size(ir_node const *const node)
+{
+	(void)node; // TODO refine
+	return 32;
+}
+
 arch_isa_if_t const riscv32_isa_if = {
 	.name                  = "riscv32",
 	.pointer_size          = 4,
@@ -324,6 +330,7 @@ arch_isa_if_t const riscv32_isa_if = {
 	.generate_code         = riscv_generate_code,
 	.lower_for_target      = riscv_lower_for_target,
 	.get_op_estimated_cost = riscv_get_op_estimated_cost,
+	.get_op_estimated_size = riscv_get_op_estimated_size,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_riscv)

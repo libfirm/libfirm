@@ -787,6 +787,12 @@ static unsigned amd64_get_op_estimated_cost(const ir_node *node)
 	return 1;
 }
 
+static unsigned amd64_get_op_estimated_size(const ir_node *node)
+{
+	(void)node; // TODO refine
+	return 24;
+}
+
 /** we don't have a concept of aliasing registers, so enumerate them
  * manually for the asm nodes. */
 static be_register_name_t const amd64_additional_reg_names[] = {
@@ -827,6 +833,7 @@ arch_isa_if_t const amd64_isa_if = {
 	.additional_reg_names  = amd64_additional_reg_names,
 	.handle_intrinsics     = amd64_handle_intrinsics,
 	.get_op_estimated_cost = amd64_get_op_estimated_cost,
+	.get_op_estimated_size = amd64_get_op_estimated_size,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)

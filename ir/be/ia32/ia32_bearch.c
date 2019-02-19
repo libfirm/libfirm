@@ -266,6 +266,24 @@ static unsigned ia32_get_op_estimated_cost(ir_node const *const irn)
 }
 
 /**
+ * Get the estimated machine code size for @p irn.
+ *
+ * @param irn  The node.
+ *
+ * @return     The estimated size for this operation in bits
+ */
+static unsigned ia32_get_op_estimated_size(ir_node const *const irn)
+{
+	if (be_is_IncSP(irn)) {
+		if (be_get_IncSP_offset(irn) == 0)
+			return 0;
+		return 24;
+	}
+	// TODO refine
+	return 24;
+}
+
+/**
  * Check if irn can load its operand at position i from memory (source addressmode).
  * @param irn    The irn to be checked
  * @param i      The operands position
@@ -1672,6 +1690,7 @@ arch_isa_if_t const ia32_isa_if = {
 	.lower_for_target      = ia32_lower_for_target,
 	.additional_reg_names  = ia32_additional_reg_names,
 	.get_op_estimated_cost = ia32_get_op_estimated_cost,
+	.get_op_estimated_size = ia32_get_op_estimated_size,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32)

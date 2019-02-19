@@ -303,6 +303,12 @@ static unsigned arm_get_op_estimated_cost(const ir_node *node)
 	return 1;
 }
 
+static unsigned arm_get_op_estimated_size(const ir_node *node)
+{
+	(void)node; /* TODO refine */
+	return 32;
+}
+
 arch_isa_if_t const arm_isa_if = {
 	.name                  = "arm",
 	.pointer_size          = 4,
@@ -320,6 +326,7 @@ arch_isa_if_t const arm_isa_if = {
 	.lower_for_target      = arm_lower_for_target,
 	.handle_intrinsics     = arm_handle_intrinsics,
 	.get_op_estimated_cost = arm_get_op_estimated_cost,
+	.get_op_estimated_size = arm_get_op_estimated_size,
 };
 
 static const lc_opt_enum_int_items_t arm_fpu_items[] = {
