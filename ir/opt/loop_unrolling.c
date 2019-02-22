@@ -13,7 +13,7 @@
 #include "xmalloc.h"
 #include "debug.h"
 #include <assert.h>
-#include <math.h>
+#include "irnode_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -256,7 +256,30 @@ static unsigned find_optimal_factor(long number, unsigned max) {
 	return max;
 }
 
-static unsigned find_suitable_factor(ir_node *const header, unsigned max) {
+/**
+ * walk trivial phis (with only one input) until another node is found
+ */
+static ir_node* skip_trivial_phis(ir_node *start) {
+	if (is_Phi(start) && get_Phi_n_preds(start) == 1) {
+		return skip_trivial_phis(get_Phi_pred(start, 0));
+	}
+	return start;
+}
+
+/**
+ * Analyzes loop and decides whether it should be unrolled or not and chooses a suitable unroll factor.
+ *
+ * Currently only loops featuring a counter variable with constant start, step and limit known at compile time
+ * are considered for unrolling.
+ * Tries to find a divisor of the number of loop iterations which is smaller than the maximum unroll factor
+ * and is a power of two. In these cases, additional optimizations are possible.
+ *
+ * @param header loop header
+ * @param max max allowed unroll factor
+ * @param fully_unroll pointer to where the decision to fully unroll the loop is stored
+ * @return unroll factor to use fot this loop; 0 if loop should not be unrolled
+ */
+static unsigned find_suitable_factor(ir_node *const header, unsigned max, bool *fully_unroll) {
 
 	unsigned const n_outs = get_irn_n_outs(header);
 	unsigned factor = 1;
@@ -276,47 +299,67 @@ static unsigned find_suitable_factor(ir_node *const header, unsigned max) {
 			ir_tarval *tv_step = NULL;
 			ir_tarval *tv_limit = NULL;
 
-			ir_node *phi;
+			ir_node *header_phi;
 			ir_node *cmp_right = get_Cmp_right(node);
 			if (is_Const(cmp_right) && mode_is_int(get_irn_mode(cmp_right))) {
 				if (!is_Phi(get_Cmp_left(node))) {
 					return 0;
 				}
 				// found Cmp(?, const)
-				phi = get_Cmp_left(node);
+				header_phi = get_Cmp_left(node);
 				tv_limit = get_Const_tarval(get_Cmp_right(node));
 			} else if (is_Const(get_Cmp_left(node))) {
 				if (!is_Phi(get_Cmp_right(node))) {
 					return 0;
 				}
 				// found Cmp(const, ?)
-				phi = get_Cmp_right(node);
+				header_phi = get_Cmp_right(node);
 				tv_limit = get_Const_tarval(get_Cmp_left(node));
 			} else {
 				return 0;
 			}
-			int phi_preds = get_Phi_n_preds(phi);
+			int phi_preds = get_Phi_n_preds(header_phi);
+			ir_node *cnt_add = NULL;
 			for (int j = 0; j < phi_preds; j++) {
-				ir_node *phi_pred = get_Phi_pred(phi, j);
+				ir_node *phi_pred = get_Phi_pred(header_phi, j);
 				if (is_Const(phi_pred)) {
 					// found constant init for (possible) counter
-					tv_init = get_Const_tarval(phi_pred);
-					continue;
+					ir_tarval *const_tv = get_Const_tarval(phi_pred);
+					if (tv_init == NULL || tarval_cmp(tv_init, const_tv) == ir_relation_equal) {
+						tv_init = const_tv;
+						continue;
+					}
 				}
+				phi_pred = skip_trivial_phis(phi_pred);
 				// is_binop() would find more cases, but we currently can only optimize further if we have an Add here
-				if (is_Add(phi_pred)) {
+				if (is_Add(phi_pred) && cnt_add == NULL) {
+					cnt_add = phi_pred;
 					ir_node *left = get_binop_left(phi_pred);
 					ir_node *right = get_binop_right(phi_pred);
 					if (is_Const(right) && is_Phi(left)) {
 						// found Add(phi, const)
-						// LCSSA construction builds an additional phi, so this needs to be checked
-						if (left == phi || (get_Phi_n_preds(left) == 1 && get_Phi_pred(left, 0) == phi)) {
-							// found constant step
-							tv_step = get_Const_tarval(right);
+
+						bool found_constant_step = false;
+						// LCSSA construction builds additional phi nodes
+						do {
+							if (left == header_phi) {
+								found_constant_step = true;
+								tv_step = get_Const_tarval(right);
+								break;
+							}
+							left = get_Phi_pred(left, 0);
+
+						} while (is_Phi(left) && (get_Phi_n_preds(left) == 1 || left == header_phi));
+
+						if (found_constant_step) {
 							continue;
 						}
 					}
 					return 0;
+				}
+				// multiple uses of the same loop counter increment/decrement
+				if (phi_pred == cnt_add) {
+					continue;
 				} else {
 					return 0;
 				}
@@ -342,10 +385,139 @@ static unsigned find_suitable_factor(ir_node *const header, unsigned max) {
 			long loop_count = interval / step;
 			DB((dbg, LEVEL_3 , "\tinit: %ld, step: %ld, limit: %ld, loop count: %ld\n", init, step, limit, loop_count));
 			factor = find_optimal_factor(loop_count, max);
+			if (factor == loop_count) {
+				*fully_unroll = true;
+			}
 			break;
 		}
 	}
 	return factor;
+}
+
+/**
+ * Remove block input with given index.
+ */
+static void remove_block_input(ir_node *block, int idx)
+{
+	int i, j, n = get_Block_n_cfgpreds(block) - 1;
+	unsigned k;
+	ir_node *phi;
+
+	ir_node **ins = ALLOCAN(ir_node*, n);
+
+	if (n == 1) {
+		/* all Phis will be deleted */
+		//ir_node *next_phi;
+
+		for (k = 0; k < get_irn_n_outs(block); k++) {
+			phi = get_irn_out(block, k);
+			if (is_Phi(phi)) {
+				if (get_Phi_loop(phi)) {
+					remove_keep_alive(phi);
+					set_Phi_loop(phi, false);
+				}
+				exchange(phi, get_Phi_pred(phi, idx ^ 1));
+			}
+		}
+	} else {
+		for (k = 0; k < get_irn_n_outs(block); k++) {
+			phi = get_irn_out(block, k);
+			if (is_Phi(phi)) {
+				for (i = j = 0; i <= n; ++i) {
+					if (i != idx)
+						ins[j++] = get_Phi_pred(phi, i);
+				}
+				set_irn_in(phi, n, ins);
+			}
+		}
+	}
+	for (i = j = 0; i <= n; ++i) {
+		if (i != idx)
+			ins[j++] = get_Block_cfgpred(block, i);
+	}
+	set_irn_in(block, n, ins);
+}
+
+static void rewire_fully_unrolled(ir_loop *const loop, ir_node *header) {
+	int n_header_preds = get_irn_arity(header);
+
+	ir_node *after_loop = NULL;
+	int n_after = 0;
+	// 1. search for the after_loop block
+	unsigned const header_n_outs = get_irn_n_outs(header);
+	for (unsigned i = 0; i < header_n_outs; ++i) {
+		int n;
+		ir_node *const succ = get_irn_out_ex(header, i, &n);
+		if (is_Proj(succ) && get_irn_mode(succ) == mode_X) {
+			unsigned proj_outs = get_irn_n_outs(succ);
+			assert(proj_outs == 1);
+			for (unsigned j = 0; j < proj_outs; j++) {
+				ir_node *cf_succ = get_irn_out_ex(succ, j, &n_after);
+				if (get_irn_link(cf_succ) == NULL && is_Block(cf_succ) && !block_is_inside_loop(cf_succ, loop)) {
+					// found block after loop
+					after_loop = cf_succ;
+				}
+			}
+		}
+	}
+
+	if (after_loop == NULL) {
+		return;
+	}
+
+	for (int i = 0; i < n_header_preds; i++) {
+		// 2. find loop body blocks which jump back into the loop header
+		ir_node *pred_block = get_nodes_block(get_irn_n(header, i));
+		if (get_irn_link(pred_block) == NULL) {
+			continue;
+		}
+
+		// 3. jump from such loop body block into block after_loop instead
+		ir_node *old_jump = get_irn_n(header, i);
+		add_edge(after_loop, old_jump);
+
+		// 4. add inputs to phis inside the after_loop block
+		unsigned const n_outs = get_irn_n_outs(after_loop);
+		for (unsigned j = 0; j < n_outs; ++j) {
+			ir_node *const phi = get_irn_out(after_loop, j);
+			if (is_Phi(phi)) {
+				ir_node *const pred = get_irn_n(phi, n_after);
+				ir_node *new_pred = NULL;
+				if (is_Phi(pred)) {
+					// case: pred is phi in loop header. use input i of loop header phi
+					new_pred = get_irn_n(pred, i);
+				} else if (get_irn_mode(phi) == mode_M) {
+					// case: memory phi in after_loop: search memory phi in loop header
+					// note: if there are no nodes except the phi on the memory path within the loop header, the case
+					// above already handled the memory phi correctly.
+					assert(get_irn_mode(pred) == mode_M);
+					new_pred = pred;
+					// walk memory path until phi is found
+					while (!is_Phi(new_pred)) {
+						new_pred = is_memop(new_pred) ? get_memop_mem(new_pred) : get_irn_n(new_pred, 0);
+					}
+					assert(is_Phi(new_pred));
+					// use input i of loop header memory phi
+					new_pred = get_irn_n(new_pred, i);
+				} else {
+					// case: pred was copied during loop unrolling
+					new_pred = get_irn_link(pred);
+				}
+				if (new_pred == NULL) {
+					new_pred = pred;
+				}
+				add_edge(phi, new_pred);
+			}
+		}
+		// 5. remove input of loop header which represents jump from the last loop iteration
+		remove_block_input(header, i);
+		n_header_preds--;
+		i--;
+	}
+
+	// 6. cleanup keepalives
+	remove_End_Bads_and_doublets(get_irg_end(get_irn_irg(header)));
+	DB((dbg, LEVEL_2, "fully unrolled loop %+F\n", loop));
 }
 
 static unsigned n_loops_unrolled = 0;
@@ -358,7 +530,8 @@ static void unroll_loop(ir_loop *const loop, unsigned factor)
 
 	DB((dbg, LEVEL_3, "\tfound loop header %N\n", header));
 
-	factor = find_suitable_factor(header, factor);
+	bool fully_unroll = false;
+	factor = find_suitable_factor(header, factor, &fully_unroll);
 	if (factor <= 1) {
 		return;
 	}
@@ -390,6 +563,11 @@ static void unroll_loop(ir_loop *const loop, unsigned factor)
 
 	}
 	++n_loops_unrolled;
+
+	// fully unroll: remove control flow loop
+	if (fully_unroll) {
+		rewire_fully_unrolled(loop, header);
+	}
 }
 
 static size_t count_nodes(ir_loop *const loop)
