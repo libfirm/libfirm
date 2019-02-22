@@ -333,7 +333,7 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 		if (get_irn_mode(irn) == mode_T) {
 			unsigned     clique_size         = 0;
 			unsigned     n_alloc             = 0;
-			pbqp_node   *clique[cls->n_regs];
+			pbqp_node_t *clique[cls->n_regs];
 			bipartite_t *bp                  = bipartite_new(cls->n_regs, cls->n_regs);
 
 			/* add all proj after a perm to clique */
@@ -349,9 +349,9 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 
 				if (is_Perm_Proj(proj)) {
 					/* add proj to clique */
-					pbqp_node *clique_member = get_node(pbqp_inst,proj->node_idx);
-					vector    *costs         = clique_member->costs;
-					unsigned   idx           = 0;
+					pbqp_node_t *clique_member = get_node(pbqp_inst,proj->node_idx);
+					vector_t    *costs         = clique_member->costs;
+					unsigned     idx           = 0;
 
 					clique[clique_size] = clique_member;
 
@@ -369,15 +369,15 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 
 			if (clique_size > 0) {
 				for (size_t i = ARR_LEN(temp_list); i-- > 0;) {
-					pbqp_node *clique_candidate  = temp_list[i];
-					unsigned   idx               = 0;
-					bool       isMember          = true;
+					pbqp_node_t *clique_candidate  = temp_list[i];
+					unsigned     idx               = 0;
+					bool         isMember          = true;
 
 					/* clique size not bigger then register class size */
 					if (clique_size >= cls->n_regs) break;
 
 					for (idx = 0; idx < clique_size; idx++) {
-						pbqp_node *member = clique[idx];
+						pbqp_node_t *member = clique[idx];
 
 						if (member == clique_candidate) {
 							isMember = false;
@@ -396,7 +396,7 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 					/* add candidate to clique */
 					clique[clique_size] = clique_candidate;
 
-					vector *costs = clique_candidate->costs;
+					vector_t *costs = clique_candidate->costs;
 					for (idx = 0; idx < costs->len; idx++) {
 						if (costs->entries[idx].data != INF_COSTS) {
 							bipartite_add(bp, clique_size, idx);
@@ -414,9 +414,8 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 			/* assign colors */
 			unsigned nodeIdx = 0;
 			for (nodeIdx = 0; nodeIdx < clique_size; nodeIdx++) {
-				vector *costs = clique[nodeIdx]->costs;
-				int     idx;
-				for (idx = 0; idx < (int)costs->len; idx++) {
+				vector_t *costs = clique[nodeIdx]->costs;
+				for (int idx = 0; idx < (int)costs->len; idx++) {
 					if (assignment[nodeIdx] != idx) {
 						costs->entries[idx].data = INF_COSTS;
 					}
