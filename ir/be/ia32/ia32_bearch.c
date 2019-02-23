@@ -274,13 +274,27 @@ static unsigned ia32_get_op_estimated_cost(ir_node const *const irn)
  */
 static unsigned ia32_get_op_estimated_size(ir_node const *const irn)
 {
+	// handle IncSP nodes correctly
 	if (be_is_IncSP(irn)) {
 		if (be_get_IncSP_offset(irn) == 0)
 			return 0;
 		return 24;
 	}
+	// ~2 byte op code
+	unsigned int size = 16;
+	// estimate size of immediates
+	for (int i=0; i<get_irn_arity(irn); i++) {
+		if (is_ia32_Immediate(get_irn_n(irn, i))) {
+			size += 32;
+			break;
+		}
+	}
+	if (size == 16 && is_ia32_irn(irn)) {
+		int32_t immediate = get_ia32_attr_const(irn)->addr.immediate.offset;
+		if (immediate > 0) size += 16;
+	}
 	// TODO refine
-	return 24;
+	return size;
 }
 
 /**
