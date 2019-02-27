@@ -549,8 +549,8 @@ static unsigned sparc_get_op_estimated_cost(const ir_node *node)
 
 static unsigned sparc_get_op_estimated_size(const ir_node *node)
 {
-	(void)node; // all instructions consist of 32 bit
-	return 32;
+	(void)node; // all instructions consist of 4 byte
+	return 4;
 }
 
 arch_isa_if_t const sparc_isa_if = {

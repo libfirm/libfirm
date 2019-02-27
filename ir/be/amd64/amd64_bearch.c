@@ -790,7 +790,7 @@ static unsigned amd64_get_op_estimated_cost(const ir_node *node)
 static unsigned amd64_get_op_estimated_size(const ir_node *node)
 {
 	(void)node; // TODO refine
-	return 24;
+	return 3;
 }
 
 /** we don't have a concept of aliasing registers, so enumerate them

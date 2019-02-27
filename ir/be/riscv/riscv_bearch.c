@@ -311,7 +311,7 @@ static unsigned riscv_get_op_estimated_cost(ir_node const *const node)
 static unsigned riscv_get_op_estimated_size(ir_node const *const node)
 {
 	(void)node; // TODO refine
-	return 32;
+	return 4;
 }
 
 arch_isa_if_t const riscv32_isa_if = {

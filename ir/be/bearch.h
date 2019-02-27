@@ -325,7 +325,7 @@ struct arch_isa_if_t {
 
 	/**
 	 * Get a size estimation for node @p irn. The size should be similar to the
-	 * number of bits necessary to represent the instruction in machine code.
+	 * number of bytes necessary to represent the instruction in machine code.
 	 */
 	unsigned (*get_op_estimated_size)(const ir_node *irn);
 };

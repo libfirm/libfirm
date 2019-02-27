@@ -144,7 +144,7 @@ static unsigned TEMPLATE_get_op_estimated_cost(const ir_node *node)
 static unsigned TEMPLATE_get_op_estimated_size(const ir_node *node)
 {
 	(void)node;
-	return 32;
+	return 4;
 }
 
 arch_isa_if_t const TEMPLATE_isa_if = {

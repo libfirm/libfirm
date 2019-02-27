@@ -303,8 +303,8 @@ static unsigned mips_get_op_estimated_cost(ir_node const *const node)
 
 static unsigned mips_get_op_estimated_size(const ir_node *node)
 {
-	(void)node; // all instructions consist of 32 byte
-	return 32;
+	(void)node; // all instructions consist of 4 byte
+	return 4;
 }
 
 arch_isa_if_t const mips_isa_if = {

@@ -306,7 +306,7 @@ static unsigned arm_get_op_estimated_cost(const ir_node *node)
 static unsigned arm_get_op_estimated_size(const ir_node *node)
 {
 	(void)node; /* TODO refine */
-	return 32;
+	return 4;
 }
 
 arch_isa_if_t const arm_isa_if = {
