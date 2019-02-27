@@ -30,16 +30,13 @@
 #include "benode.h"
 #include "besched.h"
 #include "debug.h"
-#include "execfreq.h"
 #include "execfreq_t.h"
 #include "iredges_t.h"
 #include "irgmod.h"
 #include "irtools.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
-#include <math.h>
 #include "pdeq.h"
-#include "irprintf.h"
 #include <sys/time.h>
 #include "target_t.h"
 #include "util.h"
