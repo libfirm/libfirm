@@ -634,38 +634,6 @@ static int get_block_size(ir_node *block)
 	return size;
 }
 
-// ****************************************************************************
-// TODO remove graphviz debug code
-// ****************************************************************************
-static FILE *dump_file_graphviz;
-
-static void print_block_graphviz(ir_node *block, void *env)
-{
-	ir_fprintf(dump_file_graphviz,
-		"\t\"%+F\" [label=\"%+F\\n freq:%f\\n size: %d bytes %s %s\"]\n",
-		block, block, get_block_execfreq(block), get_block_size(block),
-		get_irg_start_block((ir_graph*)env)==block ? "\\nSTART" : "",
-		get_irg_end_block((ir_graph*)env)==block ? "\\nEND" : "");
-	foreach_block_succ(block, edge) {
-		ir_fprintf(dump_file_graphviz, "\t\"%+F\" -> \"%+F\"[label=\"%f\"]\n",
-			block, get_edge_src_irn(edge), get_edge_execfreq(edge));
-	}
-}
-
-static void dump_cfg_graphviz(ir_graph *irg)
-{
-	char file[64];
-	ir_snprintf(file, 64, "%F-cfg-dump.gv", irg);
-	dump_file_graphviz = fopen(file, "w");
-	if (dump_file_graphviz) {
-		ir_fprintf(dump_file_graphviz, "digraph {\n");
-		irg_block_walk_graph(irg, print_block_graphviz, NULL, (void*)irg);
-		ir_fprintf(dump_file_graphviz, "}\n");
-		fclose(dump_file_graphviz);
-	}
-}
-// ****************************************************************************
-
 /*
  * Data structures used by the ExtTSP algorithm.
  */
@@ -1110,8 +1078,6 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 		gains[i]        = OALLOCNZ(&obst, exttsp_score_t, env.chain_count);
 		merge_types[i]  = OALLOCNZ(&obst, int,            env.chain_count);
 	}
-
-	//dump_cfg_graphviz(irg); // TODO remove graphviz
 
 	// initial chain creation
 	env.chain_count = env.block_count = env.edge_count = 0;
