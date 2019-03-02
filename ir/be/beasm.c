@@ -207,7 +207,7 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 
 	/* Handle early clobbers. */
 	size_t                   const orig_n_ins  = ARR_LEN(in_reqs);
-	size_t                         orig_n_outs = ARR_LEN(out_reqs);
+	size_t                   const orig_n_outs = ARR_LEN(out_reqs);
 	ir_asm_constraint const *const constraints = get_ASM_constraints(node);
 	for (unsigned o = 0, n = get_ASM_n_constraints(node); o != n; ++o) {
 		ir_asm_constraint const *const constraint = &constraints[o];
@@ -290,6 +290,9 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 		}
 	}
 
+	unsigned const n_ins  = ARR_LEN(in);
+	unsigned const n_outs = ARR_LEN(out_reqs); // Clobbers might add further outputs.
+
 	/* Attempt to make ASM node register pressure faithful.
 	 * (This does not work for complicated cases yet!)
 	 *
@@ -302,31 +305,28 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	 *        before...
 	 * FIXME: need to do this per register class...
 	 */
-	orig_n_outs = ARR_LEN(out_reqs); // Clobbers might add further outputs.
 	uint8_t add_pressure[ir_target.isa->n_register_classes];
 	memset(add_pressure, 0, sizeof(add_pressure));
-	if (orig_n_outs < orig_n_ins) {
-		bitset_t *const used_ins = bitset_alloca(orig_n_ins);
-		for (size_t o = pn_be_Asm_first_out; o < orig_n_outs; ++o) {
+	if (n_outs < n_ins) {
+		bitset_t *const used_ins = bitset_alloca(n_ins);
+		for (size_t o = pn_be_Asm_first_out; o < n_outs; ++o) {
 			arch_register_req_t const *const outreq = out_reqs[o];
 			assert(outreq->cls->index < ARRAY_SIZE(add_pressure));
-			if (!match_requirement(in_reqs, orig_n_ins, used_ins, outreq))
+			if (!match_requirement(in_reqs, n_ins, used_ins, outreq))
 				add_pressure[outreq->cls->index]++;
 		}
 	} else {
-		bitset_t *const used_outs = bitset_alloca(orig_n_outs);
-		for (unsigned i = n_be_Asm_first_in; i < orig_n_ins; ++i) {
+		bitset_t *const used_outs = bitset_alloca(n_outs);
+		for (unsigned i = n_be_Asm_first_in; i < n_ins; ++i) {
 			arch_register_req_t const *const inreq = in_reqs[i];
 			assert(inreq->cls->index < ARRAY_SIZE(add_pressure));
-			if (!match_requirement(out_reqs, orig_n_outs, used_outs, inreq))
+			if (!match_requirement(out_reqs, n_outs, used_outs, inreq))
 				add_pressure[inreq->cls->index]++;
 		}
 	}
 
 	dbg_info                   *const dbgi        = get_irn_dbg_info(node);
 	ir_node                    *const block       = be_transform_nodes_block(node);
-	unsigned                    const n_ins       = ARR_LEN(in);
-	unsigned                    const n_outs      = ARR_LEN(out_reqs);
 	ident                      *const text        = get_ASM_text(node);
 	arch_register_req_t const **const dup_in_reqs = DUP_ARR_D(arch_register_req_t const*, obst, in_reqs);
 	ir_node                    *const new_node    = be_new_Asm(dbgi, block, n_ins, in, dup_in_reqs, n_outs, text, operands);
