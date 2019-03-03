@@ -587,6 +587,11 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 	panic("invalid asm operand kind");
 }
 
+static void emit_jmp(ir_node const *const node, ir_node const *const target)
+{
+	BE_EMIT_JMP(amd64, node, "jmp", target) {}
+}
+
 static void emit_amd64_asm(const ir_node *node)
 {
 	be_emit_asm(node, emit_amd64_asm_operand);
@@ -597,7 +602,7 @@ static void emit_amd64_asm(const ir_node *node)
  */
 static void emit_amd64_jmp(const ir_node *node)
 {
-	BE_EMIT_JMP(amd64, node, "jmp", node) {}
+	emit_jmp(node, node);
 }
 
 static void emit_jumptable_target(ir_entity const *const table,
@@ -663,7 +668,7 @@ static void emit_amd64_jcc(const ir_node *irn)
 	/* emit the true proj */
 	amd64_emitf(irn, "j%PX %L", (int)cc, projs.t);
 
-	BE_EMIT_JMP(amd64, irn, "jmp", projs.f) {}
+	emit_jmp(irn, projs.f);
 }
 
 static void emit_amd64_mov_gp(const ir_node *node)

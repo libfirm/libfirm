@@ -94,6 +94,11 @@ unknown:
 	}
 }
 
+static void emit_jmp(ir_node const *const node, ir_node const *const target)
+{
+	BE_EMIT_JMP(riscv, node, "j", target) {}
+}
+
 static void emit_riscv_asm_operand(ir_node const *const node, char const modifier, unsigned const pos)
 {
 	be_asm_attr_t       const *const attr = get_be_asm_attr_const(node);
@@ -200,13 +205,13 @@ static void emit_riscv_bcc(ir_node const *const node)
 		riscv_emitf(node, fmt, riscv_negate_cond(cond), projs.f);
 	} else {
 		riscv_emitf(node, fmt, cond, projs.t);
-		BE_EMIT_JMP(riscv, node, "j", projs.f) {}
+		emit_jmp(node, projs.f);
 	}
 }
 
 static void emit_riscv_j(ir_node const *const node)
 {
-	BE_EMIT_JMP(riscv, node, "j", node) {}
+	emit_jmp(node, node);
 }
 
 static void emit_jumptable_target(ir_entity const *const table, ir_node const *const proj_x)

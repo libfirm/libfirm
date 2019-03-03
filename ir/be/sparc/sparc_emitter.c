@@ -664,6 +664,16 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 	panic("invalid asm operand kind");
 }
 
+static void emit_jmp(ir_node const *const node, ir_node const *const target)
+{
+	BE_EMIT_JMP(sparc, node, "ba", target) {
+		/* TODO: fill this slot as well */
+		emitting_delay_slot = true;
+		sparc_emitf(NULL, "nop");
+		emitting_delay_slot = false;
+	}
+}
+
 static void emit_sparc_ASM(const ir_node *node)
 {
 	be_emit_asm(node, emit_sparc_asm_operand);
@@ -1082,12 +1092,7 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 	sparc_emitf(node, "%s%A %L", get_cc(relation), projs.t);
 	fill_delay_slot(node);
 
-	BE_EMIT_JMP(sparc, node, "ba", projs.f) {
-		/* TODO: fill this slot as well */
-		emitting_delay_slot = true;
-		sparc_emitf(NULL, "nop");
-		emitting_delay_slot = false;
-	}
+	emit_jmp(node, projs.f);
 }
 
 static void emit_sparc_Bicc(const ir_node *node)

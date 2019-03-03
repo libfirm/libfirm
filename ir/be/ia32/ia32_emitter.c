@@ -596,6 +596,11 @@ static void ia32_emit_exc_label(const ir_node *node)
 	be_emit_irprintf("%lu", get_ia32_exc_label_id(node));
 }
 
+static void emit_jmp(ir_node const *const node, ir_node const *const target)
+{
+	BE_EMIT_JMP(ia32, node, "jmp", target) {}
+}
+
 /**
  * Emits the jump sequence for a conditional jump (cmp + jmp_true + jmp_false)
  */
@@ -652,7 +657,7 @@ static void emit_ia32_Jcc(const ir_node *node)
 		be_emit_write_line();
 	}
 
-	BE_EMIT_JMP(ia32, node, "jmp", projs.f) {}
+	emit_jmp(node, projs.f);
 }
 
 /**
@@ -716,7 +721,7 @@ static void emit_ia32_SwitchJmp(const ir_node *node)
  */
 static void emit_ia32_Jmp(const ir_node *node)
 {
-	BE_EMIT_JMP(ia32, node, "jmp", node) {}
+	emit_jmp(node, node);
 }
 
 static void emit_ia32_asm_register(const arch_register_t *reg, char modifier,

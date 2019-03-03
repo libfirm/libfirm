@@ -350,6 +350,11 @@ static void emit_arm_fConst(const ir_node *irn)
 	arm_emitf(irn, "ldf%m %D0, %C", mode, entry);
 }
 
+static void emit_jmp(ir_node const *const node, ir_node const *const target)
+{
+	BE_EMIT_JMP(arm, node, "b", target) {}
+}
+
 /**
  * Emit a Compare with conditional branch.
  */
@@ -393,7 +398,7 @@ static void emit_arm_Bcc(const ir_node *irn)
 	/* emit the true proj */
 	arm_emitf(irn, "b%s %L", suffix, projs.t);
 
-	BE_EMIT_JMP(arm, irn, "b", projs.f) {}
+	emit_jmp(irn, projs.f);
 }
 
 static void emit_jumptable_target(ir_entity const *const table,
@@ -542,7 +547,7 @@ static void emit_be_MemPerm(const ir_node *node)
 
 static void emit_arm_B(const ir_node *node)
 {
-	BE_EMIT_JMP(arm, node, "b", node) {}
+	emit_jmp(node, node);
 }
 
 /**

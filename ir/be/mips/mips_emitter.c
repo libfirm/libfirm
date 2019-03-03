@@ -134,6 +134,13 @@ static void emit_mips_asm_operand(ir_node const *const node, char const modifier
 	panic("invalid asm operand kind");
 }
 
+static void emit_jmp(ir_node const *const node, ir_node const *const target)
+{
+	BE_EMIT_JMP(mips, node, "b", target) {
+		mips_emitf(NULL, "nop");
+	}
+}
+
 static void emit_be_ASM(const ir_node *node)
 {
 	be_emit_asm(node, &emit_mips_asm_operand);
@@ -176,9 +183,7 @@ static void emit_be_Perm(ir_node const *const node)
 
 static void emit_mips_b(ir_node const *const node)
 {
-	BE_EMIT_JMP(mips, node, "b", node) {
-		mips_emitf(NULL, "nop");
-	}
+	emit_jmp(node, node);
 }
 
 static void emit_mips_bcc(ir_node const *const node)
@@ -190,9 +195,7 @@ static void emit_mips_bcc(ir_node const *const node)
 		mips_emitf(node, fmt, mips_negate_cond(cond), projs.f);
 	} else {
 		mips_emitf(node, fmt, cond, projs.t);
-		BE_EMIT_JMP(mips, node, "b", projs.f) {
-			mips_emitf(NULL, "nop");
-		}
+		emit_jmp(node, projs.f);
 	}
 }
 
