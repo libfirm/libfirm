@@ -440,7 +440,7 @@ static void emit_arm_asm_operand(ir_node const *const node, char const modifier,
 		return;
 
 	case BE_ASM_OPERAND_IMMEDIATE:
-		if (modifier != 'B' && modifier != 'c')
+		if (!be_has_modifier("Bc", modifier))
 			be_emit_char('#');
 		if (op->ent) {
 			if (modifier == 'B')

@@ -123,4 +123,9 @@ struct be_register_name_t {
 
 arch_register_t const *be_parse_register_name(char const *clobber);
 
+static inline bool be_has_modifier(char const* const candidates, char const modifier)
+{
+	return modifier != '\0' && strchr(candidates, modifier);
+}
+
 #endif

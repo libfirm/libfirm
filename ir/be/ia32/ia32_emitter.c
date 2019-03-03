@@ -792,7 +792,7 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
 	}
 
 	case BE_ASM_OPERAND_IMMEDIATE:
-		if (modifier != 'c' && modifier != 'P' && modifier != 'p')
+		if (!be_has_modifier("Pcp", modifier))
 			be_emit_char('$');
 		x86_emit_imm32(&op->u.imm32);
 		return;
