@@ -311,17 +311,21 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 		bitset_t *const used_ins = bitset_alloca(n_ins);
 		for (size_t o = pn_be_Asm_first_out; o < n_outs; ++o) {
 			arch_register_req_t const *const outreq = out_reqs[o];
-			assert(outreq->cls->index < ARRAY_SIZE(add_pressure));
-			if (!match_requirement(in_reqs, n_ins, used_ins, outreq))
-				add_pressure[outreq->cls->index]++;
+			if (!outreq->cls->manual_ra) {
+				assert(outreq->cls->index < ARRAY_SIZE(add_pressure));
+				if (!match_requirement(in_reqs, n_ins, used_ins, outreq))
+					add_pressure[outreq->cls->index]++;
+			}
 		}
 	} else {
 		bitset_t *const used_outs = bitset_alloca(n_outs);
 		for (unsigned i = n_be_Asm_first_in; i < n_ins; ++i) {
 			arch_register_req_t const *const inreq = in_reqs[i];
-			assert(inreq->cls->index < ARRAY_SIZE(add_pressure));
-			if (!match_requirement(out_reqs, n_outs, used_outs, inreq))
-				add_pressure[inreq->cls->index]++;
+			if (!inreq->cls->manual_ra) {
+				assert(inreq->cls->index < ARRAY_SIZE(add_pressure));
+				if (!match_requirement(out_reqs, n_outs, used_outs, inreq))
+					add_pressure[inreq->cls->index]++;
+			}
 		}
 	}
 
