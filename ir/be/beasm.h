@@ -26,6 +26,7 @@ typedef enum be_asm_operand_kind_t {
 	BE_ASM_OPERAND_OUTPUT_VALUE,
 	BE_ASM_OPERAND_IMMEDIATE,
 	BE_ASM_OPERAND_MEMORY,
+	BE_ASM_OPERAND_LABEL,
 } be_asm_operand_kind_t;
 
 typedef struct be_asm_operand_t {

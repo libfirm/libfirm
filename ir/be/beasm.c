@@ -421,6 +421,7 @@ static char const *be_get_constraint_name(be_asm_operand_kind_t const kind)
 	case BE_ASM_OPERAND_OUTPUT_VALUE: return "output register";
 	case BE_ASM_OPERAND_IMMEDIATE:    return "immediate";
 	case BE_ASM_OPERAND_MEMORY:       return "memory";
+	case BE_ASM_OPERAND_LABEL:        return "label";
 	}
 	panic("invalid constraint kind");
 }

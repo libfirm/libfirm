@@ -787,6 +787,11 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
 			be_emit_char('$');
 		x86_emit_imm32(&op->u.imm32);
 		return;
+
+	case BE_ASM_OPERAND_LABEL:
+		be_emit_char('$');
+		be_emit_cfop_target_pos(node, op->op.pos);
+		return;
 	}
 	panic("invalid asm operand kind");
 }

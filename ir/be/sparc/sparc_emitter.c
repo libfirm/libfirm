@@ -648,6 +648,10 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 		sparc_emit_register(arch_get_irn_register_in(node, op->op.pos));
 		return;
 
+	case BE_ASM_OPERAND_LABEL:
+		be_emit_cfop_target_pos(node, op->op.pos);
+		return;
+
 	case BE_ASM_OPERAND_OUTPUT_VALUE:
 		sparc_emit_register(arch_get_irn_register_out(node, op->op.pos));
 		return;

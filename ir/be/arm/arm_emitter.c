@@ -456,6 +456,11 @@ static void emit_arm_asm_operand(ir_node const *const node, char const modifier,
 		}
 		return;
 
+	case BE_ASM_OPERAND_LABEL:
+		be_emit_char('#');
+		be_emit_cfop_target_pos(node, op->op.pos);
+		return;
+
 	case BE_ASM_OPERAND_MEMORY:
 		be_emit_char('[');
 		arm_emit_register(arch_get_irn_register_in(node, op->op.pos));

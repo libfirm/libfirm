@@ -126,6 +126,10 @@ static void emit_mips_asm_operand(ir_node const *const node, char const modifier
 			emit_immediate_val(NULL, op->ent, op->val);
 		return;
 
+	case BE_ASM_OPERAND_LABEL:
+		be_emit_cfop_target_pos(node, op->op.pos);
+		return;
+
 	case BE_ASM_OPERAND_MEMORY:
 		be_emit_char('(');
 		emit_register(arch_get_irn_register_in(node, op->op.pos));
