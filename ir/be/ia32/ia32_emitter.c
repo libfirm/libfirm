@@ -803,7 +803,9 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
  */
 static void emit_ia32_Asm(const ir_node *node)
 {
-	be_emit_asm(node, emit_ia32_asm_operand);
+	ir_node *const fallthrough = be_emit_asm(node, emit_ia32_asm_operand);
+	if (fallthrough)
+		emit_jmp(node, fallthrough);
 }
 
 /**

@@ -355,7 +355,7 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	return new_node;
 }
 
-void be_emit_asm(ir_node const *const asmn, be_emit_asm_operand_func *const emit_asm_operand)
+ir_node *be_emit_asm(ir_node const *const asmn, be_emit_asm_operand_func *const emit_asm_operand)
 {
 	be_emit_cstring("#APP");
 	be_emit_finish_line_gas(asmn);
@@ -412,6 +412,9 @@ void be_emit_asm(ir_node const *const asmn, be_emit_asm_operand_func *const emit
 
 	be_emit_cstring("\n#NO_APP\n");
 	be_emit_write_line();
+
+	/* Return the fallthrough proj if present. */
+	return get_Proj_for_pn(asmn, pn_be_Asm_X_regular);
 }
 
 static char const *be_get_constraint_name(be_asm_operand_kind_t const kind)

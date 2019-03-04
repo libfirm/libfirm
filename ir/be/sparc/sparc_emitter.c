@@ -682,7 +682,9 @@ static void emit_jmp(ir_node const *const node, ir_node const *const target)
 
 static void emit_sparc_ASM(const ir_node *node)
 {
-	be_emit_asm(node, emit_sparc_asm_operand);
+	ir_node const *const fallthrough = be_emit_asm(node, emit_sparc_asm_operand);
+	if (fallthrough)
+		emit_jmp(node, fallthrough);
 }
 
 /**

@@ -474,7 +474,9 @@ static void emit_arm_asm_operand(ir_node const *const node, char const modifier,
 
 static void emit_be_ASM(const ir_node *node)
 {
-	be_emit_asm(node, &emit_arm_asm_operand);
+	ir_node const *const fallthrough = be_emit_asm(node, &emit_arm_asm_operand);
+	if (fallthrough)
+		emit_jmp(node, fallthrough);
 }
 
 /** Emit an IncSP node */

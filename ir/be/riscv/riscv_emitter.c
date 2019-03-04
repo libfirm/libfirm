@@ -165,7 +165,9 @@ static void emit_riscv_asm_operand(ir_node const *const node, char const modifie
 
 static void emit_be_ASM(const ir_node *node)
 {
-	be_emit_asm(node, &emit_riscv_asm_operand);
+	ir_node const *const fallthrough = be_emit_asm(node, &emit_riscv_asm_operand);
+	if (fallthrough)
+		emit_jmp(node, fallthrough);
 }
 
 static void emit_be_Copy(ir_node const *const node)

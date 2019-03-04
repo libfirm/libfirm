@@ -125,7 +125,7 @@ ir_node *be_make_asm(ir_node const *node, be_asm_info_t const *info, void *opera
 
 typedef void be_emit_asm_operand_func(ir_node const *asmn, char modifier, unsigned pos);
 
-void be_emit_asm(ir_node const *asmn, be_emit_asm_operand_func *emit_asm_operand);
+ir_node *be_emit_asm(ir_node const *asmn, be_emit_asm_operand_func *emit_asm_operand);
 
 bool be_is_valid_asm_operand_kind(ir_node const *node, char modifier, unsigned pos, be_asm_operand_kind_t have, char const *mod_any, char const *mod_imm, char const *mod_mem);
 
