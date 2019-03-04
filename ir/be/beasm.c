@@ -346,6 +346,11 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	arch_register_req_t const **const dup_in_reqs = DUP_ARR_D(arch_register_req_t const*, obst, in_reqs);
 	ir_node                    *const new_node    = be_new_Asm(dbgi, block, n_ins, in, dup_in_reqs, n_outs, text, operands);
 
+	if (n_labels != 0) {
+		ir_set_throws_exception(new_node, true);
+		set_irn_pinned(new_node, op_pin_state_pinned);
+	}
+
 	for (unsigned i = 0; i != ARRAY_SIZE(add_pressure); ++i) {
 		if (add_pressure[i] != 0) {
 			arch_register_class_t const *const cls = &ir_target.isa->register_classes[i];
