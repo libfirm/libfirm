@@ -7,6 +7,7 @@ import sys
 
 class Node(object):
     '''Node base class'''
+    only_regular = False
     pinned = "no"
     flags = []
     ins = []
@@ -96,7 +97,7 @@ def verify_node(node):
         if not inout_contains(node.outs, "X_regular"):
             print("ERROR: fragile node %s needs an output named 'X_regular'" %
                   node.name)
-        if not inout_contains(node.outs, "X_except"):
+        if not inout_contains(node.outs, "X_except") and not node.only_regular:
             print("ERROR: fragile node %s needs an output named 'X_except'" %
                   node.name)
     else:

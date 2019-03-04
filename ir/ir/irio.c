@@ -834,6 +834,7 @@ static void write_ASM(write_env_t *env, const ir_node *node)
 	write_list_end(env);
 
 	write_pin_state(env, get_irn_pinned(node));
+	write_throws(env, ir_throws_exception(node));
 	write_pred_refs(env, node, n_ASM_max+1);
 }
 
@@ -1999,6 +2000,8 @@ static ir_node *read_ASM(read_env_t *env)
 	ir_cons_flags flags = cons_none;
 	if (!read_pinned(env))
 		flags |= cons_floats;
+	if (read_throws(env))
+		flags |= cons_throws_exception;
 
 	int       n_in = read_preds(env);
 	ir_node **in   = (ir_node**)obstack_finish(&env->preds_obst);

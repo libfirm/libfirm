@@ -216,7 +216,7 @@ void {{spec.name}}_init_opcodes(void)
 	ir_op_set_memory_index(op_{{node.name}}, n_{{node.name}}_mem);
 	{%- endif -%}
 	{%- if "fragile" in node.flags: %}
-	ir_op_set_fragile_indices(op_{{node.name}}, pn_{{node.name}}_X_regular, pn_{{node.name}}_X_except);
+	ir_op_set_fragile_indices(op_{{node.name}}, pn_{{node.name}}_X_regular, {% if node.only_regular -%} (unsigned)-1 {%- else -%} pn_{{node.name}}_X_except {%- endif -%});
 	{%- endif -%}
 	{%- endfor %}
 }

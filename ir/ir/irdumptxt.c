@@ -313,7 +313,13 @@ void dump_irnode_to_file(FILE *const F, const ir_node *const n)
 		ir_asm_constraint const *const cons = get_ASM_constraints(n);
 		for (size_t i = 0, n_cons = get_ASM_n_constraints(n); i < n_cons; sep = ",", ++i) {
 			ir_asm_constraint const *const c = &cons[i];
-			fprintf(F, "%s %%%zu: \\\"%s\\\"", sep, i, c->constraint);
+			fprintf(F, "%s %%%zu: ", sep, i);
+			char const *const str = get_id_str(c->constraint);
+			if (str) {
+				fprintf(F, "\\\"%s\\\"", str);
+			} else {
+				fprintf(F, "<label>");
+			}
 			int const in_pos = c->in_pos;
 			if (in_pos != -1)
 				fprintf(F, " [in: %d]", n_ASM_max + 1 + in_pos);
