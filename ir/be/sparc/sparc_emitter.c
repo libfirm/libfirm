@@ -626,6 +626,7 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 	/* modifiers:
 	 *   c: plain immediate
 	 *   f: memory reference without surrounding '[]'
+	 *   l: label only
 	 *   m: see 'f'
 	 *   r: immediate, but show '%g0' instead of '0' */
 	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "r", "c", "fm"))

@@ -108,6 +108,7 @@ static void emit_riscv_asm_operand(ir_node const *const node, char const modifie
 	 *   R: %lo of immediate
 	 *   c: plain immediate
 	 *   h: %hi of immediate
+	 *   l: label only
 	 *   z: print normally, except immediate 0 as 'zero' */
 	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "z", "Rch", ""))
 		return;

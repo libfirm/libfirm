@@ -533,6 +533,7 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 	 *   X: no modifying effect (gcc doc: don't print any sort of PIC '@' suffix for a symbol)
 	 *   b: 8 bit low name of register
 	 *   c: immediate without prefix '$'
+	 *   l: label without prefix '$'
 	 *   h: 8 bit high name of register
 	 *   k: 32 bit name of register
 	 *   p: like 'c' and other operands unmodified (gcc doc: "print raw symbol")
@@ -573,7 +574,8 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 		return;
 
 	case BE_ASM_OPERAND_LABEL:
-		be_emit_char('$');
+		if (modifier != 'l')
+			be_emit_char('$');
 		be_emit_cfop_target_pos(node, op->op.pos);
 		return;
 	}

@@ -423,7 +423,8 @@ static void emit_arm_asm_operand(ir_node const *const node, char const modifier,
 	/* modifiers:
 	 *   B: Ones' complement of immediate and without prefix '#'
 	 *   C: memory reference consisting only of a single register
-	 *   c: immediate without prefix '#' */
+	 *   c: immediate without prefix '#'
+	 *   l: label without prefix '#' */
 	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "", "Bc", "C"))
 		return;
 
@@ -457,7 +458,8 @@ static void emit_arm_asm_operand(ir_node const *const node, char const modifier,
 		return;
 
 	case BE_ASM_OPERAND_LABEL:
-		be_emit_char('#');
+		if (modifier != 'l')
+			be_emit_char('#');
 		be_emit_cfop_target_pos(node, op->op.pos);
 		return;
 

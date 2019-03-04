@@ -435,6 +435,8 @@ bool be_is_valid_asm_operand_kind(ir_node const *const node, char const modifier
 		want = BE_ASM_OPERAND_IMMEDIATE;
 	} else if (strchr(mod_mem, modifier)) {
 		want = BE_ASM_OPERAND_MEMORY;
+	} else if (modifier == 'l') {
+		want = BE_ASM_OPERAND_LABEL;
 	} else {
 		be_errorf(node, "asm contains unknown modifier '%c'", modifier);
 		return false;
