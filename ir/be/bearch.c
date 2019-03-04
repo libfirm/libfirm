@@ -22,7 +22,7 @@
 #include "target_t.h"
 #include "util.h"
 
-static arch_register_class_t arch_exec_cls = {
+arch_register_class_t arch_exec_cls = {
 	.name      = "exec",
 	.mode      = NULL, /* Filled in at initialization. */
 	.regs      = NULL,

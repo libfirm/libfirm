@@ -116,7 +116,10 @@ static inline void be_asm_add_inout(be_asm_info_t *const info, be_asm_operand_t 
 
 static inline void be_asm_add_out(be_asm_info_t *const info, be_asm_operand_t *const op, struct obstack *const obst, be_asm_constraint_t const *const be_constraint, int const opos)
 {
-	be_set_asm_operand(op, BE_ASM_OPERAND_OUTPUT_VALUE, opos);
+	be_asm_operand_kind_t const kind =
+		be_constraint->cls == &arch_exec_cls ? BE_ASM_OPERAND_LABEL :
+		/*                                  */ BE_ASM_OPERAND_OUTPUT_VALUE;
+	be_set_asm_operand(op, kind, opos);
 	arch_register_req_t const *const oreq = be_make_register_req(obst, be_constraint);
 	info->out_reqs[opos] = oreq;
 }

@@ -48,6 +48,13 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 
 	char const *i = get_id_str(constraint_text);
 
+	if (!i) {
+		/* Labels have no constraint text. */
+		constraint->all_registers_allowed = true;
+		constraint->cls                   = &arch_exec_cls;
+		return;
+	}
+
 	bool is_output = false;
 	if (i[0] == '+' || i[0] == '=') {
 		++i;
