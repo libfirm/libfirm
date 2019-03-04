@@ -206,13 +206,16 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	ir_graph       *const irg  = get_irn_irg(node);
 	struct obstack *const obst = get_irg_obstack(irg);
 
-	/* Handle early clobbers. */
+	/* Handle early clobbers and labels. */
+	size_t                         n_labels    = 0;
 	size_t                   const orig_n_ins  = ARR_LEN(in_reqs);
 	size_t                   const orig_n_outs = ARR_LEN(out_reqs);
 	ir_asm_constraint const *const constraints = get_ASM_constraints(node);
 	for (unsigned o = 0, n = get_ASM_n_constraints(node); o != n; ++o) {
 		ir_asm_constraint const *const constraint = &constraints[o];
-		if (strchr(get_id_str(constraint->constraint), '&')) {
+		if (!constraint->constraint) {
+			++n_labels;
+		} else if (strchr(get_id_str(constraint->constraint), '&')) {
 			int const out_pos = constraint->out_pos;
 			if (out_pos >= 0) {
 				arch_register_req_t   const **const oslot = &out_reqs[out_pos];
@@ -308,7 +311,7 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	 */
 	be_add_pressure_t add_pressure[ir_target.isa->n_register_classes];
 	memset(add_pressure, 0, sizeof(add_pressure));
-	if (n_outs - pn_be_Asm_first_out < n_ins - n_be_Asm_first_in) {
+	if (n_outs - n_labels - pn_be_Asm_first_out < n_ins - n_be_Asm_first_in) {
 		bitset_t *const used_ins = bitset_alloca(n_ins);
 		for (size_t o = pn_be_Asm_first_out; o < n_outs; ++o) {
 			arch_register_req_t const *const outreq = out_reqs[o];
