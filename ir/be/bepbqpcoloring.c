@@ -54,7 +54,7 @@
 
 #define TIMER                  0
 #define PRINT_RPEO             0
-#define USE_BIPARTITE_MATCHING 1
+#define USE_BIPARTITE_MATCHING 0
 #define DO_USEFUL_OPT          1
 
 
