@@ -866,7 +866,7 @@ static exttsp_score_t exttsp_compute_merge_gain(exttsp_chain_t *a,
 {
 	compute_merge_gain_counter++;
 	exttsp_score_t score, max_score = 0;
-	int merge_type;
+	int merge_type = -1;
 
 	// try simple concatenation of a and b
 	if (!b->contains_start) {
@@ -882,7 +882,7 @@ static exttsp_score_t exttsp_compute_merge_gain(exttsp_chain_t *a,
 	// concatenation. If chains get to long we stop to try complex merges too.
 	if (a->length <= 1 || a->length > MAXIMAL_SPLIT_LENGTH) {
 		compute_merge_gain_early_return_counter++; // TODO remove
-		if (max_score == 0) { // no allowed merge possible
+		if (merge_type == -1) { // no allowed merge possible
 			*merge_type_cache = -1;
 			return -1;
 		}
@@ -944,6 +944,11 @@ static void exttsp_merge_chains(exttsp_chain_t *a, exttsp_chain_t *b,
 {
 	assert(merge_type >= 0 && "executing forbidden merge");
 	const int concrete_merge_type = merge_type % 5;
+	if (concrete_merge_type == 4) {
+		assert(!a->contains_start && "start node is not kept at beginning!");
+	} else {
+		assert(!b->contains_start && "start node is not kept at beginning!");
+	}
 	if (concrete_merge_type == 0) { // simple concatenation
 		a->last->succ = b->first;
 		a->last = b->last;
