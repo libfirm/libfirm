@@ -1111,8 +1111,7 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 		for (size_t i=0; i<ARR_LEN(env.chains); i++) {
 			if (env.chains[i].length == 0) continue;
 			for (size_t j=0; j<ARR_LEN(env.chains); j++) {
-				if (i == j || env.chains[j].length == 0) continue;
-				if (gains[i][j] >= max) {
+				if (env.adjacent[i][j] && gains[i][j] >= max) {
 					max_i = i; max_j = j; max = gains[i][j];
 				}
 			}
