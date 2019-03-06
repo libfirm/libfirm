@@ -237,7 +237,7 @@ static void lower64_shl(ir_node *const node)
 	} else {
 		right_low = new_rd_Conv(dbgi, block, right, umode);
 	}
-	/* Res_lo = L_hi << R | L_lo << (R - 32) | L_lo >> (32 - R) */
+	/* Res_hi = L_hi << R | L_lo << (R - 32) | L_lo >> (32 - R) */
 	ir_node  *shl1     = new_rd_Shl(dbgi, block, left_high, right_low);
 	ir_graph *irg      = get_irn_irg(node);
 	ir_node  *c32      = new_r_Const_long(irg, umode, 32);
