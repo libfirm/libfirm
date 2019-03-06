@@ -86,7 +86,7 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t cons
 			ir_node *const in  = get_ASM_input(node, in_pos);
 			char     const imm = be_constraint.immediate_type;
 			if (imm != '\0' && x86_match_immediate(&op->u.imm32, in, imm)) {
-				be_set_asm_operand(&op->op, BE_ASM_OPERAND_IMMEDIATE, -1);
+				be_asm_add_immediate(&op->op);
 			} else if (be_constraint.same_as >= 0) {
 				int                        const out_pos = operands[be_constraint.same_as].op.pos;
 				arch_register_req_t const *const ireq    = info.out_reqs[out_pos];

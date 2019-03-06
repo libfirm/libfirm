@@ -40,6 +40,11 @@ static inline void be_set_asm_operand(be_asm_operand_t* const op, be_asm_operand
 	op->pos  = pos;
 }
 
+static inline void be_asm_add_immediate(be_asm_operand_t *const op)
+{
+	be_set_asm_operand(op, BE_ASM_OPERAND_IMMEDIATE, -1);
+}
+
 /**
  * An assembler constraint.
  */

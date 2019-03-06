@@ -241,7 +241,7 @@ static ir_node *gen_ASM(ir_node *const node)
 			ir_node *const in  = get_ASM_input(node, in_pos);
 			char     const imm = be_constraint.immediate_type;
 			if (imm != '\0' && riscv_match_immediate(op, in, imm)) {
-				be_set_asm_operand(&op->op, BE_ASM_OPERAND_IMMEDIATE, -1);
+				be_asm_add_immediate(&op->op);
 			} else if (be_constraint.same_as >= 0) {
 				int                        const out_pos = operands[be_constraint.same_as].op.pos;
 				arch_register_req_t const *const ireq    = info.out_reqs[out_pos];
