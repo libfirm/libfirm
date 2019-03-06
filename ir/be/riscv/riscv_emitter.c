@@ -256,7 +256,7 @@ void riscv_emit_function(ir_graph *const irg)
 	be_gas_elf_type_char = '@';
 
 	ir_entity *const entity = get_irg_entity(irg);
-	be_gas_emit_function_prolog(entity, 16, NULL);
+	be_gas_emit_function_prolog(entity, 4, NULL);
 
 	ir_node **const blk_sched = be_create_block_schedule(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
