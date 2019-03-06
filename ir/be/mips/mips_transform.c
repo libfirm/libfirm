@@ -245,7 +245,6 @@ static bool mips_match_immediate(mips_asm_operand_t *const operand, ir_node *con
 		value = 0;
 	}
 
-	be_set_asm_operand(&operand->op, BE_ASM_OPERAND_IMMEDIATE, -1);
 	operand->val = value;
 	operand->ent = entity;
 	return true;

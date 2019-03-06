@@ -256,7 +256,6 @@ static bool sparc_match_immediate(sparc_asm_operand_t *const operand, ir_node *c
 		value = 0;
 	}
 
-	be_set_asm_operand(&operand->op, BE_ASM_OPERAND_IMMEDIATE, -1);
 	operand->immediate_value        = value;
 	operand->immediate_value_entity = entity;
 	return true;

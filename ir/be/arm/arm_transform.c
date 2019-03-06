@@ -1993,7 +1993,6 @@ static bool arm_match_immediate(arm_asm_operand_t *const operand, ir_node *const
 		value = 0;
 	}
 
-	be_set_asm_operand(&operand->op, BE_ASM_OPERAND_IMMEDIATE, -1);
 	operand->val = value;
 	operand->ent = entity;
 	return true;
