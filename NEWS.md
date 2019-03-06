@@ -8,7 +8,7 @@ libFirm 1.22.1 (2016-01-07)
 * ia32: Generate `mov $~0x80000000, %r; ror x, %r` for `~(0x80000000 >> x)`
 * be: Stub support for the asm constraint modifier `%`
 * amd64, ia32: Support the asm constraint `e`
-* amd64, ia32: Support the asm modifier `c`
+* be: Support the asm modifier `c` in all backends
 * ia32: Support JIT compilation
 * be: Improve permutation moving for copy coalescing
 * ir: Improve handling of negative overflow in float to int tarval conversion

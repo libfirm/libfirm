@@ -105,9 +105,10 @@ static void emit_riscv_asm_operand(ir_node const *const node, char const modifie
 	riscv_asm_operand_t const *const op   = &((riscv_asm_operand_t const*)attr->operands)[pos];
 	/* modifiers:
 	 *   R: %lo of immediate
+	 *   c: plain immediate
 	 *   h: %hi of immediate
 	 *   z: print normally, except immediate 0 as 'zero' */
-	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "z", "Rh", ""))
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "z", "Rch", ""))
 		return;
 
 	switch (op->op.kind) {

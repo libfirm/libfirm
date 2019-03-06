@@ -102,8 +102,9 @@ static void emit_mips_asm_operand(ir_node const *const node, char const modifier
 	be_asm_attr_t      const *const attr = get_be_asm_attr_const(node);
 	mips_asm_operand_t const *const op   = &((mips_asm_operand_t const*)attr->operands)[pos];
 	/* modifiers:
+	 *   c: plain immediate
 	 *   z: print normally, except immediate 0 as '$zero' */
-	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "z", "", ""))
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "z", "c", ""))
 		return;
 
 	switch (op->op.kind) {

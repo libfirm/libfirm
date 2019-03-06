@@ -624,10 +624,11 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 	be_asm_attr_t       const *const attr = get_be_asm_attr_const(node);
 	sparc_asm_operand_t const *const op   = &((sparc_asm_operand_t const*)attr->operands)[pos];
 	/* modifiers:
+	 *   c: plain immediate
 	 *   f: memory reference without surrounding '[]'
 	 *   m: see 'f'
 	 *   r: immediate, but show '%g0' instead of '0' */
-	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "r", "", "fm"))
+	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "r", "c", "fm"))
 		return;
 
 	switch (op->op.kind) {
