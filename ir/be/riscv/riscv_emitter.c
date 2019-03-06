@@ -18,6 +18,7 @@
 #include "gen_riscv_emitter.h"
 #include "gen_riscv_regalloc_if.h"
 #include "riscv_nodes_attr.h"
+#include "riscv_bearch_t.h"
 #include "util.h"
 
 static void emit_immediate_val(char const *const prefix, ir_entity *const ent, int32_t const val)
@@ -180,6 +181,7 @@ static void emit_be_Copy(ir_node const *const node)
 static void emit_be_IncSP(ir_node const *const node)
 {
 	int const offs = -be_get_IncSP_offset(node);
+	assert(is_simm12(offs));
 	riscv_emitf(node, "addi\t%D0, %S0, %d", offs);
 }
 
@@ -229,18 +231,28 @@ static void emit_riscv_switch(ir_node const *const node)
   be_emit_jump_table(node, &attr->swtch, mode_P, emit_jumptable_target);
 }
 
+static void emit_riscv_FrameAddr(const ir_node *node)
+{
+	const riscv_immediate_attr_t *attr   = get_riscv_immediate_attr_const(node);
+	int32_t             offset = attr->val;
+
+	assert(is_simm12((long)offset));
+	riscv_emitf(node, "addi\t%D0, %S0, %d", (int)offset);
+}
+
 static void riscv_register_emitters(void)
 {
 	be_init_emitters();
 	riscv_register_spec_emitters();
 
-	be_set_emitter(op_be_Asm,       emit_be_ASM);
-	be_set_emitter(op_be_Copy,      emit_be_Copy);
-	be_set_emitter(op_be_IncSP,     emit_be_IncSP);
-	be_set_emitter(op_be_Perm,      emit_be_Perm);
-	be_set_emitter(op_riscv_bcc,    emit_riscv_bcc);
-	be_set_emitter(op_riscv_j,      emit_riscv_j);
-	be_set_emitter(op_riscv_switch, emit_riscv_switch);
+	be_set_emitter(op_be_Asm,          emit_be_ASM);
+	be_set_emitter(op_be_Copy,         emit_be_Copy);
+	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
+	be_set_emitter(op_be_Perm,         emit_be_Perm);
+	be_set_emitter(op_riscv_FrameAddr, emit_riscv_FrameAddr);
+	be_set_emitter(op_riscv_bcc,       emit_riscv_bcc);
+	be_set_emitter(op_riscv_j,         emit_riscv_j);
+	be_set_emitter(op_riscv_switch,    emit_riscv_switch);
 }
 
 static void riscv_gen_block(ir_node *const block)

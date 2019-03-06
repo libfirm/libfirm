@@ -5,6 +5,7 @@
 
 #include "riscv_transform.h"
 
+#include "becconv.h"
 #include "beirg.h"
 #include "benode.h"
 #include "betranshlp.h"
@@ -19,6 +20,10 @@
 static riscv_calling_convention_t cur_cconv;
 
 static be_stack_env_t stack_env;
+
+static const unsigned ignore_regs[] = {
+	REG_T0,
+};
 
 static unsigned const callee_saves[] = {
 	REG_S0,
@@ -37,7 +42,6 @@ static unsigned const callee_saves[] = {
 
 static unsigned const caller_saves[] = {
 	REG_RA,
-	REG_T0,
 	REG_T1,
 	REG_T2,
 	REG_A0,
@@ -59,19 +63,9 @@ static ir_node *get_Start_sp(ir_graph *const irg)
 	return be_get_Start_proj(irg, &riscv_registers[REG_SP]);
 }
 
-static ir_node *get_Start_zero(ir_graph *const irg)
+ir_node *get_Start_zero(ir_graph *const irg)
 {
 	return be_get_Start_proj(irg, &riscv_registers[REG_ZERO]);
-}
-
-static inline bool is_uimm5(long const val)
-{
-	return 0 <= val && val < 32;
-}
-
-static inline bool is_simm12(long const val)
-{
-	return -2048 <= val && val < 2048;
 }
 
 typedef struct riscv_addr {
@@ -189,8 +183,9 @@ static bool riscv_check_immediate_constraint(long const val, char const imm_type
 	case 'g':
 	case 'i':
 	case 'n': return true;
+	default:
+		panic("invalid immediate constraint found");
 	}
-	panic("invalid immediate constraint found");
 }
 
 static bool riscv_match_immediate(riscv_asm_operand_t *const operand, ir_node *const node, char const imm_type)
@@ -557,17 +552,16 @@ static ir_node *gen_Const(ir_node *const node)
 			dbg_info *const dbgi  = get_irn_dbg_info(node);
 			ir_node  *const block = be_transform_nodes_block(node);
 
+			riscv_hi_lo_imm imm = calc_hi_lo((int32_t)val);
 			ir_node      *res;
-			int32_t const hi = ((uint32_t)val >> 12) + ((uint32_t)val >> 11 & 1);
-			if (hi != 0) {
-				res = new_bd_riscv_lui(dbgi, block, NULL, hi);
+			if (imm.hi != 0) {
+				res = new_bd_riscv_lui(dbgi, block, NULL, imm.hi);
 			} else {
 				ir_graph *const irg = get_irn_irg(node);
 				res = get_Start_zero(irg);
 			}
-			int32_t const lo = (uint32_t)val - (hi << 12);
-			if (lo != 0)
-				res = new_bd_riscv_addi(dbgi, block, res, NULL, lo);
+			if (imm.lo != 0)
+				res = new_bd_riscv_addi(dbgi, block, res, NULL, imm.lo);
 			return res;
 		}
 	}
@@ -657,7 +651,7 @@ static ir_node *gen_Member(ir_node *const node)
 	ir_node   *const block = be_transform_nodes_block(node);
 	ir_node   *const frame = be_transform_node(ptr);
 	ir_entity *const ent   = get_Member_entity(node);
-	return new_bd_riscv_addi(dbgi, block, frame, ent, 0);
+	return new_bd_riscv_FrameAddr(dbgi, block, frame, ent, 0);
 }
 
 static ir_node *gen_Minus(ir_node *const node)
@@ -1177,6 +1171,8 @@ static void riscv_set_allocatable_regs(ir_graph *const irg)
 		rbitset_set(a, caller_saves[i]);
 	}
 	birg->allocatable_regs = a;
+
+	be_cconv_rem_regs(birg->allocatable_regs, ignore_regs, ARRAY_SIZE(ignore_regs));
 }
 
 void riscv_transform_graph(ir_graph *const irg)

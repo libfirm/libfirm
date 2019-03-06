@@ -125,6 +125,7 @@ void riscv_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const 
 			case iro_riscv_and:
 			case iro_riscv_div:
 			case iro_riscv_divu:
+			case iro_riscv_FrameAddr:
 			case iro_riscv_ijmp:
 			case iro_riscv_j:
 			case iro_riscv_jalr:

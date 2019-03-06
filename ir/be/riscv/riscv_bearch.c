@@ -42,6 +42,19 @@ static ir_settings_arch_dep_t const riscv_arch_dep = {
 	.max_bits_for_mulh    = RISCV_MACHINE_SIZE,
 };
 
+/**
+ * Splits a 32 bit immediate value into a 20 bit hi and a 12 bit lo part, which can be realised by lui and addi
+ * instructions.
+ */
+riscv_hi_lo_imm calc_hi_lo(int32_t val) {
+	int32_t hi = ((uint32_t) val >> 12) + ((uint32_t) val >> 11 & 1);
+	if (hi >= 1048576) { //2^20
+		hi = 0;
+	}
+	int32_t const lo = (uint32_t) val - (hi << 12);
+	return (riscv_hi_lo_imm) {hi, lo};
+}
+
 static void riscv_init_asm_constraints(void)
 {
 	be_set_constraint_support(ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP,     "m");
@@ -201,6 +214,7 @@ static void riscv_sp_sim(ir_node *const node, stack_pointer_state_t *const state
 	if (is_riscv_irn(node)) {
 		switch ((riscv_opcodes)get_riscv_irn_opcode(node)) {
 		case iro_riscv_addi:
+		case iro_riscv_FrameAddr:
 		case iro_riscv_lb:
 		case iro_riscv_lbu:
 		case iro_riscv_lh:
@@ -253,6 +267,7 @@ static void riscv_generate_code(FILE *const output, char const *const cup_name)
 		birg->non_ssa_regs = NULL;
 		be_sim_stack_pointer(irg, 0, 3, &riscv_sp_sim);
 
+		riscv_finish_graph(irg);
 		be_handle_2addr(irg, NULL);
 
 		riscv_emit_function(irg);

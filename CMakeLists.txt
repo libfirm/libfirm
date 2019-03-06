@@ -405,6 +405,7 @@ add_backend(riscv
 	ir/be/riscv/riscv_bearch.c
 	ir/be/riscv/riscv_cconv.c
 	ir/be/riscv/riscv_emitter.c
+	ir/be/riscv/riscv_finish.c
 	ir/be/riscv/riscv_lower64.c
 	ir/be/riscv/riscv_new_nodes.c
 	ir/be/riscv/riscv_nodes_attr.c

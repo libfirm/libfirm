@@ -8,6 +8,8 @@
 
 #include "firm_types.h"
 
+ir_node *get_Start_zero(ir_graph *irg);
+
 void riscv_transform_graph(ir_graph *irg);
 
 #endif

@@ -237,4 +237,14 @@ xor => { template => $binOp },
 
 xori => { template => $immediateOp },
 
+FrameAddr => {
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
+	attr      => "ir_entity *ent, int32_t val",
+	in_reqs   => [ "cls-gp" ],
+	out_reqs  => [ "cls-gp" ],
+	ins       => [ "base" ],
+	attr_type => "riscv_immediate_attr_t",
+},
+
 );
