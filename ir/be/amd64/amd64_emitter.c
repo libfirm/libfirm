@@ -287,15 +287,6 @@ emit_addr_reg:
 		assert(attr->addr.variant == X86_ADDR_REG);
 		arch_register_t const *const reg
 			= arch_get_irn_register_in(node, attr->addr.base_input);
-		// check that should_be_same constraints are fulfilled
-		be_foreach_out(node, i) {
-			arch_register_req_t const *const req = arch_get_irn_register_req_out(node, i);
-			if (req->should_be_same == 0)
-				continue;
-			unsigned               const same_as = ntz(req->should_be_same);
-			const arch_register_t *outreg = arch_get_irn_register_out(node, same_as);
-			assert(outreg == NULL || (reg->index == outreg->index && "invalid 2addr code: in register != out register"));
-		}
 		emit_register_mode(reg, attr->base.size);
 		return;
 	}
