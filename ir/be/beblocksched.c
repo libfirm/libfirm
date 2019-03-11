@@ -37,7 +37,11 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "pdeq.h"
-#include <sys/time.h>
+#ifdef _WIN32
+	#include <time.h>
+#else
+	#include <sys/time.h>
+#endif
 #include "target_t.h"
 #include "util.h"
 
@@ -1231,8 +1235,14 @@ void be_init_blocksched(void)
 	be_add_module_list_opt(be_grp, "block-scheduler",
 		"basic block scheduling algorithm", &block_schedulers,
 		(void**)&scheduler);
-	// seed random number generator with current milliseconds
+	// seed random number generator
+#ifdef _WIN32
+	// use seconds
+	srand((unsigned int) time(NULL));
+#else
+	// use milliseconds
 	struct timeval time;
     gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec / 1000));
+#endif
 }
