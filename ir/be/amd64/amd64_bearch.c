@@ -789,8 +789,23 @@ static unsigned amd64_get_op_estimated_cost(const ir_node *node)
 
 static unsigned amd64_get_op_estimated_size(const ir_node *node)
 {
-	(void)node; // TODO refine
-	return 3;
+	// handle IncSP nodes correctly
+	if (be_is_IncSP(node)) {
+		if (be_get_IncSP_offset(node) == 0)
+			return 0;
+		return 4;
+	}
+	// ~3 byte op code
+	unsigned int size = 3;
+	// estimate size of addresses
+	if (is_amd64_irn(node)) {
+		amd64_op_mode_t op_mode = get_amd64_attr_const(node)->op_mode;
+		if (amd64_has_addr_attr(op_mode)) {
+			size += 2; // TODO refine
+		}
+	}
+	// TODO refine
+	return size;
 }
 
 /** we don't have a concept of aliasing registers, so enumerate them
