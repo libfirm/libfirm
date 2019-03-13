@@ -17,7 +17,7 @@
 #include "beirg.h"
 #include "bepeephole.h"
 #include "riscv_transform.h"
-#include "../../../build/gen/ir/be/riscv/gen_riscv_regalloc_if.h"
+#include "gen_riscv_regalloc_if.h"
 
 
 /**
