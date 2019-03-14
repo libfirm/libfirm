@@ -403,6 +403,7 @@ ir_graph *ir_profile_instrument(const char *filename)
 	 * types must have a fixed layout, because we are already running in the
 	 * backend */
 	ir_entity *const bblock_counts = new_array_entity("__FIRMPROF__BLOCK_COUNTS", mode_Iu, n_blocks, IR_LINKAGE_DEFAULT);
+	set_entity_initializer(bblock_counts, get_initializer_null());
 
 	ir_entity *const ent_filename = new_static_string_entity("__FIRMPROF__FILE_NAME", filename);
 
