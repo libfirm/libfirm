@@ -234,19 +234,19 @@ static void rewire_block(ir_node *const block, ir_node *const header)
 	}
 }
 
-static unsigned find_optimal_factor(long number, unsigned max) {
+static unsigned find_optimal_factor(unsigned long number, unsigned max) {
 	if (number <= max) {
 		// loop can be unrolled completely
 		return (unsigned) number;
 	}
-	int i;
+	unsigned i;
 	for (i = 2; i <= number / 2; i++) {
 		if (number % i == 0) {
 			// found a small divisor i -> number/i is a large divisor of number
 			if ((number / i) <= max) {
 				unsigned candidate = (unsigned) number / i;
 				// limit to powers of two for now
-				if((candidate != 0) && ((candidate &(candidate - 1)) == 0)) {
+				if ((candidate != 0) && ((candidate & (candidate - 1)) == 0)) {
 					return candidate;
 				}
 
@@ -371,26 +371,33 @@ static unsigned find_suitable_factor(ir_node *const header, unsigned max, bool *
 			}
 
 			ir_tarval *tv_interval = tarval_sub(tv_limit, tv_init);
-			if (tarval_is_negative(tv_interval)) {
+			if (tarval_is_negative(tv_interval) || tarval_is_negative(tv_step)) {
 				return DONT_UNROLL;
 			}
-			assert(!tarval_is_null(tv_step));
 
+			ir_tarval *tv_one = new_tarval_from_long(1, get_tarval_mode(tv_interval));
+			// normalize: use less_equal as relation
+			if (!(cmp_rel & ir_relation_equal)) {
+				// interval -= 1
+				tarval_sub(tv_interval, tv_one);
+			}
+
+			assert(!tarval_is_null(tv_step));
+			// calculate loop iterations; add one iteration to count the first iteration
+			ir_tarval *tv_loop_count = (tarval_add(tarval_div(tv_interval, tv_step), tv_one));
+			long loop_count = get_tarval_long(tv_loop_count);
+			if (loop_count <= 0) {
+				return DONT_UNROLL;
+			}
+
+#ifdef DEBUG_libfirm
 			long limit = get_tarval_long(tv_limit);
 			long step = get_tarval_long(tv_step);
 			long init = get_tarval_long(tv_init);
-			long interval = get_tarval_long(tv_interval);
-			if (!(cmp_rel & ir_relation_equal)) {
-				interval--;
-			}
-			long loop_count = (interval + step) / step;
-			if (loop_count < 0) {
-				return DONT_UNROLL;
-			}
-
 			DB((dbg, LEVEL_3 , "\tinit: %ld, step: %ld, limit: %ld, loop count: %ld\n", init, step, limit, loop_count));
-			factor = find_optimal_factor(loop_count, max);
-			if (factor == loop_count) {
+#endif
+			factor = find_optimal_factor((unsigned long) loop_count, max);
+			if (factor == (unsigned long) loop_count) {
 				*fully_unroll = true;
 			}
 			break;
