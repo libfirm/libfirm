@@ -307,7 +307,7 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	 */
 	uint8_t add_pressure[ir_target.isa->n_register_classes];
 	memset(add_pressure, 0, sizeof(add_pressure));
-	if (n_outs < n_ins) {
+	if (n_outs - pn_be_Asm_first_out < n_ins - n_be_Asm_first_in) {
 		bitset_t *const used_ins = bitset_alloca(n_ins);
 		for (size_t o = pn_be_Asm_first_out; o < n_outs; ++o) {
 			arch_register_req_t const *const outreq = out_reqs[o];
