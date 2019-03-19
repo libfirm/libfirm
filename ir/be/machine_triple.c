@@ -128,7 +128,7 @@ ir_machine_triple_t *ir_get_host_machine_triple(void)
 #elif defined(__arm__)
 		"arm";
 #else
-#error Could not determine host CPU. Consider defining HOST_TRIPLE.
+		"unknown";
 #endif
 
 	const char *manufacturer =
