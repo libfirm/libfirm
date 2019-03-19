@@ -119,6 +119,10 @@ ir_machine_triple_t *ir_get_host_machine_triple(void)
 		"i686";
 #elif defined(__i386__)
 		"i386";
+#elif defined(__mips__)
+		"mips";
+#elif defined(__riscv)
+		"riscv32";
 #elif defined(__sparc__)
 		"sparc";
 #elif defined(__arm__)
