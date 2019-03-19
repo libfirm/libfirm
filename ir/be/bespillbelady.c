@@ -289,7 +289,7 @@ static unsigned get_distance(ir_node *from, const ir_node *def,
  * In this case reloads must be performed
  */
 static void displace(workset_t *const new_vals, bool const is_usage,
-                     ir_node *const instr, uint8_t add_pressure)
+                     ir_node *const instr, be_add_pressure_t const add_pressure)
 {
 	ir_node **to_insert = ALLOCAN(ir_node*, n_regs);
 	bool     *spilled   = ALLOCAN(bool,     n_regs);
@@ -686,7 +686,7 @@ static void process_block(ir_node *block)
 			/* (note that "spilled" is irrelevant here) */
 			workset_insert(new_vals, in, false);
 		);
-		uint8_t add_pressure = arch_get_additional_pressure(irn, cls);
+		be_add_pressure_t const add_pressure = arch_get_additional_pressure(irn, cls);
 		displace(new_vals, true, irn, add_pressure);
 
 		/* allocate all values _defined_ by this instruction */

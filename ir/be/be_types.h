@@ -11,6 +11,8 @@
 #ifndef FIRM_BE_TYPES_H
 #define FIRM_BE_TYPES_H
 
+#include <stdint.h>
+
 #include "firm_types.h"
 
 typedef unsigned int sched_timestep_t;
@@ -60,5 +62,7 @@ typedef struct be_options_t    be_options_t;
 typedef struct regalloc_if_t   regalloc_if_t;
 
 typedef struct be_register_name_t be_register_name_t;
+
+typedef uint8_t be_add_pressure_t;
 
 #endif

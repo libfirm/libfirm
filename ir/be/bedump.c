@@ -246,7 +246,7 @@ void be_dump_reqs_and_registers(FILE *const F, ir_node const *const node)
 	}
 
 	for (size_t i = 0; i != ARRAY_SIZE(info->add_pressure); ++i) {
-		uint8_t const add = info->add_pressure[i];
+		be_add_pressure_t const add = info->add_pressure[i];
 		if (add != 0) {
 			char const *const name = ir_target.isa->register_classes[i].name;
 			fprintf(F, "additional pressure %s = %d\n", name, add);

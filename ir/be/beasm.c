@@ -305,7 +305,7 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	 *        before...
 	 * FIXME: need to do this per register class...
 	 */
-	uint8_t add_pressure[ir_target.isa->n_register_classes];
+	be_add_pressure_t add_pressure[ir_target.isa->n_register_classes];
 	memset(add_pressure, 0, sizeof(add_pressure));
 	if (n_outs - pn_be_Asm_first_out < n_ins - n_be_Asm_first_in) {
 		bitset_t *const used_ins = bitset_alloca(n_ins);

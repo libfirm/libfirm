@@ -4619,7 +4619,6 @@ static ir_node *gen_Call(ir_node *node)
 		in_req[fpcwi] = &ia32_single_reg_req_fpcw_fpcw;
 	}
 
-	uint8_t         add_pressure = 0;
 	unsigned        sync_arity = 0;
 	unsigned  const n_params   = get_Call_n_params(node);
 	ir_node **const sync_ins   = ALLOCAN(ir_node*, n_params + 1);
@@ -4663,6 +4662,7 @@ static ir_node *gen_Call(ir_node *node)
 	}
 
 	/* PIC calls need the GOT address in ebx */
+	be_add_pressure_t add_pressure = 0;
 	if (is_plt) {
 		unsigned goti = in_arity++;
 		in[goti]      = ia32_get_pic_base(irg);

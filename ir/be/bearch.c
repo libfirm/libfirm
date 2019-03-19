@@ -127,7 +127,7 @@ arch_register_t const *arch_find_register(char const *const name)
 
 void arch_set_additional_pressure(ir_node *const node,
                                   arch_register_class_t const *const cls,
-                                  uint8_t const pressure)
+                                  be_add_pressure_t const pressure)
 {
 	backend_info_t *const info = be_get_info(node);
 	/* restricted to the first few classes for now */
@@ -136,8 +136,7 @@ void arch_set_additional_pressure(ir_node *const node,
 	info->add_pressure[index] = pressure;
 }
 
-uint8_t arch_get_additional_pressure(ir_node const *const node,
-                                     arch_register_class_t const *const cls)
+be_add_pressure_t arch_get_additional_pressure(ir_node const *const node, arch_register_class_t const *const cls)
 {
 	backend_info_t *const info = be_get_info(node);
 	/* restricted to the first few classes for now */
