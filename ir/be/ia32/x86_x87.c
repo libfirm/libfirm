@@ -417,6 +417,7 @@ static x87_state *x87_shuffle(ir_node *block, x87_state *state,
 		for (unsigned src_idx = i, dst_idx; ; src_idx = dst_idx) {
 			unsigned src_vreg = x87_get_st_reg(state, src_idx);
 			dst_idx = x87_reg_on_stack(dst_state, src_vreg);
+			assert(dst_idx != X87_NOT_ON_STACK);
 
 			if ((all_mask & (1 << dst_idx)) == 0)
 				break;
