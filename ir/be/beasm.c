@@ -324,7 +324,7 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 			if (!inreq->cls->manual_ra) {
 				assert(inreq->cls->index < ARRAY_SIZE(add_pressure));
 				if (!match_requirement(out_reqs, n_outs, used_outs, inreq))
-					add_pressure[inreq->cls->index]++;
+					add_pressure[inreq->cls->index]--;
 			}
 		}
 	}

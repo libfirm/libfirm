@@ -59,6 +59,7 @@ libFirm 1.22.1 (2016-01-07)
 * be: Accept `#` and `%` as register name prefix for gcc compatibility
 * arm, mips, sparc: Handle clobbers in asm
 * riscv: Add new backend
+* be: Improve modelling of register demand
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)

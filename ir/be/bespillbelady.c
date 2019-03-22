@@ -687,7 +687,7 @@ static void process_block(ir_node *block)
 			workset_insert(new_vals, in, false);
 		);
 		be_add_pressure_t const add_pressure = arch_get_additional_pressure(irn, cls);
-		displace(new_vals, true, irn, add_pressure);
+		displace(new_vals, true, irn, MAX(add_pressure, 0));
 
 		/* allocate all values _defined_ by this instruction */
 		workset_clear(new_vals);
@@ -695,7 +695,7 @@ static void process_block(ir_node *block)
 			assert(req->width == 1);
 			workset_insert(new_vals, value, false);
 		);
-		displace(new_vals, false, irn, add_pressure);
+		displace(new_vals, false, irn, MAX(-add_pressure, 0));
 	}
 
 	/* Remember end-workset for this block */

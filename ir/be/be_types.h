@@ -63,6 +63,8 @@ typedef struct regalloc_if_t   regalloc_if_t;
 
 typedef struct be_register_name_t be_register_name_t;
 
-typedef uint8_t be_add_pressure_t;
+/** Additional register pressure applied to before (positive value) or after
+ * (negative value) a instruction. */
+typedef int8_t be_add_pressure_t;
 
 #endif

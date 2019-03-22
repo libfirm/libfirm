@@ -4669,7 +4669,7 @@ static ir_node *gen_Call(ir_node *node)
 		in_req[goti]  = &ia32_single_reg_req_gp_ebx;
 		/* We cannot pair up the "ebx" with any output, causing additional
 		 * register pressure */
-		++add_pressure;
+		--add_pressure;
 	}
 	assert(in_arity == n_ins);
 	assert(sync_arity <= n_params + 1);
