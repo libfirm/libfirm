@@ -145,8 +145,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 
 	/* we can reuse all reloaded values for the defined values, but we might
 	 * need even more registers */
-	if (values_defined > free_regs_needed)
-		free_regs_needed = values_defined;
+	free_regs_needed = MAX(free_regs_needed, values_defined);
 
 	size_t n_live_nodes  = ir_nodeset_size(live_nodes);
 	int    spills_needed = (n_live_nodes + free_regs_needed) - n_regs;
