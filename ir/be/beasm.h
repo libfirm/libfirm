@@ -35,7 +35,7 @@ typedef struct be_asm_operand_t {
 
 static inline void be_set_asm_operand(be_asm_operand_t* const op, be_asm_operand_kind_t const kind, int const pos)
 {
-	assert((kind == BE_ASM_OPERAND_IMMEDIATE) == (pos == -1));
+	assert(pos == -1 ? kind == BE_ASM_OPERAND_IMMEDIATE || kind == BE_ASM_OPERAND_MEMORY : kind != BE_ASM_OPERAND_IMMEDIATE);
 	op->kind = kind;
 	op->pos  = pos;
 }
@@ -71,12 +71,19 @@ typedef struct be_asm_info_t {
 
 be_asm_info_t be_asm_prepare_info(ir_node const *node);
 
+static inline size_t be_asm_append_in(be_asm_info_t *const info, ir_node *const in, arch_register_req_t const *const req)
+{
+	size_t const pos = ARR_LEN(info->ins);
+	ARR_APP1(ir_node*,                   info->ins,     in);
+	ARR_APP1(arch_register_req_t const*, info->in_reqs, req);
+	return pos;
+}
+
 static inline void be_asm_add_in(be_asm_info_t *const info, be_asm_operand_t *const op, be_asm_operand_kind_t const kind, ir_node *const in, arch_register_req_t const *const req)
 {
 	assert(kind == BE_ASM_OPERAND_INPUT_VALUE || kind == BE_ASM_OPERAND_MEMORY);
-	be_set_asm_operand(op, kind, ARR_LEN(info->ins));
-	ARR_APP1(ir_node*,                   info->ins,     in);
-	ARR_APP1(arch_register_req_t const*, info->in_reqs, req);
+	size_t const pos = be_asm_append_in(info, in, req);
+	be_set_asm_operand(op, kind, pos);
 }
 
 static inline arch_register_req_t const *be_asm_make_same_req(struct obstack *const obst, arch_register_req_t const *const req, unsigned const pos)

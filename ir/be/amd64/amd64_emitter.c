@@ -562,12 +562,9 @@ static void emit_amd64_asm_operand(ir_node const *const node, char const modifie
 		return;
 	}
 
-	case BE_ASM_OPERAND_MEMORY: {
-		arch_register_t const *const reg
-			= arch_get_irn_register_in(node, op->op.pos);
-		be_emit_irprintf("(%%%s)", reg->name);
+	case BE_ASM_OPERAND_MEMORY:
+		x86_emit_addr(node, &op->u.addr);
 		return;
-	}
 
 	case BE_ASM_OPERAND_IMMEDIATE:
 		if (!be_has_modifier("Pcp", modifier))

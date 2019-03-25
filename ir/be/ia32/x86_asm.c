@@ -63,6 +63,13 @@ static void x86_parse_constraint_letter(void const *const env, be_asm_constraint
 	panic("Unknown asm constraint '%c'", l);
 }
 
+static size_t x86_add_addr_in(be_asm_info_t *const info, ir_node *const in)
+{
+	ir_node                   *const new_in = be_transform_node(in);
+	arch_register_req_t const *const req    = arch_get_irn_register_req(new_in)->cls->class_req;
+	return be_asm_append_in(info, new_in, req);
+}
+
 ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t const *const constraint_list)
 {
 	be_asm_info_t info = be_asm_prepare_info(node);
@@ -95,9 +102,23 @@ ir_node *x86_match_ASM(ir_node const *const node, x86_asm_constraint_list_t cons
 				arch_register_req_t const *const ireq = be_make_register_req(obst, &be_constraint);
 				be_asm_add_inout(&info, &op->op, obst, in, ireq, c->out_pos);
 			} else {
-				ir_node                   *const new_in = be_transform_node(in);
-				arch_register_req_t const *const ireq   = arch_get_irn_register_req(new_in)->cls->class_req;
-				be_asm_add_in(&info, &op->op, BE_ASM_OPERAND_MEMORY, new_in, ireq);
+				x86_address_t address;
+				x86_create_address_mode(&address, in, x86_create_am_normal);
+
+				x86_addr_t *const addr = &op->u.addr;
+				*addr = (x86_addr_t){
+					.immediate = address.imm,
+					.log_scale = address.scale,
+					.variant   = address.variant,
+				};
+
+				if (x86_addr_variant_has_base(address.variant))
+					addr->base_input = x86_add_addr_in(&info, address.base);
+
+				if (x86_addr_variant_has_index(address.variant))
+					addr->index_input = x86_add_addr_in(&info, address.index);
+
+				be_set_asm_operand(&op->op, BE_ASM_OPERAND_MEMORY, -1);
 			}
 		} else {
 			be_asm_add_out(&info, &op->op, obst, &be_constraint, c->out_pos);

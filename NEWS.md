@@ -60,6 +60,7 @@ libFirm 1.22.1 (2016-01-07)
 * arm, mips, sparc: Handle clobbers in asm
 * riscv: Add new backend
 * be: Improve modelling of register demand
+* amd64, ia32: Support all address modes in inline asm
 * Bugfixes
 
 libFirm 1.22.0 (2015-12-31)
