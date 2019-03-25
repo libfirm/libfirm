@@ -735,7 +735,6 @@ static ir_node *transform_else_noreg(ir_node *const node)
 static void build_address_ptr(x86_address_t *const addr, ir_node *const ptr, ir_node *const mem, x86_create_am_flags_t const flags)
 {
 	/* construct load address */
-	memset(addr, 0, sizeof(addr[0]));
 	ia32_create_address_mode(addr, ptr, flags);
 	addr->base  = transform_else_noreg(addr->base);
 	addr->index = transform_else_noreg(addr->index);
@@ -1448,7 +1447,6 @@ static ir_node *gen_Add(ir_node *node)
 	 *   3. Otherwise -> Lea
 	 */
 	x86_address_t addr;
-	memset(&addr, 0, sizeof(addr));
 	ia32_create_address_mode(&addr, node, x86_create_am_force);
 
 	dbg_info *dbgi      = get_irn_dbg_info(node);
@@ -3987,7 +3985,6 @@ static ir_node *gen_Member(ir_node *node)
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 
 	x86_address_t addr;
-	memset(&addr, 0, sizeof(addr));
 	ia32_create_address_mode(&addr, node, x86_create_am_force);
 
 	return create_lea_from_address(dbgi, block, &addr);

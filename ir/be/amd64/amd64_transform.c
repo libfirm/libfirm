@@ -638,7 +638,6 @@ static bool use_address_matching(ir_mode *mode, match_flags_t flags,
 static void perform_address_matching_flags(ir_node *const ptr, int *const arity, ir_node **const in, x86_addr_t *const addr, x86_create_am_flags_t const flags)
 {
 	x86_address_t maddr;
-	memset(&maddr, 0, sizeof(maddr));
 	x86_create_address_mode(&maddr, ptr, flags);
 
 	x86_addr_variant_t variant = maddr.variant;

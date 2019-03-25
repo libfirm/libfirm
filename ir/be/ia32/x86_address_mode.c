@@ -236,6 +236,8 @@ static void add_addr_operand(x86_address_t *const addr, ir_node *const op)
 void x86_create_address_mode(x86_address_t *addr, ir_node *node,
                              x86_create_am_flags_t flags)
 {
+	memset(addr, 0, sizeof(*addr));
+
 	addr->imm.kind = X86_IMM_VALUE;
 	if (eat_immediate(addr, node, true)) {
 		addr->variant = addr->ip_base ? X86_ADDR_RIP : X86_ADDR_JUST_IMM;
