@@ -190,6 +190,7 @@ enum {
 
 enum {
 	pn_be_Asm_M,
+	pn_be_Asm_X_regular,
 	pn_be_Asm_first_out,
 };
 

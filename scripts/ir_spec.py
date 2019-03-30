@@ -159,6 +159,7 @@ class ASM(Node):
     ]
     outs = [
         ("M", "memory result"),
+        ("X_regular", "control flow when no jump occurs"),
         ("first_out", "first output"),
     ]
     attrs = [

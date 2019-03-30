@@ -146,7 +146,7 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 /* Determine number of output operands. */
 static unsigned be_count_asm_outputs(ir_node const *const node)
 {
-	unsigned                       n_outputs   = pn_be_Asm_first_out; /* At least the memory output. */
+	unsigned                       n_outputs   = pn_be_Asm_first_out; /* At least the default outputs. */
 	ir_asm_constraint const *const constraints = get_ASM_constraints(node);
 	for (unsigned i = 0, n = get_ASM_n_constraints(node); i != n; ++i) {
 		n_outputs = MAX(n_outputs, (unsigned)(constraints[i].out_pos + 1));
@@ -158,7 +158,8 @@ be_asm_info_t be_asm_prepare_info(ir_node const *const node)
 {
 	unsigned                    const n_outs   = be_count_asm_outputs(node);
 	arch_register_req_t const **const out_reqs = NEW_ARR_F(arch_register_req_t const*, n_outs);
-	out_reqs[pn_be_Asm_M] = arch_memory_req;
+	out_reqs[pn_be_Asm_M]         = arch_memory_req;
+	out_reqs[pn_be_Asm_X_regular] = arch_exec_req;
 
 	ir_node                   **const ins     = NEW_ARR_F(ir_node*, n_be_Asm_first_in);
 	arch_register_req_t const **const in_reqs = NEW_ARR_F(arch_register_req_t const*, n_be_Asm_first_in);
