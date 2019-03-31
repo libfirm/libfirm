@@ -1344,6 +1344,9 @@ static bool block_needs_label(ir_node const *const block)
 		if (be_emit_get_prev_block(block) != cfgpred_block)
 			return true;
 
+		if (is_x_regular_Proj(cfgpred))
+			return false;
+
 		ir_node const *const pred = skip_Proj(cfgpred);
 		return !(arch_get_irn_flags(pred) & arch_irn_flag_fallthrough);
 	} else {
