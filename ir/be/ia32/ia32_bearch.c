@@ -148,41 +148,38 @@ static void ia32_set_frame_entity(ir_node *node, ir_entity *entity,
 	assert(!is_ia32_Store(node) || attr->size > X86_SIZE_8);
 }
 
-static bool node_has_sp_base(ir_node const *const node)
+static void ia32_determine_frameoffset_addr(ir_node *const node, x86_addr_t *const addr, int const sp_offset)
 {
-	assert(is_ia32_irn(node));
-	arch_register_t const *const base_reg
-		= arch_get_irn_register_in(node, n_ia32_base);
-	return base_reg == &ia32_registers[REG_ESP];
+	if (addr->immediate.kind == X86_IMM_FRAMEENT) {
+#ifndef NDEBUG
+		if (is_ia32_irn(node))
+			get_ia32_attr(node)->old_frame_ent = addr->immediate.entity;
+#endif
+		addr->immediate.offset += get_entity_offset(addr->immediate.entity);
+		addr->immediate.entity  = NULL;
+		addr->immediate.kind    = X86_IMM_FRAMEOFFSET;
+	}
+
+	if (addr->immediate.kind == X86_IMM_FRAMEOFFSET) {
+		assert(x86_addr_variant_has_base(addr->variant));
+		arch_register_t const *const base = arch_get_irn_register_in(node, addr->base_input);
+		if (base == &ia32_registers[REG_ESP]) {
+			addr->immediate.offset += sp_offset;
+		} else {
+			assert(base == &ia32_registers[REG_EBP]);
+			/* we calculate offsets relative to the SP value at function begin,
+			 * but EBP points after the saved old frame pointer */
+			addr->immediate.offset += IA32_REGISTER_SIZE;
+		}
+		addr->immediate.kind = X86_IMM_VALUE;
+	}
 }
 
 static void ia32_determine_frameoffset(ir_node *node, int sp_offset)
 {
-	if (!is_ia32_irn(node))
-		return;
-
-	ia32_attr_t *const attr = get_ia32_attr(node);
-	if (attr->addr.immediate.kind == X86_IMM_FRAMEENT) {
-#ifndef NDEBUG
-		attr->old_frame_ent = attr->addr.immediate.entity;
-#endif
-		attr->addr.immediate.offset
-			+= get_entity_offset(attr->addr.immediate.entity);
-		attr->addr.immediate.entity  = NULL;
-		attr->addr.immediate.kind    = X86_IMM_FRAMEOFFSET;
-	}
-
-	if (attr->addr.immediate.kind == X86_IMM_FRAMEOFFSET) {
-		if (node_has_sp_base(node))
-			attr->addr.immediate.offset += sp_offset;
-		else {
-			assert(arch_get_irn_register_in(node, n_ia32_base)
-			       == &ia32_registers[REG_EBP]);
-			/* we calculate offsets relative to the SP value at function begin,
-			 * but EBP points after the saved old frame pointer */
-			attr->addr.immediate.offset += IA32_REGISTER_SIZE;
-		}
-		attr->addr.immediate.kind = X86_IMM_VALUE;
+	if (is_ia32_irn(node)) {
+		ia32_attr_t *const attr = get_ia32_attr(node);
+		ia32_determine_frameoffset_addr(node, &attr->addr, sp_offset);
 	}
 }
 
