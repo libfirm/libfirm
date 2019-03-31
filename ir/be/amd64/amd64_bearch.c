@@ -547,6 +547,14 @@ static void amd64_determine_frameoffset(ir_node *node, int sp_offset)
 			x86_addr_t *const addr = &get_amd64_addr_attr(node)->addr;
 			amd64_determine_frameoffset_addr(node, addr, sp_offset);
 		}
+	} else if (be_is_Asm(node)) {
+		be_asm_attr_t const *const attr = get_be_asm_attr_const(node);
+		x86_asm_operand_t   *const ops  = (x86_asm_operand_t*)attr->operands;
+		for (size_t i = 0, n = ARR_LEN(ops); i != n; ++i) {
+			x86_asm_operand_t *const op = &ops[i];
+			if (op->op.kind == BE_ASM_OPERAND_MEMORY)
+				amd64_determine_frameoffset_addr(node, &op->u.addr, sp_offset);
+		}
 	}
 }
 
