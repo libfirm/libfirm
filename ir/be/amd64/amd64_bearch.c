@@ -520,13 +520,8 @@ static bool node_has_sp_base(ir_node const *const node,
 	return base_reg == &amd64_registers[REG_RSP];
 }
 
-static void amd64_determine_frameoffset(ir_node *node, int sp_offset)
+static void amd64_determine_frameoffset_addr(ir_node *const node, x86_addr_t *const addr, int const sp_offset)
 {
-	if (!is_amd64_irn(node)
-	 || !amd64_has_addr_attr(get_amd64_attr_const(node)->op_mode))
-		return;
-
-	x86_addr_t *const addr = &get_amd64_addr_attr(node)->addr;
 	if (addr->immediate.kind == X86_IMM_FRAMEENT) {
 		addr->immediate.offset += get_entity_offset(addr->immediate.entity);
 		addr->immediate.entity  = NULL;
@@ -534,14 +529,24 @@ static void amd64_determine_frameoffset(ir_node *node, int sp_offset)
 	}
 
 	if (addr->immediate.kind == X86_IMM_FRAMEOFFSET) {
-		if (node_has_sp_base(node, addr))
+		if (node_has_sp_base(node, addr)) {
 			addr->immediate.offset += sp_offset;
-		else {
+		} else {
 			/* we calculate offsets relative to the SP value at function begin,
 			 * but RBP points after the saved old frame pointer */
 			addr->immediate.offset += AMD64_REGISTER_SIZE;
 		}
 		addr->immediate.kind = X86_IMM_VALUE;
+	}
+}
+
+static void amd64_determine_frameoffset(ir_node *node, int sp_offset)
+{
+	if (is_amd64_irn(node)) {
+		if (amd64_has_addr_attr(get_amd64_attr_const(node)->op_mode)) {
+			x86_addr_t *const addr = &get_amd64_addr_attr(node)->addr;
+			amd64_determine_frameoffset_addr(node, addr, sp_offset);
+		}
 	}
 }
 
