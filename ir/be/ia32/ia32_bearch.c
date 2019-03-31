@@ -180,6 +180,14 @@ static void ia32_determine_frameoffset(ir_node *node, int sp_offset)
 	if (is_ia32_irn(node)) {
 		ia32_attr_t *const attr = get_ia32_attr(node);
 		ia32_determine_frameoffset_addr(node, &attr->addr, sp_offset);
+	} else if (be_is_Asm(node)) {
+		be_asm_attr_t const *const attr = get_be_asm_attr_const(node);
+		x86_asm_operand_t   *const ops  = (x86_asm_operand_t*)attr->operands;
+		for (size_t i = 0, n = ARR_LEN(ops); i != n; ++i) {
+			x86_asm_operand_t *const op = &ops[i];
+			if (op->op.kind == BE_ASM_OPERAND_MEMORY)
+				ia32_determine_frameoffset_addr(node, &op->u.addr, sp_offset);
+		}
 	}
 }
 
