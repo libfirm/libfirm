@@ -509,7 +509,10 @@ void ia32_swap_left_right(ir_node *node)
 void init_ia32_attributes(ir_node *node, x86_insn_size_t const size)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->size = size;
+	attr->size             = size;
+	attr->addr.base_input  = n_ia32_base;
+	attr->addr.index_input = n_ia32_index;
+	attr->addr.mem_input   = n_ia32_mem;
 
 #ifndef NDEBUG
 	attr->attr_type |= IA32_ATTR_ia32_attr_t;

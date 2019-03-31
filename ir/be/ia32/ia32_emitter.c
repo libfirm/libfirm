@@ -288,13 +288,7 @@ ENUM_BITSET(ia32_emit_mod_t)
 static void ia32_emit_am(ir_node const *const node)
 {
 	ia32_attr_t const *const attr = get_ia32_attr_const(node);
-	/* Prepare a temporary x86_addr_t with input numbers set until the ia32
-	 * backend sets them properly earlier. */
-	x86_addr_t addr = attr->addr;
-	addr.base_input  = n_ia32_base;
-	addr.index_input = n_ia32_index;
-	addr.mem_input   = n_ia32_mem;
-	x86_emit_addr(node, &addr);
+	x86_emit_addr(node, &attr->addr);
 }
 
 void ia32_emitf(ir_node const *const node, char const *fmt, ...)
