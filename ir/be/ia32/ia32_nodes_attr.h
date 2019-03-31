@@ -66,13 +66,12 @@ typedef enum ia32_attr_type_t {
 	IA32_ATTR_INVALID               = 0,
 	IA32_ATTR_ia32_attr_t           = 1 << 0,
 	IA32_ATTR_ia32_x87_attr_t       = 1 << 1,
-	IA32_ATTR_ia32_asm_attr_t       = 1 << 2,
-	IA32_ATTR_ia32_immediate_attr_t = 1 << 3,
-	IA32_ATTR_ia32_condcode_attr_t  = 1 << 4,
-	IA32_ATTR_ia32_copyb_attr_t     = 1 << 5,
-	IA32_ATTR_ia32_call_attr_t      = 1 << 6,
-	IA32_ATTR_ia32_switch_attr_t    = 1 << 7,
-	IA32_ATTR_ia32_return_attr_t    = 1 << 8,
+	IA32_ATTR_ia32_immediate_attr_t = 1 << 2,
+	IA32_ATTR_ia32_condcode_attr_t  = 1 << 3,
+	IA32_ATTR_ia32_copyb_attr_t     = 1 << 4,
+	IA32_ATTR_ia32_call_attr_t      = 1 << 5,
+	IA32_ATTR_ia32_switch_attr_t    = 1 << 6,
+	IA32_ATTR_ia32_return_attr_t    = 1 << 7,
 } ia32_attr_type_t;
 #endif
 
