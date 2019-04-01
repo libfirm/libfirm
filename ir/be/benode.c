@@ -575,7 +575,10 @@ static void be_dump_node(FILE *f, const ir_node *irn, dump_reason_t reason)
 		}
 		break;
 	case dump_node_info_txt:
-		if (be_is_IncSP(irn)) {
+		if (be_is_Asm(irn)) {
+			be_asm_attr_t const *const attr = get_be_asm_attr_const(irn);
+			fprintf(f, "assembler text: %s\n", get_id_str(attr->text));
+		} else if (be_is_IncSP(irn)) {
 			const be_incsp_attr_t *a
 				= (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
 			fprintf(f, "no_align: %s\n", be_dump_yesno(a->no_align));
