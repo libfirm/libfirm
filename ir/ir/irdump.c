@@ -858,7 +858,7 @@ static void dump_node_vcgattr(FILE *F, const ir_node *node, const ir_node *local
 	ir_op *op = get_irn_op(n);
 	if (is_op_constlike(op)) {
 		print_vcg_color(F, ird_color_const);
-	} else if (is_op_cfopcode(op) || is_op_forking(op)) {
+	} else if (is_op_cfopcode(op) || is_op_forking(op) || (is_op_fragile(op) && ir_throws_exception(n))) {
 		print_vcg_color(F, ird_color_controlflow);
 	} else if (is_op_uses_memory(op)) {
 		print_vcg_color(F, ird_color_memory);
