@@ -123,27 +123,26 @@ class ASM(Node):
     """executes assembler fragments of the target machine.
 
     The node contains a template for an assembler snippet. The compiler will
-    replace occurrences of %0 to %9 with input/output registers,
-    %% with a single % char. Some backends allow additional specifiers (for
-    example %w3, %l3, %h3 on x86 to get a 16bit, 8hit low, 8bit high part
-    of a register).
+    replace occurrences of %0, %1, ... with input/output operands, %% with a
+    single % char. Some backends allow additional specifiers (for example %w3,
+    %b3, %h3 on x86 to get a 16bit, 8hit low, 8bit high part of a register).
     After the replacements the text is emitted into the final assembly.
 
     The clobber list contains names of registers which have an undefined value
     after the assembler instruction is executed; it may also contain 'memory'
     or 'cc' if global state/memory changes or the condition code registers
-    (some backends implicitly set cc, memory clobbers on all ASM statements).
+    (some backends implicitly set cc on all ASM statements).
 
-    Example (an i386 instruction)::
+    Example (an i386 instruction):
 
         ASM(text="btsl %1, %0",
-            constraints = ["=m", "r"],
+            constraints = ["+m", "r"],
             clobbers = ["cc"])
 
-    As there are no output, the %0 references the first input which is just an
-    address which the asm operation writes to. %1 references to an input which
-    is passed as a register. The condition code register has an unknown value
-    after the instruction.
+    %0 references a memory reference which the operation both reads and writes.
+    For this the node has an address input operand.  %1 references an input
+    which is passed as a register. The condition code register has an unknown
+    value after the instruction.
 
     (This format is inspired by the gcc extended asm syntax)
     """
