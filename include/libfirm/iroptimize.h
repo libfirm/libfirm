@@ -437,6 +437,7 @@ FIRM_API void do_loop_unrolling(ir_graph *irg);
 /**
  * Perform loop unrolling on a given graph.
  *
+ * @param irg       the IR-graph to optimize
  * @param factor    the unroll factor
  * @param maxsize   the maximum number of nodes in a loop
  */
