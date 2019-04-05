@@ -626,6 +626,7 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 	/* modifiers:
 	 *   c: plain immediate
 	 *   f: memory reference without surrounding '[]'
+	 *   l: label only
 	 *   m: see 'f'
 	 *   r: immediate, but show '%g0' instead of '0' */
 	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "r", "c", "fm"))
@@ -646,6 +647,10 @@ static void emit_sparc_asm_operand(ir_node const *const node, char const modifie
 
 	case BE_ASM_OPERAND_INPUT_VALUE:
 		sparc_emit_register(arch_get_irn_register_in(node, op->op.pos));
+		return;
+
+	case BE_ASM_OPERAND_LABEL:
+		be_emit_cfop_target_pos(node, op->op.pos);
 		return;
 
 	case BE_ASM_OPERAND_OUTPUT_VALUE:
@@ -677,7 +682,9 @@ static void emit_jmp(ir_node const *const node, ir_node const *const target)
 
 static void emit_sparc_ASM(const ir_node *node)
 {
-	be_emit_asm(node, emit_sparc_asm_operand);
+	ir_node const *const fallthrough = be_emit_asm(node, emit_sparc_asm_operand);
+	if (fallthrough)
+		emit_jmp(node, fallthrough);
 }
 
 /**

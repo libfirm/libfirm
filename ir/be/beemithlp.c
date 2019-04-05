@@ -104,6 +104,12 @@ void be_emit_cfop_target(ir_node const *const jmp)
 	be_gas_emit_block_name(target);
 }
 
+void be_emit_cfop_target_pos(ir_node const *const jmp, unsigned const pos)
+{
+	ir_node *const proj = get_Proj_for_pn(jmp, pos);
+	be_emit_cfop_target(proj);
+}
+
 bool be_is_fallthrough(ir_node const *const jmp)
 {
 	ir_node *const block  = get_nodes_block(jmp);

@@ -493,6 +493,8 @@ static void ia32_lower_ASM(ir_node *const asmn)
 	ir_cons_flags flags = cons_none;
 	if (get_irn_pinned(asmn) == op_pin_state_floats)
 		flags |= cons_floats;
+	if (ir_throws_exception(asmn))
+		flags |= cons_throws_exception;
 
 	dbg_info *const dbgi      = get_irn_dbg_info(asmn);
 	ir_node  *const block     = get_nodes_block(asmn);

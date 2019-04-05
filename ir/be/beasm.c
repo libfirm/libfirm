@@ -48,6 +48,13 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 
 	char const *i = get_id_str(constraint_text);
 
+	if (!i) {
+		/* Labels have no constraint text. */
+		constraint->all_registers_allowed = true;
+		constraint->cls                   = &arch_exec_cls;
+		return;
+	}
+
 	bool is_output = false;
 	if (i[0] == '+' || i[0] == '=') {
 		++i;
@@ -146,7 +153,7 @@ void be_parse_asm_constraints_internal(be_asm_constraint_t *const constraint, id
 /* Determine number of output operands. */
 static unsigned be_count_asm_outputs(ir_node const *const node)
 {
-	unsigned                       n_outputs   = pn_be_Asm_first_out; /* At least the memory output. */
+	unsigned                       n_outputs   = pn_be_Asm_first_out; /* At least the default outputs. */
 	ir_asm_constraint const *const constraints = get_ASM_constraints(node);
 	for (unsigned i = 0, n = get_ASM_n_constraints(node); i != n; ++i) {
 		n_outputs = MAX(n_outputs, (unsigned)(constraints[i].out_pos + 1));
@@ -158,7 +165,8 @@ be_asm_info_t be_asm_prepare_info(ir_node const *const node)
 {
 	unsigned                    const n_outs   = be_count_asm_outputs(node);
 	arch_register_req_t const **const out_reqs = NEW_ARR_F(arch_register_req_t const*, n_outs);
-	out_reqs[pn_be_Asm_M] = arch_memory_req;
+	out_reqs[pn_be_Asm_M]         = arch_memory_req;
+	out_reqs[pn_be_Asm_X_regular] = arch_exec_req;
 
 	ir_node                   **const ins     = NEW_ARR_F(ir_node*, n_be_Asm_first_in);
 	arch_register_req_t const **const in_reqs = NEW_ARR_F(arch_register_req_t const*, n_be_Asm_first_in);
@@ -205,13 +213,16 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	ir_graph       *const irg  = get_irn_irg(node);
 	struct obstack *const obst = get_irg_obstack(irg);
 
-	/* Handle early clobbers. */
+	/* Handle early clobbers and labels. */
+	size_t                         n_labels    = 0;
 	size_t                   const orig_n_ins  = ARR_LEN(in_reqs);
 	size_t                   const orig_n_outs = ARR_LEN(out_reqs);
 	ir_asm_constraint const *const constraints = get_ASM_constraints(node);
 	for (unsigned o = 0, n = get_ASM_n_constraints(node); o != n; ++o) {
 		ir_asm_constraint const *const constraint = &constraints[o];
-		if (strchr(get_id_str(constraint->constraint), '&')) {
+		if (!constraint->constraint) {
+			++n_labels;
+		} else if (strchr(get_id_str(constraint->constraint), '&')) {
 			int const out_pos = constraint->out_pos;
 			if (out_pos >= 0) {
 				arch_register_req_t   const **const oslot = &out_reqs[out_pos];
@@ -307,7 +318,7 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	 */
 	be_add_pressure_t add_pressure[ir_target.isa->n_register_classes];
 	memset(add_pressure, 0, sizeof(add_pressure));
-	if (n_outs - pn_be_Asm_first_out < n_ins - n_be_Asm_first_in) {
+	if (n_outs - n_labels - pn_be_Asm_first_out < n_ins - n_be_Asm_first_in) {
 		bitset_t *const used_ins = bitset_alloca(n_ins);
 		for (size_t o = pn_be_Asm_first_out; o < n_outs; ++o) {
 			arch_register_req_t const *const outreq = out_reqs[o];
@@ -335,6 +346,11 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	arch_register_req_t const **const dup_in_reqs = DUP_ARR_D(arch_register_req_t const*, obst, in_reqs);
 	ir_node                    *const new_node    = be_new_Asm(dbgi, block, n_ins, in, dup_in_reqs, n_outs, text, operands);
 
+	if (n_labels != 0) {
+		ir_set_throws_exception(new_node, true);
+		set_irn_pinned(new_node, op_pin_state_pinned);
+	}
+
 	for (unsigned i = 0; i != ARRAY_SIZE(add_pressure); ++i) {
 		if (add_pressure[i] != 0) {
 			arch_register_class_t const *const cls = &ir_target.isa->register_classes[i];
@@ -354,7 +370,7 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	return new_node;
 }
 
-void be_emit_asm(ir_node const *const asmn, be_emit_asm_operand_func *const emit_asm_operand)
+ir_node *be_emit_asm(ir_node const *const asmn, be_emit_asm_operand_func *const emit_asm_operand)
 {
 	be_emit_cstring("#APP");
 	be_emit_finish_line_gas(asmn);
@@ -411,6 +427,9 @@ void be_emit_asm(ir_node const *const asmn, be_emit_asm_operand_func *const emit
 
 	be_emit_cstring("\n#NO_APP\n");
 	be_emit_write_line();
+
+	/* Return the fallthrough proj if present. */
+	return get_Proj_for_pn(asmn, pn_be_Asm_X_regular);
 }
 
 static char const *be_get_constraint_name(be_asm_operand_kind_t const kind)
@@ -421,6 +440,7 @@ static char const *be_get_constraint_name(be_asm_operand_kind_t const kind)
 	case BE_ASM_OPERAND_OUTPUT_VALUE: return "output register";
 	case BE_ASM_OPERAND_IMMEDIATE:    return "immediate";
 	case BE_ASM_OPERAND_MEMORY:       return "memory";
+	case BE_ASM_OPERAND_LABEL:        return "label";
 	}
 	panic("invalid constraint kind");
 }
@@ -434,6 +454,8 @@ bool be_is_valid_asm_operand_kind(ir_node const *const node, char const modifier
 		want = BE_ASM_OPERAND_IMMEDIATE;
 	} else if (strchr(mod_mem, modifier)) {
 		want = BE_ASM_OPERAND_MEMORY;
+	} else if (modifier == 'l') {
+		want = BE_ASM_OPERAND_LABEL;
 	} else {
 		be_errorf(node, "asm contains unknown modifier '%c'", modifier);
 		return false;

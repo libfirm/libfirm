@@ -26,6 +26,7 @@ typedef enum be_asm_operand_kind_t {
 	BE_ASM_OPERAND_OUTPUT_VALUE,
 	BE_ASM_OPERAND_IMMEDIATE,
 	BE_ASM_OPERAND_MEMORY,
+	BE_ASM_OPERAND_LABEL,
 } be_asm_operand_kind_t;
 
 typedef struct be_asm_operand_t {
@@ -115,7 +116,10 @@ static inline void be_asm_add_inout(be_asm_info_t *const info, be_asm_operand_t 
 
 static inline void be_asm_add_out(be_asm_info_t *const info, be_asm_operand_t *const op, struct obstack *const obst, be_asm_constraint_t const *const be_constraint, int const opos)
 {
-	be_set_asm_operand(op, BE_ASM_OPERAND_OUTPUT_VALUE, opos);
+	be_asm_operand_kind_t const kind =
+		be_constraint->cls == &arch_exec_cls ? BE_ASM_OPERAND_LABEL :
+		/*                                  */ BE_ASM_OPERAND_OUTPUT_VALUE;
+	be_set_asm_operand(op, kind, opos);
 	arch_register_req_t const *const oreq = be_make_register_req(obst, be_constraint);
 	info->out_reqs[opos] = oreq;
 }
@@ -124,7 +128,7 @@ ir_node *be_make_asm(ir_node const *node, be_asm_info_t const *info, void *opera
 
 typedef void be_emit_asm_operand_func(ir_node const *asmn, char modifier, unsigned pos);
 
-void be_emit_asm(ir_node const *asmn, be_emit_asm_operand_func *emit_asm_operand);
+ir_node *be_emit_asm(ir_node const *asmn, be_emit_asm_operand_func *emit_asm_operand);
 
 bool be_is_valid_asm_operand_kind(ir_node const *node, char modifier, unsigned pos, be_asm_operand_kind_t have, char const *mod_any, char const *mod_imm, char const *mod_mem);
 

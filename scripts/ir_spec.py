@@ -149,9 +149,11 @@ class ASM(Node):
     mode = "mode_T"
     arity = "variable"
     input_name = "input"
-    flags = ["keep", "uses_memory"]
+    flags = ["fragile", "keep", "uses_memory"]
+    only_regular = True
     pinned = "exception"
     pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
+    throws_init = "(flags & cons_throws_exception) != 0"
     attr_struct = "asm_attr"
     attrs_name = "assem"
     ins = [
@@ -159,6 +161,7 @@ class ASM(Node):
     ]
     outs = [
         ("M", "memory result"),
+        ("X_regular", "control flow when no jump occurs"),
         ("first_out", "first output"),
     ]
     attrs = [

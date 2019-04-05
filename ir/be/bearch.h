@@ -21,6 +21,8 @@
 #include "beinfo.h"
 #include "be.h"
 
+extern arch_register_class_t arch_exec_cls;
+
 extern arch_register_req_t const arch_exec_requirement;
 #define arch_exec_req (&arch_exec_requirement)
 

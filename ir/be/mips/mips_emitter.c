@@ -103,6 +103,7 @@ static void emit_mips_asm_operand(ir_node const *const node, char const modifier
 	mips_asm_operand_t const *const op   = &((mips_asm_operand_t const*)attr->operands)[pos];
 	/* modifiers:
 	 *   c: plain immediate
+	 *   l: label only
 	 *   z: print normally, except immediate 0 as '$zero' */
 	if (!be_is_valid_asm_operand_kind(node, modifier, pos, op->op.kind, "z", "c", ""))
 		return;
@@ -126,6 +127,10 @@ static void emit_mips_asm_operand(ir_node const *const node, char const modifier
 			emit_immediate_val(NULL, op->ent, op->val);
 		return;
 
+	case BE_ASM_OPERAND_LABEL:
+		be_emit_cfop_target_pos(node, op->op.pos);
+		return;
+
 	case BE_ASM_OPERAND_MEMORY:
 		be_emit_char('(');
 		emit_register(arch_get_irn_register_in(node, op->op.pos));
@@ -144,7 +149,9 @@ static void emit_jmp(ir_node const *const node, ir_node const *const target)
 
 static void emit_be_ASM(const ir_node *node)
 {
-	be_emit_asm(node, &emit_mips_asm_operand);
+	ir_node const *const fallthrough = be_emit_asm(node, &emit_mips_asm_operand);
+	if (fallthrough)
+		emit_jmp(node, fallthrough);
 }
 
 static void emit_be_Copy(ir_node const *const node)

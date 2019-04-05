@@ -83,6 +83,8 @@ be_cond_branch_projs_t be_get_cond_branch_projs(ir_node const *node);
  */
 void be_emit_cfop_target(ir_node const *jmp);
 
+void be_emit_cfop_target_pos(ir_node const *jmp, unsigned pos);
+
 bool be_is_fallthrough(ir_node const *jmp);
 
  /**

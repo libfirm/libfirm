@@ -750,6 +750,7 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
 	 *   X: no modifying effect (gcc doc: don't print any sort of PIC '@' suffix for a symbol)
 	 *   b: 8 bit low name of register
 	 *   c: immediate without prefix '$'
+	 *   l: label without prefix '$'
 	 *   h: 8 bit high name of register
 	 *   k: 32 bit name of register
 	 *   p: like 'c' and other operands unmodified (gcc doc: "print raw symbol")
@@ -787,6 +788,12 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
 			be_emit_char('$');
 		x86_emit_imm32(&op->u.imm32);
 		return;
+
+	case BE_ASM_OPERAND_LABEL:
+		if (modifier != 'l')
+			be_emit_char('$');
+		be_emit_cfop_target_pos(node, op->op.pos);
+		return;
 	}
 	panic("invalid asm operand kind");
 }
@@ -796,7 +803,9 @@ static void emit_ia32_asm_operand(ir_node const *const node, char const modifier
  */
 static void emit_ia32_Asm(const ir_node *node)
 {
-	be_emit_asm(node, emit_ia32_asm_operand);
+	ir_node *const fallthrough = be_emit_asm(node, emit_ia32_asm_operand);
+	if (fallthrough)
+		emit_jmp(node, fallthrough);
 }
 
 /**
