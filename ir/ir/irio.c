@@ -1996,15 +1996,16 @@ static ir_node *read_ASM(read_env_t *env)
 		ARR_APP1(ident*, clobbers, clobber);
 	}
 
-	int pinned = read_pinned(env);
+	ir_cons_flags flags = cons_none;
+	if (!read_pinned(env))
+		flags |= cons_floats;
 
 	int       n_in = read_preds(env);
 	ir_node **in   = (ir_node**)obstack_finish(&env->preds_obst);
 
 	ir_node *newnode = new_r_ASM(block, mem, n_in, in, asm_text,
 	                             ARR_LEN(constraints), constraints,
-	                             ARR_LEN(clobbers), clobbers);
-	set_irn_pinned(newnode, pinned);
+	                             ARR_LEN(clobbers), clobbers, flags);
 	obstack_free(&env->preds_obst, in);
 	DEL_ARR_F(clobbers);
 	DEL_ARR_F(constraints);

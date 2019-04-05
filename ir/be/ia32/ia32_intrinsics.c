@@ -490,6 +490,10 @@ static void ia32_lower_ASM(ir_node *const asmn)
 	lo->constraint = new_id_from_str("=a");
 	lo->mode       = lo_mode;
 
+	ir_cons_flags flags = cons_none;
+	if (get_irn_pinned(asmn) == op_pin_state_floats)
+		flags |= cons_floats;
+
 	dbg_info *const dbgi      = get_irn_dbg_info(asmn);
 	ir_node  *const block     = get_nodes_block(asmn);
 	ir_node  *const mem       = get_ASM_mem(asmn);
@@ -498,7 +502,7 @@ static void ia32_lower_ASM(ir_node *const asmn)
 	size_t    const n_clobber = get_ASM_n_clobbers(asmn);
 	ident   **const clobbers  = get_ASM_clobbers(asmn);
 	ident    *const asm_text  = get_ASM_text(asmn);
-	ir_node  *const new_asm   = new_rd_ASM(dbgi, block, mem, n_ins, ins, asm_text, new_n_constraints, new_constraints, n_clobber, clobbers);
+	ir_node  *const new_asm   = new_rd_ASM(dbgi, block, mem, n_ins, ins, asm_text, new_n_constraints, new_constraints, n_clobber, clobbers, flags);
 
 	foreach_out_edge_safe(asmn, edge) {
 		ir_node *const proj = get_edge_src_irn(edge);

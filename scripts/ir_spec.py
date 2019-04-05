@@ -151,7 +151,7 @@ class ASM(Node):
     input_name = "input"
     flags = ["keep", "uses_memory"]
     pinned = "exception"
-    pinned_init = "op_pin_state_pinned"
+    pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
     attr_struct = "asm_attr"
     attrs_name = "assem"
     ins = [
@@ -177,6 +177,8 @@ class ASM(Node):
                   comment="number of clobbered registers/memory"),
         Attribute("clobbers", type="ident**",
                   comment="list of clobbered registers/memory"),
+        Attribute("flags", type="ir_cons_flags",
+                  comment="specifies alignment, volatility and pin state"),
     ]
     init = '''
     struct obstack *const obst = get_irg_obstack(irg);
