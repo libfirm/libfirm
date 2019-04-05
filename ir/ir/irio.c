@@ -2001,9 +2001,9 @@ static ir_node *read_ASM(read_env_t *env)
 	int       n_in = read_preds(env);
 	ir_node **in   = (ir_node**)obstack_finish(&env->preds_obst);
 
-	ir_node *newnode = new_r_ASM(block, mem, n_in, in,
+	ir_node *newnode = new_r_ASM(block, mem, n_in, in, asm_text,
 	                             ARR_LEN(constraints), constraints,
-	                             ARR_LEN(clobbers), clobbers, asm_text);
+	                             ARR_LEN(clobbers), clobbers);
 	set_irn_pinned(newnode, pinned);
 	obstack_free(&env->preds_obst, in);
 	DEL_ARR_F(clobbers);

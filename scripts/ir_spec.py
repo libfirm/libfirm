@@ -166,8 +166,7 @@ class ASM(Node):
                   comment="constraints"),
         Attribute("clobbers", type="ident**", init="NULL",
                   comment="list of clobbered registers/memory"),
-        Attribute("text", type="ident*", init="text",
-                  comment="assembler text"),
+        Attribute("text", type="ident*", comment="assembler text"),
     ]
     constructor_args = [
         Attribute("n_constraints", type="size_t",
@@ -178,7 +177,6 @@ class ASM(Node):
                   comment="number of clobbered registers/memory"),
         Attribute("clobbers", type="ident**",
                   comment="list of clobbered registers/memory"),
-        Attribute("text", type="ident*", comment="assembler text"),
     ]
     init = '''
     struct obstack *const obst = get_irg_obstack(irg);

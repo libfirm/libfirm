@@ -498,7 +498,7 @@ static void ia32_lower_ASM(ir_node *const asmn)
 	size_t    const n_clobber = get_ASM_n_clobbers(asmn);
 	ident   **const clobbers  = get_ASM_clobbers(asmn);
 	ident    *const asm_text  = get_ASM_text(asmn);
-	ir_node  *const new_asm   = new_rd_ASM(dbgi, block, mem, n_ins, ins, new_n_constraints, new_constraints, n_clobber, clobbers, asm_text);
+	ir_node  *const new_asm   = new_rd_ASM(dbgi, block, mem, n_ins, ins, asm_text, new_n_constraints, new_constraints, n_clobber, clobbers);
 
 	foreach_out_edge_safe(asmn, edge) {
 		ir_node *const proj = get_edge_src_irn(edge);
