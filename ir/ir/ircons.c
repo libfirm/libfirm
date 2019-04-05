@@ -40,46 +40,9 @@ ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg, ir_mode *mode,
 	return new_rd_Const(db, irg, new_tarval_from_long(value, mode));
 }
 
-ir_node *new_rd_ASM(dbg_info *db, ir_node *block, ir_node *mem,
-                    int arity, ir_node *in[],
-                    size_t n_constraints, ir_asm_constraint *constraints, size_t n_clobber,
-                    ident *clobber[], ident *text)
-{
-	ir_graph *const irg = get_irn_irg(block);
-
-	int       const r_arity = arity + 1;
-	ir_node **const r_in    = ALLOCAN(ir_node*, r_arity);
-	r_in[0] = mem;
-	MEMCPY(&r_in[1], in, arity);
-
-	ir_node *res = new_ir_node(db, irg, block, op_ASM, mode_T, r_arity, r_in);
-
-	struct obstack *const obst = get_irg_obstack(irg);
-	asm_attr       *const a    = &res->attr.assem;
-	a->exc.pinned  = true;
-	a->constraints = NEW_ARR_D(ir_asm_constraint, obst, n_constraints);
-	a->clobbers    = NEW_ARR_D(ident*,            obst, n_clobber);
-	a->text        = text;
-
-	MEMCPY(a->constraints, constraints, n_constraints);
-	MEMCPY(a->clobbers,    clobber,     n_clobber);
-
-	verify_new_node(res);
-	res = optimize_node(res);
-	return res;
-}
-
 ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value)
 {
 	return new_rd_Const_long(NULL, irg, mode, value);
-}
-
-ir_node *new_r_ASM(ir_node *block, ir_node *mem,
-                   int arity, ir_node *in[],
-                   size_t n_constraints, ir_asm_constraint *constraints,
-                   size_t n_clobber, ident *clobber[], ident *text)
-{
-	return new_rd_ASM(NULL, block, mem, arity, in, n_constraints, constraints, n_clobber, clobber, text);
 }
 
 /** Creates a Phi node with 0 predecessors. */
@@ -300,15 +263,6 @@ ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value)
 {
 	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
 	return new_rd_Const_long(db, current_ir_graph, mode, value);
-}
-
-ir_node *new_d_ASM(dbg_info *db, ir_node *mem, int arity, ir_node *in[],
-                   size_t n_constraints, ir_asm_constraint *constraints,
-                   size_t n_clobber, ident *clobber[], ident *text)
-{
-	assert(irg_is_constrained(current_ir_graph, IR_GRAPH_CONSTRAINT_CONSTRUCTION));
-	return new_rd_ASM(db, current_ir_graph->current_block, mem, arity, in,
-	                  n_constraints, constraints, n_clobber, clobber, text);
 }
 
 ir_node *new_rd_DivRL(dbg_info *dbgi, ir_node *block, ir_node * irn_mem, ir_node * irn_left, ir_node * irn_right, int pinned)
@@ -564,13 +518,6 @@ void irg_finalize_cons(ir_graph *irg)
 ir_node *new_Const_long(ir_mode *mode, long value)
 {
 	return new_d_Const_long(NULL, mode, value);
-}
-
-ir_node *new_ASM(ir_node *mem, int arity, ir_node *in[],
-                 size_t n_constraints, ir_asm_constraint *constraints, size_t n_clobber,
-                 ident *clobber[], ident *text)
-{
-	return new_d_ASM(NULL, mem, arity, in, n_constraints, constraints, n_clobber, clobber, text);
 }
 
 ir_node *new_r_Anchor(ir_graph *irg)

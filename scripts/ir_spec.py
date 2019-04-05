@@ -162,19 +162,33 @@ class ASM(Node):
         ("first_out", "first output"),
     ]
     attrs = [
-        Attribute("n_constraints", type="size_t", noprop=True,
+        Attribute("constraints", type="ir_asm_constraint*", init="NULL",
+                  comment="constraints"),
+        Attribute("clobbers", type="ident**", init="NULL",
+                  comment="list of clobbered registers/memory"),
+        Attribute("text", type="ident*", init="text",
+                  comment="assembler text"),
+    ]
+    constructor_args = [
+        Attribute("n_constraints", type="size_t",
                   comment="number of constraints"),
         Attribute("constraints", type="ir_asm_constraint*",
                   comment="constraints"),
-        Attribute("n_clobbers", type="size_t", noprop=True,
+        Attribute("n_clobbers", type="size_t",
                   comment="number of clobbered registers/memory"),
         Attribute("clobbers", type="ident**",
                   comment="list of clobbered registers/memory"),
         Attribute("text", type="ident*", comment="assembler text"),
     ]
-    # constructor is written manually at the moment, because of the clobbers+
-    # constraints arrays needing special handling (2 arguments for 1 attribute)
-    constructor = False
+    init = '''
+    struct obstack *const obst = get_irg_obstack(irg);
+    attr->constraints = NEW_ARR_D(ir_asm_constraint, obst, n_constraints);
+    attr->clobbers    = NEW_ARR_D(ident*,            obst, n_clobbers);
+
+    MEMCPY(attr->constraints, constraints, n_constraints);
+    MEMCPY(attr->clobbers,    clobbers,    n_clobbers);
+    '''
+    serializer = False
 
 
 @op
