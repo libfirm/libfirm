@@ -1160,12 +1160,18 @@ ir_node **be_create_block_schedule(ir_graph *irg)
 {
 	DB((dbg, LEVEL_1, "\nCreating block schedule for '%F'\n", irg));
 	be_timer_push(T_BLOCKSCHED);
+	ir_timer_t *timer_benchmark = ir_timer_new(); // TODO remove
+	ir_timer_start(timer_benchmark); // TODO remove
 	ir_node **block_list = scheduler(irg);
+	ir_timer_stop(timer_benchmark); // TODO remove
 	be_timer_pop(T_BLOCKSCHED);
 	DB((dbg, LEVEL_1, "Created block schedule:\n"));
 	for (size_t i=0; i < ARR_LEN(block_list); i++) {
 		DB((dbg, LEVEL_1, "\t%+F\n", block_list[i]));
 	}
+	ir_printf("BLOCKSCHED<%F;%d;%lu>\n", irg, ARR_LEN(block_list), // TODO remove
+		ir_timer_elapsed_usec(timer_benchmark)); // TODO remove
+	ir_timer_free(timer_benchmark);
 	return block_list;
 }
 
