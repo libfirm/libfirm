@@ -622,16 +622,13 @@ static int get_block_size(ir_node *block)
 {
 	// try to estimate block size in final binary
 	int size = 0;
-	//DB((dbg, LEVEL_1, "estimating size of %+F:\n", block));
 	sched_foreach(block, node) {
 		ir_op *const op = get_irn_op(node);
 		if (op == op_Phi || op == op_be_Keep || op == op_be_Start
 				||op == op_be_Unknown) continue;
 		unsigned int node_size = ir_target.isa->get_op_estimated_size(node);
-		//DB((dbg, LEVEL_1, "\t%+F : %d\n", node, node_size));
 		size += node_size;
 	}
-	//DB((dbg, LEVEL_1, "===> %d byte\n", size));
 	return size;
 }
 
@@ -858,9 +855,6 @@ static void exttsp_create_chains(ir_node *block, void *env)
 	(z)->addr_base -= (x)->bytes + (y)->bytes;  \
 }
 
-static int compute_merge_gain_counter; // TODO remove
-static int compute_merge_gain_early_return_counter; // TODO remove
-
 /*
  * Compute gain in ExtTSP score achieved by merging two chains.
  * Only merges which keep the start block at begin are considered.
@@ -868,7 +862,6 @@ static int compute_merge_gain_early_return_counter; // TODO remove
 static exttsp_score_t exttsp_compute_merge_gain(exttsp_chain_t *a,
 	exttsp_chain_t *b, int *merge_type_cache)
 {
-	compute_merge_gain_counter++;
 	exttsp_score_t score, max_score = 0;
 	int merge_type = -1;
 
@@ -885,7 +878,6 @@ static exttsp_score_t exttsp_compute_merge_gain(exttsp_chain_t *a,
 	// If chain a consists of 1 block all following merges are equivalent to simple
 	// concatenation. If chains get to long we stop to try complex merges too.
 	if (a->length <= 1 || a->length > MAXIMAL_SPLIT_LENGTH) {
-		compute_merge_gain_early_return_counter++; // TODO remove
 		if (merge_type == -1) { // no allowed merge possible
 			*merge_type_cache = -1;
 			return -1;
@@ -1048,17 +1040,6 @@ DB((dbg, LEVEL_1, "adjacency matrix:\n"));                         \
  */
 static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 {
-	// init performance meassurement timers
-	ir_timer_t *timer_startup = ir_timer_new();
-	ir_timer_t *timer_initial_cmg = ir_timer_new();
-	ir_timer_t *timer_max_search = ir_timer_new();
-	ir_timer_t *timer_merging = ir_timer_new();
-	ir_timer_t *timer_loop_cmg = ir_timer_new();
-	ir_timer_t *timer_shutdown = ir_timer_new();
-	compute_merge_gain_counter = 0;
-	compute_merge_gain_early_return_counter = 0;
-	// start
-	ir_timer_start(timer_startup);
 	exttsp_env_t env;
 	struct obstack obst;
 	env.irg = irg;
@@ -1091,10 +1072,8 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	for (int i=0; i<env.chain_count; i++)
 		env.chains[i].score = exttsp_rate_chain(&env.chains[i], NULL, NULL);
-	ir_timer_stop(timer_startup);
 
 	// compute initial merge gains
-	ir_timer_start(timer_initial_cmg);
 	for (int i=0; i<env.chain_count; i++) {
 		for (int j=0; j<env.chain_count; j++) {
 			if (env.adjacent[i][j])
@@ -1102,14 +1081,12 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 				               &env.chains[j], &merge_types[i][j]);
 		}
 	}
-	ir_timer_stop(timer_initial_cmg);
 
 	// chain merging
 	int max_i, max_j;
 	exttsp_score_t max;
 	while (env.chain_count > 1) {
 		// find maximum merge gain
-		ir_timer_start(timer_max_search);
 		max_i = max_j = -1;
 		max = 0;
 		for (size_t i=0; i<ARR_LEN(env.chains); i++) {
@@ -1121,15 +1098,12 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 			}
 		}
 		assert(max_i >= 0 && max_j >= 0 && "found no chain for merging!");
-		ir_timer_stop(timer_max_search);
 
 		// merge chains with maximum gain
-		ir_timer_start(timer_merging);
 		DB((dbg, LEVEL_1, "merging chain %u and %u (type: %d, gain:%f)\n",
 			max_i, max_j, merge_types[max_i][max_j], gains[max_i][max_j]));
 		exttsp_merge_chains(&env.chains[max_i], &env.chains[max_j],
 			merge_types[max_i][max_j]);
-		ir_timer_stop(timer_merging);
 
 		// fix adjacency matrix
 		for (size_t n=0; n<ARR_LEN(env.chains); n++) {
@@ -1141,7 +1115,6 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 		env.adjacent[max_i][max_i] = 0;
 
 		// recalculate gains affected by new chain i
-		ir_timer_start(timer_loop_cmg);
 		gains[max_i][max_j] = gains[max_j][max_i] = 0;
 		for (size_t n=0; n<ARR_LEN(env.chains); n++) {
 			gains[max_j][n] = gains[n][max_j] = 0;
@@ -1151,10 +1124,8 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 			gains[n][max_i] = exttsp_compute_merge_gain(&env.chains[n],
 			                    &env.chains[max_i], &merge_types[n][max_i]);
 		}
-		ir_timer_stop(timer_loop_cmg);
 		env.chain_count--;
 	}
-	ir_timer_start(timer_shutdown);
 	// get remaining chain which contains the schedule
 	exttsp_chain_t *final_chain = NULL;
 	for (size_t i=0; i<ARR_LEN(env.chains); i++) {
@@ -1175,25 +1146,6 @@ static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 		block_list[i++] = bb->irn;
 	} while ((bb = bb->succ) != NULL);
 	obstack_free(&obst, NULL);
-	ir_timer_stop(timer_shutdown);
-
-	// print time meassurements and free timers
-	printf("\nBLOCKSCHED TIMERS:\n");
-	printf("startup:\t\t %lu us\n", ir_timer_elapsed_usec(timer_startup));
-	printf("initial cmg:\t\t %lu us\n", ir_timer_elapsed_usec(timer_initial_cmg));
-	printf("search for maximum:\t %lu us\n", ir_timer_elapsed_usec(timer_max_search));
-	printf("merging:\t\t %lu us\n", ir_timer_elapsed_usec(timer_merging));
-	printf("loop cmg:\t\t %lu us\n", ir_timer_elapsed_usec(timer_loop_cmg));
-	printf("shutdown:\t\t %lu us\n", ir_timer_elapsed_usec(timer_shutdown));
-	printf("called compute_merge_gain %d times (%.3f%% early returns)\n",
-		compute_merge_gain_counter,
-		compute_merge_gain_early_return_counter/((double)compute_merge_gain_counter/100));
-	ir_timer_free(timer_startup);
-	ir_timer_free(timer_initial_cmg);
-	ir_timer_free(timer_max_search);
-	ir_timer_free(timer_merging);
-	ir_timer_free(timer_loop_cmg);
-	ir_timer_free(timer_shutdown);
 	return block_list;
 }
 
