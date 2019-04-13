@@ -845,7 +845,7 @@ static void exttsp_create_chains(ir_node *block, void *env)
 	(y)->addr_base += (x)->bytes;               \
 	(z)->addr_base += (x)->bytes + (y)->bytes;  \
 	score = exttsp_rate_chain((x), (y), (z));   \
-	if (score > max_score) {                    \
+	if (score >= max_score) {                   \
 		max_score = score;                      \
 		merge_type = i*5+type;                  \
 	}                                           \
