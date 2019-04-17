@@ -1040,8 +1040,6 @@ DB((dbg, LEVEL_1, "adjacency matrix:\n"));                         \
  */
 static ir_node **be_create_exttsp_block_schedule(ir_graph *irg)
 {
-	// TODO remove:
-	printf("MAXIMAL_SPLIT_LENGTH is %d\n", MAXIMAL_SPLIT_LENGTH);
 	exttsp_env_t env;
 	struct obstack obst;
 	env.irg = irg;
@@ -1195,9 +1193,6 @@ void be_init_blocksched(void)
 	be_add_module_list_opt(be_grp, "block-scheduler",
 		"basic block scheduling algorithm", &block_schedulers,
 		(void**)&scheduler);
-	// add commandline option for MAXIMAL_SPLIT_LENGTH
-	lc_opt_add_opt(be_grp, "exttsp-max-split-len", "Maximal length to split in exttsp algorithm.", // TODO remove
-		lc_opt_type_int, &MAXIMAL_SPLIT_LENGTH, sizeof(MAXIMAL_SPLIT_LENGTH), lc_opt_int_cb, lc_opt_int_dump, NULL);
 	// seed random number generator
 #ifdef _WIN32
 	// use seconds
