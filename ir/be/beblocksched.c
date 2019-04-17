@@ -9,7 +9,7 @@
  * @author      Matthias Braun, Christoph Mallon
  * @date        27.09.2006
  *
- * The goals of the greedy (and ILP) algorithm here works by assuming that
+ * The goals of the greedy (and ILP) "normal" algorithm here works by assuming that
  * we want to change as many jumps to fallthroughs as possible (executed jumps
  * actually, we have to look at the execution frequencies). The algorithms
  * do this by collecting execution frequencies of all branches (which is easily
@@ -19,7 +19,14 @@
  * a next and prev pointers on blocks. The greedy algorithm sorts the edges by
  * execution frequencies and tries to transform them to fallthroughs in this order.
  *
- * The random algorithm schedules the blocks in a non-deterministic pseudorandom order.
+ * The "random" algorithm schedules the blocks in a non-deterministic pseudorandom
+ * order.
+ *
+ * The goal of the "ExtTSP" algorithm is not to maximize the number of fallthroughs,
+ * but to maximize the ExtTSP-Score of the created block schedule. This score trys
+ * to better modell the performance of the final binary, by considering all jumps
+ * in the schedule. See the bachelors thesis "Optimierung der Grundblockanordnung"
+ * by Christoph Breisacher for a more detailed explanation.
  */
 
 #include "beblocksched.h"
@@ -1006,33 +1013,6 @@ static void exttsp_merge_chains(exttsp_chain_t *a, exttsp_chain_t *b,
 	b->length = b->bytes = b->score = 0;
 	b->first = b->last = NULL;
 	b->contains_start = false;
-}
-
-#define EXTTSP_DB_CHAINS {                                                           \
-	DB((dbg, LEVEL_1, "\n%d(%ld) chains, %d(%ld) blocks, %d(%ld) edges\n",           \
-		env.chain_count, ARR_LEN(env.chains),env.block_count,                        \
-		ARR_LEN(env.blocks), env.edge_count, ARR_LEN(env.edges)));                   \
-	for (size_t x=0; x<ARR_LEN(env.chains); x++) {                                   \
-		if (env.chains[x].length == 0) continue;                                     \
-		DB((dbg, LEVEL_1,                                                            \
-			"\t chain: %zu \t length: %d \t bytes: %d  \t score: %f \t start: %d\n", \
-			x, env.chains[x].length, env.chains[x].bytes, env.chains[x].score,       \
-			env.chains[x].contains_start));                                          \
-	}                                                                                \
-}
-
-#define EXTTSP_DB_ADJACENCY_MATRIX {                               \
-DB((dbg, LEVEL_1, "adjacency matrix:\n"));                         \
-	for (size_t i=0; i<ARR_LEN(env.chains); i++)                   \
-		DB((dbg, LEVEL_1, " %d", i%10));                           \
-	DB((dbg, LEVEL_1, "\n"));                                      \
-	for (size_t i=0; i<ARR_LEN(env.chains); i++) {                 \
-		DB((dbg, LEVEL_1, "%d", i%10));                            \
-		for (size_t j=0; j<ARR_LEN(env.chains); j++) {             \
-			DB((dbg, LEVEL_1, "%c ", env.adjacent[i][j]?'X':' ')); \
-		}                                                          \
-		DB((dbg, LEVEL_1, "\n"));                                  \
-	}                                                              \
 }
 
 /*
