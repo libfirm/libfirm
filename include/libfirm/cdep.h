@@ -12,6 +12,7 @@
 #define FIRM_ANA_CDEP_H
 
 #include "firm_types.h"
+
 #include "begin.h"
 
 /** @ingroup irana

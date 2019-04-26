@@ -12,13 +12,13 @@
 #define FIRM_IR_IRNODE_H
 
 #include <stddef.h>
-
 #include "firm_common.h"
-#include "typerep.h"
-#include "irop.h"
 #include "irmode.h"
-#include "begin.h"
+#include "irop.h"
 #include "nodes.h"
+#include "typerep.h"
+
+#include "begin.h"
 
 /**
  * @ingroup ir_graph

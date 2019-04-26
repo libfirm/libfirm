@@ -12,6 +12,7 @@
 #define FIRM_COMMON_FIRM_COMMON_H
 
 #include "firm_types.h"
+
 #include "begin.h"
 
 /**

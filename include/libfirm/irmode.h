@@ -12,10 +12,10 @@
 #ifndef FIRM_IR_IRMODE_H
 #define FIRM_IR_IRMODE_H
 
-#include "firm_types.h"
-#include "begin.h"
-
 #include <stddef.h>
+#include "firm_types.h"
+
+#include "begin.h"
 
 /**
  * @defgroup ir_mode Value Modes

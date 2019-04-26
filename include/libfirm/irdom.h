@@ -14,6 +14,7 @@
 #define FIRM_ANA_IRDOM_H
 
 #include "firm_types.h"
+
 #include "begin.h"
 
 /**

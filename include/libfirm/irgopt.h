@@ -12,6 +12,7 @@
 #define FIRM_IR_IRGOPT_H
 
 #include "firm_types.h"
+
 #include "begin.h"
 
 /**

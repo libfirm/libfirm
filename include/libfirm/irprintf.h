@@ -13,10 +13,10 @@
 
 #include <stdarg.h>
 #include <stdio.h>
-#include "begin.h"
 #include "firm_types.h"
-
 struct obstack;
+
+#include "begin.h"
 
 /**
  * @ingroup printing

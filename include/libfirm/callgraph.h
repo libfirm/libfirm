@@ -15,6 +15,7 @@
 
 #include <stddef.h>
 #include "firm_types.h"
+
 #include "begin.h"
 
 /**

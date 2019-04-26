@@ -14,8 +14,8 @@
 #define FIRM_IR_IRDUMP_H
 
 #include <stdio.h>
-
 #include "firm_types.h"
+
 #include "begin.h"
 
 /**

@@ -13,6 +13,7 @@
 #define FIRM_ANA_IRCONSCONFIRM_H
 
 #include "firm_types.h"
+
 #include "begin.h"
 
 /**

@@ -12,8 +12,9 @@
 #define FIRM_BE_H
 
 #include <stdio.h>
-#include "iroptimize.h"
 #include "irmode.h"
+#include "iroptimize.h"
+
 #include "begin.h"
 
 /**

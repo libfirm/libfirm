@@ -12,8 +12,8 @@
 #define FIRM_IR_IRIO_H
 
 #include <stdio.h>
-
 #include "firm_types.h"
+
 #include "begin.h"
 
 /**

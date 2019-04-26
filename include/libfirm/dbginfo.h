@@ -13,8 +13,8 @@
 #define FIRM_DEBUG_DBGINFO_H
 
 #include <stddef.h>
-
 #include "firm_types.h"
+
 #include "begin.h"
 
 /**

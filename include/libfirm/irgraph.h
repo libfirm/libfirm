@@ -12,8 +12,8 @@
 #define FIRM_IR_IRGRAPH_H
 
 #include <stddef.h>
-
 #include "firm_types.h"
+
 #include "begin.h"
 
 /**

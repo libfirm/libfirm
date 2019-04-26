@@ -14,6 +14,7 @@
 
 #include "firm_types.h"
 #include "iredgekinds.h"
+
 #include "begin.h"
 
 /**

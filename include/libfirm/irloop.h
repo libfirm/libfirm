@@ -19,9 +19,9 @@
 #define FIRM_ANA_IRLOOP_H
 
 #include <stddef.h>
-
-#include "firm_types.h"
 #include "firm_common.h"
+#include "firm_types.h"
+
 #include "begin.h"
 
 /** @ingroup irana

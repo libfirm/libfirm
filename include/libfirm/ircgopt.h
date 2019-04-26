@@ -16,8 +16,8 @@
 #define FIRM_IR_ICGOPT_H
 
 #include <stddef.h>
-
 #include "firm_types.h"
+
 #include "begin.h"
 
 /**

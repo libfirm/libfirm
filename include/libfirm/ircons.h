@@ -295,8 +295,9 @@
 #define FIRM_IR_IRCONS_H
 
 #include "firm_types.h"
-#include "begin.h"
 #include "irnode.h"
+
+#include "begin.h"
 
 /** @addtogroup Const
  * @{

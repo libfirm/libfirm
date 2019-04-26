@@ -12,6 +12,7 @@
 #define VRP_H
 
 #include "firm_types.h"
+
 #include "begin.h"
 
 /**
