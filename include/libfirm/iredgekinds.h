@@ -12,6 +12,8 @@
 #ifndef FIRM_IR_IREDGEKINDS_H
 #define FIRM_IR_IREDGEKINDS_H
 
+#include "firm_types.h"
+
 #include "begin.h"
 
 /** Supported Edge kinds.
