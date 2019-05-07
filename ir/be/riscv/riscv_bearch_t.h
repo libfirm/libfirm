@@ -7,6 +7,7 @@
 #define FIRM_BE_RISCV_RISCV_BEARCH_T_H
 
 #define RISCV_MACHINE_SIZE 32
+#define RISCV_PO2_STACK_ALIGNMENT 4
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -20,7 +21,7 @@ static inline bool is_uimm5(long const val)
 
 static inline bool is_simm12(long const val)
 {
-	return -2048 <= val && val < 2048;
+	return -2048 <= (int32_t)val && (int32_t)val < 2048;
 }
 
 typedef struct riscv_hi_lo_imm {

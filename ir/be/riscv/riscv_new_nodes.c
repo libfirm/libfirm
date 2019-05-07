@@ -5,8 +5,6 @@
 
 #include "riscv_new_nodes_t.h"
 
-#include <inttypes.h>
-
 #include "gen_riscv_new_nodes.h"
 #include "riscv_nodes_attr.h"
 
@@ -143,6 +141,8 @@ void riscv_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const 
 			case iro_riscv_sra:
 			case iro_riscv_srl:
 			case iro_riscv_sub:
+			case iro_riscv_SubSP:
+			case iro_riscv_SubSPimm:
 			case iro_riscv_switch:
 			case iro_riscv_xor:
 				break;

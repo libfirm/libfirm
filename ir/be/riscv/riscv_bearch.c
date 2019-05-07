@@ -22,6 +22,7 @@
 #include "irgwalk.h"
 #include "irprog_t.h"
 #include "lower_builtins.h"
+#include "lower_alloc.h"
 #include "lowering.h"
 #include "riscv_emitter.h"
 #include "riscv_lower64.h"
@@ -265,7 +266,7 @@ static void riscv_generate_code(FILE *const output, char const *const cup_name)
 		riscv_introduce_prologue_epilogue(irg);
 		be_fix_stack_nodes(irg, &riscv_registers[REG_SP]);
 		birg->non_ssa_regs = NULL;
-		be_sim_stack_pointer(irg, 0, 3, &riscv_sp_sim);
+		be_sim_stack_pointer(irg, 0, RISCV_PO2_STACK_ALIGNMENT, &riscv_sp_sim);
 
 		riscv_finish_graph(irg);
 		be_handle_2addr(irg, NULL);
@@ -300,6 +301,11 @@ static void riscv_lower_for_target(void)
 
 	riscv_lower64();
 	be_after_irp_transform("lower-64");
+
+	foreach_irp_irg(i, irg) {
+		lower_alloc(irg, RISCV_PO2_STACK_ALIGNMENT);
+		be_after_transform(irg, "lower-alloc");
+	}
 }
 
 static unsigned riscv_get_op_estimated_cost(ir_node const *const node)

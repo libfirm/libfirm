@@ -296,6 +296,46 @@ static ir_node *gen_Address(ir_node *const node)
 	return make_address(node, ent, 0);
 }
 
+static ir_node *gen_Alloc(ir_node *node)
+{
+	dbg_info *dbgi       = get_irn_dbg_info(node);
+	ir_node  *new_block  = be_transform_nodes_block(node);
+	ir_node  *size       = get_Alloc_size(node);
+	ir_graph *irg        = get_irn_irg(node);
+	ir_node  *stack_pred = be_get_Start_proj(irg, &riscv_registers[REG_SP]);
+	ir_node  *mem        = get_Alloc_mem(node);
+	ir_node  *new_mem    = be_transform_node(mem);
+
+	ir_node *subsp;
+	if (is_Const(size)) {
+		long const sizel = get_Const_long(size);
+		assert((sizel & ((1<<RISCV_PO2_STACK_ALIGNMENT) - 1)) == 0 && "Found Alloc with misaligned constant");
+		assert(is_simm12(sizel));
+		subsp = new_bd_riscv_SubSPimm(dbgi, new_block, new_mem, stack_pred, NULL, sizel);
+	} else {
+		ir_node *new_size = be_transform_node(size);
+		subsp = new_bd_riscv_SubSP(dbgi, new_block, new_mem, stack_pred, new_size);
+	}
+
+	ir_node *const stack_proj = be_new_Proj_reg(subsp, pn_riscv_SubSP_stack, &riscv_registers[REG_SP]);
+	be_stack_record_chain(&stack_env, subsp, n_riscv_SubSP_stack, stack_proj);
+
+	return subsp;
+}
+
+static ir_node *gen_Proj_Alloc(ir_node *node)
+{
+	ir_node *alloc     = get_Proj_pred(node);
+	ir_node *new_alloc = be_transform_node(alloc);
+	unsigned pn        = get_Proj_num(node);
+
+	switch ((pn_Alloc)pn) {
+		case pn_Alloc_M:   return be_new_Proj(new_alloc, pn_riscv_SubSP_M);
+		case pn_Alloc_res: return be_new_Proj(new_alloc, pn_riscv_SubSP_addr);
+	}
+	panic("invalid Proj->Alloc");
+}
+
 typedef ir_node *cons_binop(dbg_info*, ir_node*, ir_node*, ir_node*);
 typedef ir_node *cons_binop_imm(dbg_info*, ir_node*, ir_node*, ir_entity*, int32_t);
 
@@ -1121,6 +1161,7 @@ static void riscv_register_transformers(void)
 	be_set_transform_function(op_ASM,     gen_ASM);
 	be_set_transform_function(op_Add,     gen_Add);
 	be_set_transform_function(op_Address, gen_Address);
+	be_set_transform_function(op_Alloc,   gen_Alloc);
 	be_set_transform_function(op_And,     gen_And);
 	be_set_transform_function(op_Builtin, gen_Builtin);
 	be_set_transform_function(op_Call,    gen_Call);
@@ -1152,6 +1193,7 @@ static void riscv_register_transformers(void)
 	be_set_transform_function(op_Switch,  gen_Switch);
 	be_set_transform_function(op_Unknown, gen_Unknown);
 
+	be_set_transform_proj_function(op_Alloc,   gen_Proj_Alloc);
 	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);
 	be_set_transform_proj_function(op_Call,    gen_Proj_Call);
 	be_set_transform_proj_function(op_Div,     gen_Proj_Div);

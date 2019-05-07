@@ -250,6 +250,21 @@ static void emit_riscv_FrameAddr(const ir_node *node)
 	riscv_emitf(node, "addi\t%D0, %S0, %d", (int)offset);
 }
 
+static void emit_riscv_SubSP(ir_node const *const node)
+{
+	riscv_emitf(node, "sub\t%D0, %S1, %S2");
+	riscv_emitf(node, "mv\t%D1, %S1");
+}
+
+static void emit_riscv_SubSPimm(ir_node const *const node)
+{
+	const riscv_immediate_attr_t *attr   = get_riscv_immediate_attr_const(node);
+	int32_t val = attr->val;
+	assert(is_simm12((long)val));
+	riscv_emitf(node, "addi\t%D0, %S1, %d", (int)val);
+	riscv_emitf(node, "mv\t%D1, %S1");
+}
+
 static void riscv_register_emitters(void)
 {
 	be_init_emitters();
@@ -262,6 +277,8 @@ static void riscv_register_emitters(void)
 	be_set_emitter(op_riscv_FrameAddr, emit_riscv_FrameAddr);
 	be_set_emitter(op_riscv_bcc,       emit_riscv_bcc);
 	be_set_emitter(op_riscv_j,         emit_riscv_j);
+	be_set_emitter(op_riscv_SubSP,     emit_riscv_SubSP);
+	be_set_emitter(op_riscv_SubSPimm,  emit_riscv_SubSPimm);
 	be_set_emitter(op_riscv_switch,    emit_riscv_switch);
 }
 
