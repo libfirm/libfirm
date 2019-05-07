@@ -247,4 +247,20 @@ FrameAddr => {
 	attr_type => "riscv_immediate_attr_t",
 },
 
+SubSP => {
+	in_reqs => [ "mem", "sp", "cls-gp" ],
+	ins     => [ "mem", "stack", "size" ],
+	out_reqs => [ "sp:I", "cls-gp", "mem" ],
+	outs     => [ "stack", "addr", "M" ],
+},
+
+SubSPimm => {
+	in_reqs => [ "mem", "sp" ],
+	ins      => [ "mem", "stack" ],
+	out_reqs => [ "sp:I", "cls-gp", "mem" ],
+	outs     => [ "stack", "addr", "M" ],
+	attr_type => "riscv_immediate_attr_t",
+	attr    => "ir_entity *ent, int32_t val",
+},
+
 );
