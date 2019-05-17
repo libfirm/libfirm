@@ -132,8 +132,12 @@ static ir_node *make_extension(dbg_info *const dbgi, ir_node *const op, unsigned
 		return sra;
 	} else if (op_size == 8) {
 		return new_bd_riscv_andi(dbgi, block, new_op, NULL, (1U << op_size) - 1);
+	} else {
+		int32_t  const val = RISCV_MACHINE_SIZE - op_size;
+		ir_node *const sll = new_bd_riscv_slli(dbgi, block, new_op, NULL, val);
+		ir_node *const srl = new_bd_riscv_srli(dbgi, block, sll,    NULL, val);
+		return srl;
 	}
-	TODO(op);
 }
 
 static ir_node *extend_value(ir_node *const val)
