@@ -51,7 +51,7 @@ riscv_hi_lo_imm calc_hi_lo(int32_t val) {
 	if (hi >= 1048576) { //2^20
 		hi = 0;
 	}
-	int32_t const lo = (uint32_t) val - (hi << 12);
+	int32_t const lo = (uint32_t) val - ((uint32_t) hi << 12);
 	return (riscv_hi_lo_imm) {hi, lo};
 }
 
