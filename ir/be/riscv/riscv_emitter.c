@@ -188,6 +188,9 @@ static void emit_be_Copy(ir_node const *const node)
 static void emit_be_IncSP(ir_node const *const node)
 {
 	int const offs = -be_get_IncSP_offset(node);
+	if (offs == 0) {
+		return;
+	}
 	assert(is_simm12(offs));
 	riscv_emitf(node, "addi\t%D0, %S0, %d", offs);
 }

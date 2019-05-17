@@ -117,11 +117,16 @@ static void finish_be_IncSP(ir_node *node)
 	}
 }
 
+static void peephole_be_IncSP(ir_node *const node)
+{
+	be_peephole_IncSP_IncSP(node);
+}
+
 void riscv_finish_graph(ir_graph *irg)
 {
 	/* perform peephole optimizations */
 	ir_clear_opcodes_generic_func();
-
+	register_peephole_optimization(op_be_IncSP, peephole_be_IncSP);
 	be_peephole_opt(irg);
 
 	/* perform legalizations (mostly fix nodes with too big immediates) */
