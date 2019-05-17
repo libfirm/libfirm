@@ -2,6 +2,10 @@
 #ifndef FIRM_{{spec.name|upper}}_NODES_H
 #define FIRM_{{spec.name|upper}}_NODES_H
 
+#ifndef FIRM_IR_IRNODE_H
+#error Do not include nodes.h directly; include irnode.h instead.
+#endif
+
 {% if spec.external %}
 {% set FIRM_API="" %}
 #include <libfirm/firm_types.h>
