@@ -195,6 +195,39 @@ static void emit_be_IncSP(ir_node const *const node)
 	riscv_emitf(node, "addi\t%D0, %S0, %d", offs);
 }
 
+static void emit_be_MemPerm(const ir_node *node)
+{
+/* TODO: this implementation is slower than necessary.
+	   The longterm goal is however to avoid the memperm node completely */
+
+	int memperm_arity = be_get_MemPerm_entity_arity(node);
+	if (memperm_arity > 22)
+		panic("memperm with more than 22 inputs not supported yet");
+
+	int const memperm_offset = be_get_MemPerm_offset(node);
+
+	int ent_offset = memperm_offset;
+	for (int i = 0; i < memperm_arity; ++i) {
+		/* spill register */
+		riscv_emitf(node, "sw x%d, %d(sp)", i + 10, -(i + 1)*4);		
+		/* load from entity */
+		ir_entity *entity = be_get_MemPerm_in_entity(node, i);		
+        int        offset = get_entity_offset(entity) + ent_offset;
+		riscv_emitf(node, "lw x%d, %d(sp)", i + 10, offset);
+	}
+
+	for (int i = memperm_arity; i-- > 0; ) {
+		/* store to new entity */
+		ir_entity *entity = be_get_MemPerm_out_entity(node, i);
+		int        offset = get_entity_offset(entity) + ent_offset;
+		riscv_emitf(node, "sw x%d, %d(sp)", i + 10, offset);
+		/* restore register */
+		riscv_emitf(node, "lw x%d, %d(sp)", i + 10, -(i +1)*4);		
+	}
+	assert(ent_offset == memperm_offset);
+} 
+	
+
 static void emit_be_Perm(ir_node const *const node)
 {
 	arch_register_t const *const out = arch_get_irn_register_out(node, 0);
@@ -258,6 +291,7 @@ static void riscv_register_emitters(void)
 	be_set_emitter(op_be_Asm,          emit_be_ASM);
 	be_set_emitter(op_be_Copy,         emit_be_Copy);
 	be_set_emitter(op_be_IncSP,        emit_be_IncSP);
+	be_set_emitter(op_be_MemPerm,      emit_be_MemPerm); 
 	be_set_emitter(op_be_Perm,         emit_be_Perm);
 	be_set_emitter(op_riscv_FrameAddr, emit_riscv_FrameAddr);
 	be_set_emitter(op_riscv_bcc,       emit_riscv_bcc);

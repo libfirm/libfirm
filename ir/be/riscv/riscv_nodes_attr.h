@@ -51,6 +51,13 @@ typedef struct riscv_switch_attr_t {
 	be_switch_attr_t swtch;
 } riscv_switch_attr_t;
 
+/** attributes for floatingpoint arithmetic operations */
+typedef struct riscv_farith_attr_t {
+	riscv_attr_t  attr;
+	ir_mode    *mode; /* operation mode */
+} riscv_farith_attr_t;
+ 
+
 static inline riscv_attr_t const *get_riscv_attr_const(ir_node const *const node)
 {
 	return (riscv_attr_t const*)get_irn_generic_attr_const(node);
@@ -74,6 +81,11 @@ static inline riscv_immediate_attr_t const *get_riscv_immediate_attr_const(ir_no
 static inline riscv_switch_attr_t const *get_riscv_switch_attr_const(ir_node const *const node)
 {
 	return (riscv_switch_attr_t const*)get_irn_generic_attr_const(node);
+}
+
+static inline riscv_farith_attr_t const *get_riscv_farith_attr_const(ir_node const *const node)
+{
+	return (riscv_farith_attr_t const*)get_irn_generic_attr_const(node);
 }
 
 char const *riscv_get_cond_name(riscv_cond_t cond);

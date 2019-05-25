@@ -116,6 +116,14 @@ and => { template => $binOp },
 
 andi => { template => $immediateOp },
 
+
+sltu_t => {
+	ins       => [ "left", "right" ],
+	attr_type => "",
+	dump_func => "NULL",
+}, 
+ 
+
 bcc => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode", "forking" ],

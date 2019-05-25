@@ -12,6 +12,7 @@
 #include "gen_riscv_new_nodes.h"
 #include "gen_riscv_regalloc_if.h"
 #include "irprog_t.h"
+#include "iredges_t.h"
 #include "nodes.h"
 #include "riscv_bearch_t.h"
 #include "riscv_cconv.h"
@@ -57,6 +58,19 @@ static unsigned const caller_saves[] = {
 	REG_T5,
 	REG_T6,
 };
+
+static unsigned const regs_param_gp[] = {
+	REG_A0,
+	REG_A1,
+	REG_A2,
+	REG_A3,
+	REG_A4,
+	REG_A5,
+	REG_A6,
+	REG_A7,
+}; 
+
+static ir_node              *initial_va_list;
 
 static ir_node *get_Start_sp(ir_graph *const irg)
 {
@@ -332,12 +346,30 @@ static ir_node *gen_saturating_increment(ir_node *const node)
   return addu;
 }
 
+static ir_node *gen_va_start(ir_node *node)
+{
+	if (initial_va_list == NULL) {
+		dbg_info  *dbgi   = get_irn_dbg_info(node);
+		ir_graph  *irg    = get_irn_irg(node);
+		ir_node   *block  = get_irg_start_block(irg);
+		ir_entity *entity = cur_cconv.va_start_addr;
+		ir_node   *frame  = get_Start_sp(irg);
+		ir_node   *ap     = new_bd_riscv_FrameAddr(dbgi, block, frame, entity, 0);
+
+		initial_va_list = ap;
+	}
+
+	return initial_va_list;
+}
+ 
+
 static ir_node *gen_Builtin(ir_node *const node)
 {
 	ir_builtin_kind const kind = get_Builtin_kind(node);
 	switch (kind) {
 	case ir_bk_saturating_increment: return gen_saturating_increment(node);
-
+    case ir_bk_va_arg: break;
+	case ir_bk_va_start: return gen_va_start(node);break;
 	case ir_bk_bswap:
 	case ir_bk_clz:
 	case ir_bk_compare_swap:
@@ -352,9 +384,7 @@ static ir_node *gen_Builtin(ir_node *const node)
 	case ir_bk_popcount:
 	case ir_bk_prefetch:
 	case ir_bk_return_address:
-	case ir_bk_trap:
-	case ir_bk_va_arg:
-	case ir_bk_va_start:
+	case ir_bk_trap:	
 		TODO(node);
 	}
 	panic("unexpected Builtin");
@@ -770,6 +800,7 @@ static ir_node *gen_Proj_Builtin(ir_node *const node)
 	ir_node         *const pred     = get_Proj_pred(node);
 	ir_node         *const new_pred = be_transform_node(pred);
 	ir_builtin_kind  const kind     = get_Builtin_kind(pred);
+	unsigned         pn       = get_Proj_num(node); 
 	switch (kind) {
 	case ir_bk_saturating_increment:
 		assert(get_Proj_num(node) == pn_Builtin_max + 1);
@@ -790,9 +821,16 @@ static ir_node *gen_Proj_Builtin(ir_node *const node)
 	case ir_bk_prefetch:
 	case ir_bk_return_address:
 	case ir_bk_trap:
-	case ir_bk_va_arg:
+	TODO(node);
+	case ir_bk_va_arg: break;
 	case ir_bk_va_start:
-		TODO(node);
+	if (pn == pn_Builtin_M) {
+			return be_transform_node(get_Builtin_mem(pred));
+		} else {
+			assert(pn == pn_Builtin_max+1);
+			return new_pred;
+		} 
+		
 	}
 	panic("unexpected Builtin");
 }
@@ -1114,6 +1152,22 @@ static ir_node *gen_Unknown(ir_node *const node)
 	}
 }
 
+
+
+static ir_node *gen_riscv_sltu_t(ir_node *node)
+{
+	ir_node *left  = get_irn_n(node, n_riscv_sltu_t_left);
+	ir_node *right = get_irn_n(node, n_riscv_sltu_t_right);
+	
+	ir_node *new_left  = be_transform_node(left);
+	ir_node *new_right = be_transform_node(right);
+	
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *new_block = be_transform_nodes_block(node);
+	ir_node  *res       = new_bd_riscv_sltu(dbgi, new_block, new_left,
+	                                         new_right);
+	return res;
+} 
 static void riscv_register_transformers(void)
 {
 	be_start_transform_setup();
@@ -1152,6 +1206,7 @@ static void riscv_register_transformers(void)
 	be_set_transform_function(op_Switch,  gen_Switch);
 	be_set_transform_function(op_Unknown, gen_Unknown);
 
+    be_set_transform_function(op_riscv_sltu_t,   gen_riscv_sltu_t); 
 	be_set_transform_proj_function(op_Builtin, gen_Proj_Builtin);
 	be_set_transform_proj_function(op_Call,    gen_Proj_Call);
 	be_set_transform_proj_function(op_Div,     gen_Proj_Div);
@@ -1179,19 +1234,83 @@ static void riscv_set_allocatable_regs(ir_graph *const irg)
 	be_cconv_rem_regs(birg->allocatable_regs, ignore_regs, ARRAY_SIZE(ignore_regs));
 }
 
+static bool riscv_variadic_fixups(ir_graph *const irg)
+{
+	ir_entity *entity = get_irg_entity(irg);
+	ir_type   *mtp    = get_entity_type(entity);
+	if (!is_method_variadic(mtp))
+		return false;
+
+	
+
+	size_t                    const n_params     = get_method_n_params(mtp);
+	if (n_params >= ARRAY_SIZE(regs_param_gp))
+		return false;
+	size_t                    const n_ress       = get_method_n_ress(mtp);
+	size_t                    const new_n_params = ARRAY_SIZE(regs_param_gp);
+	unsigned                  const cc_mask      = get_method_calling_convention(mtp);
+	mtp_additional_properties const props        = get_method_additional_properties(mtp);
+	ir_type                  *const new_mtp      = new_type_method(new_n_params, n_ress, true, cc_mask, props);
+ 
+	type_dbg_info *const dbgi = get_type_dbg_info(mtp);
+	set_type_dbg_info(new_mtp, dbgi);
+
+	for (size_t i = 0; i < n_ress; ++i) {
+		ir_type *type = get_method_res_type(mtp, i);
+		set_method_res_type(new_mtp, i, type);
+	}
+	for (size_t i = 0; i < n_params; ++i) {
+		ir_type *type = get_method_param_type(mtp, i);
+		set_method_param_type(new_mtp, i, type);
+	}
+	ir_type *const frame_type  = get_irg_frame_type(irg);
+	ir_mode *const gp_reg_mode = riscv_reg_classes[CLASS_riscv_gp].mode;
+	ir_type *const gp_reg_type = get_type_for_mode(gp_reg_mode);
+	for (size_t i = n_params; i < new_n_params; ++i) {        
+		set_method_param_type(new_mtp, i, gp_reg_type);
+		new_parameter_entity(frame_type, i, gp_reg_type);
+	}
+    
+	set_entity_type(entity, new_mtp);    
+	return true;
+} 
+
 void riscv_transform_graph(ir_graph *const irg)
 {
-	riscv_register_transformers();
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_TUPLES
+	                         | IR_GRAPH_PROPERTY_NO_BADS); 
+    riscv_register_transformers();
 	riscv_set_allocatable_regs(irg);
 	be_stack_init(&stack_env);
 
 	ir_entity *const fun_ent  = get_irg_entity(irg);
-	ir_type   *const fun_type = get_entity_type(fun_ent);
+	ir_type   *fun_type = get_entity_type(fun_ent);    
+    unsigned n_parameters = get_method_n_params(fun_type);
 	riscv_determine_calling_convention(&cur_cconv, fun_type);
-	riscv_layout_parameter_entities(&cur_cconv, irg);
-	be_add_parameter_entity_stores(irg);
-	be_transform_graph(irg, NULL);
+	cur_cconv.n_parameters = n_parameters;
+	if(riscv_variadic_fixups(irg)) {        
+        fun_type = get_entity_type(fun_ent);
+        riscv_free_calling_convention(&cur_cconv);
+        riscv_determine_calling_convention(&cur_cconv, fun_type);
+    }    
+    n_parameters = get_method_n_params(fun_type);    
+    riscv_layout_parameter_entities(&cur_cconv, irg);
+	ir_entity *need_stores[ARRAY_SIZE(regs_param_gp)];	
+	
+	unsigned   n_stores = 0;
+    ir_entity * entity;
+	if(is_method_variadic(fun_type)) {
+	for (size_t i = 0; i < ARRAY_SIZE(regs_param_gp); ++i) {
+	 	riscv_reg_or_slot_t const *const param  = &cur_cconv.parameters[i];		
+		entity = param->entity;        
+		if (entity == NULL) continue;        
+		need_stores[n_stores++] = entity;		
+	}	
+    }
+	be_add_parameter_entity_stores_list(irg, n_stores, need_stores); 
+	be_transform_graph(irg, NULL);	
+    be_stack_finish(&stack_env);
 	riscv_free_calling_convention(&cur_cconv);
-
-	be_stack_finish(&stack_env);
+	initial_va_list = NULL;
+    assure_edges(irg);
 }

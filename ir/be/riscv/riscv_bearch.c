@@ -15,16 +15,20 @@
 #include "bespillslots.h"
 #include "bestack.h"
 #include "betranshlp.h"
+#include "bevarargs.h"
 #include "gen_riscv_new_nodes.h"
 #include "gen_riscv_regalloc_if.h"
 #include "irarch.h"
 #include "iredges.h"
 #include "irgwalk.h"
 #include "irprog_t.h"
+#include "platform_t.h"
 #include "lower_builtins.h"
+#include "lower_calls.h" 
 #include "lowering.h"
 #include "riscv_emitter.h"
 #include "riscv_lower64.h"
+#include "lower_softfloat.h"
 #include "riscv_transform.h"
 #include "target_t.h"
 #include "util.h"
@@ -80,7 +84,8 @@ static void riscv_init(void)
 	ir_target.experimental = "the RISC-V backend is highly experimental and unfinished";
 
 	ir_target.allow_ifconv       = riscv_ifconv;
-	ir_target.float_int_overflow = ir_overflow_indefinite;
+	ir_target.float_int_overflow = ir_overflow_min_max;
+    ir_platform_set_va_list_type_pointer();
 }
 
 static void riscv_finish(void)
@@ -211,7 +216,11 @@ static void riscv_introduce_prologue_epilogue(ir_graph *const irg)
 
 static void riscv_sp_sim(ir_node *const node, stack_pointer_state_t *const state)
 {
-	if (is_riscv_irn(node)) {
+	if (be_is_MemPerm(node)) {		
+			be_set_MemPerm_offset(node, state->offset);
+		return;
+	}
+    if (is_riscv_irn(node)) {
 		switch ((riscv_opcodes)get_riscv_irn_opcode(node)) {
 		case iro_riscv_addi:
 		case iro_riscv_FrameAddr:
@@ -277,20 +286,38 @@ static void riscv_generate_code(FILE *const output, char const *const cup_name)
 	be_finish();
 }
 
+static void riscv32_lower_va_arg(ir_node *node)
+{
+	be_default_lower_va_arg(node, false, 4);
+}
+
 static void riscv_lower_for_target(void)
 {
 	ir_arch_lower(&riscv_arch_dep);
 	be_after_irp_transform("lower-arch-dep");
-
+    
+    /* lower compound param handling */
+	lower_calls_with_compounds(LF_RETURN_HIDDEN,
+				   lower_aggregates_as_pointers, NULL,
+				   lower_aggregates_as_pointers, NULL,
+				   reset_stateless_abi);
+	be_after_irp_transform("lower-calls");
+    
 	foreach_irp_irg(i, irg) {
 		lower_CopyB(irg, 16, 17, false);
 		be_after_transform(irg, "lower-copyb");
 	}
-
-	static ir_builtin_kind const supported[] = {
-		ir_bk_saturating_increment,
-	};
-	lower_builtins(ARRAY_SIZE(supported), supported, NULL);
+    
+    lower_floating_point();
+	be_after_irp_transform("lower-fp"); 
+    
+    size_t s = 0; 
+	ir_builtin_kind  supported[8];
+    
+		supported[s++] = ir_bk_saturating_increment;
+        supported[s++] = ir_bk_va_start;
+	
+	lower_builtins(s, supported, riscv32_lower_va_arg);
 
 	ir_mode *const mode_gp = riscv_reg_classes[CLASS_riscv_gp].mode;
 	foreach_irp_irg(i, irg) {

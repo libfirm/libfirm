@@ -17,8 +17,10 @@ typedef struct riscv_reg_or_slot_t {
 typedef struct riscv_calling_convention_t {
 	unsigned             param_stack_size;
 	unsigned             n_mem_param;
+	unsigned             n_parameters; 
 	riscv_reg_or_slot_t *parameters;
 	riscv_reg_or_slot_t *results;
+    ir_entity          *va_start_addr; 
 } riscv_calling_convention_t;
 
 void riscv_determine_calling_convention(riscv_calling_convention_t *cconv, ir_type *fun_type);

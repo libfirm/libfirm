@@ -54,6 +54,15 @@ int riscv_switch_attrs_equal(ir_node const *const a, ir_node const *const b)
 		riscv_attrs_equal_(&a_attr->attr, &b_attr->attr) &&
 		be_switch_attrs_equal(&a_attr->swtch, &b_attr->swtch);
 }
+int riscv_farith_attrs_equal(ir_node const *const a, ir_node const *const b)
+{
+	riscv_farith_attr_t const *const a_attr = get_riscv_farith_attr_const(a);
+	riscv_farith_attr_t const *const b_attr = get_riscv_farith_attr_const(b);
+	return
+		riscv_attrs_equal_(&a_attr->attr, &b_attr->attr) &&
+		a_attr->mode == b_attr->mode;
+}
+ 
 
 static void dump_immediate(FILE *const F, char const *const prefix, ir_node const *const n)
 {
@@ -62,7 +71,8 @@ static void dump_immediate(FILE *const F, char const *const prefix, ir_node cons
 		fputc(' ', F);
 		if (prefix)
 			fprintf(F, "%s(", prefix);
-		fputs(get_entity_name(imm->ent), F);
+		const char *name = get_entity_name(imm->ent);
+		if(name) fputs(name, F);
 		if (imm->val != 0)
 			fprintf(F, "%+" PRId32, imm->val);
 		if (prefix)
@@ -145,6 +155,7 @@ void riscv_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const 
 			case iro_riscv_sub:
 			case iro_riscv_switch:
 			case iro_riscv_xor:
+			case iro_riscv_sltu_t:
 				break;
 			}
 			break;
