@@ -626,6 +626,7 @@ static unsigned find_suitable_factor(ir_node *const header, unsigned max,
 	unsigned const DONT_UNROLL = 0;
 	unsigned const n_outs = get_irn_n_outs(header);
 	unsigned factor = 1;
+	return 0;
 	for (unsigned i = 0; i < n_outs; ++i) {
 		ir_node *const node = get_irn_out(header, i);
 		assert(!is_Block(node));
