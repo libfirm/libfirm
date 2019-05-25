@@ -499,41 +499,50 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
 	unroll_info->incr = node_to_check;
 	return true;
 }
-static unsigned check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
+static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 {
 	ir_node *phi = unroll_info->phi;
 	assert(is_Phi(phi));
 	unsigned phi_preds = get_Phi_n_preds(phi);
-	if (phi_preds != 2) {
+	if (phi_preds < 2) {
 		// TODO: Allow for more inputs, e.g., if before loop
-		DB((dbg, LEVEL_4, "Phi has %u preds. Too many!F\n", phi_preds));
+		DB((dbg, LEVEL_4, "Phi has %u preds. Too few!F\n", phi_preds));
 		return DONT_UNROLL_LIN;
 	}
 	// check for static beginning: neither in loop, nor aliased and for valid linear increment
-	ir_node *pred_0 = get_Phi_pred(phi, 0);
-	ir_node *pred_1 = get_Phi_pred(phi, 1);
+
 	get_all_stores(loop);
-	if (is_valid_base(pred_0)) {
-		DB((dbg, LEVEL_5, "\tFound valid phi base %+F\n", pred_0));
-		unroll_info->base = pred_0;
-		if (is_valid_incr(unroll_info, pred_1)) {
-			DB((dbg, LEVEL_5, "\tFound valid incr %+F\n", pred_1));
-			return 0;
+	long long incr_pred_index = -1;
+	for (unsigned i = 0; i < phi_preds; ++i) {
+		ir_node *curr = get_Phi_pred(phi, i);
+		if (is_valid_incr(unroll_info, curr)) {
+			DB((dbg, LEVEL_5, "\tFound valid incr %+F\n", curr));
+			incr_pred_index = i;
 		}
 	}
-	if (is_valid_base(pred_1)) {
-		DB((dbg, LEVEL_4, "\tFound valid phi base %+F\n", pred_1));
-		unroll_info->base = pred_1;
-		if (is_valid_incr(unroll_info, pred_0)) {
-			DB((dbg, LEVEL_5, "\tFound valid incr %+F\n", pred_0));
-			return 0;
+	if (incr_pred_index == -1) {
+		return false;
+	}
+	for (unsigned i = 0; i < phi_preds; ++i) {
+		ir_node *curr = get_Phi_pred(phi, i);
+		if (i == incr_pred_index) {
+			DB((dbg, LEVEL_5, "\tSkipping phi incr\n"));
+			continue;
+		}
+		if (!is_valid_base(curr)) {
+			DB((dbg, LEVEL_5,
+			    "\tPhi input %+F is neither valid base, nor the found increment. Phi invalid.\n",
+			    curr));
+			return false;
 		}
 	}
-	DB((dbg, LEVEL_5, "\tCould not find valid phi base\n", pred_1));
-	return DONT_UNROLL_LIN;
+	DB((dbg, LEVEL_5,
+	    "\tFound one phi incr and (%u-1) valid bases. Phi valid\n",
+	    phi_preds));
+	return true;
 }
 
-static unsigned determine_lin_unroll_info(linear_unroll_info *unroll_info,
+static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
 					  ir_loop *loop)
 {
 	printf("Reached ");
@@ -573,18 +582,18 @@ static unsigned determine_lin_unroll_info(linear_unroll_info *unroll_info,
 			    "\tCouldn't find a phi in compare\n"));
 			return DONT_UNROLL_LIN;
 		}
-		unsigned ret = -1;
+		bool ret = false;
 		if (is_Phi(left)) {
 			unroll_info->phi = left;
 			DB((dbg, LEVEL_4, "Checking Phi left %+F\n", left));
-			ret &= check_phi(unroll_info, loop);
+			ret |= check_phi(unroll_info, loop);
 		}
 		if (is_Phi(right)) {
 			unroll_info->phi = right;
 			DB((dbg, LEVEL_4, "Checking Phi right %+F\n", right));
-			ret &= check_phi(unroll_info, loop);
+			ret |= check_phi(unroll_info, loop);
 		}
-		DEBUG_ONLY(if (ret != 0) {
+		DEBUG_ONLY(if (!ret) {
 			DB((dbg, LEVEL_4,
 			    "Cannot unroll: phi checks failed %+F\n", loop));
 		} else { DB((dbg, LEVEL_4, "Can unroll %+F\n", loop)); })
@@ -887,9 +896,9 @@ static void unroll_loop(ir_loop *const loop, unsigned factor)
 
 	linear_unroll_info info;
 	if (determine_lin_unroll_info(&info, loop)) {
-		DB((dbg, LEVEL_3, "DUFF: Cannot unroll! (loop: %+F)", loop));
-	} else {
 		DB((dbg, LEVEL_3, "DUFF: Can unroll! (loop: %+F)", loop));
+	} else {
+		DB((dbg, LEVEL_3, "DUFF: Cannot unroll! (loop: %+F)", loop));
 	}
 	bool fully_unroll = false;
 	factor = find_suitable_factor(header, factor, &fully_unroll);
