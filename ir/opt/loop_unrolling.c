@@ -283,7 +283,6 @@ struct linear_unroll_info {
 };
 
 #define linear_unroll_info struct linear_unroll_info
-#define DONT_UNROLL_LIN 127
 struct alias_list {
 	ir_node *node;
 	const ir_node *addr;
@@ -418,6 +417,7 @@ static bool is_valid_base(ir_node *node)
 			mtp_additional_properties properties =
 				get_method_additional_properties(callee_type);
 			if (!(properties & mtp_property_pure)) {
+				// TODO: Unroll_simple_incr_non_const.c
 				DB((dbg, LEVEL_4, "Call is not pure\n"));
 				return false;
 			}
@@ -477,6 +477,11 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
 	DB((dbg, LEVEL_5,
 	    "\tLooking for phi (%+F) in left (%+F) and right (%+F)\n",
 	    unroll_info->phi, left, right));
+	if (!is_Phi(left) && !is_Phi(right)) {
+		DB((dbg, LEVEL_4, "No phis found in incr. Can't be right\n"));
+		return false;
+	}
+	/* TODO: Find out why not working -> Unroll_simple_incr_const.c */
 	if (left == unroll_info->phi) {
 		DB((dbg, LEVEL_5, "\tLeft is correct Phi\n"));
 		node_to_check = right;
@@ -507,7 +512,7 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 	if (phi_preds < 2) {
 		// TODO: Allow for more inputs, e.g., if before loop
 		DB((dbg, LEVEL_4, "Phi has %u preds. Too few!F\n", phi_preds));
-		return DONT_UNROLL_LIN;
+		return false;
 	}
 	// check for static beginning: neither in loop, nor aliased and for valid linear increment
 
@@ -543,7 +548,7 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 }
 
 static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
-					  ir_loop *loop)
+				      ir_loop *loop)
 {
 	printf("Reached ");
 	printf("%s\n", getenv("FIRMDBG"));
@@ -580,7 +585,7 @@ static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
 		if (!is_Phi(left) && !is_Phi(right)) {
 			DB((dbg, LEVEL_5,
 			    "\tCouldn't find a phi in compare\n"));
-			return DONT_UNROLL_LIN;
+			return false;
 		}
 		bool ret = false;
 		if (is_Phi(left)) {
@@ -601,8 +606,7 @@ static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
 	}
 	DB((dbg, LEVEL_4, "Cannot unroll: Didn't find valid compare%+F\n",
 	    loop));
-
-	return DONT_UNROLL_LIN;
+	return false;
 }
 
 /**
