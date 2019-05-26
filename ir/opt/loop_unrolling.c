@@ -274,7 +274,6 @@ static bool binop_to_op(Op *op, ir_node *bin_op)
 
 struct linear_unroll_info {
 	Op op;
-	ir_node *base;
 	ir_node *i;
 	ir_node *cmp;
 	ir_relation rel;
@@ -334,20 +333,26 @@ static bool is_aliased(ir_node *node)
 	DB((dbg, LEVEL_4, "found no aliasing\n"));
 	return false;
 }
+static void walk_call_for_aliases(ir_node *call);
 static bool stored;
 
-void walk(ir_node *node, ir_loop *loop)
+void check_for_store(ir_node *node, ir_loop *loop)
 {
+	assert(!is_Block(node));
+	if (is_Call(node)) {
+		walk_call_for_aliases(node);
+	}
 	if (!is_Store(node)) {
 		return;
 	}
 	DB((dbg, LEVEL_4, "Found store %+F\n", node));
-	if (false && get_irn_loop(node) != loop) {
-		// TODO: Outer loops -> loop depth
-		// TODO: Unroll_aliased: Why null!?
-		DB((dbg, LEVEL_4, "Store in wrong loop - skipping\n", node));
-		DB((dbg, LEVEL_4, "Expected loop: %+F, was %+F\n", loop,
-		    get_irn_loop(node)));
+	ir_node *block = get_block(node);
+	if (loop && !block_is_inside_loop(block, loop)) {
+		DB((dbg, LEVEL_4, "Store %+F in wrong loop - skipping\n",
+		    node));
+		DB((dbg, LEVEL_4,
+		    "Expected loop: %+F (or inner loops of it), was %+F\n",
+		    loop, get_irn_loop(node)));
 		return;
 	}
 	ir_type *type = get_Store_type(node);
@@ -364,35 +369,78 @@ void walk(ir_node *node, ir_loop *loop)
 	*list_ptr = list;
 	alias_candidates = list_ptr;
 }
-static void get_all_stores(ir_loop *loop)
+static void walk_graph_aliasing(ir_node *block, void *_)
 {
-	// TODO: What should be done about calls?
-	long n = get_loop_n_elements(loop);
+	DB((dbg, LEVEL_5, "Inspecting block in call graph: %+F\n", block));
+	if (!is_Block(block)) {
+		return;
+	}
+	for (unsigned i = 0; i < get_irn_n_outs(block); ++i) {
+		ir_node *node = get_irn_out(block, i);
+		check_for_store(node, NULL);
+	}
+}
 
+static void walk_call_for_aliases(ir_node *call)
+{
+	DB((dbg, LEVEL_4, "Found call: %+F\n", call));
+	ir_entity *callee_entity = get_Call_callee(call);
+	ir_graph *callee_graph = get_entity_linktime_irg(callee_entity);
+	if (!callee_graph) {
+		// TODO: Library doing things?
+		DB((dbg, LEVEL_4, "No graph attached to call - skipping"));
+		return;
+	}
+	if (callee_graph->reserved_resources & IR_RESOURCE_IRN_VISITED) {
+		DB((dbg, LEVEL_4,
+		    "Already visited target of call %+F - recursive\n", call));
+		return;
+	}
+	DB((dbg, LEVEL_4, "Walking graph %+F of call for aliases\n",
+	    callee_graph));
+	irg_walk_blkwise_graph(callee_graph, walk_graph_aliasing, NULL, NULL);
+}
+
+static void clear_all_stores()
+{
 	DB((dbg, LEVEL_4, "Clearing existing stores\n"));
 	for (struct alias_list *curr = alias_candidates; curr;) {
 		struct alias_list *tmp = curr;
 		curr = curr->next;
 		free(tmp);
 	}
-	DB((dbg, LEVEL_4, "Cleared existing stores\n"));
-	DB((dbg, LEVEL_4, "Finding all stores\n"));
+}
+
+static void get_all_stores(ir_loop *loop)
+{
+	long n = get_loop_n_elements(loop);
+
+	DB((dbg, LEVEL_4, "Finding all stores in loop %+F\n", loop));
 	alias_candidates = NULL;
 	for (long i = 0; i < n; ++i) {
 		loop_element element = get_loop_element(loop, i);
-		if (*element.kind != k_ir_node) {
-			return;
+		if (*element.kind == k_ir_loop) {
+			DB((dbg, LEVEL_4,
+			    "\t Found child loop %+F; digging in\n",
+			    element.son));
+			get_all_stores(element.son);
+			continue;
+		} else if (*element.kind != k_ir_node) {
+			continue;
 		}
 		ir_node *node = element.node;
 		assert(is_Block(node));
+		DB((dbg, LEVEL_5,
+		    "\t Block %+F in loop %+F... looking for stores\n", node,
+		    loop));
 		unsigned m = get_irn_n_outs(node);
 		for (unsigned j = 0; j < m; ++j) {
-			walk(get_irn_out(node, j), loop);
+			check_for_store(get_irn_out(node, j), loop);
 		}
 	}
-	DB((dbg, LEVEL_4, "Found all stores\n"));
+	DB((dbg, LEVEL_4, "Found all stores in loop %+F\n", loop));
 }
-static bool is_valid_base(ir_node *node)
+static bool is_valid_base(ir_node *node, ir_loop *loop)
 {
 	DB((dbg, LEVEL_4, "Checking if %+F is a valid base\n", node));
 	// Const
@@ -425,7 +473,7 @@ static bool is_valid_base(ir_node *node)
 			for (unsigned i = 0; i < n; ++i) {
 				ir_node *call_param =
 					get_Call_param(proj_call, i);
-				if (!is_valid_base(call_param)) {
+				if (!is_valid_base(call_param, loop)) {
 					DB((dbg, LEVEL_4,
 					    "Call param %d %+F is not pure\n",
 					    i, call_param));
@@ -444,14 +492,28 @@ static bool is_valid_base(ir_node *node)
 		unsigned n = get_Phi_n_preds(node);
 		DB((dbg, LEVEL_4,
 		    "Node is phi; Checking all %u inputs are bases\n", n));
+		// TODO: Only 1 Input may point into loop
+		unsigned pointing_into_loop = 0;
 		for (unsigned i = 0; i < n; i++) {
 			ir_node *phi_pred = get_Phi_pred(node, i);
-			if (!is_valid_base(phi_pred)) {
+			ir_node *pred_block = get_block(phi_pred);
+			if (loop && block_is_inside_loop(pred_block, loop)) {
+				pointing_into_loop++;
+				DB((dbg, LEVEL_4,
+				    "\tPhi pred %u (%+F) inside loop\n", n,
+				    phi_pred));
+			}
+			if (!is_valid_base(phi_pred, loop)) {
 				DB((dbg, LEVEL_4,
 				    "\tPhi pred %u (%+F) was not a valid base. Phi is not a valid base\n",
-				    n, phi_pred));
+				    i, phi_pred));
 				return false;
 			}
+		}
+		if (loop && pointing_into_loop > 1) {
+			DB((dbg, LEVEL_4,
+			    "Phi has multiple ends in loop => Cannot unroll\n"));
+			return false;
 		}
 		DB((dbg, LEVEL_4,
 		    "Phi is valid base: All phi preds were valid bases\n"));
@@ -490,12 +552,15 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
 		DB((dbg, LEVEL_5, "\tRight is correct Phi\n"));
 		node_to_check = left;
 	}
-	node_to_check = right; // TODO: WTF
+	DEBUG_ONLY(node_to_check =
+			   right;) //FIXME: Unroll_non_base_incr.invalid.c
 	if (!node_to_check) {
 		DB((dbg, LEVEL_4, "Phi not found in incr\n"));
 		return false;
 	}
-	if (!is_valid_base(node_to_check)) {
+
+	if (!is_valid_base(node_to_check,
+			   get_irn_loop(get_block(node_to_check)))) {
 		DB((dbg, LEVEL_4,
 		    "Incr does not have valid base, but has correct Phi\n"));
 		return false;
@@ -515,7 +580,7 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 		return false;
 	}
 	// check for static beginning: neither in loop, nor aliased and for valid linear increment
-
+	clear_all_stores();
 	get_all_stores(loop);
 	long long incr_pred_index = -1;
 	for (unsigned i = 0; i < phi_preds; ++i) {
@@ -534,7 +599,7 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 			DB((dbg, LEVEL_5, "\tSkipping phi incr\n"));
 			continue;
 		}
-		if (!is_valid_base(curr)) {
+		if (!is_valid_base(curr, loop)) {
 			DB((dbg, LEVEL_5,
 			    "\tPhi input %+F is neither valid base, nor the found increment. Phi invalid.\n",
 			    curr));
@@ -550,8 +615,6 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
 				      ir_loop *loop)
 {
-	printf("Reached ");
-	printf("%s\n", getenv("FIRMDBG"));
 	DB((dbg, LEVEL_4, "\tDetermining info for loop %+F\n", loop));
 	ir_node *header = get_loop_header(loop);
 	unsigned outs = get_irn_n_outs(header);
@@ -612,7 +675,8 @@ static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
 /**
  * walk trivial phis (with only one input) until another node is found
  */
-static ir_node* skip_trivial_phis(ir_node *start) {
+static ir_node *skip_trivial_phis(ir_node *start)
+{
 	if (is_Phi(start) && get_Phi_n_preds(start) == 1) {
 		return skip_trivial_phis(get_Phi_pred(start, 0));
 	}
