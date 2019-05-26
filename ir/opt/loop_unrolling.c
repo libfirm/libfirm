@@ -962,12 +962,6 @@ static void unroll_loop(ir_loop *const loop, unsigned factor)
 		return;
 	DB((dbg, LEVEL_3, "\tfound loop header %N\n", header));
 
-	linear_unroll_info info;
-	if (determine_lin_unroll_info(&info, loop)) {
-		DB((dbg, LEVEL_3, "DUFF: Can unroll! (loop: %+F)", loop));
-	} else {
-		DB((dbg, LEVEL_3, "DUFF: Cannot unroll! (loop: %+F)", loop));
-	}
 	bool fully_unroll = false;
 	factor = find_suitable_factor(header, factor, &fully_unroll);
 	if (factor < 1 || (factor == 1 && !fully_unroll)) {
@@ -980,7 +974,6 @@ static void unroll_loop(ir_loop *const loop, unsigned factor)
 	size_t const n_elements = get_loop_n_elements(loop);
 
 	for (unsigned j = 1; j < factor; ++j) {
-
 		// step 1: duplicate blocks
 		for (size_t i = 0; i < n_elements; ++i) {
 			loop_element const element = get_loop_element(loop, i);
@@ -998,7 +991,6 @@ static void unroll_loop(ir_loop *const loop, unsigned factor)
 				rewire_block(element.node, header);
 			}
 		}
-
 	}
 	++n_loops_unrolled;
 
@@ -1039,25 +1031,46 @@ static void duplicate_innermost_loops(ir_loop *const loop, unsigned const factor
 			innermost = false;
 		}
 	}
+	/*
 	if (innermost && !outermost) {
 		unsigned const actual_factor = determine_unroll_factor(loop, factor, maxsize);
 		if (actual_factor > 0) {
 			unroll_loop(loop, actual_factor);
 		}
 	}
+	*/
+	// TODXO: Why so many loops
+	linear_unroll_info info;
+	DB((dbg, LEVEL_2, "DUFF: Checking if %+F is unrollable\n", loop));
+	for (unsigned i = 0; i < get_loop_n_elements(loop); ++i) {
+		DB((dbg, LEVEL_3, "\tContaining: %+F\n",
+		    get_loop_element(loop, i)));
+	}
+	DB((dbg, LEVEL_3, "-------------\n", loop));
+	if (determine_lin_unroll_info(&info, loop)) {
+		DB((dbg, LEVEL_2, "DUFF: Can unroll! (loop: %+F)\n", loop));
+	} else {
+		DB((dbg, LEVEL_2, "DUFF: Cannot unroll! (loop: %+F)\n", loop));
+	}
+	DB((dbg, LEVEL_2, "--------------------------------------------\n",
+	    loop));
 }
 
 void unroll_loops(ir_graph *const irg, unsigned factor, unsigned maxsize)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.loop-unrolling");
-	printf("Registered debug\n");
-	DB((dbg, LEVEL_1, "TEST"));
 	n_loops_unrolled = 0;
 	assure_lcssa(irg);
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_OUTS | IR_GRAPH_PROPERTY_NO_BADS | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+	assure_irg_properties(irg,
+			      IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+				      IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+				      IR_GRAPH_PROPERTY_NO_BADS |
+				      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	duplicate_innermost_loops(get_irg_loop(irg), factor, maxsize, true);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE | IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
+	clear_irg_properties(irg,
+			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+				     IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	DB((dbg, LEVEL_1, "%+F: %d loops unrolled\n", irg, n_loops_unrolled));
 }
