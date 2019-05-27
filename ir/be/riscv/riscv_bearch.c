@@ -15,12 +15,14 @@
 #include "bespillslots.h"
 #include "bestack.h"
 #include "betranshlp.h"
+#include "beutil.h"
 #include "gen_riscv_new_nodes.h"
 #include "gen_riscv_regalloc_if.h"
 #include "irarch.h"
 #include "iredges.h"
 #include "irgwalk.h"
 #include "irprog_t.h"
+#include "irprintf.h"
 #include "lower_builtins.h"
 #include "lower_alloc.h"
 #include "lowering.h"
@@ -163,11 +165,11 @@ static void riscv_set_frame_entity(ir_node *const node, ir_entity *const entity,
 	imm->ent = entity;
 }
 
-static void riscv_assign_spill_slots(ir_graph *const irg)
+static void riscv_assign_spill_slots(ir_graph *const irg, bool omit_fp)
 {
 	be_fec_env_t *const fec_env = be_new_frame_entity_coalescer(irg);
 	irg_walk_graph(irg, NULL, riscv_collect_frame_entity_nodes, fec_env);
-	be_assign_entities(fec_env, riscv_set_frame_entity, true);
+	be_assign_entities(fec_env, riscv_set_frame_entity, omit_fp);
 	be_free_frame_entity_coalescer(fec_env);
 }
 
@@ -176,38 +178,89 @@ static ir_node *riscv_new_IncSP(ir_node *const block, ir_node *const sp, int con
 	return be_new_IncSP(block, sp, offset, align);
 }
 
-static void riscv_introduce_prologue(ir_graph *const irg, unsigned const size)
+static void riscv_introduce_prologue(ir_graph *const irg, unsigned const size, bool omit_fp)
 {
 	ir_node *const start    = get_irg_start(irg);
 	ir_node *const block    = get_nodes_block(start);
 	ir_node *const start_sp = be_get_Start_proj(irg, &riscv_registers[REG_SP]);
-	ir_node *const inc_sp   = riscv_new_IncSP(block, start_sp, size, 0);
-	sched_add_after(start, inc_sp);
-	edges_reroute_except(start_sp, inc_sp, inc_sp);
+	ir_node *const start_fp = be_get_Start_proj(irg, &riscv_registers[REG_S0]);
+
+	if (!omit_fp) {
+		ir_node *const mem        = get_irg_initial_mem(irg);
+
+		/* save fp to stack */
+		ir_node *const store_fp = new_bd_riscv_sw(NULL, block, mem, start_sp, start_fp, NULL, -4);
+		sched_add_after(start, store_fp);
+		edges_reroute_except(mem, store_fp, store_fp);
+
+		/* move sp to fp */
+		ir_node *const curr_fp = be_new_Copy(block, start_sp);
+		arch_copy_irn_out_info(curr_fp, 0, start_fp);
+		sched_add_after(store_fp, curr_fp);
+		edges_reroute_except(start_fp, curr_fp, store_fp);
+
+		ir_node *const inc_sp   = riscv_new_IncSP(block, start_sp, size, 0);
+		edges_reroute_except(start_sp, inc_sp, inc_sp);
+		sched_add_after(curr_fp, inc_sp);
+
+		/* make sure the initial IncSP is really used by someone */
+		be_keep_if_unused(inc_sp);
+	} else {
+		ir_node *const inc_sp   = riscv_new_IncSP(block, start_sp, size, 0);
+		sched_add_after(start, inc_sp);
+		edges_reroute_except(start_sp, inc_sp, inc_sp);
+	}
 }
 
-static void riscv_introduce_epilogue(ir_node *const ret, unsigned const size)
+static void riscv_introduce_epilogue(ir_node *const ret, unsigned const size, bool omit_fp)
 {
 	ir_node *const block  = get_nodes_block(ret);
-	ir_node *const ret_sp = get_irn_n(ret, n_riscv_ret_stack);
-	ir_node *const inc_sp = riscv_new_IncSP(block, ret_sp, -(int)size, 0);
-	sched_add_before(ret, inc_sp);
-	set_irn_n(ret, n_riscv_ret_stack, inc_sp);
+	if (!omit_fp) {
+		int const n_fp = be_get_input_pos_for_req(ret, &riscv_single_reg_req_gp_s0);
+		ir_node  *curr_fp  = get_irn_n(ret, n_fp);
+		ir_node  *curr_mem = get_irn_n(ret, n_riscv_ret_mem);
+
+		/* Copy fp to sp */
+		ir_node *const curr_sp = be_new_Copy(block, curr_fp);
+		arch_set_irn_register(curr_sp, &riscv_registers[REG_SP]);
+		sched_add_before(ret, curr_sp);
+
+		/* restore old fp */
+		ir_node *const restore = new_bd_riscv_lw(NULL, block, curr_mem, curr_sp, NULL, -4);
+		curr_mem = be_new_Proj(restore, pn_riscv_lw_M);
+		curr_fp  = be_new_Proj_reg(restore, pn_riscv_lw_res, &riscv_registers[REG_S0]);
+		sched_add_before(ret, restore);
+
+		set_irn_n(ret, n_fp,            curr_fp);
+		set_irn_n(ret, n_riscv_ret_mem, curr_mem);
+		set_irn_n(ret, n_riscv_ret_stack, curr_sp);
+	} else {
+		ir_node *const ret_sp = get_irn_n(ret, n_riscv_ret_stack);
+		ir_node *const inc_sp = riscv_new_IncSP(block, ret_sp, -(int)size, 0);
+		sched_add_before(ret, inc_sp);
+		set_irn_n(ret, n_riscv_ret_stack, inc_sp);
+	}
+
 }
 
-static void riscv_introduce_prologue_epilogue(ir_graph *const irg)
+static void riscv_introduce_prologue_epilogue(ir_graph *const irg, bool omit_fp)
 {
 	ir_type *const frame = get_irg_frame_type(irg);
-	unsigned const size  = get_type_size(frame);
-	if (size == 0)
+	unsigned size  = get_type_size(frame);
+	if (size == 0 && omit_fp)
 		return;
+
+	if (!omit_fp) {
+		// additional slot for saved frame pointer
+		size += RISCV_MACHINE_SIZE / 8;
+	}
 
 	foreach_irn_in(get_irg_end_block(irg), i, ret) {
 		assert(is_riscv_ret(ret));
-		riscv_introduce_epilogue(ret, size);
+		riscv_introduce_epilogue(ret, size, omit_fp);
 	}
 
-	riscv_introduce_prologue(irg, size);
+	riscv_introduce_prologue(irg, size, omit_fp);
 }
 
 static void riscv_sp_sim(ir_node *const node, stack_pointer_state_t *const state)
@@ -228,9 +281,15 @@ static void riscv_sp_sim(ir_node *const node, stack_pointer_state_t *const state
 			ir_entity              *const ent = imm->ent;
 			if (ent && is_frame_type(get_entity_owner(ent))) {
 				imm->ent  = NULL;
-				imm->val += state->offset + get_entity_offset(ent);
+				ir_graph *const irg = get_irn_irg(node);
+				if (riscv_get_irg_data(irg)->omit_fp) {
+					imm->val += state->offset;
+				} else if (!(arch_get_irn_flags(node) & (arch_irn_flags_t)riscv_arch_irn_flag_ignore_fp_offset_fix)) {
+					// consider additional slot for saved frame pointer
+					imm->val -= RISCV_MACHINE_SIZE / 8;
+				}
+				imm->val += get_entity_offset(ent);
 			}
-			break;
 		}
 
 		default:
@@ -251,19 +310,25 @@ static void riscv_generate_code(FILE *const output, char const *const cup_name)
 			continue;
 
 		be_irg_t *const birg = be_birg_from_irg(irg);
+
+		struct obstack *obst = be_get_be_obst(irg);
+		birg->isa_link = OALLOCZ(obst, riscv_irg_data_t);
 		birg->non_ssa_regs = sp_is_non_ssa;
 
 		riscv_select_instructions(irg);
 		be_step_schedule(irg);
 		be_step_regalloc(irg, &riscv_regalloc_if);
 
-		riscv_assign_spill_slots(irg);
+		riscv_irg_data_t const *const irg_data = riscv_get_irg_data(irg);
+		bool const omit_fp = irg_data->omit_fp;
+
+		riscv_assign_spill_slots(irg, omit_fp);
 
 		ir_type *const frame = get_irg_frame_type(irg);
-		be_sort_frame_entities(frame, true);
+		be_sort_frame_entities(frame, omit_fp);
 		be_layout_frame_type(frame, 0, 0);
 
-		riscv_introduce_prologue_epilogue(irg);
+		riscv_introduce_prologue_epilogue(irg, omit_fp);
 		be_fix_stack_nodes(irg, &riscv_registers[REG_SP]);
 		birg->non_ssa_regs = NULL;
 		be_sim_stack_pointer(irg, 0, RISCV_PO2_STACK_ALIGNMENT, &riscv_sp_sim);

@@ -60,7 +60,10 @@ static void dump_immediate(FILE *const F, char const *const prefix, ir_node cons
 		fputc(' ', F);
 		if (prefix)
 			fprintf(F, "%s(", prefix);
-		fputs(get_entity_name(imm->ent), F);
+		const char *name = get_entity_name(imm->ent);
+		if (name) {
+			fputs(name, F);
+		}
 		if (imm->val != 0)
 			fprintf(F, "%+" PRId32, imm->val);
 		if (prefix)

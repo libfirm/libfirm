@@ -3,11 +3,13 @@
  * Copyright (C) 2018 Christoph Mallon.
  */
 
-#include "riscv_cconv.h"
-
+#include "be_t.h"
+#include "becconv.h"
 #include "betranshlp.h"
 #include "gen_riscv_regalloc_if.h"
+#include "irgwalk.h"
 #include "riscv_bearch_t.h"
+#include "riscv_cconv.h"
 #include "util.h"
 
 static unsigned const regs_param_gp[] = {
@@ -26,8 +28,28 @@ static unsigned const regs_result_gp[] = {
 	REG_A1,
 };
 
-void riscv_determine_calling_convention(riscv_calling_convention_t *const cconv, ir_type *const fun_type)
+static void check_omit_fp(ir_node *node, void *env)
 {
+	/* omit-fp is not possible if:
+	 *  - we have allocations on the stack
+	 */
+	if (is_Alloc(node) || is_Free(node)) {
+		bool *can_omit_fp = (bool*) env;
+		*can_omit_fp = false;
+	}
+}
+
+void riscv_determine_calling_convention(riscv_calling_convention_t *const cconv, ir_type *const fun_type,
+                                        ir_graph *const irg)
+{
+	bool omit_fp = false;
+	if (irg != NULL) {
+		omit_fp = be_options.omit_fp;
+		if (omit_fp)
+			irg_walk_graph(irg, check_omit_fp, NULL, &omit_fp);
+		riscv_get_irg_data(irg)->omit_fp = omit_fp;
+	}
+
 	/* Handle parameters. */
 	riscv_reg_or_slot_t *params   = NULL;
 	size_t               gp_param = 0;
@@ -78,6 +100,13 @@ void riscv_determine_calling_convention(riscv_calling_convention_t *const cconv,
 		}
 	}
 	cconv->results = results;
+
+	if (irg != NULL) {
+		be_irg_t *birg = be_birg_from_irg(irg);
+		if (!omit_fp)
+			rbitset_clear(birg->allocatable_regs, REG_S0); // s0 = frame pointer
+	}
+	cconv->omit_fp = omit_fp;
 }
 
 void riscv_layout_parameter_entities(riscv_calling_convention_t *const cconv, ir_graph *const irg)

@@ -14,6 +14,10 @@ typedef struct riscv_attr_t {
 	except_attr exc; /**< the exception attribute. MUST be the first one. */
 } riscv_attr_t;
 
+enum riscv_arch_irn_flags_t {
+	riscv_arch_irn_flag_ignore_fp_offset_fix = arch_irn_flag_backend << 0,
+};
+
 typedef enum riscv_cond_t {
 	/* Flipping the lowest bit negates the condition. */
 	riscv_cc_eq,

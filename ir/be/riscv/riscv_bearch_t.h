@@ -12,7 +12,17 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "beirg.h"
 #include "firm_types.h"
+
+typedef struct riscv_irg_data_t {
+	bool     omit_fp;        /**< No frame pointer is used. */
+} riscv_irg_data_t;
+
+static inline riscv_irg_data_t *riscv_get_irg_data(const ir_graph *irg)
+{
+	return (riscv_irg_data_t*)be_birg_from_irg(irg)->isa_link;
+}
 
 static inline bool is_uimm5(long const val)
 {

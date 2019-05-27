@@ -63,6 +63,11 @@ static ir_node *get_Start_sp(ir_graph *const irg)
 	return be_get_Start_proj(irg, &riscv_registers[REG_SP]);
 }
 
+static ir_node *get_Start_fp(ir_graph *const irg)
+{
+	return be_get_Start_proj(irg, &riscv_registers[REG_S0]);
+}
+
 ir_node *get_Start_zero(ir_graph *const irg)
 {
 	return be_get_Start_proj(irg, &riscv_registers[REG_ZERO]);
@@ -311,7 +316,7 @@ static ir_node *gen_Alloc(ir_node *node)
 		long const sizel = get_Const_long(size);
 		assert((sizel & ((1<<RISCV_PO2_STACK_ALIGNMENT) - 1)) == 0 && "Found Alloc with misaligned constant");
 		assert(is_simm12(sizel));
-		subsp = new_bd_riscv_SubSPimm(dbgi, new_block, new_mem, stack_pred, NULL, sizel);
+		subsp = new_bd_riscv_SubSPimm(dbgi, new_block, new_mem, stack_pred, NULL, -sizel);
 	} else {
 		ir_node *new_size = be_transform_node(size);
 		subsp = new_bd_riscv_SubSP(dbgi, new_block, new_mem, stack_pred, new_size);
@@ -425,7 +430,7 @@ static ir_node *gen_Call(ir_node *const node)
 	record_returns_twice(irg, fun_type);
 
 	riscv_calling_convention_t cconv;
-	riscv_determine_calling_convention(&cconv, fun_type);
+	riscv_determine_calling_convention(&cconv, fun_type, NULL);
 
 	ir_node *mems[1 + cconv.n_mem_param];
 	unsigned m = 0;
@@ -905,7 +910,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *const node)
 	ir_type *const fun_type = get_Call_type(ocall);
 
 	riscv_calling_convention_t cconv;
-	riscv_determine_calling_convention(&cconv, fun_type);
+	riscv_determine_calling_convention(&cconv, fun_type, NULL);
 
 	ir_node               *const call = be_transform_node(ocall);
 	unsigned               const num  = get_Proj_num(node);
@@ -930,8 +935,9 @@ static ir_node *gen_Proj_Proj_Start(ir_node *const node)
 		dbg_info *const dbgi  = get_irn_dbg_info(node);
 		ir_node  *const block = be_transform_nodes_block(node);
 		ir_node  *const mem   = be_get_Start_mem(irg);
-		ir_node  *const base  = get_Start_sp(irg);
+		ir_node  *const base  = cur_cconv.omit_fp ? get_Start_sp(irg) : get_Start_fp(irg);
 		ir_node  *const load  = new_bd_riscv_lw(dbgi, block, mem, base, param->entity, 0);
+		arch_add_irn_flags(load, (arch_irn_flags_t)riscv_arch_irn_flag_ignore_fp_offset_fix);
 		return be_new_Proj(load, pn_riscv_lw_res);
 	}
 }
@@ -952,7 +958,7 @@ static ir_node *gen_Proj_Start(ir_node *const node)
 	ir_graph *const irg = get_irn_irg(node);
 	switch ((pn_Start)get_Proj_num(node)) {
 	case pn_Start_M:            return be_get_Start_mem(irg);
-	case pn_Start_P_frame_base: return get_Start_sp(irg);
+	case pn_Start_P_frame_base: return cur_cconv.omit_fp ? get_Start_sp(irg): get_Start_fp(irg);
 	case pn_Start_T_args:       return new_r_Bad(irg, mode_T);
 	}
 	panic("unexpected Proj");
@@ -1073,6 +1079,8 @@ static ir_node *gen_Start(ir_node *const node)
 		if (reg)
 			outs[reg->global_index] = BE_START_REG;
 	}
+	if (!cur_cconv.omit_fp)
+		outs[REG_S0] = BE_START_IGNORE;
 
 	return be_new_Start(irg, outs);
 }
@@ -1229,7 +1237,7 @@ void riscv_transform_graph(ir_graph *const irg)
 
 	ir_entity *const fun_ent  = get_irg_entity(irg);
 	ir_type   *const fun_type = get_entity_type(fun_ent);
-	riscv_determine_calling_convention(&cur_cconv, fun_type);
+	riscv_determine_calling_convention(&cur_cconv, fun_type, irg);
 	riscv_layout_parameter_entities(&cur_cconv, irg);
 	be_add_parameter_entity_stores(irg);
 	be_transform_graph(irg, NULL);
