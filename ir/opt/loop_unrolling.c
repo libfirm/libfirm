@@ -304,20 +304,11 @@ static bool is_aliased(ir_node *node)
 	} else if (is_Store(node)) {
 		addr = get_Store_ptr(node);
 		type = get_Store_type(node);
-	} else if (is_Proj(node)) {
-		ir_node *pre_proj = get_Proj_pred(node);
-		if (!is_Proj(pre_proj)) {
-			return false;
-		}
-		ir_node *pre_pre_proj = get_Proj_pred(node);
-		if (!is_Call(pre_pre_proj)) {
-			return false;
-		}
-		addr = get_Call_ptr(pre_pre_proj);
-		type = get_Call_type(pre_pre_proj);
+	} else if (is_Call(node)) {
+		addr = get_Call_ptr(node);
+		type = get_Call_type(node);
 	} else {
-		DB((dbg, LEVEL_4,
-		    "%+F neither, load, nor store, nor double proj will call\n",
+		DB((dbg, LEVEL_4, "%+F neither, load, nor store, nor call\n",
 		    node));
 		return false;
 	}
@@ -326,7 +317,8 @@ static bool is_aliased(ir_node *node)
 		if (get_alias_relation(curr->addr, curr->type, curr->size, addr,
 				       type,
 				       get_type_size(type)) != ir_no_alias) {
-			DB((dbg, LEVEL_4, "found  aliasing\n"));
+			DB((dbg, LEVEL_4, "found  aliasing with %+F\n",
+			    curr->node));
 			return true;
 		}
 	}
@@ -416,11 +408,6 @@ static void walk_call_for_aliases(ir_node *call)
 						list.node = pre_proj;
 					}
 				}
-			} else if (is_Address(param)) {
-				list.addr = param;
-				list.type = NULL;
-				list.size = 0;
-				list.node = param;
 			}
 			if (list.addr) {
 				DB((dbg, LEVEL_4,
