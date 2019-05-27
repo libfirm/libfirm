@@ -387,8 +387,51 @@ static void walk_call_for_aliases(ir_node *call)
 	ir_entity *callee_entity = get_Call_callee(call);
 	ir_graph *callee_graph = get_entity_linktime_irg(callee_entity);
 	if (!callee_graph) {
-		// TODO: Library doing things?
-		DB((dbg, LEVEL_4, "No graph attached to call - skipping"));
+		// TODO: Library doing things? Should this be a straight "no unroll"-scenario
+		// TODO: This code is highly dangerous - definitely should be thoroughly tested and reviewed
+		DB((dbg, LEVEL_4, "Unknown call found!\n"));
+		for (int i = 0; i < get_Call_n_params(call); i++) {
+			ir_node *param = get_Call_param(call, i);
+			DB((dbg, LEVEL_4, "Has param %+F of type!\n", param));
+			struct alias_list list = { .addr = NULL,
+						   .next = alias_candidates };
+			if (is_Proj(param)) {
+				ir_node *pre_proj = get_Proj_pred(param);
+				if (is_Load(pre_proj)) {
+					list.addr = get_Load_ptr(pre_proj);
+					ir_type *type = get_Load_type(pre_proj);
+					list.type = type;
+					list.size = get_type_size(type);
+					list.node = pre_proj;
+				} else if (is_Proj(pre_proj)) {
+					ir_node *pre_pre_proj =
+						get_Proj_pred(pre_proj);
+					if (is_Call(pre_pre_proj)) {
+						list.addr = get_Call_ptr(
+							pre_pre_proj);
+						ir_type *type = get_Call_type(
+							pre_pre_proj);
+						list.type = type;
+						list.size = get_type_size(type);
+						list.node = pre_proj;
+					}
+				}
+			} else if (is_Address(param)) {
+				list.addr = param;
+				list.type = NULL;
+				list.size = 0;
+				list.node = param;
+			}
+			if (list.addr) {
+				DB((dbg, LEVEL_4,
+				    "Adding store to potential alias list\n"));
+				struct alias_list *list_ptr =
+					(struct alias_list *)malloc(
+						sizeof(struct alias_list));
+				*list_ptr = list;
+				alias_candidates = list_ptr;
+			}
+		}
 		return;
 	}
 	if (callee_graph->reserved_resources & IR_RESOURCE_IRN_VISITED) {
@@ -492,7 +535,6 @@ static bool is_valid_base(ir_node *node, ir_loop *loop)
 		unsigned n = get_Phi_n_preds(node);
 		DB((dbg, LEVEL_4,
 		    "Node is phi; Checking all %u inputs are bases\n", n));
-		// TODO: Only 1 Input may point into loop
 		unsigned pointing_into_loop = 0;
 		for (unsigned i = 0; i < n; i++) {
 			ir_node *phi_pred = get_Phi_pred(node, i);
@@ -558,8 +600,7 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
 		DB((dbg, LEVEL_5, "\tRight is correct Phi\n"));
 		node_to_check = left;
 	}
-	DEBUG_ONLY(node_to_check =
-			   right;) //FIXME: Unroll_non_base_incr.invalid.c
+	DEBUG_ONLY(node_to_check = right;)
 	if (!node_to_check) {
 		DB((dbg, LEVEL_4, "Phi not found in incr\n"));
 		return false;
@@ -581,7 +622,6 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 	assert(is_Phi(phi));
 	unsigned phi_preds = get_Phi_n_preds(phi);
 	if (phi_preds < 2) {
-		// TODO: Allow for more inputs, e.g., if before loop
 		DB((dbg, LEVEL_4, "Phi has %u preds. Too few!F\n", phi_preds));
 		return false;
 	}
