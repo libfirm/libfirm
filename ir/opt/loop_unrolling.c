@@ -519,6 +519,12 @@ static bool is_valid_base(ir_node *node, ir_loop *loop)
 		    "Phi is valid base: All phi preds were valid bases\n"));
 		return true;
 	}
+	if (is_Conv(node)) { // Cast
+		ir_node *conved = get_Conv_op(node);
+		DB((dbg, LEVEL_4, "Found cast. Checking target of cast (%+F)\n",
+		    conved));
+		return is_valid_base(conved, loop);
+	}
 	return false;
 }
 static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
