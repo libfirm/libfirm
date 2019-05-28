@@ -491,13 +491,11 @@ static bool is_valid_base(ir_node *node, ir_loop *loop)
 				return false;
 			}
 			ir_entity *callee = get_Call_callee(proj_call);
-			ir_type *callee_type = get_entity_type(callee);
 			mtp_additional_properties properties =
-				get_method_additional_properties(callee_type);
+				get_entity_additional_properties(callee);
 			if (!(properties & mtp_property_pure)) {
-				// TODO: Unroll_simple_incr_non_const.c
 				DB((dbg, LEVEL_4, "Call is not pure\n"));
-				return false;
+				return false; // TODO: Comment out for Unroll_library_function_modifying_incr.invalid.c testcase
 			}
 			unsigned n = get_Call_n_params(proj_call);
 			for (unsigned i = 0; i < n; ++i) {
