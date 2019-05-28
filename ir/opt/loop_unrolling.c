@@ -279,6 +279,7 @@ struct linear_unroll_info {
 	ir_relation rel;
 	ir_node *incr;
 	ir_node *phi;
+	ir_node *bound;
 };
 
 #define linear_unroll_info struct linear_unroll_info
@@ -624,21 +625,7 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 	if (incr_pred_index == -1) {
 		return false;
 	}
-	for (unsigned i = 0; i < phi_preds; ++i) {
-		ir_node *curr = get_Phi_pred(phi, i);
-		if (i == incr_pred_index) {
-			DB((dbg, LEVEL_5, "\tSkipping phi incr\n"));
-			continue;
-		}
-		if (!is_valid_base(curr, loop)) {
-			DB((dbg, LEVEL_5,
-			    "\tPhi input %+F is neither valid base, nor the found increment. Phi invalid.\n",
-			    curr));
-			return false;
-		}
-	}
-	DB((dbg, LEVEL_5,
-	    "\tFound one phi incr and (%u-1) valid bases. Phi valid\n",
+	DB((dbg, LEVEL_5, "\tFound one phi incr and (%u-1) inputs. Phi valid\n",
 	    phi_preds));
 	return true;
 }
@@ -684,13 +671,21 @@ static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
 		bool ret = false;
 		if (is_Phi(left)) {
 			unroll_info->phi = left;
+			unroll_info->bound = right;
 			DB((dbg, LEVEL_4, "Checking Phi left %+F\n", left));
 			ret |= check_phi(unroll_info, loop);
 		}
 		if (is_Phi(right)) {
 			unroll_info->phi = right;
+			unroll_info->bound = left;
 			DB((dbg, LEVEL_4, "Checking Phi right %+F\n", right));
 			ret |= check_phi(unroll_info, loop);
+		}
+		DB((dbg, LEVEL_4, "Checking bound %+F\n", unroll_info->bound));
+		if (!is_valid_base(unroll_info->bound, loop)) {
+			DB((dbg, LEVEL_4, "Bound %+F is not valid base\n",
+			    unroll_info->bound));
+			ret = false;
 		}
 		DEBUG_ONLY(if (!ret) {
 			DB((dbg, LEVEL_4,
