@@ -555,6 +555,15 @@ static bool is_valid_base(ir_node *node, ir_loop *loop)
 	}
 	return false;
 }
+static ir_node *climb_single_phi(ir_node *phi)
+{
+	if (!is_Phi(phi))
+		return phi;
+	if (get_Phi_n_preds(phi) != 1)
+		return phi;
+	return climb_single_phi(get_Phi_pred(phi, 0));
+}
+
 static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
 {
 	DB((dbg, LEVEL_4, "Checking if increment\n"));
@@ -567,8 +576,8 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
 		DB((dbg, LEVEL_4, "Invalid binary op\n"));
 		return false;
 	}
-	ir_node *left = get_binop_left(node);
-	ir_node *right = get_binop_right(node);
+	ir_node *left = climb_single_phi(get_binop_left(node));
+	ir_node *right = climb_single_phi(get_binop_right(node));
 	ir_node *node_to_check = NULL;
 	DB((dbg, LEVEL_5,
 	    "\tLooking for phi (%+F) in left (%+F) and right (%+F)\n",
@@ -586,7 +595,6 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
 		DB((dbg, LEVEL_5, "\tRight is correct Phi\n"));
 		node_to_check = left;
 	}
-	DEBUG_ONLY(node_to_check = right;)
 	if (!node_to_check) {
 		DB((dbg, LEVEL_4, "Phi not found in incr\n"));
 		return false;
