@@ -274,6 +274,7 @@ static bool binop_to_op(Op *op, ir_node *bin_op)
 
 struct linear_unroll_info {
 	Op op;
+	ir_loop *loop;
 	ir_node *i;
 	ir_node *cmp;
 	ir_relation rel;
@@ -577,8 +578,8 @@ static bool is_in_stack(ir_node *query, struct irn_stack *head)
 	return false;
 }
 
-static void phi_cycle_dfs(ir_node *curr, ir_node *searched, bool *foundCycle,
-			  bool *valid, ir_node **outside,
+static void phi_cycle_dfs(ir_node *curr, ir_node *searched, ir_loop *loop,
+			  bool *foundCycle, bool *valid, ir_node **outside,
 			  struct irn_stack **stack_head)
 {
 	assert(is_Phi(curr));
@@ -616,12 +617,17 @@ static void phi_cycle_dfs(ir_node *curr, ir_node *searched, bool *foundCycle,
 			    w));
 			return;
 		}
-		phi_cycle_dfs(w, searched, foundCycle, valid, outside,
+		phi_cycle_dfs(w, searched, loop, foundCycle, valid, outside,
 			      stack_head);
+	}
+	if (*outside != curr && !block_is_inside_loop(get_block(curr), loop)) {
+		DB((dbg, LEVEL_5,
+		    "\tBlock is neither leading out nor in loop\n", searched));
+		*valid = false;
 	}
 }
 static ir_node *check_cycle_and_find_exit(ir_node *initial_phi,
-					  ir_node *searched)
+					  ir_node *searched, ir_loop *loop)
 {
 	if (!is_Phi(initial_phi)) {
 		return initial_phi;
@@ -630,8 +636,8 @@ static ir_node *check_cycle_and_find_exit(ir_node *initial_phi,
 	bool valid = true;
 	bool foundCycle = false;
 	ir_node *outside = NULL;
-	phi_cycle_dfs(initial_phi, searched, &foundCycle, &valid, &outside,
-		      &stack);
+	phi_cycle_dfs(initial_phi, searched, loop, &foundCycle, &valid,
+		      &outside, &stack);
 	struct irn_stack *curr = stack;
 	while (curr) {
 		struct irn_stack *clear = curr;
@@ -676,10 +682,10 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
 	}
 	if (!node_to_check) {
 		// Assume it is a cycle:
-		ir_node *left_c =
-			check_cycle_and_find_exit(get_binop_left(node), node);
-		ir_node *right_c =
-			check_cycle_and_find_exit(get_binop_right(node), node);
+		ir_node *left_c = check_cycle_and_find_exit(
+			get_binop_left(node), node, unroll_info->loop);
+		ir_node *right_c = check_cycle_and_find_exit(
+			get_binop_right(node), node, unroll_info->loop);
 		if (left_c == unroll_info->phi) {
 			DB((dbg, LEVEL_5, "\tLeft leads to correct Phi\n"));
 			node_to_check = right;
@@ -735,6 +741,7 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
 				      ir_loop *loop)
 {
+	unroll_info->loop = loop;
 	DB((dbg, LEVEL_4, "\tDetermining info for loop %+F\n", loop));
 	ir_node *header = get_loop_header(loop);
 	unsigned outs = get_irn_n_outs(header);
