@@ -563,6 +563,85 @@ static ir_node *climb_single_phi(ir_node *phi)
 		return phi;
 	return climb_single_phi(get_Phi_pred(phi, 0));
 }
+struct irn_stack {
+	ir_node *el;
+	struct irn_stack *next;
+};
+static bool is_in_stack(ir_node *query, struct irn_stack *head)
+{
+	for (struct irn_stack *curr = head; curr; curr = curr->next) {
+		if (curr->el == query) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static void phi_cycle_dfs(ir_node *curr, ir_node *searched, bool *foundCycle,
+			  bool *valid, ir_node **outside,
+			  struct irn_stack **stack_head)
+{
+	assert(is_Phi(curr));
+	struct irn_stack stack_el = { .next = *stack_head, .el = curr };
+	*stack_head = (struct irn_stack *)malloc(sizeof(struct irn_stack));
+	**stack_head = stack_el;
+	unsigned n = get_Phi_n_preds(curr);
+	DB((dbg, LEVEL_5, "Querying %+F for phi cycle check\n", curr));
+	if (n == 0) {
+		DB((dbg, LEVEL_5, "%+F has no preds. Can't be right\n", curr));
+		*valid = false;
+		return;
+	}
+	for (unsigned i = 0; i < n; ++i) {
+		ir_node *w = get_Phi_pred(curr, i);
+		DB((dbg, LEVEL_5, "\tChecking edge (%+F,%+F)\n", curr, w));
+		if (w == searched) {
+			DB((dbg, LEVEL_5, "\t\tEdge to searched (%+F)\n",
+			    searched));
+			*foundCycle = true;
+		}
+		if (!is_Phi(w)) {
+			DB((dbg, LEVEL_5, "\t\tEdge to outside\n"));
+			if (!*outside) {
+				*outside = curr;
+			} else if (*outside != curr) {
+				DB((dbg, LEVEL_5,
+				    "\t\t\t Found 2nd edge to outside. Not valid\n"));
+				*valid = false;
+			}
+			continue;
+		}
+		if (is_in_stack(w, *stack_head)) {
+			DB((dbg, LEVEL_5, "\t\tAlready visited %+F. Skipping\n",
+			    w));
+			return;
+		}
+		phi_cycle_dfs(w, searched, foundCycle, valid, outside,
+			      stack_head);
+	}
+}
+static ir_node *check_cycle_and_find_exit(ir_node *initial_phi,
+					  ir_node *searched)
+{
+	if (!is_Phi(initial_phi)) {
+		return initial_phi;
+	}
+	struct irn_stack *stack = NULL;
+	bool valid = true;
+	bool foundCycle = false;
+	ir_node *outside = NULL;
+	phi_cycle_dfs(initial_phi, searched, &foundCycle, &valid, &outside,
+		      &stack);
+	struct irn_stack *curr = stack;
+	while (curr) {
+		struct irn_stack *clear = curr;
+		curr = curr->next;
+		free(clear);
+	}
+	if (outside && valid && foundCycle)
+		return outside;
+	return NULL;
+}
 
 static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
 {
@@ -596,8 +675,23 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
 		node_to_check = left;
 	}
 	if (!node_to_check) {
-		DB((dbg, LEVEL_4, "Phi not found in incr\n"));
-		return false;
+		// Assume it is a cycle:
+		ir_node *left_c =
+			check_cycle_and_find_exit(get_binop_left(node), node);
+		ir_node *right_c =
+			check_cycle_and_find_exit(get_binop_right(node), node);
+		if (left_c == unroll_info->phi) {
+			DB((dbg, LEVEL_5, "\tLeft leads to correct Phi\n"));
+			node_to_check = right;
+		}
+		if (right_c == unroll_info->phi) {
+			DB((dbg, LEVEL_5, "\tRight leads to correct Phi\n"));
+			node_to_check = left;
+		}
+		if (!node_to_check) {
+			DB((dbg, LEVEL_4, "Phi not found in incr\n"));
+			return false;
+		}
 	}
 
 	if (!is_valid_base(node_to_check,
