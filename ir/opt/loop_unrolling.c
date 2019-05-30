@@ -514,6 +514,15 @@ static bool is_valid_base(ir_node *node, ir_loop *loop)
 			    "Checking for aliasing on call then returning\n"));
 			return !is_aliased(proj_call);
 		} else if (is_Load(pre_proj)) {
+			ir_node *pre_load = get_Load_ptr(pre_proj);
+			if (is_Proj(pre_load)) {
+				DB((dbg, LEVEL_4,
+				    "Load points further to %+F. Investigating further\n",
+				    pre_load));
+				if (!is_valid_base(pre_load, loop)) {
+					return false;
+				}
+			}
 			DB((dbg, LEVEL_4, "Load; Checking on aliasing\n"));
 			return !is_aliased(pre_proj);
 		}
