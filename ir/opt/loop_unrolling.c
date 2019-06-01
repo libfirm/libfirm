@@ -1099,34 +1099,33 @@ static void rewire_fully_unrolled(ir_loop *const loop, ir_node *header, unsigned
 
 static unsigned n_loops_unrolled = 0;
 
-static void unroll_loop(ir_loop *const loop, unsigned factor)
+static struct irn_stack *unrolled_headers;
+static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
 {
-	ir_node *const header = get_loop_header(loop);
-	if (header == NULL)
-		return;
-	DB((dbg, LEVEL_3, "\tfound loop header %N\n", header));
-
-	bool fully_unroll = false;
-	factor = find_suitable_factor(header, factor, &fully_unroll);
-	if (factor < 1 || (factor == 1 && !fully_unroll)) {
-		return;
-	}
-	DB((dbg, LEVEL_2, "unroll loop %+F\n", loop));
-	DB((dbg, LEVEL_3, "\tuse %d as unroll factor\n", factor));
-
 	irg_walk_graph(get_irn_irg(header), firm_clear_link, NULL, NULL);
 	size_t const n_elements = get_loop_n_elements(loop);
-
 	for (unsigned j = 1; j < factor; ++j) {
 		// step 1: duplicate blocks
 		for (size_t i = 0; i < n_elements; ++i) {
 			loop_element const element = get_loop_element(loop, i);
 			if (*element.kind == k_ir_node) {
 				assert(is_Block(element.node));
-				duplicate_block(element.node);
+				ir_node *dup = duplicate_block(element.node);
+				if (element.node == header) {
+					DB((dbg, LEVEL_2,
+					    " Duplicated header to %+F\n",
+					    dup));
+					struct irn_stack stack_top = {
+						.el = dup,
+						.next = unrolled_headers
+					};
+					unrolled_headers = (struct irn_stack *)
+						malloc(sizeof(
+							struct irn_stack));
+					*unrolled_headers = stack_top;
+				}
 			}
 		}
-
 		// step 2: rewire the edges
 		for (size_t i = 0; i < n_elements; ++i) {
 			loop_element const element = get_loop_element(loop, i);
@@ -1136,8 +1135,100 @@ static void unroll_loop(ir_loop *const loop, unsigned factor)
 			}
 		}
 	}
-	++n_loops_unrolled;
+}
+static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
+			     linear_unroll_info *info)
+{
+	DB((dbg, LEVEL_3, "\tTrying to unroll %N\n", loop));
+	ir_node *const header = get_loop_header(loop);
+	if (header == NULL)
+		return;
+	unrolled_headers = NULL;
+	rewire_loop(loop, header, factor);
+	ir_graph *irg = get_irn_irg(header);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	assure_irg_properties(
+		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
+			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	assert(unrolled_headers);
+	for (struct irn_stack *curr = unrolled_headers; curr;
+	     curr = curr->next) {
+		ir_node *linked_header = curr->el;
+		// TODO: Use unroll info to  find link to cmd rewire in to header  to out of proj true
+		assert(linked_header);
+		assert(is_Block(linked_header));
+		DB((dbg, LEVEL_2, "Link to header %+F\n", linked_header));
 
+		ir_node *linked_cmp;
+		assert(info);
+		void *v = linked_header->o.out;
+		assert(v);
+		DB((dbg, LEVEL_2, "1\n"));
+		unsigned n = get_irn_n_outs(linked_header);
+		for (unsigned i = 0; i < n; ++i) {
+			ir_node *curr = get_irn_out(linked_header, i);
+			if (is_Cmp(curr)) {
+				linked_cmp = curr;
+				break;
+			}
+		}
+		DB((dbg, LEVEL_2, "2\n"));
+		assert(linked_cmp);
+		ir_node *linked_cond;
+		for (unsigned i = 0; i < get_irn_arity(linked_cmp); ++i) {
+			ir_node *in = get_irn_n(linked_cmp, i);
+			if (get_block(in) == linked_header && is_Cond(in)) {
+				linked_cond = in;
+				break;
+			}
+		}
+		DB((dbg, LEVEL_2, "3\n"));
+		assert(linked_cond);
+		assert(linked_cond->in);
+		ir_node *target;
+		for (unsigned i = 0; i < get_irn_arity(linked_cond); ++i) {
+			DB((dbg, LEVEL_2, "i\n"));
+			ir_node *in = get_irn_n(linked_cond, i);
+			if (is_Proj(in) && get_Proj_num(in) == pn_Cond_true) {
+				target = in;
+				break;
+			}
+		}
+		DB((dbg, LEVEL_2, "4\n"));
+		assert(target);
+		for (unsigned i = 0; i < get_Block_n_cfgpreds(linked_header);
+		     ++i) {
+			ir_node *pred = get_Block_cfgpred(linked_header, i);
+			set_irn_n(target, i, pred);
+		}
+	}
+	++n_loops_unrolled;
+}
+
+static void unroll_loop(ir_loop *const loop, unsigned factor)
+{
+	DB((dbg, LEVEL_3, "\tTrying to unroll %N\n", loop));
+	ir_node *const header = get_loop_header(loop);
+	if (header == NULL)
+		return;
+	DB((dbg, LEVEL_3, "\tfound loop header %N\n", header));
+
+	bool fully_unroll = false;
+	factor = find_suitable_factor(header, factor, &fully_unroll);
+	if (factor < 1 || (factor == 1 && !fully_unroll)) {
+		DB((dbg, LEVEL_3,
+		    "\tCan't unroll %+F, factor is %u, fully unroll: %u\n",
+		    loop, factor, fully_unroll));
+		return;
+	}
+	DB((dbg, LEVEL_2, "unroll loop %+F\n", loop));
+	DB((dbg, LEVEL_3, "\tuse %d as unroll factor\n", factor));
+	rewire_loop(loop, header, factor);
+	++n_loops_unrolled;
 	// fully unroll: remove control flow loop
 	if (fully_unroll) {
 		rewire_fully_unrolled(loop, header, factor);
@@ -1163,15 +1254,27 @@ static unsigned determine_unroll_factor(ir_loop *const loop, unsigned const fact
 {
 	return count_nodes(loop) < maxsize ? factor : 0;
 }
-
-static void duplicate_innermost_loops(ir_loop *const loop, unsigned const factor, unsigned const maxsize, bool const outermost)
+static void unroll_duff(ir_loop *const loop, linear_unroll_info *const info,
+			unsigned const factor)
 {
-	bool         innermost  = true;
+	unroll_loop_duff(loop, factor, info);
+	// TODO: Remove execess headers
+	// TODO: Change main header
+	// TODO: Fixup
+}
+#define DUFF_FACTOR 4
+static void duplicate_innermost_loops(ir_loop *const loop,
+				      unsigned const factor,
+				      unsigned const maxsize,
+				      bool const outermost)
+{
+	bool innermost = true;
 	size_t const n_elements = get_loop_n_elements(loop);
 	for (size_t i = 0; i < n_elements; ++i) {
 		loop_element const element = get_loop_element(loop, i);
 		if (*element.kind == k_ir_loop) {
-			duplicate_innermost_loops(element.son, factor, maxsize, false);
+			duplicate_innermost_loops(element.son, factor, maxsize,
+						  false);
 			innermost = false;
 		}
 	}
