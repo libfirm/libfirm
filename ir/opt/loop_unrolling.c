@@ -206,10 +206,9 @@ static void rewire_node(ir_node *const node, ir_node *const header)
 	}
 }
 
-static void duplicate_block(ir_node *const block)
+static ir_node *duplicate_block(ir_node *const block)
 {
 	ir_node *const new_block = duplicate_node(block, NULL);
-
 	unsigned const n_outs = get_irn_n_outs(block);
 	for (unsigned i = 0; i < n_outs; ++i) {
 		ir_node *const node = get_irn_out(block, i);
@@ -218,6 +217,7 @@ static void duplicate_block(ir_node *const block)
 			continue;
 		duplicate_node(node, new_block);
 	}
+	return new_block;
 }
 
 static void rewire_block(ir_node *const block, ir_node *const header)
@@ -1136,6 +1136,161 @@ static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
 		}
 	}
 }
+static bool is_Proj_attached_to_Cmp(ir_node *const proj)
+{
+	assert(is_Proj(proj));
+	ir_node *post_proj = get_Proj_pred(proj);
+	if (!is_Cond(post_proj)) {
+		return false;
+	}
+	ir_node *pre_Cond = get_Cond_selector(post_proj);
+	return is_Cmp(pre_Cond);
+}
+static void prune_block(ir_node *block)
+{
+	assert(is_Block(block));
+	for (unsigned i = 0; i < get_irn_n_outs(block); ++i) {
+		ir_node *node = get_irn_out(block, i);
+		if (!is_Phi(node)) {
+			continue;
+		}
+		unsigned phi_n_preds = get_Phi_n_preds(node);
+		DB((dbg, LEVEL_4, "\t\t\tPruning phi %+F with links to ",
+		    node));
+		ir_node **phi_preds = get_Phi_pred_arr(node);
+		for (unsigned j = 0; j < phi_n_preds; j++) {
+			DB((dbg, LEVEL_4, "(%+F) ", phi_preds[j]));
+		}
+		DB((dbg, LEVEL_4, "\n"));
+		assert(phi_preds);
+		for (unsigned j = 0; j < get_irn_n_outs(node); ++j) {
+			// TODO: Skip keep alive edges
+			ir_node *target = get_irn_out(node, j);
+			DB((dbg, LEVEL_4, "\t\t\t\tUpdating %+F\n", target));
+			if (!is_Phi(target) && phi_n_preds > 1) {
+				// TODO: Skip keep alive
+				DB((dbg, LEVEL_4,
+				    "\t\t\t\tRequires new phi\n"));
+				ir_node *new_phi =
+					new_Phi(phi_n_preds, phi_preds,
+						get_irn_mode(node));
+				ir_node **phi_arr = ALLOCAN(ir_node *, 1);
+				phi_arr[0] = new_phi;
+				DB((dbg, LEVEL_4, "\t\t\t\tCreated phi %+F\n",
+				    new_phi));
+				set_irn_in(target, 1, phi_arr);
+				continue;
+			}
+			set_irn_in(target, phi_n_preds, phi_preds);
+		}
+		set_irn_in(node, 0, NULL);
+	}
+	set_irn_in(block, 0, NULL);
+}
+
+static void get_false_and_true_targets(ir_node *header,
+				       ir_node **in_loop_target,
+				       ir_node **out_of_loop_target)
+{
+	unsigned n = get_irn_n_outs(header);
+	DB((dbg, LEVEL_4, "\tSearching targets of %+F\n", header));
+	*in_loop_target = NULL;
+	*out_of_loop_target = NULL;
+	for (unsigned i = 0; i < n; ++i) {
+		ir_node *curr = get_irn_out(header, i);
+		if (!is_Proj(curr) || !is_Proj_attached_to_Cmp(curr)) {
+			continue;
+		}
+		if (get_Proj_num(curr) == pn_Cond_true ||
+		    get_Proj_num(curr) == pn_Cond_false) {
+			assert(get_irn_n_outs(curr) == 1);
+			ir_node *post_proj = get_irn_out(curr, 0);
+			DEBUG_ONLY(ir_node *post_proj_block =
+					   get_block(post_proj);)
+			if (block_is_inside_loop(get_block(post_proj),
+						 get_irn_loop(header))) {
+				DB((dbg, LEVEL_4,
+				    "\t\tIn loop tgt %+F, in block %+F\n",
+				    post_proj, post_proj_block));
+				*in_loop_target = post_proj;
+			} else {
+				DB((dbg, LEVEL_4,
+				    "\t\tOut of loop tgt %+F, in block %+F\n",
+				    post_proj, post_proj_block));
+				*out_of_loop_target = post_proj;
+			}
+		}
+	}
+}
+
+static void remove_excess_headers(linear_unroll_info *info,
+				  ir_node *const header)
+{
+	for (struct irn_stack *curr = unrolled_headers; curr;
+	     curr = curr->next) {
+		ir_node *linked_header = curr->el;
+		// TODO: Use unroll info to  find link to cmd rewire in to header  to out of proj true
+		assert(linked_header);
+		assert(is_Block(linked_header));
+		DB((dbg, LEVEL_2, "Link to header %+F\n", linked_header));
+
+		assert(info);
+		void *v = linked_header->o.out;
+		assert(v);
+		ir_node *in_loop_target;
+		ir_node *out_of_loop_target;
+		get_false_and_true_targets(linked_header, &in_loop_target,
+					   &out_of_loop_target);
+		assert(in_loop_target);
+		assert(out_of_loop_target);
+
+		unsigned const in_loop_n_preds =
+			get_Block_n_cfgpreds(linked_header);
+		ir_node **const in_loop_preds = get_irn_in(linked_header);
+		for (unsigned i = 0; i < in_loop_n_preds; ++i) {
+			DB((dbg, LEVEL_4,
+			    "\tRewire %+F (arity: %u, outs: %u) to be pointed to by %+F\n",
+			    in_loop_preds[i], get_irn_arity(in_loop_preds[i]),
+			    get_irn_n_outs(in_loop_preds[i]), in_loop_target));
+			for (unsigned j = 0;
+			     j < get_irn_arity(in_loop_preds[i]); ++j) {
+				DB((dbg, LEVEL_5,
+				    "\t\tCurrently %+F points to: %+F\n",
+				    in_loop_preds[i],
+				    get_irn_n(in_loop_preds[i], j)));
+			}
+		}
+		set_irn_in(linked_header, 0, NULL);
+		set_irn_in(in_loop_target, in_loop_n_preds, in_loop_preds);
+		ir_node *out_of_loop_block = get_block(out_of_loop_target);
+		unsigned const out_of_loop_n_preds =
+			get_Block_n_cfgpreds(out_of_loop_block);
+		assert(out_of_loop_n_preds > 0);
+		ir_node **const out_of_loop_preds =
+			ALLOCAN(ir_node *, out_of_loop_n_preds - 1);
+		DB((dbg, LEVEL_4,
+		    "\tRemove end block (%+F, with %u connections); linked header (%+F)\n",
+		    out_of_loop_block, out_of_loop_n_preds, linked_header));
+		for (unsigned i = 0, j = 0; i < out_of_loop_n_preds; ++i) {
+			ir_node *pred = get_Block_cfgpred(out_of_loop_block, i);
+			ir_node *pred_block = get_block(pred);
+			DB((dbg, LEVEL_4, "\t\tAssessing for prune %+F\n",
+			    pred_block));
+			if (pred_block == linked_header) {
+				DB((dbg, LEVEL_4, "\t\tRemove and prune %+F\n",
+				    pred_block));
+				prune_block(pred_block);
+				continue;
+			}
+			assert(j < out_of_loop_n_preds - 1);
+			DB((dbg, LEVEL_4, "\t\tKeep %+F\n", pred));
+			out_of_loop_preds[j] = pred;
+			j++;
+		}
+		set_irn_in(out_of_loop_block, out_of_loop_n_preds - 1,
+			   out_of_loop_preds);
+	}
+}
 static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 			     linear_unroll_info *info)
 {
@@ -1147,65 +1302,15 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	rewire_loop(loop, header, factor);
 	ir_graph *irg = get_irn_irg(header);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-	assure_irg_properties(
-		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
-			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+	assure_irg_properties(irg,
+			      IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+				      IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	assert(unrolled_headers);
-	for (struct irn_stack *curr = unrolled_headers; curr;
-	     curr = curr->next) {
-		ir_node *linked_header = curr->el;
-		// TODO: Use unroll info to  find link to cmd rewire in to header  to out of proj true
-		assert(linked_header);
-		assert(is_Block(linked_header));
-		DB((dbg, LEVEL_2, "Link to header %+F\n", linked_header));
-
-		ir_node *linked_cmp;
-		assert(info);
-		void *v = linked_header->o.out;
-		assert(v);
-		DB((dbg, LEVEL_2, "1\n"));
-		unsigned n = get_irn_n_outs(linked_header);
-		for (unsigned i = 0; i < n; ++i) {
-			ir_node *curr = get_irn_out(linked_header, i);
-			if (is_Cmp(curr)) {
-				linked_cmp = curr;
-				break;
-			}
-		}
-		DB((dbg, LEVEL_2, "2\n"));
-		assert(linked_cmp);
-		ir_node *linked_cond;
-		for (unsigned i = 0; i < get_irn_arity(linked_cmp); ++i) {
-			ir_node *in = get_irn_n(linked_cmp, i);
-			if (get_block(in) == linked_header && is_Cond(in)) {
-				linked_cond = in;
-				break;
-			}
-		}
-		DB((dbg, LEVEL_2, "3\n"));
-		assert(linked_cond);
-		assert(linked_cond->in);
-		ir_node *target;
-		for (unsigned i = 0; i < get_irn_arity(linked_cond); ++i) {
-			DB((dbg, LEVEL_2, "i\n"));
-			ir_node *in = get_irn_n(linked_cond, i);
-			if (is_Proj(in) && get_Proj_num(in) == pn_Cond_true) {
-				target = in;
-				break;
-			}
-		}
-		DB((dbg, LEVEL_2, "4\n"));
-		assert(target);
-		for (unsigned i = 0; i < get_Block_n_cfgpreds(linked_header);
-		     ++i) {
-			ir_node *pred = get_Block_cfgpred(linked_header, i);
-			set_irn_n(target, i, pred);
-		}
-	}
+	DEBUG_ONLY(dump_ir_graph(irg, "duff_0"));
+	remove_excess_headers(info, header);
+	DEBUG_ONLY(dump_ir_graph(irg, "duff_1"));
 	++n_loops_unrolled;
 }
 
@@ -1286,9 +1391,14 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 		}
 	}
 	*/
-	// TODXO: Why so many loops
 	linear_unroll_info info;
-	DB((dbg, LEVEL_2, "DUFF: Checking if %+F is unrollable\n", loop));
+	unsigned depth = get_loop_depth(loop);
+	DB((dbg, LEVEL_2, "DUFF: Checking if %+F (depth: %u) is unrollable\n",
+	    loop, depth));
+	if (depth == 0) {
+		DB((dbg, LEVEL_2, "Skipping loop with depth 0\n"));
+		return;
+	}
 	for (unsigned i = 0; i < get_loop_n_elements(loop); ++i) {
 		DB((dbg, LEVEL_3, "\tContaining: %+F\n",
 		    get_loop_element(loop, i)));
@@ -1296,6 +1406,7 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 	DB((dbg, LEVEL_3, "-------------\n", loop));
 	if (determine_lin_unroll_info(&info, loop)) {
 		DB((dbg, LEVEL_2, "DUFF: Can unroll! (loop: %+F)\n", loop));
+		unroll_duff(loop, &info, DUFF_FACTOR);
 	} else {
 		DB((dbg, LEVEL_2, "DUFF: Cannot unroll! (loop: %+F)\n", loop));
 	}
