@@ -1108,6 +1108,8 @@ static void rewire_fully_unrolled(ir_loop *const loop, ir_node *header, unsigned
 static unsigned n_loops_unrolled = 0;
 
 static struct irn_stack *unrolled_headers;
+static struct irn_stack *unrolled_nodes;
+
 static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
 {
 	ir_graph *irg = get_irn_irg(header);
