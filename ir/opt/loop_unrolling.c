@@ -577,6 +577,14 @@ struct irn_stack {
 	ir_node *el;
 	struct irn_stack *next;
 };
+
+static void add_to_stack(struct irn_stack **stack, ir_node *node)
+{
+	struct irn_stack new_top = { .next = *stack, .el = node };
+	*stack = malloc(sizeof(struct irn_stack));
+	**stack = new_top;
+}
+
 static bool is_in_stack(ir_node *query, struct irn_stack *head)
 {
 	for (struct irn_stack *curr = head; curr; curr = curr->next) {
@@ -1102,8 +1110,15 @@ static unsigned n_loops_unrolled = 0;
 static struct irn_stack *unrolled_headers;
 static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
 {
-	irg_walk_graph(get_irn_irg(header), firm_clear_link, NULL, NULL);
+	ir_graph *irg = get_irn_irg(header);
+	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 	size_t const n_elements = get_loop_n_elements(loop);
+	for (size_t i = 0; i < n_elements; ++i) {
+		loop_element const element = get_loop_element(loop, i);
+		if (*element.kind == k_ir_node) {
+			add_to_stack(&unrolled_nodes, element.node);
+		}
+	}
 	for (unsigned j = 1; j < factor; ++j) {
 		// step 1: duplicate blocks
 		for (size_t i = 0; i < n_elements; ++i) {
@@ -1111,18 +1126,12 @@ static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
 			if (*element.kind == k_ir_node) {
 				assert(is_Block(element.node));
 				ir_node *dup = duplicate_block(element.node);
+				add_to_stack(&unrolled_nodes, dup);
 				if (element.node == header) {
 					DB((dbg, LEVEL_2,
 					    " Duplicated header to %+F\n",
 					    dup));
-					struct irn_stack stack_top = {
-						.el = dup,
-						.next = unrolled_headers
-					};
-					unrolled_headers = (struct irn_stack *)
-						malloc(sizeof(
-							struct irn_stack));
-					*unrolled_headers = stack_top;
+					add_to_stack(&unrolled_headers, dup);
 				}
 			}
 		}
@@ -1135,7 +1144,12 @@ static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
 			}
 		}
 	}
+	clear_irg_properties(irg,
+			     IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+				     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+				     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 }
+
 static bool is_Proj_attached_to_Cmp(ir_node *const proj)
 {
 	assert(is_Proj(proj));
@@ -1146,46 +1160,82 @@ static bool is_Proj_attached_to_Cmp(ir_node *const proj)
 	ir_node *pre_Cond = get_Cond_selector(post_proj);
 	return is_Cmp(pre_Cond);
 }
-static void prune_block(ir_node *block)
+static void prune_block(ir_node *block, ir_node *header)
 {
 	assert(is_Block(block));
+	assert(is_Block(header));
+	if (block == header) {
+		return;
+	}
 	for (unsigned i = 0; i < get_irn_n_outs(block); ++i) {
-		ir_node *node = get_irn_out(block, i);
-		if (!is_Phi(node)) {
+		ir_node *phi = get_irn_out(block, i);
+		if (!is_Phi(phi)) {
 			continue;
 		}
-		unsigned phi_n_preds = get_Phi_n_preds(node);
-		DB((dbg, LEVEL_4, "\t\t\tPruning phi %+F with links to ",
-		    node));
-		ir_node **phi_preds = get_Phi_pred_arr(node);
-		for (unsigned j = 0; j < phi_n_preds; j++) {
-			DB((dbg, LEVEL_4, "(%+F) ", phi_preds[j]));
+		unsigned phi_n_preds = get_irn_arity(phi);
+		ir_node **phi_preds = get_irn_in(phi);
+		DB((dbg, LEVEL_5, "\t\t\tPruning phi %+F with links to ", phi));
+		for (unsigned j = 0; j < phi_n_preds - 1; j++) {
+			DB((dbg, LEVEL_5, "(%+F), ", phi_preds[j]));
+		}
+		if (phi_n_preds > 0) {
+			DB((dbg, LEVEL_5, "(%+F).",
+			    phi_preds[phi_n_preds - 1]));
 		}
 		DB((dbg, LEVEL_4, "\n"));
-		assert(phi_preds);
-		for (unsigned j = 0; j < get_irn_n_outs(node); ++j) {
-			// TODO: Skip keep alive edges
-			ir_node *target = get_irn_out(node, j);
-			DB((dbg, LEVEL_4, "\t\t\t\tUpdating %+F\n", target));
-			if (!is_Phi(target) && phi_n_preds > 1) {
-				// TODO: Skip keep alive
-				DB((dbg, LEVEL_4,
-				    "\t\t\t\tRequires new phi\n"));
-				ir_node *new_phi =
-					new_Phi(phi_n_preds, phi_preds,
-						get_irn_mode(node));
-				ir_node **phi_arr = ALLOCAN(ir_node *, 1);
-				phi_arr[0] = new_phi;
-				DB((dbg, LEVEL_4, "\t\t\t\tCreated phi %+F\n",
-				    new_phi));
-				set_irn_in(target, 1, phi_arr);
+		for (int j = 0; j < get_irn_n_outs(phi); ++j) {
+			ir_node *target = get_irn_out(phi, j);
+			ir_node *target_block = get_block(target);
+			if (is_in_stack(target_block, unrolled_headers)) {
 				continue;
 			}
-			set_irn_in(target, phi_n_preds, phi_preds);
+			if (!is_in_stack(target_block, unrolled_nodes)) {
+				DB((dbg, LEVEL_5,
+				    "\t\t\t\t%+F is outside and links to pruned node\n",
+				    target));
+				unsigned target_arity = get_irn_arity(target);
+				ir_node **new_in =
+					ALLOCAN(ir_node *, target_arity - 1);
+				for (unsigned k = 0, index = 0;
+				     k < target_arity; k++) {
+					ir_node *in = get_irn_n(target, k);
+					if (in == phi) {
+						DB((dbg, LEVEL_5,
+						    "\t\t\t\t\t Removing link to %+F\n",
+						    phi));
+						continue;
+					}
+					DB((dbg, LEVEL_5,
+					    "\t\t\t\t\t Keeping link to %+F\n",
+					    in));
+					assert(index < target_arity - 1);
+					new_in[index] = in;
+					index++;
+				}
+				set_irn_in(target, target_arity - 1, new_in);
+				continue;
+			}
+			ir_node **nodes = ALLOCAN(ir_node *, 1);
+			DB((dbg, LEVEL_5,
+			    "\t\t\t\t%+F will now have input: ", target));
+			for (unsigned k = 0; k < phi_n_preds; k++) {
+				ir_node *curr_node = get_irn_n(phi, k);
+				ir_node *curr_block = get_block(curr_node);
+				if (!is_in_stack(curr_block,
+						 unrolled_headers) &&
+				    is_in_stack(curr_block, unrolled_nodes)) {
+					nodes[0] = curr_node;
+					DB((dbg, LEVEL_5, "%+F.", curr_node));
+				}
+			}
+			set_irn_in(target, 1, nodes);
+			DB((dbg, LEVEL_5, ".\n", target));
 		}
-		set_irn_in(node, 0, NULL);
+
+		set_irn_in(phi, 0, NULL);
 	}
-	set_irn_in(block, 0, NULL);
+	remove_keep_alive(block);
+	ir_graph *irg = get_irn_irg(block);
 }
 
 static void get_false_and_true_targets(ir_node *header,
@@ -1229,6 +1279,17 @@ static void remove_excess_headers(linear_unroll_info *info,
 	for (struct irn_stack *curr = unrolled_headers; curr;
 	     curr = curr->next) {
 		ir_node *linked_header = curr->el;
+		if (linked_header == header) {
+			continue;
+		}
+		prune_block(linked_header, header);
+	}
+	for (struct irn_stack *curr = unrolled_headers; curr;
+	     curr = curr->next) {
+		ir_node *linked_header = curr->el;
+		if (linked_header == header) {
+			continue;
+		}
 		// TODO: Use unroll info to  find link to cmd rewire in to header  to out of proj true
 		assert(linked_header);
 		assert(is_Block(linked_header));
@@ -1279,7 +1340,6 @@ static void remove_excess_headers(linear_unroll_info *info,
 			if (pred_block == linked_header) {
 				DB((dbg, LEVEL_4, "\t\tRemove and prune %+F\n",
 				    pred_block));
-				prune_block(pred_block);
 				continue;
 			}
 			assert(j < out_of_loop_n_preds - 1);
@@ -1299,18 +1359,31 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	if (header == NULL)
 		return;
 	unrolled_headers = NULL;
-	rewire_loop(loop, header, factor);
+	unrolled_nodes = NULL;
 	ir_graph *irg = get_irn_irg(header);
+	rewire_loop(loop, header, factor);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	assure_irg_properties(irg,
 			      IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
 				      IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
 				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	assert(unrolled_headers);
 	DEBUG_ONLY(dump_ir_graph(irg, "duff_0"));
 	remove_excess_headers(info, header);
+	DB((dbg, LEVEL_3, "\t%u\n", loop));
+	clear_irg_properties(irg,
+			     IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+				     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+				     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
+				     IR_GRAPH_PROPERTY_NO_BADS);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_BADS);
+	assure_irg_properties(irg,
+			      IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+				      IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+	info->loop = get_irn_loop(header);
 	DEBUG_ONLY(dump_ir_graph(irg, "duff_1"));
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	++n_loops_unrolled;
 }
 
@@ -1425,6 +1498,7 @@ void unroll_loops(ir_graph *const irg, unsigned factor, unsigned maxsize)
 				      IR_GRAPH_PROPERTY_NO_BADS |
 				      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	dump_ir_graph(irg, "lcssa");
 	duplicate_innermost_loops(get_irg_loop(irg), factor, maxsize, true);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	clear_irg_properties(irg,
