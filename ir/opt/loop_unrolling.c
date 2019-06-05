@@ -1372,17 +1372,16 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	assert(unrolled_headers);
 	DEBUG_ONLY(dump_ir_graph(irg, "duff_0"));
 	remove_excess_headers(info, header);
-	DB((dbg, LEVEL_3, "\t%u\n", loop));
 	clear_irg_properties(irg,
 			     IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
 				     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
 				     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
 				     IR_GRAPH_PROPERTY_NO_BADS);
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_BADS);
 	assure_irg_properties(irg,
 			      IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
 				      IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
+				      IR_GRAPH_PROPERTY_NO_BADS);
 	info->loop = get_irn_loop(header);
 	DEBUG_ONLY(dump_ir_graph(irg, "duff_1"));
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
