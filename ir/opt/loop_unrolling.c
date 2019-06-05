@@ -472,10 +472,47 @@ static void get_all_stores(ir_loop *loop)
 	}
 	DB((dbg, LEVEL_4, "Found all stores in loop %+F\n", loop));
 }
-static bool is_valid_base(ir_node *node, ir_loop *loop)
+struct irn_stack {
+	ir_node *el;
+	struct irn_stack *next;
+};
+
+static void add_to_stack(ir_node *node, struct irn_stack **stack)
+{
+	struct irn_stack new_top = { .next = *stack, .el = node };
+	*stack = malloc(sizeof(struct irn_stack));
+	**stack = new_top;
+}
+
+static bool is_in_stack(ir_node *query, struct irn_stack *head)
+{
+	for (struct irn_stack *curr = head; curr; curr = curr->next) {
+		if (curr->el == query) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static void free_stack(struct irn_stack *head)
+{
+	for (struct irn_stack *curr = head; curr;) {
+		struct irn_stack *to_free = curr;
+		curr = curr->next;
+		free(to_free);
+	}
+}
+
+static struct irn_stack *visited_base;
+
+static bool is_valid_base_(ir_node *node, ir_loop *loop)
 {
 	DB((dbg, LEVEL_4, "Checking if %+F is a valid base\n", node));
 	// Const
+	if (is_in_stack(node, visited_base)) {
+		return false;
+	}
+	add_to_stack(node, &visited_base);
 	if (is_Const(node)) {
 		DB((dbg, LEVEL_4, "Node is const. Valid base.\n"));
 		return true;
@@ -503,7 +540,7 @@ static bool is_valid_base(ir_node *node, ir_loop *loop)
 			for (unsigned i = 0; i < n; ++i) {
 				ir_node *call_param =
 					get_Call_param(proj_call, i);
-				if (!is_valid_base(call_param, loop)) {
+				if (!is_valid_base_(call_param, loop)) {
 					DB((dbg, LEVEL_4,
 					    "Call param %d %+F is not pure\n",
 					    i, call_param));
@@ -519,7 +556,7 @@ static bool is_valid_base(ir_node *node, ir_loop *loop)
 				DB((dbg, LEVEL_4,
 				    "Load points further to %+F. Investigating further\n",
 				    pre_load));
-				if (!is_valid_base(pre_load, loop)) {
+				if (!is_valid_base_(pre_load, loop)) {
 					return false;
 				}
 			}
@@ -541,9 +578,10 @@ static bool is_valid_base(ir_node *node, ir_loop *loop)
 				    "\tPhi pred %u (%+F) inside loop\n", n,
 				    phi_pred));
 			}
-			if (!is_valid_base(phi_pred, loop)) {
+			if (!is_valid_base_(phi_pred, loop)) {
 				DB((dbg, LEVEL_4,
-				    "\tPhi pred %u (%+F) was not a valid base. Phi is not a valid base\n",
+				    "\tPhi pred %u (%+F) was not a valid base. Phi is not a valid "
+				    "base\n",
 				    i, phi_pred));
 				return false;
 			}
@@ -561,10 +599,19 @@ static bool is_valid_base(ir_node *node, ir_loop *loop)
 		ir_node *conved = get_Conv_op(node);
 		DB((dbg, LEVEL_4, "Found cast. Checking target of cast (%+F)\n",
 		    conved));
-		return is_valid_base(conved, loop);
+		return is_valid_base_(conved, loop);
 	}
 	return false;
 }
+
+static bool is_valid_base(ir_node *node, ir_loop *loop)
+{
+	visited_base = NULL;
+	bool ret = is_valid_base_(node, loop);
+	free_stack(visited_base);
+	return ret;
+}
+
 static ir_node *climb_single_phi(ir_node *phi)
 {
 	if (!is_Phi(phi))
@@ -572,27 +619,6 @@ static ir_node *climb_single_phi(ir_node *phi)
 	if (get_Phi_n_preds(phi) != 1)
 		return phi;
 	return climb_single_phi(get_Phi_pred(phi, 0));
-}
-struct irn_stack {
-	ir_node *el;
-	struct irn_stack *next;
-};
-
-static void add_to_stack(struct irn_stack **stack, ir_node *node)
-{
-	struct irn_stack new_top = { .next = *stack, .el = node };
-	*stack = malloc(sizeof(struct irn_stack));
-	**stack = new_top;
-}
-
-static bool is_in_stack(ir_node *query, struct irn_stack *head)
-{
-	for (struct irn_stack *curr = head; curr; curr = curr->next) {
-		if (curr->el == query) {
-			return true;
-		}
-	}
-	return false;
 }
 
 static void phi_cycle_dfs(ir_node *curr, ir_node *searched, ir_loop *loop,
