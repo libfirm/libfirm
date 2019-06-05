@@ -281,6 +281,7 @@ struct linear_unroll_info {
 	ir_node *incr;
 	ir_node *phi;
 	ir_node *bound;
+	ir_node *header;
 };
 
 #define linear_unroll_info struct linear_unroll_info
@@ -768,9 +769,11 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 	long long incr_pred_index = -1;
 	for (unsigned i = 0; i < phi_preds; ++i) {
 		ir_node *curr = get_Phi_pred(phi, i);
+		DB((dbg, LEVEL_5, "\tChecking for valid incr %+F\n", curr));
 		if (is_valid_incr(unroll_info, curr)) {
 			DB((dbg, LEVEL_5, "\tFound valid incr %+F\n", curr));
 			incr_pred_index = i;
+			break;
 		}
 	}
 	if (incr_pred_index == -1) {
@@ -813,6 +816,7 @@ static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
 		DB((dbg, LEVEL_4,
 		    "Found compare: %+F - investigating further\n", node));
 		unroll_info->rel = rel;
+		unroll_info->cmp = node;
 		ir_node *left = get_Cmp_left(node);
 		ir_node *right = get_Cmp_right(node);
 		if (!is_Phi(left) && !is_Phi(right)) {
@@ -1379,6 +1383,106 @@ static void remove_excess_headers(linear_unroll_info *info,
 			   out_of_loop_preds);
 	}
 }
+
+static void recursive_copy_in_loop(ir_node *node, ir_node *header)
+{
+	for (unsigned i = 0; i < get_irn_arity(node); ++i) {
+		ir_node *to_cpy = get_irn_n(node, i);
+		ir_node *to_cpy_block = get_block(to_cpy);
+		if (!is_in_stack(to_cpy_block, unrolled_nodes)) {
+			continue;
+		}
+		duplicate_node(to_cpy, header);
+		recursive_copy_in_loop(to_cpy, header);
+	}
+}
+
+static void recursive_rewire_in_loop(ir_node *node)
+{
+	unsigned arity = get_irn_arity(node);
+	ir_node **new_in = ALLOCAN(ir_node *, arity);
+	for (unsigned i = 0; i < arity; ++i) {
+		ir_node *next = get_irn_n(node, i);
+		ir_node *next_block = get_block(next);
+		if (!is_in_stack(next_block, unrolled_nodes)) {
+			new_in[i] = next;
+			continue;
+		}
+		new_in[i] = get_irn_link(next);
+		recursive_rewire_in_loop(next);
+	}
+	set_irn_in(get_irn_link(node), arity, new_in);
+}
+enum Side { LEFT, RIGHT };
+#define Side enum Side
+
+static void update_header_condition_add(linear_unroll_info *info,
+					unsigned factor)
+{
+	ir_node *cmp = info->cmp;
+	DB((dbg, LEVEL_3, "Changing condition and compare %+F\n", cmp));
+	ir_node *header = info->header;
+	ir_node *left = get_Cmp_left(cmp);
+	ir_node *right = get_Cmp_right(cmp);
+	ir_node *N;
+	Side side;
+	if (left == info->phi) {
+		N = right;
+		side = RIGHT;
+	} else if (right == info->phi) {
+		N = left;
+		side = LEFT;
+	} else {
+		assert(false);
+	}
+	DB((dbg, LEVEL_4, "\tN: %+F\n", N));
+	ir_node *new_N;
+	ir_node *c_cpy = duplicate_node(info->incr, header);
+	DB((dbg, LEVEL_4, "\tcopied c: %+F\n", c_cpy));
+	recursive_copy_in_loop(c_cpy, header);
+	recursive_rewire_in_loop(info->incr);
+	ir_node *factor_const = new_r_Const_long(get_irn_irg(header),
+						 get_irn_mode(c_cpy), factor);
+	ir_node *mul = new_r_Mul(header, c_cpy, factor_const);
+	DB((dbg, LEVEL_4, "\tc * factor: %+F\n", mul));
+	if (info->op == ADD) {
+		new_N = new_r_Sub(header, N, mul);
+	} else if (info->op == SUB) {
+		new_N = new_r_Add(header, N, mul);
+	} else {
+		assert(false);
+	}
+	DB((dbg, LEVEL_4,
+	    "\tAttaching (N %s (c * 4)): (%+F %s (%+F * %+F)) to %+F on the ",
+	    info->op == ADD ? "-" : "+", N, info->op == ADD ? "-" : "+", c_cpy,
+	    factor_const, cmp));
+	if (side == LEFT) {
+		DB((dbg, LEVEL_4, "left side\n"));
+		set_Cmp_left(cmp, new_N);
+	} else {
+		DB((dbg, LEVEL_4, "right side\n"));
+		set_Cmp_right(cmp, new_N);
+	}
+}
+static void update_header_condition_mul(linear_unroll_info *info,
+					unsigned factor)
+{
+	assert(false);
+}
+static void update_header_condition(linear_unroll_info *info, unsigned factor)
+{
+	switch (info->op) {
+	case ADD:
+	case SUB:
+		update_header_condition_add(info, factor);
+		break;
+	case MUL:
+		update_header_condition_mul(info, factor);
+		break;
+	default:
+		assert(false);
+	}
+}
 static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 			     linear_unroll_info *info)
 {
@@ -1386,6 +1490,7 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	ir_node *const header = get_loop_header(loop);
 	if (header == NULL)
 		return;
+	info->header = header;
 	unrolled_headers = NULL;
 	unrolled_nodes = NULL;
 	ir_graph *irg = get_irn_irg(header);
@@ -1409,8 +1514,9 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
 				      IR_GRAPH_PROPERTY_NO_BADS);
 	info->loop = get_irn_loop(header);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff_1"));
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	update_header_condition(info, factor);
+	DEBUG_ONLY(dump_ir_graph(irg, "duff_1"));
 	++n_loops_unrolled;
 	// TODO: Change main header
 	// TODO: Fixup
