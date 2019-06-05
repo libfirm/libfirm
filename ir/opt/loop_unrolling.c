@@ -1386,6 +1386,8 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	DEBUG_ONLY(dump_ir_graph(irg, "duff_1"));
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	++n_loops_unrolled;
+	// TODO: Change main header
+	// TODO: Fixup
 }
 
 static void unroll_loop(ir_loop *const loop, unsigned factor)
@@ -1433,14 +1435,7 @@ static unsigned determine_unroll_factor(ir_loop *const loop, unsigned const fact
 {
 	return count_nodes(loop) < maxsize ? factor : 0;
 }
-static void unroll_duff(ir_loop *const loop, linear_unroll_info *const info,
-			unsigned const factor)
-{
-	unroll_loop_duff(loop, factor, info);
-	// TODO: Remove execess headers
-	// TODO: Change main header
-	// TODO: Fixup
-}
+
 #define DUFF_FACTOR 4
 static void duplicate_innermost_loops(ir_loop *const loop,
 				      unsigned const factor,
@@ -1459,9 +1454,10 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 	}
 	/*
 	if (innermost && !outermost) {
-		unsigned const actual_factor = determine_unroll_factor(loop, factor, maxsize);
+		unsigned const actual_factor =
+			determine_unroll_factor(loop, factor, maxsize);
 		if (actual_factor > 0) {
-			unroll_loop(loop, actual_factor);
+			unroll_loop(loop, actual_factor, false);
 		}
 	}
 	*/
@@ -1480,7 +1476,7 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 	DB((dbg, LEVEL_3, "-------------\n", loop));
 	if (determine_lin_unroll_info(&info, loop)) {
 		DB((dbg, LEVEL_2, "DUFF: Can unroll! (loop: %+F)\n", loop));
-		unroll_duff(loop, &info, DUFF_FACTOR);
+		unroll_loop_duff(loop, DUFF_FACTOR, &info);
 	} else {
 		DB((dbg, LEVEL_2, "DUFF: Cannot unroll! (loop: %+F)\n", loop));
 	}
