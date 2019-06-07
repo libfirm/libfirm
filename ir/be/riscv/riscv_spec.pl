@@ -17,7 +17,7 @@ my $mode_gp = "mode_Iu";
 			{ name => "t0",   encoding =>  5 },
 			{ name => "t1",   encoding =>  6 },
 			{ name => "t2",   encoding =>  7 },
-			{ name => "s0",   encoding =>  8 },
+			{ name => "fp",   encoding =>  8 },
 			{ name => "s1",   encoding =>  9 },
 			{ name => "a0",   encoding => 10 },
 			{ name => "a1",   encoding => 11 },
