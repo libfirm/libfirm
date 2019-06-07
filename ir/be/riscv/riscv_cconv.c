@@ -69,12 +69,12 @@ void riscv_determine_calling_convention(riscv_calling_convention_t *const cconv,
 					++gp_param;
 				if (gp_param < ARRAY_SIZE(regs_param_gp))
 					params[i].reg = &riscv_registers[regs_param_gp[gp_param]];
-				params[i].offset = (gp_param - ARRAY_SIZE(regs_param_gp)) * (RISCV_MACHINE_SIZE / 8);
+				params[i].offset = (gp_param - ARRAY_SIZE(regs_param_gp)) * RISCV_REGISTER_SIZE;
 				++gp_param;
 			}
 		}
 	}
-	cconv->param_stack_size = gp_param * (RISCV_MACHINE_SIZE / 8);
+	cconv->param_stack_size = gp_param * RISCV_REGISTER_SIZE;
 	cconv->n_mem_param      = gp_param > ARRAY_SIZE(regs_param_gp) ? gp_param - ARRAY_SIZE(regs_param_gp) : 0;
 	cconv->parameters       = params;
 
