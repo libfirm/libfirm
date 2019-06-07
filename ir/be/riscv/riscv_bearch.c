@@ -149,7 +149,7 @@ static void riscv_collect_frame_entity_nodes(ir_node *const node, void *const da
 		if (base == frame) {
 			riscv_immediate_attr_t const *const attr = get_riscv_immediate_attr_const(node);
 			if (!attr->ent) {
-				unsigned const size     = RISCV_MACHINE_SIZE / 8; // TODO
+				unsigned const size     = RISCV_REGISTER_SIZE;
 				unsigned const po2align = log2_floor(size);
 				be_load_needs_frame_entity(env, node, size, po2align);
 			}
@@ -188,22 +188,57 @@ static void riscv_introduce_prologue(ir_graph *const irg, unsigned const size, b
 	if (!omit_fp) {
 		ir_node *const mem        = get_irg_initial_mem(irg);
 
-		/* save fp to stack */
-		ir_node *const store_fp = new_bd_riscv_sw(NULL, block, mem, start_sp, start_fp, NULL, -4);
-		sched_add_after(start, store_fp);
-		edges_reroute_except(mem, store_fp, store_fp);
-
-		/* move sp to fp */
-		ir_node *const curr_fp = be_new_Copy(block, start_sp);
-		arch_copy_irn_out_info(curr_fp, 0, start_fp);
-		sched_add_after(store_fp, curr_fp);
-		edges_reroute_except(start_fp, curr_fp, store_fp);
-
+		/* increase stack frame */
 		ir_node *const inc_sp   = riscv_new_IncSP(block, start_sp, size, 0);
 		edges_reroute_except(start_sp, inc_sp, inc_sp);
-		sched_add_after(curr_fp, inc_sp);
+		sched_add_after(start, inc_sp);
 
-		/* make sure the initial IncSP is really used by someone */
+		unsigned aligned = round_up2(size, 1u << RISCV_PO2_STACK_ALIGNMENT);
+
+		if (!is_simm12(aligned)) {
+			/* if desired size is not as 12 bit immediate encodeable, first compute the large offset in t0 */
+			riscv_hi_lo_imm imm = calc_hi_lo(aligned);
+			ir_node      *res;
+			if (imm.hi != 0) {
+				res = new_bd_riscv_lui(NULL, block, NULL, imm.hi);
+				arch_set_irn_register(res, &riscv_registers[REG_T0]);
+				sched_add_after(inc_sp, res);
+			} else {
+				res = get_Start_zero(irg);
+			}
+			if (imm.lo != 0) {
+				ir_node *const add_after = imm.hi != 0 ? res : inc_sp;
+				res = new_bd_riscv_addi(NULL, block, res, NULL, imm.lo);
+				arch_set_irn_register(res, &riscv_registers[REG_T0]);
+				sched_add_after(add_after, res);
+			}
+			ir_node *const add = new_bd_riscv_add(NULL, block, inc_sp, res);
+			arch_set_irn_register(add, &riscv_registers[REG_T0]);
+			sched_add_after(res, add);
+
+			/* save fp to stack */
+			ir_node *const store_fp = new_bd_riscv_sw(NULL, block, mem, add, start_fp, NULL, -RISCV_REGISTER_SIZE);
+			sched_add_after(add, store_fp);
+			edges_reroute_except(mem, store_fp, store_fp);
+
+			/* set current fp */
+			ir_node *const curr_fp = be_new_Copy(block, add);
+			arch_set_irn_register(curr_fp, &riscv_registers[REG_S0]);
+			sched_add_after(store_fp, curr_fp);
+			edges_reroute_except(start_fp, curr_fp, store_fp);
+		} else {
+			/* save fp to stack */
+			ir_node *const store_fp = new_bd_riscv_sw(NULL, block, mem, start_sp, start_fp, NULL, aligned - RISCV_REGISTER_SIZE);
+			sched_add_after(inc_sp, store_fp);
+			edges_reroute_except(mem, store_fp, store_fp);
+
+			/* set current fp */
+			ir_node *const curr_fp = new_bd_riscv_addi(NULL, block, inc_sp, NULL, aligned);
+			sched_add_after(store_fp, curr_fp);
+			edges_reroute_except(start_fp, curr_fp, store_fp);
+			arch_set_irn_register(curr_fp, &riscv_registers[REG_S0]);
+		}
+
 		be_keep_if_unused(inc_sp);
 	} else {
 		ir_node *const inc_sp   = riscv_new_IncSP(block, start_sp, size, 0);
@@ -220,18 +255,23 @@ static void riscv_introduce_epilogue(ir_node *const ret, unsigned const size, bo
 		ir_node  *curr_fp  = get_irn_n(ret, n_fp);
 		ir_node  *curr_mem = get_irn_n(ret, n_riscv_ret_mem);
 
+		/* restore old fp */
+		ir_node *const load_old_fp = new_bd_riscv_lw(NULL, block, curr_mem, curr_fp, NULL, -RISCV_REGISTER_SIZE);
+		curr_mem = be_new_Proj(load_old_fp, pn_riscv_lw_M);
+		ir_node *const old_fp  = be_new_Proj_reg(load_old_fp, pn_riscv_lw_res, &riscv_registers[REG_T0]);
+		sched_add_before(ret, load_old_fp);
+
 		/* Copy fp to sp */
 		ir_node *const curr_sp = be_new_Copy(block, curr_fp);
 		arch_set_irn_register(curr_sp, &riscv_registers[REG_SP]);
 		sched_add_before(ret, curr_sp);
 
-		/* restore old fp */
-		ir_node *const restore = new_bd_riscv_lw(NULL, block, curr_mem, curr_sp, NULL, -4);
-		curr_mem = be_new_Proj(restore, pn_riscv_lw_M);
-		curr_fp  = be_new_Proj_reg(restore, pn_riscv_lw_res, &riscv_registers[REG_S0]);
-		sched_add_before(ret, restore);
+		/* set fp to old fp */
+		ir_node *const restored_fp = be_new_Copy(block, old_fp);
+		arch_set_irn_register(restored_fp, &riscv_registers[REG_S0]);
+		sched_add_before(ret, restored_fp);
 
-		set_irn_n(ret, n_fp,            curr_fp);
+		set_irn_n(ret, n_fp,            restored_fp);
 		set_irn_n(ret, n_riscv_ret_mem, curr_mem);
 		set_irn_n(ret, n_riscv_ret_stack, curr_sp);
 	} else {
@@ -252,7 +292,7 @@ static void riscv_introduce_prologue_epilogue(ir_graph *const irg, bool omit_fp)
 
 	if (!omit_fp) {
 		// additional slot for saved frame pointer
-		size += RISCV_MACHINE_SIZE / 8;
+		size += RISCV_REGISTER_SIZE;
 	}
 
 	foreach_irn_in(get_irg_end_block(irg), i, ret) {
@@ -286,7 +326,7 @@ static void riscv_sp_sim(ir_node *const node, stack_pointer_state_t *const state
 					imm->val += state->offset;
 				} else if (!(arch_get_irn_flags(node) & (arch_irn_flags_t)riscv_arch_irn_flag_ignore_fp_offset_fix)) {
 					// consider additional slot for saved frame pointer
-					imm->val -= RISCV_MACHINE_SIZE / 8;
+					imm->val -= RISCV_REGISTER_SIZE;
 				}
 				imm->val += get_entity_offset(ent);
 			}
