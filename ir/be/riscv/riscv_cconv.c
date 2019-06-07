@@ -104,7 +104,7 @@ void riscv_determine_calling_convention(riscv_calling_convention_t *const cconv,
 	if (irg != NULL) {
 		be_irg_t *birg = be_birg_from_irg(irg);
 		if (!omit_fp)
-			rbitset_clear(birg->allocatable_regs, REG_S0); // s0 = frame pointer
+			rbitset_clear(birg->allocatable_regs, REG_FP);
 	}
 	cconv->omit_fp = omit_fp;
 }
