@@ -434,15 +434,6 @@ FIRM_API void clear_irg_properties(ir_graph *irg, ir_graph_properties_t props);
 FIRM_API int irg_has_properties(const ir_graph *irg,
                                 ir_graph_properties_t props);
 
-/** Sets a description for local value n. */
-FIRM_API void set_irg_loc_description(ir_graph *irg, int n, void *description);
-
-/** Returns the description for local value n. */
-FIRM_API void *get_irg_loc_description(ir_graph *irg, int n);
-
-/** Returns the last irn index for this graph. */
-FIRM_API unsigned get_irg_last_idx(const ir_graph *irg);
-
 /**
  * Ensures that a graph fulfills all properties stated in @p state.
  * Performs graph transformations if necessary.
@@ -455,6 +446,15 @@ FIRM_API void assure_irg_properties(ir_graph *irg, ir_graph_properties_t props);
  * This should be called after a transformation phase.
  */
 FIRM_API void confirm_irg_properties(ir_graph *irg, ir_graph_properties_t props);
+
+/** Sets a description for local value n. */
+FIRM_API void set_irg_loc_description(ir_graph *irg, int n, void *description);
+
+/** Returns the description for local value n. */
+FIRM_API void *get_irg_loc_description(ir_graph *irg, int n);
+
+/** Returns the last irn index for this graph. */
+FIRM_API unsigned get_irg_last_idx(const ir_graph *irg);
 
 /** @} */
 
