@@ -1021,17 +1021,47 @@ static ir_node *gen_Return(ir_node *const node)
 	return ret;
 }
 
-static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_binop_imm *const cons_imm)
+static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_binop_imm *const cons_imm, bool needs_extension)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_node  *const block = be_transform_nodes_block(node);
 	ir_node  *const l     = get_binop_left(node);
-	ir_node  *const new_l = be_transform_node(l);
+	ir_node  *new_l       = be_transform_node(l);
 	ir_node  *const r     = get_binop_right(node);
+	ir_mode *const mode   = get_irn_mode(node);
+	unsigned const size   = get_mode_size_bits(mode);
+
+	needs_extension = needs_extension && (size != RISCV_MACHINE_SIZE);
+	int extend = RISCV_MACHINE_SIZE - size;
+	/* right shift operations with mode sizes < 32 Bit require correct sign/zero extension.
+	 * This is done by first shifting the operand to the left by 32-size bits and then shifting back to the
+	 * right (arithmetic/logical) by the same amount. Finally the actual shift operation is performed.
+	 * If the shift amount is known (r is const), the two right shift operations are combined (if possible).
+	 */
+	if (needs_extension) {
+		assert(is_uimm5(extend));
+		if (!mode_is_signed(mode) && size == 8) {
+			new_l = new_bd_riscv_andi(dbgi, block, new_l, NULL, (1U << size) - 1);
+			needs_extension = false;
+		} else {
+			new_l = new_bd_riscv_slli(dbgi, block, new_l, NULL, extend);
+		}
+	}
 	if (is_Const(r)) {
-		long const val = get_Const_long(r);
-		if (is_uimm5(val))
+		long val = get_Const_long(r);
+		if (needs_extension && is_uimm5(extend + val)) {
+			val = extend + val;
+			needs_extension = false;
+		}
+		if (is_uimm5(val)) {
+			if (needs_extension) {
+				new_l = cons_imm(dbgi, block, new_l, NULL, extend);
+			}
 			return cons_imm(dbgi, block, new_l, NULL, val);
+		}
+	}
+	if (needs_extension) {
+		new_l = cons_imm(dbgi, block, new_l, NULL, extend);
 	}
 	ir_node *const new_r = be_transform_node(r);
 	return cons(dbgi, block, new_l, new_r);
@@ -1039,25 +1069,17 @@ static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_b
 
 static ir_node *gen_Shl(ir_node *const node)
 {
-	return gen_shift_op(node, &new_bd_riscv_sll, &new_bd_riscv_slli);
+	return gen_shift_op(node, &new_bd_riscv_sll, &new_bd_riscv_slli, false);
 }
 
 static ir_node *gen_Shr(ir_node *const node)
 {
-	ir_mode *const mode = get_irn_mode(node);
-	unsigned const size = get_mode_size_bits(mode);
-	if (size == RISCV_MACHINE_SIZE)
-		return gen_shift_op(node, &new_bd_riscv_srl, &new_bd_riscv_srli);
-	TODO(node);
+	return gen_shift_op(node, &new_bd_riscv_srl, &new_bd_riscv_srli, true);
 }
 
 static ir_node *gen_Shrs(ir_node *const node)
 {
-	ir_mode *const mode = get_irn_mode(node);
-	unsigned const size = get_mode_size_bits(mode);
-	if (size == RISCV_MACHINE_SIZE)
-		return gen_shift_op(node, &new_bd_riscv_sra, &new_bd_riscv_srai);
-	TODO(node);
+	return gen_shift_op(node, &new_bd_riscv_sra, &new_bd_riscv_srai, true);
 }
 
 static ir_node *gen_Start(ir_node *const node)
