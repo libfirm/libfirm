@@ -426,11 +426,19 @@ typedef enum ir_graph_properties_t {
 } ir_graph_properties_t;
 ENUM_BITSET(ir_graph_properties_t)
 
-/** sets some state properties on the graph */
+/**
+ * Sets the graph properties in @p props on @p irg.
+ * Just sets the flags, use assure_irg_properties() to also perform the analyses required.
+ */
 FIRM_API void add_irg_properties(ir_graph *irg, ir_graph_properties_t props);
-/** clears some graph properties */
+/**
+ * Clears the graph properties in @p props on @p irg.
+ * Just sets the flags, use confirm_irg_properties() with inverted @p props to also invalidate the analysis state.
+ */
 FIRM_API void clear_irg_properties(ir_graph *irg, ir_graph_properties_t props);
-/** queries whether @p irg has the @p props properties set */
+/**
+ * queries whether @p irg has all properties in  @p props set.
+ */
 FIRM_API int irg_has_properties(const ir_graph *irg,
                                 ir_graph_properties_t props);
 
