@@ -120,8 +120,6 @@
  * It is set to "op_pin_state_floats" if global cse was performed
  * (and during construction: did actually change something).
  * Code placement is necessary.
- *
- * @see new_pseudo_ir_graph()
  */
 FIRM_API ir_graph *new_ir_graph(ir_entity *ent, int n_loc);
 
