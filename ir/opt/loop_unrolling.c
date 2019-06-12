@@ -1471,7 +1471,8 @@ static ir_node *create_r_pow(ir_node *block, ir_node *base,
 			     unsigned long long exp)
 {
 	if (exp == 0) {
-		assert(false);
+		return new_r_Const_long(get_irn_irg(block), get_irn_mode(base),
+					1);
 	}
 	if (exp == 1) {
 		return base;
