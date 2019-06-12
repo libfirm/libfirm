@@ -526,6 +526,7 @@ static bool is_valid_base_(ir_node *node, ir_loop *loop)
 		DB((dbg, LEVEL_4, "Node is const. Valid base.\n"));
 		return true;
 	}
+
 	// Load
 	if (is_Proj(node)) {
 		DB((dbg, LEVEL_5, "Node is proj; looking further\n"));
@@ -1195,7 +1196,7 @@ static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
 					DB((dbg, LEVEL_2,
 					    " Duplicated header to %+F\n",
 					    dup));
-					add_to_stack(&unrolled_headers, dup);
+					add_to_stack(dup, &unrolled_headers);
 				}
 			}
 		}
@@ -1444,8 +1445,69 @@ static void recursive_rewire_in_loop(ir_node *node)
 enum Side { LEFT, RIGHT };
 #define Side enum Side
 
-static void update_header_condition_add(linear_unroll_info *info,
-					unsigned factor)
+static ir_node *update_header_condition_add(linear_unroll_info *info,
+					    ir_node *header, ir_node *N,
+					    ir_node *c_cpy,
+					    ir_node *factor_const)
+{
+	ir_node *new_N_minus_c;
+	ir_node *mul = new_r_Mul(header, c_cpy, factor_const);
+	DB((dbg, LEVEL_4, "\tc * factor: %+F\n", mul));
+	if (info->op == ADD) {
+		new_N_minus_c = new_r_Sub(header, N, mul);
+	} else if (info->op == SUB) {
+		new_N_minus_c = new_r_Add(header, N, mul);
+	} else {
+		assert(false);
+	}
+	ir_node *new_N = new_r_Add(header, new_N_minus_c, c_cpy);
+	DB((dbg, LEVEL_4,
+	    "\tAttaching c + (N %s (c * factor)): %+F + (%+F %s (%+F * %+F) = %+F",
+	    info->op == ADD ? "-" : "+", c_cpy, N, info->op == ADD ? "-" : "+",
+	    c_cpy, factor_const, new_N));
+	return new_N;
+}
+static ir_node *create_r_pow(ir_node *block, ir_node *base,
+			     unsigned long long exp)
+{
+	if (exp == 0) {
+		assert(false);
+	}
+	if (exp == 1) {
+		return base;
+	}
+	return new_r_Mul(block, base, create_r_pow(block, base, exp - 1));
+}
+static ir_node *update_header_condition_mul(linear_unroll_info *info,
+					    ir_node *header, ir_node *N,
+					    ir_node *c_cpy,
+					    ir_node *factor_const)
+{
+	ir_graph *irg = get_irn_irg(header);
+	assert(is_Const(c_cpy));
+	ir_node *pow =
+		create_r_pow(header, factor_const, get_Const_long(c_cpy));
+	DB((dbg, LEVEL_4, "\tc * factor: %+F\n", pow));
+	ir_node *div = new_r_DivRL(header, new_r_Pin(header, new_r_NoMem(irg)),
+				   N, pow, op_pin_state_pinned);
+	ir_mode *mode;
+	ir_mode *N_mode = get_irn_mode(N);
+	ir_mode *div_mode = get_irn_mode(div);
+	if (larger_mode(N_mode, div_mode)) {
+		mode = N_mode;
+	} else {
+		mode = div_mode;
+	}
+	ir_node *div_proj = new_r_Proj(div, mode, pn_Div_res);
+	ir_node *new_N_div_c = new_r_Mul(header, div_proj, c_cpy);
+	ir_node *new_N = new_r_Mul(header, new_N_div_c, c_cpy);
+	DB((dbg, LEVEL_4,
+	    "\tAttaching c * (N / (factor ^ c)): %+F * (%+F / (%+F ^ %+F) = %+F * (%+F / %+F) = %+F",
+	    c_cpy, N, factor_const, c_cpy, c_cpy, N, pow, new_N));
+	return new_N;
+}
+
+static void update_header_condition(linear_unroll_info *info, unsigned factor)
 {
 	ir_node *cmp = info->cmp;
 	DB((dbg, LEVEL_3, "Changing condition and compare %+F\n", cmp));
@@ -1464,51 +1526,38 @@ static void update_header_condition_add(linear_unroll_info *info,
 		assert(false);
 	}
 	DB((dbg, LEVEL_4, "\tN: %+F\n", N));
-	ir_node *new_N;
-	ir_node *c_cpy = duplicate_node(info->incr, header);
+	ir_node *c_cpy;
+	if (is_Const(info->incr)) {
+		c_cpy = exact_copy(info->incr);
+	} else {
+		c_cpy = duplicate_node(info->incr, header);
+		recursive_copy_in_loop(c_cpy, header);
+		recursive_rewire_in_loop(info->incr);
+	}
 	DB((dbg, LEVEL_4, "\tcopied c: %+F\n", c_cpy));
-	recursive_copy_in_loop(c_cpy, header);
-	recursive_rewire_in_loop(info->incr);
 	ir_node *factor_const = new_r_Const_long(get_irn_irg(header),
 						 get_irn_mode(c_cpy), factor);
-	ir_node *mul = new_r_Mul(header, c_cpy, factor_const);
-	DB((dbg, LEVEL_4, "\tc * factor: %+F\n", mul));
-	if (info->op == ADD) {
-		new_N = new_r_Sub(header, N, mul);
-	} else if (info->op == SUB) {
-		new_N = new_r_Add(header, N, mul);
-	} else {
+	ir_node *new_N;
+	switch (info->op) {
+	case ADD:
+	case SUB:
+		new_N = update_header_condition_add(info, header, N, c_cpy,
+						    factor_const);
+		break;
+	case MUL:
+		new_N = update_header_condition_mul(info, header, N, c_cpy,
+						    factor_const);
+		break;
+	default:
 		assert(false);
 	}
-	DB((dbg, LEVEL_4,
-	    "\tAttaching (N %s (c * 4)): (%+F %s (%+F * %+F)) to %+F on the ",
-	    info->op == ADD ? "-" : "+", N, info->op == ADD ? "-" : "+", c_cpy,
-	    factor_const, cmp));
+	DB((dbg, LEVEL_4, "to %+F on the ", cmp));
 	if (side == LEFT) {
 		DB((dbg, LEVEL_4, "left side\n"));
 		set_Cmp_left(cmp, new_N);
 	} else {
 		DB((dbg, LEVEL_4, "right side\n"));
 		set_Cmp_right(cmp, new_N);
-	}
-}
-static void update_header_condition_mul(linear_unroll_info *info,
-					unsigned factor)
-{
-	assert(false);
-}
-static void update_header_condition(linear_unroll_info *info, unsigned factor)
-{
-	switch (info->op) {
-	case ADD:
-	case SUB:
-		update_header_condition_add(info, factor);
-		break;
-	case MUL:
-		update_header_condition_mul(info, factor);
-		break;
-	default:
-		assert(false);
 	}
 }
 static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
