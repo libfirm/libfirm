@@ -1190,7 +1190,7 @@ static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
 			if (*element.kind == k_ir_node) {
 				assert(is_Block(element.node));
 				ir_node *dup = duplicate_block(element.node);
-				add_to_stack(&unrolled_nodes, dup);
+				add_to_stack(dup, &unrolled_nodes);
 				if (element.node == header) {
 					DB((dbg, LEVEL_2,
 					    " Duplicated header to %+F\n",
@@ -1208,10 +1208,7 @@ static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
 			}
 		}
 	}
-	clear_irg_properties(irg,
-			     IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
-				     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-				     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 }
 
 static bool is_Proj_attached_to_Cmp(ir_node *const proj)
@@ -1299,7 +1296,6 @@ static void prune_block(ir_node *block, ir_node *header)
 		set_irn_in(phi, 0, NULL);
 	}
 	remove_keep_alive(block);
-	ir_graph *irg = get_irn_irg(block);
 }
 
 static void get_false_and_true_targets(ir_node *header,
@@ -1530,18 +1526,17 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	assure_irg_properties(irg,
 			      IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+				      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
 				      IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
+				      IR_GRAPH_PROPERTY_NO_BADS);
 	assert(unrolled_headers);
 	DEBUG_ONLY(dump_ir_graph(irg, "duff_0"));
 	remove_excess_headers(info, header);
-	clear_irg_properties(irg,
-			     IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
-				     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-				     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
-				     IR_GRAPH_PROPERTY_NO_BADS);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 	assure_irg_properties(irg,
 			      IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+				      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
 				      IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
 				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
 				      IR_GRAPH_PROPERTY_NO_BADS);
@@ -1663,8 +1658,6 @@ void unroll_loops(ir_graph *const irg, unsigned factor, unsigned maxsize)
 	dump_ir_graph(irg, "lcssa");
 	duplicate_innermost_loops(get_irg_loop(irg), factor, maxsize, true);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-	clear_irg_properties(irg,
-			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
-				     IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 	DB((dbg, LEVEL_1, "%+F: %d loops unrolled\n", irg, n_loops_unrolled));
 }
