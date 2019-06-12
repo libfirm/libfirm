@@ -325,7 +325,10 @@ float_int_conversion_overflow_style_t get_mode_float_int_overflow(
 {
 	return mode->int_conv_overflow;
 }
-
+int larger_mode(const ir_mode *lm, const ir_mode *sm)
+{
+	return !smaller_mode(lm, sm);
+}
 int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 {
 	assert(sm != NULL);

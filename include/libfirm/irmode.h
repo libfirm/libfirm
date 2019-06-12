@@ -277,6 +277,19 @@ FIRM_API int mode_is_num(const ir_mode *mode);
 FIRM_API int mode_is_data(const ir_mode *mode);
 
 /**
+ * Returns true if a value of mode @p lm cannot be converted to mode @p sm without
+ * loss.
+ *
+ * That is the interpretation of the numbers does not changes, so a signed
+ * integer mode is always larger than an unsigned integer mode since the
+ * unsigned mode can't represent negative numbers in a way that they are
+ * interpreted as negative numbers.
+ *
+ * @see values_in_mode()
+ */
+FIRM_API int larger_mode(const ir_mode *lm, const ir_mode *sm);
+
+/**
  * Returns true if a value of mode @p sm can be converted to mode @p lm without
  * loss.
  *
