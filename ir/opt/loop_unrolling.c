@@ -1252,19 +1252,23 @@ static void prune_block(ir_node *block, ir_node *header)
 				continue;
 			}
 			if (!is_in_stack(target_block, unrolled_nodes)) {
-				DB((dbg, LEVEL_5,
-				    "\t\t\t\t%+F is outside and links to pruned node\n",
-				    target));
-				unsigned target_arity = get_irn_arity(target);
+				int target_arity = get_irn_arity(target);
 				ir_node **new_in =
 					ALLOCAN(ir_node *, target_arity - 1);
-				for (unsigned k = 0, index = 0;
-				     k < target_arity; k++) {
+				DB((dbg, LEVEL_5,
+				    "\t\t\t\t%+F (arity: %u) is outside and links to pruned node\n",
+				    target, target_arity));
+				for (int k = 0, index = 0; k < target_arity;
+				     k++) {
 					ir_node *in = get_irn_n(target, k);
 					if (in == phi) {
 						DB((dbg, LEVEL_5,
-						    "\t\t\t\t\t Removing link to %+F\n",
-						    phi));
+						    "\t\t\t\t\t Removing link to %+F (index: %u)\n",
+						    phi, k));
+						if (is_End(target)) {
+							remove_End_n(target, k);
+							break;
+						}
 						continue;
 					}
 					DB((dbg, LEVEL_5,
@@ -1274,7 +1278,11 @@ static void prune_block(ir_node *block, ir_node *header)
 					new_in[index] = in;
 					index++;
 				}
-				set_irn_in(target, target_arity - 1, new_in);
+				if (!is_End(target)) {
+					set_irn_in(target, target_arity - 1,
+						   new_in);
+				}
+
 				continue;
 			}
 			ir_node **nodes = ALLOCAN(ir_node *, 1);
@@ -1511,10 +1519,12 @@ static ir_node *update_header_condition_mul(linear_unroll_info *info,
 static void update_header_condition(linear_unroll_info *info, unsigned factor)
 {
 	ir_node *cmp = info->cmp;
-	DB((dbg, LEVEL_3, "Changing condition and compare %+F\n", cmp));
 	ir_node *header = info->header;
 	ir_node *left = get_Cmp_left(cmp);
 	ir_node *right = get_Cmp_right(cmp);
+	DB((dbg, LEVEL_3,
+	    "Changing condition and compare %+F (comparing %+F to %+F)\n", cmp,
+	    left, right));
 	ir_node *N;
 	Side side;
 	if (left == info->phi) {
@@ -1592,8 +1602,9 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 				      IR_GRAPH_PROPERTY_NO_BADS);
 	info->loop = get_irn_loop(header);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	update_header_condition(info, factor);
 	DEBUG_ONLY(dump_ir_graph(irg, "duff_1"));
+	update_header_condition(info, factor);
+	DEBUG_ONLY(dump_ir_graph(irg, "duff_2"));
 	++n_loops_unrolled;
 	// TODO: Change main header
 	// TODO: Fixup
@@ -1669,23 +1680,28 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 			unroll_loop(loop, actual_factor, false);
 		}
 	}
-	*/
+	 */
+	if (!innermost) {
+		DB((dbg, LEVEL_2, "DUFF: %+F not innermost\n", loop));
+		return;
+	}
+	ir_loop *curr_loop = get_irn_loop(get_loop_header(loop));
 	linear_unroll_info info;
-	unsigned depth = get_loop_depth(loop);
+	unsigned depth = get_loop_depth(curr_loop);
 	DB((dbg, LEVEL_2, "DUFF: Checking if %+F (depth: %u) is unrollable\n",
 	    loop, depth));
 	if (depth == 0) {
 		DB((dbg, LEVEL_2, "Skipping loop with depth 0\n"));
 		return;
 	}
-	for (unsigned i = 0; i < get_loop_n_elements(loop); ++i) {
+	for (unsigned i = 0; i < get_loop_n_elements(curr_loop); ++i) {
 		DB((dbg, LEVEL_3, "\tContaining: %+F\n",
 		    get_loop_element(loop, i)));
 	}
 	DB((dbg, LEVEL_3, "-------------\n", loop));
-	if (determine_lin_unroll_info(&info, loop)) {
+	if (determine_lin_unroll_info(&info, curr_loop)) {
 		DB((dbg, LEVEL_2, "DUFF: Can unroll! (loop: %+F)\n", loop));
-		unroll_loop_duff(loop, DUFF_FACTOR, &info);
+		unroll_loop_duff(curr_loop, DUFF_FACTOR, &info);
 	} else {
 		DB((dbg, LEVEL_2, "DUFF: Cannot unroll! (loop: %+F)\n", loop));
 	}
