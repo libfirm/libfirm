@@ -275,7 +275,8 @@ static bool binop_to_op(Op *op, ir_node *bin_op)
 struct linear_unroll_info {
 	Op op;
 	ir_loop *loop;
-	ir_node *i;
+	ir_node **i;
+	unsigned i_size;
 	ir_node *cmp;
 	ir_relation rel;
 	ir_node *incr;
@@ -285,6 +286,13 @@ struct linear_unroll_info {
 };
 
 #define linear_unroll_info struct linear_unroll_info
+
+void free_lin_unroll_info(linear_unroll_info *info)
+{
+	if (info->i) {
+		free(info->i);
+	}
+}
 struct alias_list {
 	ir_node *node;
 	const ir_node *addr;
@@ -767,17 +775,36 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 	clear_all_stores();
 	get_all_stores(loop);
 	long long incr_pred_index = -1;
+	ir_node **is = malloc((phi_preds - 1) * sizeof(ir_node *));
+	int is_size = 0;
 	for (unsigned i = 0; i < phi_preds; ++i) {
 		ir_node *curr = get_Phi_pred(phi, i);
 		DB((dbg, LEVEL_5, "\tChecking for valid incr %+F\n", curr));
 		if (is_valid_incr(unroll_info, curr)) {
 			DB((dbg, LEVEL_5, "\tFound valid incr %+F\n", curr));
+			if (incr_pred_index != -1) {
+				incr_pred_index = -1;
+				break;
+			}
 			incr_pred_index = i;
-			break;
+			continue;
+		}
+		if (is_size < phi_preds - 1) {
+			is[is_size] = curr;
+			is_size++;
 		}
 	}
 	if (incr_pred_index == -1) {
 		return false;
+	}
+	if (!unroll_info->i) {
+		unroll_info->i_size = is_size;
+		unroll_info->i = is;
+	}
+	DB((dbg, LEVEL_5, "\tFound %u Is:\n", unroll_info->i_size));
+	for (int i = 0; i < unroll_info->i_size; i++) {
+		DB((dbg, LEVEL_5, "\t\tI_src[%u]: %+F\n", i, is[i]));
+		DB((dbg, LEVEL_5, "\t\tI[%u]: %+F\n", i, unroll_info->i[i]));
 	}
 	DB((dbg, LEVEL_5, "\tFound one phi incr and (%u-1) inputs. Phi valid\n",
 	    phi_preds));
@@ -787,6 +814,7 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
 				      ir_loop *loop)
 {
+	unroll_info->i = NULL;
 	unroll_info->loop = loop;
 	DB((dbg, LEVEL_4, "\tDetermining info for loop %+F\n", loop));
 	ir_node *header = get_loop_header(loop);
@@ -1148,7 +1176,7 @@ static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
 	for (size_t i = 0; i < n_elements; ++i) {
 		loop_element const element = get_loop_element(loop, i);
 		if (*element.kind == k_ir_node) {
-			add_to_stack(&unrolled_nodes, element.node);
+			add_to_stack(element.node, &unrolled_nodes);
 		}
 	}
 	for (unsigned j = 1; j < factor; ++j) {
@@ -1612,6 +1640,7 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 	} else {
 		DB((dbg, LEVEL_2, "DUFF: Cannot unroll! (loop: %+F)\n", loop));
 	}
+	free_lin_unroll_info(&info);
 	DB((dbg, LEVEL_2, "--------------------------------------------\n",
 	    loop));
 }
