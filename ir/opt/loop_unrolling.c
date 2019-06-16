@@ -1571,6 +1571,167 @@ static void update_header_condition(linear_unroll_info *info, unsigned factor)
 		set_Cmp_right(cmp, new_N);
 	}
 }
+
+static void duplicate_original_loop(ir_loop *const loop, ir_graph *irg)
+{
+	DB((dbg, LEVEL_4, "Duplicating loop %+F\n", loop));
+	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
+	for (size_t i = 0; i < get_loop_n_elements(loop); ++i) {
+		loop_element el = get_loop_element(loop, i);
+		if (*el.kind != k_ir_node) {
+			continue;
+		}
+		assert(is_Block(el.node));
+		DEBUG_ONLY(ir_node *dup =) duplicate_block(el.node);
+		DB((dbg, LEVEL_4, "\tCreated %+F\n", dup));
+	}
+}
+
+static void rewire_ins_linked(ir_node *node)
+{
+	ir_node *link = get_irn_link(node);
+	assert(link);
+	DB((dbg, LEVEL_5, "\t\tRewiring link of %+F (%+F)\n", node, link));
+	unsigned arity = get_irn_arity(node);
+	ir_node **new_ins = ALLOCAN(ir_node *, arity);
+	for (unsigned i = 0; i < arity; ++i) {
+		ir_node *irn_n = get_irn_n(node, i);
+		ir_node *linked_irn_n = get_irn_link(irn_n);
+		ir_node *target = linked_irn_n ? linked_irn_n : irn_n;
+		DB((dbg, LEVEL_5,
+		    "\t\t\tGetting in %+F (link: %+F, original: %+F)\n", target,
+		    linked_irn_n, irn_n));
+		new_ins[i] = target;
+	}
+	set_irn_in(link, arity, new_ins);
+}
+
+static void rewire_duplicated_block(ir_node *node, ir_loop *loop,
+				    ir_node *header, linear_unroll_info *info)
+{
+	ir_node *const new_node = get_irn_link(node);
+	// rewire the successors outside the loop
+	DB((dbg, LEVEL_5, "\tRewiring block %+F (link of %+F)\n", new_node,
+	    node));
+	unsigned const n_outs = get_irn_n_outs(node);
+	for (unsigned j = 0; j < n_outs; ++j) {
+		int index;
+		ir_node *const curr = get_irn_out_ex(node, j, &index);
+		DB((dbg, LEVEL_5, "\t\tAssessing %+F\n", curr));
+		if (is_Block(curr)) {
+			continue;
+		} else if (is_End(curr)) {
+			DB((dbg, LEVEL_5,
+			    "\t\t\tAdding keep alive from %+F to %+F (link of %+F)\n",
+			    curr, new_node, node));
+			add_End_keepalive(curr, new_node);
+			continue;
+		}
+		rewire_ins_linked(curr);
+		ir_node *const curr_link = get_irn_link(curr);
+		if (!curr_link) {
+			continue;
+		}
+		for (unsigned k = 0; k < get_irn_n_outs(curr); ++k) {
+			int index_out;
+			ir_node *const out =
+				get_irn_out_ex(curr, k, &index_out);
+			if (is_End(out)) {
+				DB((dbg, LEVEL_5,
+				    "\t\t\tAdding keep alive from %+F to %+F (link of %+F)\n",
+				    out, curr_link, curr));
+				add_End_keepalive(out, curr_link);
+			} else if (!block_is_inside_loop(get_block(out),
+							 loop)) {
+				DB((dbg, LEVEL_5,
+				    "\t\t\tRewiring out of loop link starting at %+F to now point to %+F instead of link %+F\n",
+				    out, curr_link, curr));
+				set_irn_n(out, index_out, curr_link);
+			}
+		}
+	}
+	rewire_ins_linked(node);
+}
+static void rewire_duplicated_header(ir_node *header, ir_loop *loop,
+				     linear_unroll_info *info)
+{
+	rewire_duplicated_block(header, loop, header, info);
+	DB((dbg, LEVEL_5, "\t\tNode is header\n"));
+	ir_node *linked_header = get_irn_link(header);
+	unsigned const n_outs = get_irn_n_outs(header);
+	DB((dbg, LEVEL_5, "\t\t\tRewiring phis\n"));
+	for (unsigned j = 0; j < n_outs; ++j) {
+		ir_node *const out = get_irn_out(header, j);
+		if (is_Phi(out)) {
+			ir_node *linked = get_irn_link(out);
+			for (unsigned k = 0; k < get_irn_arity(out); ++k) {
+				ir_node *curr = get_irn_n(out, k);
+				if (!block_is_inside_loop(get_block(curr),
+							  loop) ||
+				    get_block(curr) == header) {
+					DB((dbg, LEVEL_5,
+					    "\t\t\t\tRewiring %+F (link of %+F) to have input %+F instead of\n",
+					    linked, out, out,
+					    get_irn_n(out, k)));
+					set_irn_n(linked, k, out);
+					break;
+				}
+			}
+		}
+	}
+	ir_node *cond = get_irn_out(info->cmp, 0);
+	DB((dbg, LEVEL_5, "\t\t\tRewiring Condition %+F\n", cond));
+	for (unsigned j = 0; j < get_irn_n_outs(cond); ++j) {
+		ir_node *proj = get_irn_out(cond, j);
+		DB((dbg, LEVEL_5, "\t\t\t\t Checking proj attached %+F", proj));
+		int index;
+		ir_node *target = get_irn_out_ex(proj, 0, &index);
+		DB((dbg, LEVEL_5, " that points to %+F\n", target));
+		if (!block_is_inside_loop(get_block(target), loop)) {
+			ir_node *linked_proj = get_irn_link(proj);
+			set_irn_n(target, index, linked_proj);
+			DB((dbg, LEVEL_5,
+			    "\t\t\t\t\tPost loop %+F in wired to %+F (link of %+F) \n",
+			    target, linked_proj, proj));
+			set_irn_n(linked_header, 0, proj);
+			DB((dbg, LEVEL_5,
+			    "\t\t\t\t\tLinked header in wired to %+F\n", proj));
+		}
+	}
+}
+
+static void rewire_duplicated(ir_loop *loop, linear_unroll_info *info)
+{
+	// Rewire jump into header, jump from last block(s)
+	// Rewire header and last block phis
+	DB((dbg, LEVEL_4, "Rewiring loop %+F fixup\n", loop));
+	ir_node *header = get_loop_header(loop);
+	for (size_t i = 0; i < get_loop_n_elements(loop); ++i) {
+		loop_element el = get_loop_element(loop, i);
+		if (*el.kind != k_ir_node) {
+			continue;
+		}
+		if (el.node == header) {
+			continue;
+		}
+		rewire_duplicated_block(el.node, loop, header, info);
+	}
+	rewire_duplicated_header(header, loop, info);
+}
+
+static void create_fixup_loop(ir_loop *const loop, ir_graph *irg,
+			      linear_unroll_info *info)
+{
+	duplicate_original_loop(loop, irg);
+	rewire_duplicated(loop, info);
+	clear_irg_properties(irg,
+			     IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+				     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+				     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+				     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
+				     IR_GRAPH_PROPERTY_NO_BADS);
+}
+
 static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 			     linear_unroll_info *info)
 {
@@ -1582,6 +1743,17 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	unrolled_headers = NULL;
 	unrolled_nodes = NULL;
 	ir_graph *irg = get_irn_irg(header);
+	create_fixup_loop(loop, irg, info);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-pre-fix-graph"));
+	assure_irg_properties(irg,
+			      IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+				      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+				      IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
+				      IR_GRAPH_PROPERTY_NO_BADS);
+	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup"));
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	rewire_loop(loop, header, factor);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	assure_irg_properties(irg,
