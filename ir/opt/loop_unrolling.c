@@ -1890,7 +1890,14 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 		DB((dbg, LEVEL_2, "DUFF: %+F not innermost\n", loop));
 		return;
 	}
-	ir_loop *curr_loop = get_irn_loop(get_loop_header(loop));
+	ir_node *header = get_loop_header(loop);
+	if (!header) {
+		DB((dbg, LEVEL_2,
+		    "DUFF: Cannot unroll! (Missing header) (loop: %+F)\n",
+		    loop));
+		return;
+	}
+	ir_loop *curr_loop = get_irn_loop(header);
 	linear_unroll_info info;
 	unsigned depth = get_loop_depth(curr_loop);
 	DB((dbg, LEVEL_2, "DUFF: Checking if %+F (depth: %u) is unrollable\n",
