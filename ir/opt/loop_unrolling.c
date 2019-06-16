@@ -530,6 +530,10 @@ static bool is_valid_base_(ir_node *node, ir_loop *loop)
 		DB((dbg, LEVEL_4, "Node is const. Valid base.\n"));
 		return true;
 	}
+	if (loop && !block_is_inside_loop(get_block(node), loop)) {
+		DB((dbg, LEVEL_4, "Node %+F not in loop -> ok\n", node));
+		return true;
+	}
 
 	// Load
 	if (is_Proj(node)) {
@@ -542,6 +546,12 @@ static bool is_valid_base_(ir_node *node, ir_loop *loop)
 				DB((dbg, LEVEL_4,
 				    "2nd proj layer does not point to call\n"));
 				return false;
+			}
+			if (loop &&
+			    !block_is_inside_loop(get_block(proj_call), loop)) {
+				DB((dbg, LEVEL_4,
+				    "Call %+F not in loop -> ok\n", proj_call));
+				return true;
 			}
 			ir_entity *callee = get_Call_callee(proj_call);
 			mtp_additional_properties properties =
