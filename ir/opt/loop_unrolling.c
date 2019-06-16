@@ -1479,7 +1479,7 @@ enum Side { LEFT, RIGHT };
 static ir_node *update_header_condition_add(linear_unroll_info *info,
 					    ir_node *header, ir_node *N,
 					    ir_node *c_cpy,
-					    ir_node *factor_const)
+					    ir_node *factor_const, bool less)
 {
 	ir_node *new_N_minus_c;
 	ir_node *mul = new_r_Mul(header, c_cpy, factor_const);
@@ -1491,7 +1491,8 @@ static ir_node *update_header_condition_add(linear_unroll_info *info,
 	} else {
 		assert(false);
 	}
-	ir_node *new_N = new_r_Add(header, new_N_minus_c, c_cpy);
+	ir_node *new_N = less ? new_r_Add(header, new_N_minus_c, c_cpy) :
+				new_r_Sub(header, new_N_minus_c, c_cpy);
 	DB((dbg, LEVEL_4,
 	    "\tAttaching c + (N %s (c * factor)): %+F + (%+F %s (%+F * %+F) = %+F",
 	    info->op == ADD ? "-" : "+", c_cpy, N, info->op == ADD ? "-" : "+",
@@ -1513,7 +1514,7 @@ static ir_node *create_r_pow(ir_node *block, ir_node *base,
 static ir_node *update_header_condition_mul(linear_unroll_info *info,
 					    ir_node *header, ir_node *N,
 					    ir_node *c_cpy,
-					    ir_node *factor_const)
+					    ir_node *factor_const, bool less)
 {
 	ir_graph *irg = get_irn_irg(header);
 	assert(is_Const(c_cpy));
@@ -1532,7 +1533,13 @@ static ir_node *update_header_condition_mul(linear_unroll_info *info,
 	}
 	ir_node *div_proj = new_r_Proj(div, mode, pn_Div_res);
 	ir_node *new_N_div_c = new_r_Mul(header, div_proj, c_cpy);
-	ir_node *new_N = new_r_Mul(header, new_N_div_c, c_cpy);
+	ir_node *new_N =
+		less ? new_r_Mul(header, new_N_div_c, c_cpy) :
+		       new_Proj(new_r_DivRL(header,
+					    new_r_Pin(header, new_r_NoMem(irg)),
+					    new_N_div_c, c_cpy,
+					    op_pin_state_pinned),
+				mode, pn_Div_res);
 	DB((dbg, LEVEL_4,
 	    "\tAttaching c * (N / (factor ^ c)): %+F * (%+F / (%+F ^ %+F) = %+F * (%+F / %+F) = %+F",
 	    c_cpy, N, factor_const, c_cpy, c_cpy, N, pow, new_N));
@@ -1582,15 +1589,17 @@ static void update_header_condition(linear_unroll_info *info, unsigned factor)
 	ir_node *factor_const = new_r_Const_long(get_irn_irg(header),
 						 get_irn_mode(c_cpy), factor);
 	ir_node *new_N;
+	bool less = info->rel == ir_relation_less ||
+		    info->rel == ir_relation_less_equal;
 	switch (info->op) {
 	case ADD:
 	case SUB:
 		new_N = update_header_condition_add(info, header, N, c_cpy,
-						    factor_const);
+						    factor_const, less);
 		break;
 	case MUL:
 		new_N = update_header_condition_mul(info, header, N, c_cpy,
-						    factor_const);
+						    factor_const, less);
 		break;
 	default:
 		assert(false);
