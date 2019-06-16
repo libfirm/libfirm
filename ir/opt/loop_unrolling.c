@@ -1869,8 +1869,17 @@ static unsigned determine_unroll_factor(ir_loop *const loop, unsigned const fact
 {
 	return count_nodes(loop) < maxsize ? factor : 0;
 }
-
-#define DUFF_FACTOR 4
+static int load_duff_factor()
+{
+	char *factor = getenv("DUFF_FACTOR");
+	if (!factor) {
+		return 0;
+	}
+	return atoi(factor);
+}
+#define DUFF_DEFAULT_FACTOR 4
+#define DUFF_FACTOR                                                            \
+	load_duff_factor() ? load_duff_factor() : DUFF_DEFAULT_FACTOR
 static void duplicate_innermost_loops(ir_loop *const loop,
 				      unsigned const factor,
 				      unsigned const maxsize,
