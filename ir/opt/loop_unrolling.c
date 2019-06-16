@@ -486,6 +486,9 @@ struct irn_stack {
 	struct irn_stack *next;
 };
 
+#define iterate_stack(stack)                                                   \
+	for (struct irn_stack *curr = stack; curr; curr = curr->next)
+
 static void add_to_stack(ir_node *node, struct irn_stack **stack)
 {
 	struct irn_stack new_top = { .next = *stack, .el = node };
@@ -495,7 +498,8 @@ static void add_to_stack(ir_node *node, struct irn_stack **stack)
 
 static bool is_in_stack(ir_node *query, struct irn_stack *head)
 {
-	for (struct irn_stack *curr = head; curr; curr = curr->next) {
+	iterate_stack(head)
+	{
 		if (curr->el == query) {
 			return true;
 		}
@@ -1345,16 +1349,16 @@ static void get_false_and_true_targets(ir_node *header,
 static void remove_excess_headers(linear_unroll_info *info,
 				  ir_node *const header)
 {
-	for (struct irn_stack *curr = unrolled_headers; curr;
-	     curr = curr->next) {
+	iterate_stack(unrolled_headers)
+	{
 		ir_node *linked_header = curr->el;
 		if (linked_header == header) {
 			continue;
 		}
 		prune_block(linked_header, header);
 	}
-	for (struct irn_stack *curr = unrolled_headers; curr;
-	     curr = curr->next) {
+	iterate_stack(unrolled_headers)
+	{
 		ir_node *linked_header = curr->el;
 		if (linked_header == header) {
 			continue;
@@ -1763,7 +1767,7 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
 				      IR_GRAPH_PROPERTY_NO_BADS);
 	assert(unrolled_headers);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff_0"));
+	DEBUG_ONLY(dump_ir_graph(irg, "duff-unroll"));
 	remove_excess_headers(info, header);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 	assure_irg_properties(irg,
@@ -1774,9 +1778,9 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 				      IR_GRAPH_PROPERTY_NO_BADS);
 	info->loop = get_irn_loop(header);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff_1"));
+	DEBUG_ONLY(dump_ir_graph(irg, "duff-no-excess-header"));
 	update_header_condition(info, factor);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff_2"));
+	DEBUG_ONLY(dump_ir_graph(irg, "duff-updated-header-condition"));
 	++n_loops_unrolled;
 	// TODO: Change main header
 	// TODO: Fixup
