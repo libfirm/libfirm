@@ -1440,27 +1440,36 @@ static void recursive_copy_in_loop(ir_node *node, ir_node *header)
 	for (unsigned i = 0; i < get_irn_arity(node); ++i) {
 		ir_node *to_cpy = get_irn_n(node, i);
 		ir_node *to_cpy_block = get_block(to_cpy);
-		if (!is_in_stack(to_cpy_block, unrolled_nodes)) {
+		if (!is_in_stack(to_cpy_block, unrolled_nodes) ||
+		    to_cpy_block == header) {
 			continue;
 		}
-		duplicate_node(to_cpy, header);
-		recursive_copy_in_loop(to_cpy, header);
+		if (get_irn_mode(to_cpy) != mode_M) {
+			duplicate_node(to_cpy, header);
+			recursive_copy_in_loop(to_cpy, header);
+		}
 	}
 }
 
-static void recursive_rewire_in_loop(ir_node *node)
+static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
+				     ir_node *phi_M)
 {
 	unsigned arity = get_irn_arity(node);
 	ir_node **new_in = ALLOCAN(ir_node *, arity);
 	for (unsigned i = 0; i < arity; ++i) {
 		ir_node *next = get_irn_n(node, i);
 		ir_node *next_block = get_block(next);
-		if (!is_in_stack(next_block, unrolled_nodes)) {
+		if (!is_in_stack(next_block, unrolled_nodes) ||
+		    next_block == header) {
 			new_in[i] = next;
 			continue;
 		}
-		new_in[i] = get_irn_link(next);
-		recursive_rewire_in_loop(next);
+		if (get_irn_mode(next) == mode_M) {
+			new_in[i] = phi_M;
+		} else {
+			new_in[i] = get_irn_link(next);
+		}
+		recursive_rewire_in_loop(next, header, phi_M);
 	}
 	set_irn_in(get_irn_link(node), arity, new_in);
 }
@@ -1552,12 +1561,22 @@ static void update_header_condition(linear_unroll_info *info, unsigned factor)
 	}
 	DB((dbg, LEVEL_4, "\tN: %+F\n", N));
 	ir_node *c_cpy;
+	ir_node *phi_M = NULL;
+	for (unsigned i = 0; i < get_irn_n_outs(header); ++i) {
+		ir_node *curr = get_irn_out(header, i);
+		if (get_block(curr) == header && is_Phi(curr) &&
+		    get_irn_mode(curr) == mode_M) {
+			phi_M = curr;
+			break;
+		}
+	}
+	assert(phi_M);
 	if (is_Const(info->incr)) {
 		c_cpy = exact_copy(info->incr);
 	} else {
 		c_cpy = duplicate_node(info->incr, header);
 		recursive_copy_in_loop(c_cpy, header);
-		recursive_rewire_in_loop(info->incr);
+		recursive_rewire_in_loop(info->incr, header, phi_M);
 	}
 	DB((dbg, LEVEL_4, "\tcopied c: %+F\n", c_cpy));
 	ir_node *factor_const = new_r_Const_long(get_irn_irg(header),
