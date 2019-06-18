@@ -17,12 +17,47 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static bool is_inside_loop(ir_node const *const node)
+/* Returns true if control flow has to exit a loop on the path from
+ * "from_block" to "to_block". */
+static bool cf_has_loop_exit(ir_node const *const from_block, ir_node const *const to_block)
 {
-	ir_graph const *const graph = get_irn_irg(node);
-	ir_node  const *const block = is_Block(node) ? node : get_nodes_block(node);
-	ir_loop  const *const loop  = get_irn_loop(block);
-	return loop && loop != get_irg_loop(graph);
+	DB((dbg, LEVEL_2, "Checking whether %+F --> %+F exits a loop: ", from_block, to_block));
+
+	ir_loop const *const from_loop = get_irn_loop(from_block);
+	if (!from_loop) {
+		DB((dbg, LEVEL_2, "no from_loop -> false\n"));
+		return false;
+	}
+	ir_loop const *to_loop = get_irn_loop(to_block);
+	if (!to_loop) {
+		// from_block is in a loop (otherwise early return), but to_block is not
+		// ==> Have to leave a loop somewhere
+		DB((dbg, LEVEL_2, "no to_loop -> true\n"));
+		return true;
+	}
+
+	unsigned const from_depth = get_loop_depth(from_loop);
+	unsigned const to_depth   = get_loop_depth(to_loop);
+
+	if (from_depth == 0) {
+		DB((dbg, LEVEL_2, "from_loop depth 0 -> false\n"));
+		return false;
+	}
+	if (from_depth > to_depth) {
+		// Have to leave deeper nest at some point
+		DB((dbg, LEVEL_2, "from_loop deeper than to_loop -> true\n"));
+		return true;
+	}
+	assert(from_depth > 0 && to_depth > 0);
+
+	// to_block is deeper in the loop or equally deep.
+	// Check if to_block's loop is an inner loop (or the same) of from_block's loop.
+	for (unsigned i = to_depth; i > from_depth; i--) {
+		to_loop = get_loop_outer_loop(to_loop);
+	}
+	// If loops are not equal, we have to leave from_loop before entering to_loop.
+	DB((dbg, LEVEL_2, "checking nesting -> %s\n", from_loop != to_loop ? "true" : "false"));
+	return from_loop != to_loop;
 }
 
 static ir_node *insert_phis_recursive(ir_node *const pred, ir_node *const block)
@@ -86,10 +121,11 @@ static void insert_phis_for_edge(ir_node *node, int n)
 	ir_mode *const mode = get_irn_mode(pred);
 	if (!(mode_is_data(mode) || mode == mode_M))
 		return;
-	ir_node *const pred_block = get_nodes_block(pred);
-	if (!is_inside_loop(pred_block))
-		return;
+
 	ir_node *block = get_nodes_block(node);
+	ir_node *const pred_block = get_nodes_block(pred);
+	if (!cf_has_loop_exit(pred_block, block))
+		return;
 
 	if (is_Phi(node)) {
 		// if node is a phi, start at the nth predecessor of block
