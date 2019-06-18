@@ -1834,17 +1834,6 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
 			     IR_GRAPH_PROPERTY_NO_BADS);
 	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup"));
-	optimize_graph_df(irg);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-opt-graph"));
-	assure_lcssa(irg);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-lcssa-pre-fix-graph"));
-	assure_irg_properties(irg,
-			      IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
-				      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
-				      IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
-				      IR_GRAPH_PROPERTY_NO_BADS);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-lcssa"));
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	rewire_loop(loop, header, factor);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
