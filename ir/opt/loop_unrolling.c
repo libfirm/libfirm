@@ -1686,10 +1686,25 @@ static void rewire_duplicated_block(ir_node *node, ir_loop *loop,
 				add_End_keepalive(out, curr_link);
 			} else if (!block_is_inside_loop(get_block(out),
 							 loop)) {
-				DB((dbg, LEVEL_5,
-				    "\t\t\tRewiring out of loop link starting at %+F to now point to %+F instead of link %+F\n",
-				    out, curr_link, curr));
-				set_irn_n(out, index_out, curr_link);
+				if (get_block(node) == header) {
+					DB((dbg, LEVEL_5,
+					    "\t\t\tRewiring out of loop link starting at %+F to now point to %+F instead of link %+F\n",
+					    out, curr_link, curr));
+					set_irn_n(out, index_out, curr_link);
+				} else {
+					unsigned arity = get_irn_arity(out);
+					ir_node **ins = get_irn_in(out);
+					ir_node **new_ins =
+						ALLOCAN(ir_node *, arity + 1);
+					for (unsigned i = 0; i < arity; ++i) {
+						new_ins[i] = ins[i];
+					}
+					new_ins[arity] = curr_link;
+					set_irn_in(out, arity + 1, new_ins);
+					DB((dbg, LEVEL_5,
+					    "\t\t\tRewiring out of loop link starting at %+F to now also point to %+F\n",
+					    out, curr_link));
+				}
 			}
 		}
 	}
