@@ -12,7 +12,7 @@ set(PROJECT_DESCRIPTION "library implementing the intermediate representation Fi
 
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG_libfirm")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DDEBUG_libfirm")
 
 set(SOURCES
 	ir/adt/array.c
