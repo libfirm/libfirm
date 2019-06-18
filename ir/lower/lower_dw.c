@@ -1000,41 +1000,32 @@ static void lower_Shl(ir_node *const node)
 }
 
 /**
- * Translate an Unop by creation of an intrinsic Call.
+ * Translate a Minus operation.
+ *
+ * res_low = -low
+ * res_high = -high - (new_low > 0)
  */
 static void lower_Minus(ir_node *const node)
 {
-	ir_node  *op    = get_Minus_op(node);
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *block = get_nodes_block(node);
-	ir_graph *irg   = get_irn_irg(block);
-	ir_mode  *mode  = get_node_high_mode(node);
-	ir_type  *mtp   = mode_is_signed(mode) ? unop_tp_s : unop_tp_u;
-	ir_op    *irop  = get_irn_op(node);
-	ir_node  *addr  = get_intrinsic_address(mtp, irop, mode, mode);
-	ir_node  *nomem = get_irg_no_mem(irg);
+	dbg_info *const dbgi         = get_irn_dbg_info(node);
+	ir_graph *const irg          = get_irn_irg(node);
+	ir_node  *const block        = get_nodes_block(node);
+	ir_node  *const op           = get_Minus_op(node);
+	lower64_entry_t const *const op_entry = get_node_entry(op);
 
-	ir_node *in[2];
-	if (ir_target_big_endian()) {
-		in[0] = get_lowered_high(op);
-		in[1] = get_lowered_low(op);
-	} else {
-		in[0] = get_lowered_low(op);
-		in[1] = get_lowered_high(op);
-	}
-	ir_node *call    = new_rd_Call(dbgi, block, nomem, addr, 2, in, mtp);
-	ir_node *resproj = new_r_Proj(call, mode_T, pn_Call_T_result);
-	set_irn_pinned(call, get_irn_pinned(node));
+	ir_mode  *const low_unsigned = get_irn_mode(op_entry->low_word);
+	ir_node  *const res_low      = new_rd_Minus(dbgi, block, op_entry->low_word);
+	ir_mode  *const mode         = get_node_high_mode(node);
+	ir_node  *const tmp_high     = new_rd_Minus(dbgi, block, op_entry->high_word);
 
-	if (ir_target_big_endian()) {
-		ir_node *res_low  = new_r_Proj(resproj, env.p.word_unsigned, 1);
-		ir_node *res_high = new_r_Proj(resproj, mode,                0);
-		ir_set_dw_lowered(node, res_low, res_high);
-	} else {
-		ir_node *res_low  = new_r_Proj(resproj, env.p.word_unsigned, 0);
-		ir_node *res_high = new_r_Proj(resproj, mode,                1);
-		ir_set_dw_lowered(node, res_low, res_high);
-	}
+	ir_node  *const zero_low     = new_r_Const_null(irg, low_unsigned);
+	ir_node  *const cmp_carry    = new_rd_Cmp(dbgi, block, res_low, zero_low, ir_relation_greater);
+	ir_node  *const one          = new_r_Const(irg, get_mode_one(mode));
+	ir_node  *const zero_high    = new_r_Const(irg, get_mode_null(mode));
+	ir_node  *const carry        = new_rd_Mux(dbgi, block, cmp_carry, zero_high, one);
+
+	ir_node  *const res_high     = new_rd_Sub(dbgi, block, tmp_high, carry);
+	ir_set_dw_lowered(node, res_low, res_high);
 }
 
 static void lower_binop_additive(ir_node *const node, ir_node *(*const cons)(dbg_info*, ir_node*, ir_node*, ir_node*), ir_relation const relation)
