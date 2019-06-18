@@ -27,12 +27,18 @@ static bool is_inside_loop(ir_node const *const node)
 
 static ir_node *insert_phis_recursive(ir_node *const pred, ir_node *const block)
 {
-	if (block == get_nodes_block(pred))
+	DB((dbg, LEVEL_2, "\tinsert_phis_recursive at %+F: ", block));
+
+	if (block == get_nodes_block(pred)) {
+		DB((dbg, LEVEL_2, "Target block found, return %+F\n", pred));
 		return pred;
+	}
 
 	ir_node *const link = get_irn_link(block);
-	if (link)
+	if (link) {
+		DB((dbg, LEVEL_2, "Already visited, return %+F\n", link));
 		return link;
+	}
 
 	int       const arity = get_irn_arity(block);
 	ir_node **const in    = ALLOCAN(ir_node *, arity);
@@ -43,15 +49,18 @@ static ir_node *insert_phis_recursive(ir_node *const pred, ir_node *const block)
 	int      const opt  = get_optimize();
 	set_optimize(0);
 	ir_node *const phi = new_r_Phi(block, arity, in, mode);
+	DB((dbg, LEVEL_2, "Constructing new Phi %+F\n", phi));
 	set_optimize(opt);
 	set_irn_link(block, phi);
 
 	for (int i = 0; i < arity; ++i) {
 		ir_node *const pred_block = get_Block_cfgpred_block(block, i);
 		ir_node *const pred_phi   = insert_phis_recursive(pred, pred_block);
+		DB((dbg, LEVEL_2, "\t\t%+F @ %+F: Predecessor %i is %+F\n", phi, block, i, pred_phi));
 		set_irn_n(phi, i, pred_phi);
 	}
 
+	DB((dbg, LEVEL_2, "\t%+F done, return %+F\n", block, phi));
 	return phi;
 }
 
@@ -86,6 +95,7 @@ static void insert_phis_for_edge(ir_node *node, int n)
 		// if node is a phi, start at the nth predecessor of block
 		block = get_nodes_block(get_irn_n(block, n));
 	}
+	DB((dbg, LEVEL_1, "inserting phis for %+F (%+F), edge %i (pred %+F)\n", node, block, n, pred));
 	ir_node *const phi = insert_phis_recursive(pred, block);
 	set_irn_n(node, n, phi);
 	clear_link_recursive(block);
@@ -183,7 +193,9 @@ void assure_lcssa(ir_graph *const irg)
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
+	DB((dbg, LEVEL_1, "Begin LCSSA construction on %+F\n", irg));
 	irg_walk_graph(irg, insert_phis_for_node, NULL, NULL);
+	DB((dbg, LEVEL_1, "LCSSA done on %+F\n", irg));
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	DEBUG_ONLY(verify_lcssa(irg);)
 }
