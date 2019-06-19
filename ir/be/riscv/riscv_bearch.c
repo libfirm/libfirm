@@ -23,8 +23,9 @@
 #include "irgwalk.h"
 #include "irprog_t.h"
 #include "irprintf.h"
-#include "lower_builtins.h"
 #include "lower_alloc.h"
+#include "lower_builtins.h"
+#include "lower_calls.h"
 #include "lowering.h"
 #include "riscv_emitter.h"
 #include "riscv_lower64.h"
@@ -396,6 +397,11 @@ static void riscv_lower_for_target(void)
 {
 	ir_arch_lower(&riscv_arch_dep);
 	be_after_irp_transform("lower-arch-dep");
+
+	lower_calls_with_compounds(LF_RETURN_HIDDEN,
+	                           lower_aggregates_as_pointers, NULL,
+	                           lower_aggregates_as_pointers, NULL,
+	                           reset_stateless_abi);
 
 	foreach_irp_irg(i, irg) {
 		lower_CopyB(irg, 16, 17, false);
