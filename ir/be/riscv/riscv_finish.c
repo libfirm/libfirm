@@ -122,11 +122,55 @@ static void peephole_be_IncSP(ir_node *const node)
 	be_peephole_IncSP_IncSP(node);
 }
 
+/**
+ * Optimize consecutive shift immediate operations by combining them in a single operation
+ */
+static void peephole_riscv_shift(ir_node *const node)
+{
+	int opcode = get_riscv_irn_opcode(node);
+	ir_node *const pred = get_irn_n(node, n_riscv_srli_left);
+	if (!is_riscv_irn(pred) || !be_has_only_one_user(pred) || sched_prev(node) != pred) {
+		return;
+	}
+	if (get_riscv_irn_opcode(pred) == opcode) {
+		riscv_immediate_attr_t *const node_attr_imm = get_riscv_immediate_attr(node);
+		riscv_immediate_attr_t *const pred_attr_imm = get_riscv_immediate_attr(pred);
+		if (!is_uimm5(node_attr_imm->val + pred_attr_imm->val)) {
+			return;
+		}
+		int new_val = node_attr_imm->val + pred_attr_imm->val;
+
+		dbg_info *dbgi  = get_irn_dbg_info(node);
+		ir_node  *block = get_nodes_block(node);
+		ir_node  *left  = get_irn_n(pred, n_riscv_srli_left);
+		ir_node  *new;
+		switch (opcode) {
+			case iro_riscv_srli:
+				new = new_bd_riscv_srli(dbgi, block, left, NULL, new_val);
+				break;
+			case iro_riscv_srai:
+				new = new_bd_riscv_srai(dbgi, block, left, NULL, new_val);
+				break;
+			case iro_riscv_slli:
+				new = new_bd_riscv_slli(dbgi, block, left, NULL, new_val);
+				break;
+			default:
+				return;
+		}
+		arch_set_irn_register(new, arch_get_irn_register(node));
+		be_peephole_replace(node, new);
+		sched_remove(pred);
+	}
+}
+
 void riscv_finish_graph(ir_graph *irg)
 {
 	/* perform peephole optimizations */
 	ir_clear_opcodes_generic_func();
 	register_peephole_optimization(op_be_IncSP, peephole_be_IncSP);
+	register_peephole_optimization(op_riscv_srli, peephole_riscv_shift);
+	register_peephole_optimization(op_riscv_srai, peephole_riscv_shift);
+	register_peephole_optimization(op_riscv_slli, peephole_riscv_shift);
 	be_peephole_opt(irg);
 
 	/* perform legalizations (mostly fix nodes with too big immediates) */
