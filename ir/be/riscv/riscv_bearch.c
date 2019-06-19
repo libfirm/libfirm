@@ -305,6 +305,15 @@ static void riscv_introduce_prologue_epilogue(ir_graph *const irg, bool omit_fp)
 
 static void riscv_sp_sim(ir_node *const node, stack_pointer_state_t *const state)
 {
+	if (be_is_MemPerm(node)) {
+		ir_graph *irg = get_irn_irg(node);
+		if (riscv_get_irg_data(irg)->omit_fp) {
+			be_set_MemPerm_offset(node, state->offset);
+		} else {
+			be_set_MemPerm_offset(node, -RISCV_REGISTER_SIZE);
+		}
+		return;
+	}
 	if (is_riscv_irn(node)) {
 		switch ((riscv_opcodes)get_riscv_irn_opcode(node)) {
 		case iro_riscv_addi:
