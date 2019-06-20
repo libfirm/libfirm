@@ -1249,15 +1249,20 @@ static void prune_block(ir_node *block, ir_node *header)
 			continue;
 		}
 		unsigned phi_n_preds = get_irn_arity(phi);
+		if (get_irn_mode(phi) == mode_M) {
+			assert(phi_n_preds == 0);
+			continue;
+		}
 		ir_node **phi_preds = get_irn_in(phi);
 		DB((dbg, LEVEL_5, "\t\t\tPruning phi %+F with links to ", phi));
-		for (unsigned j = 0; j < phi_n_preds - 1; j++) {
-			DB((dbg, LEVEL_5, "(%+F), ", phi_preds[j]));
-		}
 		if (phi_n_preds > 0) {
+			for (unsigned j = 0; j < phi_n_preds - 1; j++) {
+				DB((dbg, LEVEL_5, "(%+F), ", phi_preds[j]));
+			}
 			DB((dbg, LEVEL_5, "(%+F).",
 			    phi_preds[phi_n_preds - 1]));
 		}
+
 		DB((dbg, LEVEL_4, "\n"));
 		for (int j = 0; j < get_irn_n_outs(phi); ++j) {
 			ir_node *target = get_irn_out(phi, j);
@@ -1356,9 +1361,93 @@ static void get_false_and_true_targets(ir_node *header,
 	}
 }
 
+static void remove_node_from_succ_ins(ir_node *node)
+{
+	DB((dbg, LEVEL_4, "\t\t\tPruning successors of %+F\n", node));
+	for (unsigned i = 0; i < get_irn_n_outs(node); ++i) {
+		ir_node *succ = get_irn_out(node, i);
+		if (is_End(succ)) {
+			DB((dbg, LEVEL_4, "\t\t\t\tRemoving KA\n"));
+			remove_keep_alive(node);
+			continue;
+		}
+		unsigned arity = get_irn_arity(succ);
+		assert(arity > 0);
+		ir_node **new_ins = ALLOCAN(ir_node *, arity - 1);
+		DB((dbg, LEVEL_4, "\t\t\t\tPruning %+F\n", succ));
+		for (unsigned j = 0, k = 0; j < arity; j++) {
+			ir_node *tgt = get_irn_n(succ, j);
+			if (tgt == node) {
+				DB((dbg, LEVEL_4,
+				    "\t\t\t\t\tRemoving %+F from ins of %+F\n",
+				    tgt, succ));
+				continue;
+			}
+			DB((dbg, LEVEL_4,
+			    "\t\t\t\t\tKeeping %+F in ins of %+F\n", tgt,
+			    succ));
+			new_ins[k] = tgt;
+			k++;
+		}
+		set_irn_in(succ, arity - 1, new_ins);
+	}
+}
+static void rewire_memory_of_execess_header(ir_node *const linked_header,
+					    ir_node *const in_loop_target)
+{
+	DB((dbg, LEVEL_4, "\t\t\tRewiring memory of %+F\n", linked_header));
+	ir_node *target = NULL;
+	for (unsigned i = 0; i < get_irn_n_outs(in_loop_target); ++i) {
+		ir_node *out = get_irn_out(in_loop_target, i);
+		if (get_block(out) != in_loop_target) {
+			continue;
+		}
+		if (!is_Phi(out)) {
+			continue;
+		}
+		if (get_irn_mode(out) != mode_M) {
+			continue;
+		}
+		target = out;
+	}
+	DB((dbg, LEVEL_4, "\t\t\t\tMemory target is %+F\n", target));
+	for (unsigned i = 0; i < get_irn_n_outs(linked_header); ++i) {
+		ir_node *out = get_irn_out(linked_header, i);
+		if (get_block(out) != linked_header) {
+			continue;
+		}
+		if (!is_Phi(out)) {
+			continue;
+		}
+		if (get_irn_mode(out) != mode_M) {
+			continue;
+		}
+		remove_node_from_succ_ins(out);
+		unsigned arity = get_irn_arity(out);
+		DB((dbg, LEVEL_4, "\t\t\t\tMemory source is %+F (arity: %u)\n",
+		    out, arity));
+		assert(target);
+		assert(arity > 0);
+		for (unsigned j = 0; j < arity; ++j) {
+			DB((dbg, LEVEL_4,
+			    "\t\t\t\t\tWiring memory %+F to %+F\n", target,
+			    get_irn_n(out, j)));
+		}
+		set_irn_in(target, arity, get_irn_in(out));
+		set_irn_in(out, 0, NULL);
+	}
+}
 static void remove_excess_headers(linear_unroll_info *info,
 				  ir_node *const header)
 {
+	iterate_stack(unrolled_headers)
+	{
+		ir_node *linked_header = curr->el;
+		ir_node *in_loop_target, *out_of_loop_target;
+		get_false_and_true_targets(linked_header, &in_loop_target,
+					   &out_of_loop_target);
+		rewire_memory_of_execess_header(linked_header, in_loop_target);
+	}
 	iterate_stack(unrolled_headers)
 	{
 		ir_node *linked_header = curr->el;
