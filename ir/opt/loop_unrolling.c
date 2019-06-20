@@ -1469,8 +1469,8 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 			new_in[i] = phi_M;
 		} else {
 			new_in[i] = get_irn_link(next);
+			recursive_rewire_in_loop(next, header, phi_M);
 		}
-		recursive_rewire_in_loop(next, header, phi_M);
 	}
 	set_irn_in(get_irn_link(node), arity, new_in);
 }
