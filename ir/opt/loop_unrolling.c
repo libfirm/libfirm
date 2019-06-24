@@ -1656,6 +1656,12 @@ static ir_node *copy_and_rewire(ir_node *node, ir_node *target_block,
 	recursive_rewire_in_loop(node, target_block, phi_M);
 	return cpy;
 }
+static bool is_less(linear_unroll_info *info)
+{
+	return info->rel == ir_relation_less ||
+	       info->rel == ir_relation_less_equal;
+}
+
 static void update_header_condition(linear_unroll_info *info, unsigned factor)
 {
 	ir_node *cmp = info->cmp;
@@ -1693,8 +1699,7 @@ static void update_header_condition(linear_unroll_info *info, unsigned factor)
 	ir_node *factor_const = new_r_Const_long(get_irn_irg(header),
 						 get_irn_mode(c_cpy), factor);
 	ir_node *new_N;
-	bool less = info->rel == ir_relation_less ||
-		    info->rel == ir_relation_less_equal;
+	bool less = is_less(info);
 	switch (info->op) {
 	case ADD:
 	case SUB:
@@ -1975,7 +1980,8 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	ir_node *I_cpy =
 		new_r_Phi(switch_header, info->i_size, info->i, phi_mode);
 	ir_node *one_const = new_r_Const_long(irg, get_irn_mode(c_cpy), 1);
-	ir_node *N_minus_I = new_r_Sub(switch_header, N_cpy, I_cpy);
+	ir_node *N_minus_I = less ? new_r_Sub(switch_header, N_cpy, I_cpy) :
+				    new_r_Sub(switch_header, I_cpy, N_cpy);
 	if (info->rel == ir_relation_less_equal) {
 		N_minus_I = new_r_Add(switch_header, N_minus_I, one_const);
 	} else if (info->rel == ir_relation_greater_equal) {
@@ -1988,7 +1994,8 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	DB((dbg, LEVEL_4, "\t\tCreated %+F = (N - I) + (c - 1) = %+F + %+F\n",
 	    numerator, N_minus_I, c_minus_one));
 	ir_node *pin = new_r_Pin(switch_header, new_r_NoMem(irg));
-	ir_node *div = new_r_DivRL(switch_header, pin, numerator, c_cpy,
+	ir_node *denominator = less ? c_cpy : new_r_Minus(switch_header, c_cpy);
+	ir_node *div = new_r_DivRL(switch_header, pin, numerator, denominator,
 				   op_pin_state_pinned);
 	ir_node *div_proj =
 		new_r_Proj(div, get_irn_mode(numerator), pn_Div_res);
