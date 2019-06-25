@@ -402,6 +402,7 @@ static void riscv_lower_for_target(void)
 	                           lower_aggregates_as_pointers, NULL,
 	                           lower_aggregates_as_pointers, NULL,
 	                           reset_stateless_abi);
+	be_after_irp_transform("lower-calls");
 
 	foreach_irp_irg(i, irg) {
 		lower_CopyB(irg, 16, 17, false);
