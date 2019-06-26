@@ -68,7 +68,7 @@ const char *get_input_name(int argument_number)
 
 /* Generate VHDL identifier for entity output signals from an return
    parameter position.  TODO: make this user-supplyable. */
-const char *get_output_name(int argument_number)
+const char *get_vhdl_output_name(int argument_number)
 {
 	const char static *signals[] = {
 		/* "status", */
@@ -217,7 +217,7 @@ static void emit_process(ir_node *node, void *data)
 	case iro_Return: {
 		for (int n = 0; n < get_Return_n_ress(node); n++) {
 			ir_obst_printf(obst, "\t\t\t%s <= std_logic_vector(node%N);\t-- %+F\n",
-			               get_output_name(n), get_Return_res(node, n), node);
+			               get_vhdl_output_name(n), get_Return_res(node, n), node);
 			ir_obst_printf(obst, "\t\t\tREADY <= '1';\n");
 		}
 	}
@@ -450,12 +450,12 @@ static const char *get_irg_name(ir_graph *irg)
 	return get_entity_ld_name(entity);
 }
 
-void irg2vhdl(FILE *output, ir_graph *irg)
+void generate_architecture(FILE *output, ir_graph *irg)
 {
 	struct env env;
 	env.file = output;
 
-	fprintf(env.file, "architecture %s of test_atom is\n", get_irg_name(irg));
+	fprintf(env.file, "architecture %s of %s_ent is\n", get_irg_name(irg), get_irg_name(irg));
 	irg_walk_graph(irg, 0, emit_phi_signals, &env);
 	irg_walk_graph(irg, 0, emit_exec_signals, &env);
 	fprintf(env.file,
