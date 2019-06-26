@@ -70,23 +70,43 @@ static void irp2vhdl(char *filename)
 	};
 }
 
-int main(int argc, char *argv[])
+void irg2vhdl(ir_graph *irg)
 {
-	if (argc != 3) {
-		fprintf(stderr,"usage: ir2vhdl <irfile> <vhdlfile>\n");
-		return 1;
+	char *entity_name = get_entity_ld_name(get_irg_entity(irg));
+	char filename[1024];
+	snprintf(filename, sizeof filename, "%s%s", entity_name, ".vhd");
+	FILE *out = fopen(filename, "w");
+
+	if (!out) {
+		panic("Cannot open VHDL output file");
+		//TODO
 	}
 
-	ir_init();
-	init_firm2vhdl();
-
-	if (ir_import(argv[1])) {
-		/* ir_import actually seems to call exit() instead of returning. */
-		fprintf(stderr,"ir_import of file %s failed.\n", argv[1]);
-		return 1;
+	int result = fprintf(out, "library IEEE;\n"
+	                          "use IEEE.STD_LOGIC_1164.ALL;\n"
+	                          "use IEEE.NUMERIC_STD.ALL;\n\n"
+	                          "entity %s_ent is\n"
+	                          "\tport(\n"
+	                          "\t\tcontrol : in  std_logic_vector(7 downto 0);\n"
+	                          "\t\tclk     : in  std_logic;\n"
+	                          "\t\tinput0  : in  std_logic_vector(31 downto 0);\n"
+	                          "\t\tinput1  : in  std_logic_vector(31 downto 0);\n"
+	                          "\t\toutput0 : out std_logic_vector(31 downto 0);\n"
+	                          "\t\tstart   : in  std_logic;\n"
+	                          "\t\tready   : out std_logic\n"
+	                          "\t\t);\n"
+	                          "\n"
+	                          "\t--attribute mult_style         : string;\n"
+	                          "\t--attribute mult_style of Atom : entity is \"lut\";\n"
+	                          "\t---- alternative mult_styles are: {auto|block|lut|pipe_lut|CSD|KCM}\n"
+	                          "end %s_ent;\n\n", entity_name, entity_name);
+	if (result < 0) {
+		panic("Cannot write to VHDL output file");
+		//TODO
 	}
 
-	irp2vhdl(argv[2]);
-
-	return 0;
+	lower_for_vhdl(irg);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+	generate_architecture(out, irg);
+	fclose(out);
 }

@@ -63,6 +63,7 @@ all: firm
 
 # libFirm
 libfirm_SOURCES     = $(subst $(srcdir)/,,$(wildcard $(srcdir)/ir/*/*.c))
+libfirm_SOURCES     += $(subst $(srcdir)/,,$(wildcard $(srcdir)/ir/opt/firm2vhdl/*.c))
 libfirm_GEN_SOURCES =
 libfirm_DIRS        = $(sort $(dir $(libfirm_SOURCES))) include/libfirm include/libfirm/adt
 libfirm_GEN_DIRS    = $(sort $(dir $(libfirm_GEN_SOURCES)))

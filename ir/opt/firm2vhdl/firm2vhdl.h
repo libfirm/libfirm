@@ -6,7 +6,7 @@
 
 /* Register new Modes and Nodes w/ libfirm. */
 void init_firm2vhdl(void);
-void irg2vhdl(FILE *output, ir_graph *irg);
+void generate_architecture(FILE *output, ir_graph *irg);
 
 /* INITIALIZER for internal signals.  Used to avoid Metavalue warnings
    during simulation. TODO: check if it has effects on synthesis. */
