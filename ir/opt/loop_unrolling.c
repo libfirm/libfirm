@@ -1577,6 +1577,27 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 	}
 	set_irn_in(get_irn_link(node), arity, new_in);
 }
+
+static ir_node *create_abs(ir_node *node, ir_node *block)
+{
+	/*
+	 * Compile the following with O3 to get this form:
+	 * int abs(int n) { return n < 0 ? -n : n }
+	 */
+	assert(block_dominates(block, get_block(node)) >= 0);
+	ir_mode *mode = get_irn_mode(node);
+	if (!mode_is_signed(mode)) {
+		return node;
+	}
+	ir_graph *irg = get_irn_irg(block);
+	ir_node *shrs = new_r_Shrs(
+		block, node,
+		new_r_Const_long(irg, mode_Iu, get_mode_size_bits(mode) - 1));
+	ir_node *eor = new_r_Eor(block, shrs, node);
+	ir_node *sub = new_r_Sub(block, eor, shrs);
+	return sub;
+}
+
 enum Side { LEFT, RIGHT };
 #define Side enum Side
 
@@ -1585,18 +1606,19 @@ static ir_node *update_header_condition_add(linear_unroll_info *info,
 					    ir_node *c_cpy,
 					    ir_node *factor_const, bool less)
 {
-	ir_node *new_N_minus_c;
-	ir_node *mul = new_r_Mul(header, c_cpy, factor_const);
-	DB((dbg, LEVEL_4, "\tc * factor: %+F\n", mul));
-	if (info->op == ADD) {
-		new_N_minus_c = new_r_Sub(header, N, mul);
-	} else if (info->op == SUB) {
-		new_N_minus_c = new_r_Add(header, N, mul);
-	} else {
-		assert(false);
-	}
-	ir_node *new_N = less ? new_r_Add(header, new_N_minus_c, c_cpy) :
-				new_r_Sub(header, new_N_minus_c, c_cpy);
+	ir_node *c_abs = create_abs(c_cpy, header);
+	DB((dbg, LEVEL_4, "\t(|c|,c) = (%+F,%+F)\n", c_abs, c_cpy));
+	ir_node *one_const =
+		new_r_Const_long(get_irn_irg(header), get_irn_mode(c_abs), 1);
+	ir_node *factor_offset =
+		less ? new_r_Add(header, factor_const, one_const) :
+		       new_r_Sub(header, factor_const, one_const);
+	ir_node *mul = new_r_Mul(header, c_abs, factor_offset);
+	ir_node *new_N =
+		less ? new_r_Sub(header, N, mul) : new_r_Add(header, N, mul);
+	DEBUG_ONLY(char *symb_fac = less ? "+" : "-";
+		   char *symb_N = less ? "-" : "+";)
+	DB((dbg, LEVEL_4, "\t(|c|) * (factor %s 1): %+F\n", symb_fac, mul));
 	DB((dbg, LEVEL_4,
 	    "\tAttaching c + (N %s (c * factor)): %+F + (%+F %s (%+F * %+F) = %+F",
 	    info->op == ADD ? "-" : "+", c_cpy, N, info->op == ADD ? "-" : "+",
@@ -1662,8 +1684,10 @@ static ir_node *copy_and_rewire(ir_node *node, ir_node *target_block,
 }
 static bool is_less(linear_unroll_info *info)
 {
-	return info->rel == ir_relation_less ||
-	       info->rel == ir_relation_less_equal;
+	bool less = info->rel == ir_relation_less ||
+		    info->rel == ir_relation_less_equal;
+	bool inverted = info->phi == get_Cmp_right(info->cmp);
+	return less ^ inverted;
 }
 
 static void update_header_condition(linear_unroll_info *info, unsigned factor)
@@ -2008,22 +2032,23 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 
 	set_irn_in(I_cpy, get_irn_arity(I_cpy), new_phi_ins);
 	add_to_stack(I_cpy, &fixup_phis);
-	ir_node *one_const = new_r_Const_long(irg, get_irn_mode(c_cpy), 1);
-	ir_node *N_minus_I = less ? new_r_Sub(switch_header, N_cpy, I_cpy) :
-				    new_r_Sub(switch_header, I_cpy, N_cpy);
+	ir_node *c_abs = create_abs(c_cpy, switch_header);
+	ir_node *one_const = new_r_Const_long(irg, get_irn_mode(c_abs), 1);
+	ir_node *N_minus_I = create_abs(new_r_Sub(switch_header, I_cpy, N_cpy),
+					switch_header);
 	if (info->rel == ir_relation_less_equal) {
 		N_minus_I = new_r_Add(switch_header, N_minus_I, one_const);
 	} else if (info->rel == ir_relation_greater_equal) {
 		N_minus_I = new_r_Sub(switch_header, N_minus_I, one_const);
 	}
-	DB((dbg, LEVEL_4, "\t\tCreated %+F = (N - I) = %+F - %+F\n", N_minus_I,
-	    N_cpy, I_cpy));
-	ir_node *c_minus_one = new_r_Sub(switch_header, c_cpy, one_const);
-	ir_node *numerator = new_r_Add(switch_header, N_minus_I, c_minus_one);
-	DB((dbg, LEVEL_4, "\t\tCreated %+F = (N - I) + (c - 1) = %+F + %+F\n",
-	    numerator, N_minus_I, c_minus_one));
+	DB((dbg, LEVEL_4, "\t\tCreated %+F = |(N - I)| = |%+F - %+F|\n",
+	    N_minus_I, N_cpy, I_cpy));
+	ir_node *c_one = new_r_Sub(switch_header, c_abs, one_const);
+	ir_node *numerator = new_r_Add(switch_header, N_minus_I, c_one);
+	DB((dbg, LEVEL_4, "\t\tCreated %+F = (N - I) + (|c| - 1) = %+F + %+F\n",
+	    numerator, N_minus_I, c_one));
 	ir_node *pin = new_r_Pin(switch_header, new_r_NoMem(irg));
-	ir_node *denominator = less ? c_cpy : new_r_Minus(switch_header, c_cpy);
+	ir_node *denominator = less ? c_abs : new_r_Minus(switch_header, c_abs);
 	ir_node *div = new_r_DivRL(switch_header, pin, numerator, denominator,
 				   op_pin_state_pinned);
 	ir_node *div_proj =
@@ -2370,8 +2395,8 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	unrolled_headers = NULL;
 	unrolled_nodes = NULL;
 	ir_graph *irg = get_irn_irg(header);
-	//create_fixup_loop(loop, irg, info);
-	create_fixup_switch(loop, irg, factor, info);
+	create_fixup_loop(loop, irg, info);
+	//create_fixup_switch(loop, irg, factor, info);
 	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-pre-fix-graph"));
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	assure_irg_properties(
@@ -2386,11 +2411,11 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 	assure_irg_properties(
 		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
-		     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
-		     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
-		     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-		     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
-		     IR_GRAPH_PROPERTY_NO_BADS);
+			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
+			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
+			     IR_GRAPH_PROPERTY_NO_BADS);
 	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-lcssa"));
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	rewire_loop(loop, header, factor);
