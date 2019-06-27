@@ -1610,9 +1610,7 @@ static ir_node *update_header_condition_add(linear_unroll_info *info,
 	DB((dbg, LEVEL_4, "\t(|c|,c) = (%+F,%+F)\n", c_abs, c_cpy));
 	ir_node *one_const =
 		new_r_Const_long(get_irn_irg(header), get_irn_mode(c_abs), 1);
-	ir_node *factor_offset =
-		less ? new_r_Add(header, factor_const, one_const) :
-		       new_r_Sub(header, factor_const, one_const);
+	ir_node *factor_offset = new_r_Sub(header, factor_const, one_const);
 	ir_node *mul = new_r_Mul(header, c_abs, factor_offset);
 	ir_node *new_N =
 		less ? new_r_Sub(header, N, mul) : new_r_Add(header, N, mul);
@@ -1620,9 +1618,9 @@ static ir_node *update_header_condition_add(linear_unroll_info *info,
 		   char *symb_N = less ? "-" : "+";)
 	DB((dbg, LEVEL_4, "\t(|c|) * (factor %s 1): %+F\n", symb_fac, mul));
 	DB((dbg, LEVEL_4,
-	    "\tAttaching c + (N %s (c * factor)): %+F + (%+F %s (%+F * %+F) = %+F",
-	    info->op == ADD ? "-" : "+", c_cpy, N, info->op == ADD ? "-" : "+",
-	    c_cpy, factor_const, new_N));
+	    "\tAttaching (N %s (|c|* (factor %s 1))): (%+F %s (%+F * %+F)  = %+F %s %+F = %+F",
+	    symb_N, symb_fac, N, symb_N, c_abs, factor_offset, N, symb_N, mul,
+	    new_N));
 	return new_N;
 }
 static ir_node *create_r_pow(ir_node *block, ir_node *base,
