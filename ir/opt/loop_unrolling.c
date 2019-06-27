@@ -1578,7 +1578,7 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 	set_irn_in(get_irn_link(node), arity, new_in);
 }
 
-static ir_node *create_abs(ir_node *node, ir_node *block)
+static ir_node *create_abs(ir_node *block, ir_node *node)
 {
 	/*
 	 * Compile the following with O3 to get this form:
@@ -1606,7 +1606,7 @@ static ir_node *update_header_condition_add(linear_unroll_info *info,
 					    ir_node *c_cpy,
 					    ir_node *factor_const, bool less)
 {
-	ir_node *c_abs = create_abs(c_cpy, header);
+	ir_node *c_abs = create_abs(header, c_cpy);
 	DB((dbg, LEVEL_4, "\t(|c|,c) = (%+F,%+F)\n", c_abs, c_cpy));
 	ir_node *one_const =
 		new_r_Const_long(get_irn_irg(header), get_irn_mode(c_abs), 1);
@@ -2030,10 +2030,10 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 
 	set_irn_in(I_cpy, get_irn_arity(I_cpy), new_phi_ins);
 	add_to_stack(I_cpy, &fixup_phis);
-	ir_node *c_abs = create_abs(c_cpy, switch_header);
+	ir_node *c_abs = create_abs(switch_header, c_cpy);
 	ir_node *one_const = new_r_Const_long(irg, get_irn_mode(c_abs), 1);
-	ir_node *N_minus_I = create_abs(new_r_Sub(switch_header, I_cpy, N_cpy),
-					switch_header);
+	ir_node *N_minus_I = create_abs(switch_header,
+					new_r_Sub(switch_header, I_cpy, N_cpy));
 	if (info->rel == ir_relation_less_equal) {
 		N_minus_I = new_r_Add(switch_header, N_minus_I, one_const);
 	} else if (info->rel == ir_relation_greater_equal) {
@@ -2046,7 +2046,7 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	DB((dbg, LEVEL_4, "\t\tCreated %+F = (N - I) + (|c| - 1) = %+F + %+F\n",
 	    numerator, N_minus_I, c_one));
 	ir_node *pin = new_r_Pin(switch_header, new_r_NoMem(irg));
-	ir_node *denominator = less ? c_abs : new_r_Minus(switch_header, c_abs);
+	ir_node *denominator = c_abs;
 	ir_node *div = new_r_DivRL(switch_header, pin, numerator, denominator,
 				   op_pin_state_pinned);
 	ir_node *div_proj =
