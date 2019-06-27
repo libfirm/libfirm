@@ -1196,7 +1196,7 @@ static unsigned n_loops_unrolled = 0;
 
 static struct irn_stack *unrolled_headers;
 static struct irn_stack *unrolled_nodes;
-
+static struct irn_stack *fixup_phis;
 static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
 {
 	ir_graph *irg = get_irn_irg(header);
@@ -1258,6 +1258,7 @@ static void prune_block(ir_node *block, ir_node *header)
 		if (!is_Phi(phi)) {
 			continue;
 		}
+
 		unsigned phi_n_preds = get_irn_arity(phi);
 		if (get_irn_mode(phi) == mode_M) {
 			assert(phi_n_preds == 0);
@@ -1278,6 +1279,9 @@ static void prune_block(ir_node *block, ir_node *header)
 			ir_node *target = get_irn_out(phi, j);
 			ir_node *target_block = get_block(target);
 			if (is_in_stack(target_block, unrolled_headers)) {
+				continue;
+			}
+			if (is_in_stack(target, fixup_phis)) {
 				continue;
 			}
 			if (!is_in_stack(target_block, unrolled_nodes)) {
@@ -1540,8 +1544,8 @@ static void recursive_copy_in_loop(ir_node *node, ir_node *header)
 	for (unsigned i = 0; i < get_irn_arity(node); ++i) {
 		ir_node *to_cpy = get_irn_n(node, i);
 		ir_node *to_cpy_block = get_block(to_cpy);
-		if (!is_in_stack(to_cpy_block, unrolled_nodes) ||
-		    to_cpy_block == header) {
+		if (to_cpy_block == header ||
+		    block_dominates(to_cpy_block, header) > 0) {
 			continue;
 		}
 		if (get_irn_mode(to_cpy) != mode_M) {
@@ -1559,7 +1563,7 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 	for (unsigned i = 0; i < arity; ++i) {
 		ir_node *next = get_irn_n(node, i);
 		ir_node *next_block = get_block(next);
-		if (!is_in_stack(next_block, unrolled_nodes) ||
+		if (block_dominates(next_block, header) > 0 ||
 		    next_block == header) {
 			new_in[i] = next;
 			continue;
@@ -1977,8 +1981,33 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 			phi_mode = m;
 		}
 	}
+
+	bool less = is_less(info);
+	ir_node **tmp_ins = ALLOCAN(ir_node *, get_irn_arity(header));
+
+	for (unsigned i = 0; i < get_irn_arity(header); i++) {
+		ir_node *target = get_irn_n(info->phi, i);
+		tmp_ins[i] = get_irn_n(info->phi, i);
+		if (block_is_inside_loop(get_block(target), loop)) {
+			tmp_ins[i] = new_r_Bad(irg, get_irn_mode(target));
+		}
+	}
+
 	ir_node *I_cpy =
-		new_r_Phi(switch_header, info->i_size, info->i, phi_mode);
+		new_r_Phi(header, get_irn_arity(info->phi), tmp_ins, phi_mode);
+
+	ir_node **new_phi_ins = ALLOCAN(ir_node *, get_irn_arity(header));
+
+	for (unsigned i = 0; i < get_irn_arity(header); i++) {
+		ir_node *target = get_irn_n(info->phi, i);
+		new_phi_ins[i] = target;
+		if (block_is_inside_loop(get_block(target), loop)) {
+			new_phi_ins[i] = I_cpy;
+		}
+	}
+
+	set_irn_in(I_cpy, get_irn_arity(I_cpy), new_phi_ins);
+	add_to_stack(I_cpy, &fixup_phis);
 	ir_node *one_const = new_r_Const_long(irg, get_irn_mode(c_cpy), 1);
 	ir_node *N_minus_I = less ? new_r_Sub(switch_header, N_cpy, I_cpy) :
 				    new_r_Sub(switch_header, I_cpy, N_cpy);
@@ -2024,17 +2053,18 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	set_irn_in(target_blocks[0], 1, ins_first);
 	DB((dbg, LEVEL_4, "\t\tSetting in of %+F to %+F\n", target_blocks[0],
 	    ins_first[0]));
+	// TODO: I side effect  => loop
 	for (unsigned i = 1; i < factor - 1; ++i) {
 		ir_node **ins = ALLOCAN(ir_node *, 2);
 		ins[0] = new_r_Proj(switch_mod, mode_X, i + 1);
-		ins[1] = target_blocks[i - 1];
+		ins[1] = new_r_Jmp(target_blocks[i - 1]);
 		set_irn_in(target_blocks[i], 2, ins);
 		DB((dbg, LEVEL_4, "\t\tSetting in of %+F to %+F and %+F\n",
 		    target_blocks[i], ins[0], ins[1]));
 	}
 	ir_node **ins = ALLOCAN(ir_node *, 2);
 	ins[0] = new_r_Proj(switch_mod, mode_X, pn_Switch_default);
-	ins[1] = target_blocks[factor - 1 - 1];
+	ins[1] = new_r_Jmp(target_blocks[factor - 1 - 1]);
 	set_irn_in(after_loop, 2, ins);
 	DB((dbg, LEVEL_4, "\t\tSetting in of %+F to %+F and %+F\n", after_loop,
 	    ins[0], ins[1]));
@@ -2043,29 +2073,81 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 static ir_node *find_out_block_exit_(ir_node *node, ir_node *block,
 				     ir_mode *mode)
 {
+	assert(mode != mode_T);
+	DB((dbg, LEVEL_5, "\tQuerying %+F\n", node));
+
+	if (get_irn_mode(node) != mode && get_irn_mode(node) != mode_T) {
+		return NULL;
+	}
 	if (get_irn_n_outs(node) == 0 && get_irn_mode(node) == mode) {
-		DB((dbg, LEVEL_5, "\tFound %+F", node));
+		DB((dbg, LEVEL_5, "\t\tFound %+F: node with no exits", node));
 		return node;
 	}
-	for (int i = 0; i < get_irn_n_outs(node); ++i) {
+	bool any_same_mode = false;
+	unsigned n_outs = get_irn_n_outs(node);
+	for (int i = 0; i < n_outs; ++i) {
+		DB((dbg, LEVEL_5, "\t\tNode has child: %+F\n",
+		    get_irn_out(node, i)));
+	}
+	for (int i = 0; i < n_outs; ++i) {
 		ir_node *curr = get_irn_out(node, i);
-		if (get_block(curr) != block) {
-			DB((dbg, LEVEL_5, "\tFound %+F\n", node));
+		DB((dbg, LEVEL_5, "\t\tQuerying out %+F\n", curr));
+
+		if (get_irn_mode(curr) == mode) {
+			any_same_mode = true;
+		}
+		if (get_block(curr) != block && get_irn_mode(curr) == mode) {
+			DB((dbg, LEVEL_5, "\tFound %+F: Out of block node\n",
+			    node));
 			return node;
 		}
 		ir_node *find = find_out_block_exit_(curr, block, mode);
 		if (find) {
-			DB((dbg, LEVEL_5, "\tReturning %+F\n", find));
+			DB((dbg, LEVEL_5, "\t\tReturning %+F\n", find));
 			return find;
 		}
 	}
-	DB((dbg, LEVEL_5, "\tNothing found", node));
+	if (!any_same_mode) {
+		DB((dbg, LEVEL_5,
+		    "\t\tFound %+F: none of the %u exits were the right mode\n",
+		    node, n_outs));
+		return node;
+	}
+	DB((dbg, LEVEL_5, "\t\tNothing found", node));
 	return NULL;
 }
 #define find_block_exit(node)                                                  \
 	find_out_block_exit_(node, get_block(node), get_irn_mode(node))        \
 		DEBUG_ONLY(; DB((dbg, LEVEL_5, "Looking for exit of %+F\n",    \
-				 node));)
+				 node)))
+
+static ir_node *find_in_header_phi(ir_node *node, ir_node *header)
+{
+	assert(node);
+	assert(!is_Block(node));
+	for (unsigned k = 0; k < get_irn_arity(node); k++) {
+		ir_node *curr = get_irn_n(node, k);
+		if (get_block(curr) == header && is_Phi(curr)) {
+			return curr;
+		}
+	}
+	return NULL;
+}
+static ir_node *find_into_loop_phi(ir_node *header_phi, ir_loop *loop)
+{
+	assert(header_phi);
+	for (unsigned k = 0; k < get_irn_arity(header_phi); k++) {
+		ir_node *phi_in = get_irn_n(header_phi, k);
+		DB((dbg, LEVEL_4, "\t\t\t\tHeader phi %+F points to %+F\n",
+		    header_phi, phi_in));
+		if (block_is_inside_loop(get_block(phi_in), loop)) {
+			DB((dbg, LEVEL_4, "\t\t\t\tLast in: Link of %+F\n",
+			    phi_in));
+			return phi_in;
+		}
+	}
+	return NULL;
+}
 
 static ir_node *get_link_in(ir_node *link, ir_node *block)
 {
@@ -2179,11 +2261,16 @@ static void rewire_link(ir_node *node, ir_loop *loop, ir_node *header,
 					ir_node **new_ins_out = ALLOCAN(
 						ir_node *, out_arity + 1);
 					for (unsigned k = 0; k < arity; k++) {
-						new_ins_out[k] =
+						ir_node *new_in =
 							get_irn_n(out, k);
+						new_ins_out[k] = new_in;
 					}
 					new_ins_out[out_arity] =
-						find_block_exit(link);
+						get_irn_link(find_into_loop_phi(
+							find_in_header_phi(
+								out, header),
+							loop));
+
 					for (unsigned k = 0; k < arity + 1;
 					     k++) {
 						DB((dbg, LEVEL_4,
@@ -2240,6 +2327,7 @@ static ir_node *duplicate_rewire_loop_body(ir_loop *const loop, ir_node *header,
 static void create_fixup_switch(ir_loop *const loop, ir_graph *irg,
 				unsigned factor, linear_unroll_info *info)
 {
+	fixup_phis = NULL;
 	DB((dbg, LEVEL_4, "Creating switch-case fixup\n"));
 	ir_node *header = get_loop_header(loop);
 	ir_node *in_loop_target, *out_of_loop_target;
@@ -2254,13 +2342,17 @@ static void create_fixup_switch(ir_loop *const loop, ir_graph *irg,
 			loop, header, irg, out_of_loop_target,
 			i == 0 ? NULL : dups[i - 1], i == factor - 2);
 	}
+	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-pre-switch-header-1"));
+
 	ir_node *end = get_irg_end(irg);
 	iterate_stack(kas)
 	{
 		remove_End_keepalive(end, curr->el);
 	}
 	free_stack(&kas);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-pre-switch-header"));
+	// Cleared when removing KAs
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-pre-switch-header-2"));
 	create_fixup_switch_header(loop, irg, factor, dups, out_of_loop_target,
 				   info);
 	free(dups);
@@ -2290,6 +2382,16 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
 			     IR_GRAPH_PROPERTY_NO_BADS);
 	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup"));
+	assure_lcssa(irg);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+	assure_irg_properties(
+		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+		     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+		     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
+		     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+		     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
+		     IR_GRAPH_PROPERTY_NO_BADS);
+	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-lcssa"));
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	rewire_loop(loop, header, factor);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
