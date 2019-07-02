@@ -2230,8 +2230,10 @@ static void rewire_interally(struct irn_stack *nodes, ir_graph *irg)
 				    "%+F points to %+F link of %+F (block %+F)\n",
 				    link, in, link_in,
 				    link_in ? get_block(link_in) : NULL));
-				bool is_global = is_Const(in) || is_Address(in);
-				if (is_global) {
+				bool in_is_inside_loop = block_is_inside_loop(
+					get_block(in), loop);
+				if (is_irn_constlike(in) ||
+				    !in_is_inside_loop) {
 					new_ins[j] = in;
 				} else if (link_in &&
 					   is_in_stack(get_block(link_in),
@@ -2506,7 +2508,7 @@ static pmap *duplicate_rewire_loop_body(ir_loop *const loop, ir_node *header,
 	add_all_to_map(copied, map);
 	dups[dups_pos] = first;
 	add_keep_alives_to_all(copied, kas, get_irg_end(irg));
-	rewire_interally(copied, irg);
+	rewire_interally(copied, irg, loop);
 	confirm_irg_properties(
 		irg, irg->properties & ~IR_GRAPH_PROPERTY_CONSISTENT_OUTS &
 			     ~IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
