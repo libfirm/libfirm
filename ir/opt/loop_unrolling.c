@@ -1988,6 +1988,18 @@ static ir_node *get_phi_M(ir_node *block)
 	return NULL;
 }
 
+static ir_node *get_in_to_header(ir_node *node, ir_node *header)
+{
+	for (unsigned i = 0; i < get_irn_arity(node); i++) {
+		ir_node *in = get_irn_n(node, i);
+		ir_node *in_block = get_block(in);
+		if (block_dominates(in_block, header) > 0) {
+			return in;
+		}
+	}
+	return NULL;
+}
+
 static unsigned get_in_n_to_header(ir_node *target, ir_node *header)
 {
 	unsigned header_idx = 0;
@@ -2316,6 +2328,13 @@ static void rewire_post(ir_node *last_block, ir_node *post_block,
 					node, in, added, loop, header, final);
 			}
 		}
+		if (is_Phi(node)) {
+			ir_node *header_in = get_in_to_header(node, header);
+			while (get_irn_arity(node) <
+			       get_irn_arity(post_block)) {
+				add_edge(node, header_in);
+			}
+		}
 	}
 	pset_break(added);
 	confirm_irg_properties(irg, irg->properties &
@@ -2347,17 +2366,6 @@ static void rewire_pointing_to_bad_intermediary(
 		set_irn_in(node, 1, phi_arr);
 		rewire_pointing_to_bad_first(phi, bad_index);
 	}
-}
-static ir_node *get_in_to_header(ir_node *node, ir_node *header)
-{
-	for (unsigned i = 0; i < get_irn_arity(node); i++) {
-		ir_node *in = get_irn_n(node, i);
-		ir_node *in_block = get_block(in);
-		if (block_dominates(in_block, header) > 0) {
-			return in;
-		}
-	}
-	return NULL;
 }
 
 static void rewire_intermediary(struct irn_stack *current, pmap *prevs,
