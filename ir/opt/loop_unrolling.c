@@ -1683,8 +1683,11 @@ static ir_node *update_header_condition_mul(linear_unroll_info *info,
 static ir_node *copy_and_rewire(ir_node *node, ir_node *target_block,
 				ir_node *phi_M)
 {
-	if (is_Const(node)) {
+	if (is_irn_constlike(node)) {
 		return exact_copy(node);
+	}
+	if (block_dominates(get_block(node), target_block) > 0) {
+		return node;
 	}
 	ir_node *cpy = duplicate_node(node, target_block);
 	recursive_copy_in_loop(cpy, target_block);
