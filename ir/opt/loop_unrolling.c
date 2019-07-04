@@ -2029,7 +2029,6 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 		}
 	}
 
-	bool less = is_less(info);
 	ir_node **tmp_ins = ALLOCAN(ir_node *, get_irn_arity(header));
 
 	for (unsigned i = 0; i < get_irn_arity(header); i++) {
@@ -2114,59 +2113,6 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	set_irn_n(target, get_in_n_to_header(target, header), proj);
 	DB((dbg, LEVEL_4, "\t\tSetting in of %+F to %+F\n", target, proj));
 	return switch_header;
-}
-
-static ir_node *find_in_header_phi(ir_node *node, ir_node *header)
-{
-	assert(node);
-	assert(!is_Block(node));
-	for (unsigned k = 0; k < get_irn_arity(node); k++) {
-		ir_node *curr = get_irn_n(node, k);
-		if (get_block(curr) == header && is_Phi(curr)) {
-			return curr;
-		}
-	}
-	return NULL;
-}
-static ir_node *find_into_loop_phi(ir_node *header_phi, ir_loop *loop)
-{
-	assert(header_phi);
-	for (unsigned k = 0; k < get_irn_arity(header_phi); k++) {
-		ir_node *phi_in = get_irn_n(header_phi, k);
-		DB((dbg, LEVEL_4, "\t\t\t\tHeader phi %+F points to %+F\n",
-		    header_phi, phi_in));
-		if (block_is_inside_loop(get_block(phi_in), loop)) {
-			DB((dbg, LEVEL_4, "\t\t\t\tLast in: Link of %+F\n",
-			    phi_in));
-			return phi_in;
-		}
-	}
-	return NULL;
-}
-
-static ir_node *get_link_in(ir_node *link, ir_node *block)
-{
-	assert(is_Block(block));
-	assert(!is_Block(link));
-	clear_irg_properties(get_irn_irg(link),
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
-	assure_irg_properties(get_irn_irg(link),
-			      IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
-	DB((dbg, LEVEL_5, "Looking for node linked to %+F in %+F\n", link,
-	    block));
-	for (unsigned i = 0; i < get_irn_n_outs(block); i++) {
-		ir_node *curr = get_irn_out(block, i);
-		ir_node *curr_link = get_irn_link(curr);
-		DB((dbg, LEVEL_5, "\tChecking %+F with link to %+F\n", curr,
-		    curr_link));
-		if (get_block(curr) != block) {
-			continue;
-		}
-		if (curr_link == link) {
-			return curr;
-		}
-	}
-	return NULL;
 }
 
 static void rewire_interally(struct irn_stack *nodes, ir_graph *irg,
