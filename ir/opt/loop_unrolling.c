@@ -1984,6 +1984,20 @@ static ir_node *get_phi_M(ir_node *block)
 	}
 	return NULL;
 }
+
+static unsigned get_in_n_to_header(ir_node *target, ir_node *header)
+{
+	unsigned header_idx = 0;
+	for (unsigned j = 0; j < get_irn_arity(target); j++) {
+		ir_node *n_block = get_block(get_irn_n(target, j));
+		if (n_block == header) {
+			header_idx = j;
+			break;
+		}
+	}
+	return header_idx;
+}
+
 static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 					   unsigned factor,
 					   ir_node **target_blocks,
@@ -2089,19 +2103,16 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	    ins_first[0]));
 	// TODO: I side effect  => loop
 	for (unsigned i = 1; i < factor - 1; ++i) {
-		ir_node **ins = ALLOCAN(ir_node *, 2);
-		ins[0] = new_r_Proj(switch_mod, mode_X, i + 1);
-		ins[1] = new_r_Jmp(target_blocks[i - 1]);
-		set_irn_in(target_blocks[i], 2, ins);
-		DB((dbg, LEVEL_4, "\t\tSetting in of %+F to %+F and %+F\n",
-		    target_blocks[i], ins[0], ins[1]));
+		ir_node *proj = new_r_Proj(switch_mod, mode_X, i + 1);
+		ir_node *target = target_blocks[i];
+		set_irn_n(target, get_in_n_to_header(target, header), proj);
+		DB((dbg, LEVEL_4, "\t\tSetting in of %+F to %+F\n", target,
+		    proj));
 	}
-	ir_node **ins = ALLOCAN(ir_node *, 2);
-	ins[0] = new_r_Proj(switch_mod, mode_X, pn_Switch_default);
-	ins[1] = new_r_Jmp(target_blocks[factor - 1 - 1]);
-	set_irn_in(after_loop, 2, ins);
-	DB((dbg, LEVEL_4, "\t\tSetting in of %+F to %+F and %+F\n", after_loop,
-	    ins[0], ins[1]));
+	ir_node *proj = new_r_Proj(switch_mod, mode_X, pn_Switch_default);
+	ir_node *target = after_loop;
+	set_irn_n(target, get_in_n_to_header(target, header), proj);
+	DB((dbg, LEVEL_4, "\t\tSetting in of %+F to %+F\n", target, proj));
 	return switch_header;
 }
 static ir_node *find_out_block_exit_(ir_node *node, ir_node *block,
@@ -2208,11 +2219,35 @@ static ir_node *get_link_in(ir_node *link, ir_node *block)
 	return NULL;
 }
 
-static void rewire_interally(struct irn_stack *nodes, ir_graph *irg)
+static void rewire_interally(struct irn_stack *nodes, ir_graph *irg,
+			     ir_loop *loop)
 {
 	iterate_stack(nodes)
 	{
+		ir_node *link_block = curr->el;
 		ir_node *block = get_irn_link(curr->el);
+		ir_node **new_ins_block =
+			ALLOCAN(ir_node *, get_irn_arity(link_block));
+		bool link_to_header = false;
+		for (unsigned i = 0; i < get_irn_arity(block); i++) {
+			ir_node *in = get_irn_n(block, i);
+			ir_node *link_in = get_irn_link(in);
+			if (!link_in) {
+				link_to_header = true;
+				break;
+			}
+			new_ins_block[i] = link_in;
+		}
+		if (!link_to_header) {
+			for (unsigned i = 0; i < get_irn_arity(block); i++) {
+				DB((dbg, LEVEL_5,
+				    "Wiring block %+F (link of %+F) to %+F (link of %+F)]\n",
+				    link_block, block, new_ins_block[i],
+				    get_irn_link(new_ins_block[i])));
+			}
+			set_irn_in(link_block, get_irn_arity(block),
+				   new_ins_block);
+		}
 		for (unsigned i = 0; i < get_irn_n_outs(block); i++) {
 			ir_node *node = get_irn_out(block, i);
 			if (get_block(node) != block) {
@@ -2350,32 +2385,37 @@ static void rewire_post_out(ir_node *out, ir_node *node_to_add)
 	}
 }
 static void rewire_post_out_into_header(ir_node *out, ir_node *header_node,
-					pset *added, ir_loop *loop)
+					pset *added, ir_loop *loop,
+					ir_node *header, pmap *final)
 {
 	unsigned outs = get_irn_n_outs(header_node);
 	for (unsigned i = 0; i < outs; i++) {
 		ir_node *node = get_irn_out(header_node, i);
 		ir_node *link = get_irn_link(node);
-		if (!link) {
+		if (!pmap_contains(final, node)) {
 			continue;
 		}
-		ir_node *exit = find_block_exit(link);
-		ir_node *exit_link = get_irn_link(exit);
-		if (pset_find_ptr(added, exit_link)) {
+		DB((dbg, LEVEL_5, "\tChecking exit %+F\n", link));
+		ir_node *exit = get_exit(link, header, final);
+		DB((dbg, LEVEL_5, "\t\tFinal exit %+F\n", exit));
+		assert(exit);
+		if (pset_find_ptr(added, exit)) {
 			continue;
 		}
-		pset_insert_ptr(added, exit_link);
-		if (block_is_inside_loop(get_block(exit_link), loop)) {
+		pset_insert_ptr(added, exit);
+		if (block_is_inside_loop(get_block(exit), loop)) {
 			continue;
 		}
-		rewire_post_out(out, exit_link);
-		DB((dbg, LEVEL_5, "Header exit %+F pointed to by %+F\n", out,
-		    exit_link));
+		rewire_post_out(out, exit);
+		DB((dbg, LEVEL_5, "\t\t\tHeader exit %+F pointed to by %+F\n",
+		    out, exit));
 	}
 }
 static void rewire_post(ir_node *last_block, ir_node *post_block,
-			ir_node *header, ir_graph *irg, ir_loop *loop)
+			ir_node *header, ir_graph *irg, ir_loop *loop,
+			pmap *final)
 {
+	DB((dbg, LEVEL_5, "Rewire post\n"));
 	assert(irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE));
 	ir_node *fallthrogh_jmp = new_r_Jmp(last_block);
 	add_edge(post_block, fallthrogh_jmp);
@@ -2388,8 +2428,8 @@ static void rewire_post(ir_node *last_block, ir_node *post_block,
 			ir_node *in = get_irn_n(node, j);
 			ir_node *in_block = get_block(in);
 			if (block_dominates(in_block, header) > 0) {
-				rewire_post_out_into_header(node, in, added,
-							    loop);
+				rewire_post_out_into_header(
+					node, in, added, loop, header, final);
 			}
 		}
 	}
@@ -2455,7 +2495,7 @@ static void rewire_intermediary(struct irn_stack *current, pmap *prevs,
 		ir_node *link = get_irn_link(node);
 		ir_node *link_in_at_bad_index = get_in_to_header(link, header);
 		assert(link_in_at_bad_index);
-		prepend_edge(node, link_in_at_bad_index);
+		add_edge(node, link_in_at_bad_index);
 	}
 	free_stack(&pointing_to_header);
 }
@@ -2557,7 +2597,7 @@ static void create_fixup_switch(ir_loop *const loop, ir_graph *irg,
 					    ~IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	assert(last_block);
-	rewire_post(last_block, out_of_loop_target, header, irg, loop);
+	rewire_post(last_block, out_of_loop_target, header, irg, loop, prevs);
 	pmap_destroy(prevs);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	set_optimize(opt);
