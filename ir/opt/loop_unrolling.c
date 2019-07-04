@@ -2115,56 +2115,6 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	DB((dbg, LEVEL_4, "\t\tSetting in of %+F to %+F\n", target, proj));
 	return switch_header;
 }
-static ir_node *find_out_block_exit_(ir_node *node, ir_node *block,
-				     ir_mode *mode)
-{
-	assert(mode != mode_T);
-	DB((dbg, LEVEL_5, "\tQuerying %+F\n", node));
-
-	if (get_irn_mode(node) != mode && get_irn_mode(node) != mode_T) {
-		return NULL;
-	}
-	if (get_irn_n_outs(node) == 0 && get_irn_mode(node) == mode) {
-		DB((dbg, LEVEL_5, "\t\tFound %+F: node with no exits", node));
-		return node;
-	}
-	bool any_same_mode = false;
-	unsigned n_outs = get_irn_n_outs(node);
-	for (int i = 0; i < n_outs; ++i) {
-		DB((dbg, LEVEL_5, "\t\tNode has child: %+F\n",
-		    get_irn_out(node, i)));
-	}
-	for (int i = 0; i < n_outs; ++i) {
-		ir_node *curr = get_irn_out(node, i);
-		DB((dbg, LEVEL_5, "\t\tQuerying out %+F\n", curr));
-
-		if (get_irn_mode(curr) == mode) {
-			any_same_mode = true;
-		}
-		if (get_block(curr) != block && get_irn_mode(curr) == mode) {
-			DB((dbg, LEVEL_5, "\tFound %+F: Out of block node\n",
-			    node));
-			return node;
-		}
-		ir_node *find = find_out_block_exit_(curr, block, mode);
-		if (find) {
-			DB((dbg, LEVEL_5, "\t\tReturning %+F\n", find));
-			return find;
-		}
-	}
-	if (!any_same_mode) {
-		DB((dbg, LEVEL_5,
-		    "\t\tFound %+F: none of the %u exits were the right mode\n",
-		    node, n_outs));
-		return node;
-	}
-	DB((dbg, LEVEL_5, "\t\tNothing found", node));
-	return NULL;
-}
-#define find_block_exit(node)                                                  \
-	find_out_block_exit_(node, get_block(node), get_irn_mode(node))        \
-		DEBUG_ONLY(; DB((dbg, LEVEL_5, "Looking for exit of %+F\n",    \
-				 node)))
 
 static ir_node *find_in_header_phi(ir_node *node, ir_node *header)
 {
@@ -2322,27 +2272,8 @@ static void add_keep_alives_to_all(struct irn_stack *nodes,
 		}                                                              \
 	}
 
-static ir_node *get_node_with_same_link(ir_node *node,
-					struct irn_stack *app_blocks)
-{
-	ir_node *link = get_irn_link(node);
-	assert(link);
-	iterate_stack(app_blocks)
-	{
-		ir_node *block = curr->el;
-		for (unsigned i = 0; i < get_irn_n_outs(block); i++) {
-			ir_node *out = get_irn_out(block, i);
-			if (get_block(out) != block)
-				continue;
-			if (get_irn_link(out) == link) {
-				return out;
-			}
-		}
-	}
-	return NULL;
-}
-
-static ir_node *get_exit(ir_node *start, ir_node *header, pmap *map)
+static ir_node *get_exit_(ir_node *start, ir_mode *mode, ir_node *header,
+			  pmap *map)
 {
 	unsigned app_outs = 0;
 	for (unsigned i = 0; i < get_irn_n_outs(start); ++i) {
@@ -2352,12 +2283,16 @@ static ir_node *get_exit(ir_node *start, ir_node *header, pmap *map)
 			continue;
 		}
 		app_outs++;
-		ir_node *exit = get_exit(out, header, map);
+		ir_node *exit = get_exit_(out, mode, header, map);
 		if (exit)
 			return exit;
 	}
-	return app_outs > 0 ? NULL : start;
+	return app_outs == 0 && get_irn_mode(start) == mode ? start : NULL;
 }
+
+#define get_exit(start, header, map)                                           \
+	get_exit_(start, get_irn_mode(start), header, map)
+
 static void rewire_pointing_to_bad_first(ir_node *node, unsigned bad_index)
 {
 	ir_node *link = get_irn_link(node);
