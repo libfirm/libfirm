@@ -2503,7 +2503,12 @@ static pmap *duplicate_rewire_loop_body(ir_loop *const loop, ir_node *header,
 			first = curr;
 		add_to_stack(curr, &copied);
 	}
-	*last_node = copied->el;
+	for (unsigned i = 0; i < get_irn_arity(header); i++) {
+		ir_node *in = get_irn_n(header, i);
+		ir_node *in_block = get_block(in);
+		if (block_is_inside_loop(in_block, loop))
+			*last_node = get_irn_link(in_block);
+	}
 	pmap *map = pmap_create();
 	add_all_to_map(copied, map);
 	dups[dups_pos] = first;
