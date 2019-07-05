@@ -50,7 +50,7 @@
 #include "target_t.h"
 #include "util.h"
 #include <stdio.h>
-#include "../opt/firm2vhdl/ir2vhdl.h"
+#include <vhdl/vhdl_bearch_t.h>
 
 static struct obstack obst;
 static be_main_env_t  env;
@@ -580,15 +580,11 @@ void be_finish(void)
 
 void be_main(FILE *file_handle, const char *cup_name)
 {
-	/* Write additional VHDL if desired */
-	foreach_irp_irg(i, irg) {
-		if (mtp_special_instruction & get_entity_additional_properties(get_irg_entity(irg))) {
-			irg2vhdl(irg);
-		}
-	}
-
 	/* Let the target control how the codegeneration works. */
 	ir_target.isa->generate_code(file_handle, cup_name);
+
+	/* Write additional VHDL if desired */
+	vhdl_generate_code(file_handle, cup_name);
 }
 
 ir_jit_function_t *be_jit_compile(ir_jit_segment_t *const segment,

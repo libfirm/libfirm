@@ -414,6 +414,20 @@ add_backend(riscv
 	ir/be/riscv/riscv_nodes_attr.c
 	ir/be/riscv/riscv_transform.c
 )
+
+add_backend(vhdl
+	ir/be/vhdl/vhdl_bearch.c
+	ir/be/vhdl/vhdl_bearch_t.h
+	ir/be/vhdl/vhdl_emitter.c
+	ir/be/vhdl/vhdl_emitter.h
+	ir/be/vhdl/vhdl_new_nodes.c
+	ir/be/vhdl/vhdl_new_nodes_t.h
+	ir/be/vhdl/vhdl_nodes_attr.h
+	ir/be/vhdl/vhdl_spec.pl
+	ir/be/vhdl/vhdl_transform.c
+	ir/be/vhdl/vhdl_transform.h
+)
+
 add_backend(TEMPLATE
 	ir/be/TEMPLATE/TEMPLATE_bearch.c
 	ir/be/TEMPLATE/TEMPLATE_emitter.c

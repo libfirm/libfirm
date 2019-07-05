@@ -80,7 +80,7 @@ libfirm_BUILDDIRS   = $(sort $(dir $(libfirm_OBJECTS))) $(addprefix $(gendir)/, 
 firm: $(libfirm_dll) $(libfirm_a)
 
 # backends
-backends = amd64 arm ia32 mips riscv sparc TEMPLATE
+backends = amd64 arm ia32 mips riscv sparc vhdl TEMPLATE
 
 EMITTER_GENERATOR = $(srcdir)/ir/be/scripts/generate_emitter.pl
 REGALLOC_IF_GENERATOR = $(srcdir)/ir/be/scripts/generate_regalloc_if.pl
