@@ -2299,16 +2299,18 @@ static void rewire_post_out_into_header(ir_node *out, ir_node *header_node,
 		if (block_is_inside_loop(get_block(exit), loop)) {
 			continue;
 		}
+		DB((dbg, LEVEL_5,
+		    "\t\t\t\tHeader exit %+F pointed to by %+F (exit of %+F)\n",
+		    out, exit, link));
 		rewire_post_out(out, exit);
-		DB((dbg, LEVEL_5, "\t\t\tHeader exit %+F pointed to by %+F\n",
-		    out, exit));
 	}
 }
 static void rewire_post(ir_node *last_block, ir_node *post_block,
 			ir_node *header, ir_graph *irg, ir_loop *loop,
 			pmap *final)
 {
-	DB((dbg, LEVEL_5, "Rewire post\n"));
+	DB((dbg, LEVEL_5, "Rewire post of %+F with header %+F\n", loop,
+	    header));
 	assert(irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE));
 	ir_node *fallthrogh_jmp = new_r_Jmp(last_block);
 	add_edge(post_block, fallthrogh_jmp);
@@ -2320,6 +2322,9 @@ static void rewire_post(ir_node *last_block, ir_node *post_block,
 		for (unsigned j = 0; j < get_irn_arity(node); j++) {
 			ir_node *in = get_irn_n(node, j);
 			ir_node *in_block = get_block(in);
+			if (is_irn_constlike(in)) {
+				continue;
+			}
 			if (block_dominates(in_block, header) > 0) {
 				rewire_post_out_into_header(
 					node, in, added, loop, header, final);
@@ -2345,7 +2350,7 @@ static void rewire_pointing_to_bad_intermediary(
 	ir_node *link = get_irn_link(node);
 	if (is_Phi(node)) {
 		ir_node *exit = get_exit(link, header, prevs);
-		assert(exit);
+		exit = exit ? exit : link;
 		ir_node *target = pmap_get(ir_node, prevs, exit);
 		assert(target);
 		set_irn_n(node, bad_index, target);
