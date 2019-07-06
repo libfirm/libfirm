@@ -2305,6 +2305,55 @@ static void rewire_post_out_into_header(ir_node *out, ir_node *header_node,
 		rewire_post_out(out, exit);
 	}
 }
+static bool dominated_by_in_loop_not_header(ir_node *block, ir_loop *loop,
+					    ir_node *header)
+{
+	for (unsigned i = 0; i < get_loop_n_elements(loop); i++) {
+		loop_element el = get_loop_element(loop, i);
+		if (*el.kind != k_ir_node) {
+			continue;
+		}
+		ir_node *loop_block = el.node;
+		if (loop_block == header) {
+			continue;
+		}
+		if (block_dominates(loop_block, block) > 0) {
+			return true;
+		}
+	}
+	return false;
+}
+static void rewire_missing_node(ir_node *link, ir_loop *loop, ir_node *header)
+{
+	assert(!is_Block(link));
+	ir_node *node = get_irn_link(link);
+	for (unsigned i = 0; i < get_irn_n_outs(link); ++i) {
+		ir_node *out = get_irn_out(link, i);
+		ir_node *out_block = get_block(out);
+		if (!get_irn_link(out) &&
+		    !block_is_inside_loop(out_block, loop) &&
+		    dominated_by_in_loop_not_header(out_block, loop, header)) {
+			add_edge(out, node);
+		}
+	}
+}
+static void rewire_missing(struct irn_stack *head, ir_loop *loop,
+			   ir_node *header)
+{
+	iterate_stack(head)
+	{
+		ir_node *block = get_irn_link(curr->el);
+		for (unsigned i = 0; i < get_irn_n_outs(block); ++i) {
+			ir_node *out = get_irn_out(block, i);
+			ir_node *out_block = get_block(out);
+			if (out_block != block) {
+				continue;
+			}
+			rewire_missing_node(out, loop, header);
+		}
+	}
+}
+
 static void rewire_post(ir_node *last_block, ir_node *post_block,
 			ir_node *header, ir_graph *irg, ir_loop *loop,
 			pmap *final)
@@ -2459,6 +2508,8 @@ static pmap *duplicate_rewire_loop_body(ir_loop *const loop, ir_node *header,
 	} else {
 		rewire_first(copied, irg);
 	}
+	rewire_missing(copied, loop, header);
+	free_stack(&copied);
 	return map;
 }
 static void create_fixup_switch(ir_loop *const loop, ir_graph *irg,
