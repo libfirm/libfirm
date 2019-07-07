@@ -2282,16 +2282,20 @@ static void rewire_post_out_into_header(ir_node *out, ir_node *header_node,
 					ir_node *header, pmap *final)
 {
 	unsigned outs = get_irn_n_outs(header_node);
+	DB((dbg, LEVEL_5, "\tLooking for outs in %+F (block: %+F)\n",
+	    header_node, get_block(header_node)));
 	for (unsigned i = 0; i < outs; i++) {
 		ir_node *node = get_irn_out(header_node, i);
 		ir_node *link = get_irn_link(node);
 		if (!pmap_contains(final, node)) {
 			continue;
 		}
-		DB((dbg, LEVEL_5, "\tChecking exit %+F\n", link));
+		DB((dbg, LEVEL_5, "\t\tChecking exit %+F\n", link));
 		ir_node *exit = get_exit(link, header, final);
-		DB((dbg, LEVEL_5, "\t\tFinal exit %+F\n", exit));
-		assert(exit);
+		DB((dbg, LEVEL_5, "\t\t\tFinal exit %+F\n", exit));
+		if (!exit) {
+			continue;
+		}
 		if (pset_find_ptr(added, exit)) {
 			continue;
 		}
