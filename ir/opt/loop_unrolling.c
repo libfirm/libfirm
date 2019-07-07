@@ -2234,6 +2234,9 @@ static ir_node *get_exit_(ir_node *start, ir_mode *mode, ir_node *header,
 			  pmap *map)
 {
 	unsigned app_outs = 0;
+	if (is_Block(start)) {
+		return NULL;
+	}
 	for (unsigned i = 0; i < get_irn_n_outs(start); ++i) {
 		ir_node *out = get_irn_out(start, i);
 		ir_node *out_block = get_block(out);
@@ -2294,7 +2297,7 @@ static void rewire_post_out_into_header(ir_node *out, ir_node *header_node,
 		ir_node *exit = get_exit(link, header, final);
 		DB((dbg, LEVEL_5, "\t\t\tFinal exit %+F\n", exit));
 		if (!exit) {
-			continue;
+			exit = link;
 		}
 		if (pset_find_ptr(added, exit)) {
 			continue;
