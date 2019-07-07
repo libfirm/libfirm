@@ -98,6 +98,52 @@ static ir_node *get_loop_header(ir_loop *const loop)
 	return block_dominates_loop(header, loop) ? header : NULL;
 }
 
+static bool is_Proj_attached_to_Cmp(ir_node *const proj)
+{
+	assert(is_Proj(proj));
+	ir_node *post_proj = get_Proj_pred(proj);
+	if (!is_Cond(post_proj)) {
+		return false;
+	}
+	ir_node *pre_Cond = get_Cond_selector(post_proj);
+	return is_Cmp(pre_Cond);
+}
+
+static void get_false_and_true_targets(ir_node *header,
+				       ir_node **in_loop_target,
+				       ir_node **out_of_loop_target)
+{
+	unsigned n = get_irn_n_outs(header);
+	DB((dbg, LEVEL_4, "\tSearching targets of %+F\n", header));
+	*in_loop_target = NULL;
+	*out_of_loop_target = NULL;
+	for (unsigned i = 0; i < n; ++i) {
+		ir_node *curr = get_irn_out(header, i);
+		if (!is_Proj(curr) || !is_Proj_attached_to_Cmp(curr)) {
+			continue;
+		}
+		if (get_Proj_num(curr) == pn_Cond_true ||
+		    get_Proj_num(curr) == pn_Cond_false) {
+			assert(get_irn_n_outs(curr) == 1);
+			ir_node *post_proj = get_irn_out(curr, 0);
+			DEBUG_ONLY(ir_node *post_proj_block =
+					   get_block(post_proj);)
+			if (block_is_inside_loop(get_block(post_proj),
+						 get_irn_loop(header))) {
+				DB((dbg, LEVEL_4,
+				    "\t\tIn loop tgt %+F, in block %+F\n",
+				    post_proj, post_proj_block));
+				*in_loop_target = post_proj;
+			} else {
+				DB((dbg, LEVEL_4,
+				    "\t\tOut of loop tgt %+F, in block %+F\n",
+				    post_proj, post_proj_block));
+				*out_of_loop_target = post_proj;
+			}
+		}
+	}
+}
+
 static ir_node *duplicate_node(ir_node *const node, ir_node *const new_block)
 {
 	ir_node *const new_node = exact_copy(node);
@@ -264,6 +310,14 @@ static unsigned find_optimal_factor(unsigned long number, unsigned max) {
 	}
 	return 0;
 }
+
+typedef enum {
+	duff_unrollable_none = 0,
+	duff_unrollable_loop_fixup = 1 << 1,
+	duff_unrollable_switch_fixup = 1 << 2,
+	duff_unrollable_all =
+		duff_unrollable_loop_fixup | duff_unrollable_switch_fixup,
+} duff_unrollability;
 
 enum Op { ADD, SUB, MUL };
 #define Op enum Op
@@ -802,14 +856,15 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
 	unroll_info->incr = node_to_check;
 	return true;
 }
-static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
+static duff_unrollability check_phi(linear_unroll_info *unroll_info,
+				    ir_loop *loop)
 {
 	ir_node *phi = unroll_info->phi;
 	assert(is_Phi(phi));
 	unsigned phi_preds = get_Phi_n_preds(phi);
 	if (phi_preds < 2) {
 		DB((dbg, LEVEL_4, "Phi has %u preds. Too few!F\n", phi_preds));
-		return false;
+		return duff_unrollable_none;
 	}
 	// check for static beginning: neither in loop, nor aliased and for valid linear increment
 	clear_all_stores();
@@ -817,6 +872,7 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 	long long incr_pred_index = -1;
 	ir_node **is = malloc((phi_preds - 1) * sizeof(ir_node *));
 	int is_size = 0;
+	duff_unrollability unrollability = duff_unrollable_all;
 	for (unsigned i = 0; i < phi_preds; ++i) {
 		ir_node *curr = get_Phi_pred(phi, i);
 		DB((dbg, LEVEL_5, "\tChecking for valid incr %+F\n", curr));
@@ -829,13 +885,16 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 			incr_pred_index = i;
 			continue;
 		}
+		if (!is_valid_base(curr, loop)) {
+			unrollability &= ~duff_unrollable_switch_fixup;
+		}
 		if (is_size < phi_preds - 1) {
 			is[is_size] = curr;
 			is_size++;
 		}
 	}
 	if (incr_pred_index == -1) {
-		return false;
+		return duff_unrollable_none;
 	}
 	if (!unroll_info->i) {
 		unroll_info->i_size = is_size;
@@ -848,11 +907,30 @@ static bool check_phi(linear_unroll_info *unroll_info, ir_loop *loop)
 	}
 	DB((dbg, LEVEL_5, "\tFound one phi incr and (%u-1) inputs. Phi valid\n",
 	    phi_preds));
-	return true;
+	return unrollability;
 }
 
-static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
-				      ir_loop *loop)
+static bool has_multiple_loop_exits(ir_loop *loop, ir_node *header)
+{
+	ir_node *in_loop_tgt, *out_of_loop_tgt;
+	get_false_and_true_targets(header, &in_loop_tgt, &out_of_loop_tgt);
+	if (!out_of_loop_tgt) {
+		return false;
+	}
+	ir_node *after_block = get_block(out_of_loop_tgt);
+	unsigned loop_exits = 0;
+	for (unsigned i = 0; i < get_irn_arity(after_block); i++) {
+		ir_node *curr = get_irn_n(after_block, i);
+		ir_node *curr_block = get_block(curr);
+		if (block_is_inside_loop(curr_block, loop)) {
+			loop_exits++;
+		}
+	}
+	return loop_exits > 1;
+}
+
+static duff_unrollability
+determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop)
 {
 	unroll_info->i = NULL;
 	unroll_info->loop = loop;
@@ -892,7 +970,7 @@ static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
 			    "\tCouldn't find a phi in compare\n"));
 			return false;
 		}
-		bool ret = false;
+		duff_unrollability ret = duff_unrollable_none;
 		if (is_Phi(left)) {
 			unroll_info->phi = left;
 			unroll_info->bound = right;
@@ -909,9 +987,12 @@ static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
 		if (!is_valid_base(unroll_info->bound, loop)) {
 			DB((dbg, LEVEL_4, "Bound %+F is not valid base\n",
 			    unroll_info->bound));
-			ret = false;
+			ret = duff_unrollable_none;
 		}
-		DEBUG_ONLY(if (!ret) {
+		if (has_multiple_loop_exits(loop, header)) {
+			ret &= ~duff_unrollable_switch_fixup;
+		}
+		DEBUG_ONLY(if (ret == duff_unrollable_none) {
 			DB((dbg, LEVEL_4,
 			    "Cannot unroll: phi checks failed %+F\n", loop));
 		} else { DB((dbg, LEVEL_4, "Can unroll %+F\n", loop)); })
@@ -919,7 +1000,7 @@ static bool determine_lin_unroll_info(linear_unroll_info *unroll_info,
 	}
 	DB((dbg, LEVEL_4, "Cannot unroll: Didn't find valid compare%+F\n",
 	    loop));
-	return false;
+	return duff_unrollable_none;
 }
 
 /**
@@ -1247,16 +1328,6 @@ static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 }
 
-static bool is_Proj_attached_to_Cmp(ir_node *const proj)
-{
-	assert(is_Proj(proj));
-	ir_node *post_proj = get_Proj_pred(proj);
-	if (!is_Cond(post_proj)) {
-		return false;
-	}
-	ir_node *pre_Cond = get_Cond_selector(post_proj);
-	return is_Cmp(pre_Cond);
-}
 static void prune_block(ir_node *block, ir_node *header)
 {
 	assert(is_Block(block));
@@ -1349,41 +1420,6 @@ static void prune_block(ir_node *block, ir_node *header)
 		set_irn_in(phi, 0, NULL);
 	}
 	remove_keep_alive(block);
-}
-
-static void get_false_and_true_targets(ir_node *header,
-				       ir_node **in_loop_target,
-				       ir_node **out_of_loop_target)
-{
-	unsigned n = get_irn_n_outs(header);
-	DB((dbg, LEVEL_4, "\tSearching targets of %+F\n", header));
-	*in_loop_target = NULL;
-	*out_of_loop_target = NULL;
-	for (unsigned i = 0; i < n; ++i) {
-		ir_node *curr = get_irn_out(header, i);
-		if (!is_Proj(curr) || !is_Proj_attached_to_Cmp(curr)) {
-			continue;
-		}
-		if (get_Proj_num(curr) == pn_Cond_true ||
-		    get_Proj_num(curr) == pn_Cond_false) {
-			assert(get_irn_n_outs(curr) == 1);
-			ir_node *post_proj = get_irn_out(curr, 0);
-			DEBUG_ONLY(ir_node *post_proj_block =
-					   get_block(post_proj);)
-			if (block_is_inside_loop(get_block(post_proj),
-						 get_irn_loop(header))) {
-				DB((dbg, LEVEL_4,
-				    "\t\tIn loop tgt %+F, in block %+F\n",
-				    post_proj, post_proj_block));
-				*in_loop_target = post_proj;
-			} else {
-				DB((dbg, LEVEL_4,
-				    "\t\tOut of loop tgt %+F, in block %+F\n",
-				    post_proj, post_proj_block));
-				*out_of_loop_target = post_proj;
-			}
-		}
-	}
 }
 
 static void remove_node_from_succ_ins(ir_node *node)
@@ -2571,8 +2607,10 @@ static void create_fixup_switch(ir_loop *const loop, ir_graph *irg,
 }
 
 static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
-			     linear_unroll_info *info)
+			     linear_unroll_info *info,
+			     duff_unrollability unrollability)
 {
+	assert(unrollability != duff_unrollable_none);
 	DB((dbg, LEVEL_3, "\tTrying to unroll %N\n", loop));
 	ir_node *const header = get_loop_header(loop);
 	if (!header)
@@ -2581,8 +2619,10 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	unrolled_headers = NULL;
 	unrolled_nodes = NULL;
 	ir_graph *irg = get_irn_irg(header);
-	//create_fixup_loop(loop, irg, info);
-	create_fixup_switch(loop, irg, factor, info);
+	if (unrollability & duff_unrollable_switch_fixup)
+		create_fixup_switch(loop, irg, factor, info);
+	else
+		create_fixup_loop(loop, irg, info);
 	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-pre-fix-graph"));
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	assure_irg_properties(
@@ -2737,9 +2777,11 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 		    get_loop_element(loop, i)));
 	}
 	DB((dbg, LEVEL_3, "-------------\n", loop));
-	if (determine_lin_unroll_info(&info, curr_loop)) {
+	duff_unrollability unrollability =
+		determine_lin_unroll_info(&info, curr_loop);
+	if (unrollability != duff_unrollable_none) {
 		DB((dbg, LEVEL_2, "DUFF: Can unroll! (loop: %+F)\n", loop));
-		unroll_loop_duff(curr_loop, DUFF_FACTOR, &info);
+		unroll_loop_duff(curr_loop, DUFF_FACTOR, &info, unrollability);
 	} else {
 		DB((dbg, LEVEL_2, "DUFF: Cannot unroll! (loop: %+F)\n", loop));
 	}
