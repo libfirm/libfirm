@@ -989,7 +989,8 @@ determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop)
 			    unroll_info->bound));
 			ret = duff_unrollable_none;
 		}
-		if (has_multiple_loop_exits(loop, header)) {
+		if (unroll_info->op == MUL ||
+		    has_multiple_loop_exits(loop, header)) {
 			ret &= ~duff_unrollable_switch_fixup;
 		}
 		DEBUG_ONLY(if (ret == duff_unrollable_none) {
