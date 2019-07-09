@@ -15,6 +15,8 @@
 #include "vhdl_emitter.h"
 #include "vhdl_transform.h"
 #include "target_t.h"
+#include "vhdl_bemain.h"
+
 /*
 static ir_settings_arch_dep_t const vhdl_arch_dep = {
 	.replace_muls         = true,
@@ -71,12 +73,12 @@ static void vhdl_lower_for_target(ir_graph *irg)
 
 void vhdl_generate_code(FILE *const output, char const *const cup_name)
 {
-	//be_begin(output, cup_name);
+	vhdl_be_begin(output, cup_name);
 
 
 	foreach_irp_irg(i, irg) {
 		if (!(mtp_special_instruction & get_entity_additional_properties(get_irg_entity(irg)))) {
-			return;
+			continue;
 		}
 
 		vhdl_lower_for_target(irg);
@@ -84,10 +86,10 @@ void vhdl_generate_code(FILE *const output, char const *const cup_name)
 		vhdl_select_instructions(irg);
 
 		vhdl_emit_function(irg);
-		//be_step_last(irg);
+		vhdl_be_step_last(irg);
 	}
 
-	//be_finish();
+	vhdl_be_finish();
 }
 
 static unsigned vhdl_get_op_estimated_cost(ir_node const *const node)

@@ -51,6 +51,7 @@
 #include "util.h"
 #include <stdio.h>
 #include <vhdl/vhdl_bearch_t.h>
+#include <vhdl/method_cloning.h>
 
 static struct obstack obst;
 static be_main_env_t  env;
@@ -580,6 +581,16 @@ void be_finish(void)
 
 void be_main(FILE *file_handle, const char *cup_name)
 {
+
+	foreach_irp_irg(i, irg) {
+		ir_entity *ent = get_irg_entity(irg);
+		if (mtp_special_instruction & get_entity_additional_properties(ent)) {
+			ir_entity *new_ent = clone_method(irg);
+			set_entity_additional_properties(ent, (get_entity_additional_properties(ent) ^ mtp_special_instruction));
+			set_entity_linkage(new_ent, IR_LINKAGE_NO_CODEGEN);
+		}
+	}
+
 	/* Let the target control how the codegeneration works. */
 	ir_target.isa->generate_code(file_handle, cup_name);
 
