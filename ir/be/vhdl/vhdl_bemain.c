@@ -18,6 +18,7 @@
 #include "irprog_t.h"
 #include "irverify.h"
 #include "obst.h"
+#include "vhdl_bearch_t.h"
 
 static struct obstack obst;
 static be_main_env_t  env;
@@ -54,6 +55,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 void vhdl_be_begin(FILE *file_handle, const char *cup_name)
 {
 	obstack_init(&obst);
+	vhdl_init();
 	be_emit_init(file_handle);
 
 	be_info_init();
@@ -85,5 +87,6 @@ void vhdl_be_finish(void)
 {
 	be_emit_exit();
 	be_info_free();
+	vhdl_finish();
 	obstack_free(&obst, NULL);
 }

@@ -11,11 +11,11 @@
 #include "gen_vhdl_regalloc_if.h"
 #include "irarch.h"
 #include "irprog_t.h"
-#include "../../opt/firm2vhdl/lower-for-vhdl.h"
-#include "vhdl_emitter.h"
-#include "vhdl_transform.h"
 #include "target_t.h"
 #include "vhdl_bemain.h"
+#include "vhdl_emitter.h"
+#include "vhdl_lower.h"
+#include "vhdl_transform.h"
 
 /*
 static ir_settings_arch_dep_t const vhdl_arch_dep = {
@@ -40,7 +40,7 @@ static int vhdl_ifconv(ir_node const *const sel, ir_node const *const mux_false,
 	return true;
 }
 
-static void vhdl_init(void)
+void vhdl_init(void)
 {
 	vhdl_create_opcodes();
 	vhdl_register_init();
@@ -51,7 +51,7 @@ static void vhdl_init(void)
 	ir_target.float_int_overflow = ir_overflow_indefinite;
 }
 
-static void vhdl_finish(void)
+void vhdl_finish(void)
 {
 	vhdl_free_opcodes();
 }
@@ -92,11 +92,6 @@ void vhdl_generate_code(FILE *const output, char const *const cup_name)
 	vhdl_be_finish();
 }
 
-static unsigned vhdl_get_op_estimated_cost(ir_node const *const node)
-{
-	(void)node; // TODO
-	return 1;
-}
 /*
 arch_isa_if_t const vhdl_isa_if = {
 	.name                  = "vhdl",

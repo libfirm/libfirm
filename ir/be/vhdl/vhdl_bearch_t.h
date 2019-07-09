@@ -8,7 +8,8 @@
 
 #include <stdio.h>
 
-#define VHDL_MACHINE_SIZE 32
+void vhdl_init(void);
+void vhdl_finish(void);
 
 void vhdl_generate_code(FILE *output, const char *cup_name);
 
