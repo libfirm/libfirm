@@ -7,7 +7,6 @@
  * public interface to cparser/libfirm
  */
 
-void ces_special_instruction(ir_graph* irgs);
 void firm_init_ces_special_instruction(void);
 void firm_finish_ces_special_instruction(void);
 

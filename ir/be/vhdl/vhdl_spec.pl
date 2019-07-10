@@ -15,32 +15,33 @@ my $mode_gp = "mode_Iu"; # TODO
 );
 
 %init_attr = (
-	vhdl_attr_t => "",
-	vhdl_cmp_attr_t => "attr->rel = rel;",
+	vhdl_attr_t           => "",
+	vhdl_cmp_attr_t       => "attr->rel = rel;",
 	vhdl_immediate_attr_t =>
-		"attr->ent = ent;\n".
-		"\tattr->val = val;",
-	vhdl_varsig_attr_t => "attr->name = name;",
+		"attr->ent = ent;\n" .
+			"\tattr->val = val;",
+	vhdl_varsig_attr_t    => "attr->name = name;",
+	vhdl_start_attr_t     => "attr->signals = signals;"
 );
 
 my $binOp = {
-	in_reqs   => "..." ,
-	out_reqs  => "..." ,
+	in_reqs   => [ "cls-gp", "cls-gp" ],
+	out_reqs  => [ "cls-gp" ] ,
 	ins       => [ "left", "right" ],
 	outs      => [ "res" ],
 };
 
 my $unOp = {
-	in_reqs   => "..." ,
-	out_reqs  => "..." ,
+	in_reqs   => ["cls-gp"] ,
+	out_reqs  => ["cls-gp"] ,
 	ins       => [ "val" ],
 	outs      => [ "res" ],
 };
 my $assignOp = {
 	ins       => [ "val" ],
-	in_reqs   => "...",
+	in_reqs   => ["cls-gp"],
 	outs      => [ "res" ],
-	out_reqs  => "...",
+	out_reqs  => ["cls-gp"],
 	attr_type => "vhdl_varsig_attr_t",
 	attr      => "char *name"
 };
@@ -75,8 +76,8 @@ my $assignOp = {
 		state     => "pinned",
 		irn_flags => [ "fallthrough" ],
 		op_flags  => [ "cfopcode", "forking" ],
-		in_reqs   => "...",
-		ins       => [ "left", "right" ],
+		in_reqs   => ["cls-gp"],
+		ins       => [ "cond" ],
 		out_reqs  => [ "exec", "exec" ],
 		outs      => [ "false", "true" ],
 	},
@@ -88,18 +89,32 @@ my $assignOp = {
 	},
 
 	Mux         => {
-		ins      => [ "sel", "true", "false" ],
-		in_reqs  => "...",
+		ins      => [ "sel", "t", "f" ],
+		in_reqs  => ["cls-gp", "cls-gp", "cls-gp"],
 		outs     => [ "res" ],
-		out_reqs => "...",
+		out_reqs => ["cls-gp"],
 	},
 
 	Const       => {
 		state     => "pinned",
 		outs      => [ "res" ],
-		out_reqs  => "...",
+		out_reqs  => ["cls-gp"],
 		attr_type => "vhdl_immediate_attr_t",
 		attr      => "ir_entity *const ent, int32_t const val",
+	},
+
+	Return      => {
+		state    => "pinned",
+		op_flags => [ "cfopcode" ],
+		in_reqs  => [ "cls-gp" ],
+		out_reqs => [ "exec" ],
+		ins      => [ "result" ],
+	},
+
+	Start       => {
+		out_reqs  => "...",
+		attr_type => "vhdl_start_attr_t",
+		attr      => "vhdl_varsig_attr_t **signals"
 	},
 
 	AssignVar   => { template => $assignOp},

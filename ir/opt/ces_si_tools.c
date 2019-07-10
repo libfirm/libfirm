@@ -473,7 +473,6 @@ ir_graph* ces_cut_coreISA(ir_graph* si_irg, struct stream_description* streams) 
 	}
 
 	// cut nodes from irg to coreIRG
-	void factor_subset_core(struct factor_env* env, const char* name);
 	struct factor_env env = {
 			.predicate = coreisaPredicate,
 			.clientdata = streams[0].convex_set,

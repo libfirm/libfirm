@@ -527,6 +527,9 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(ir_node *left, ir_node *right,
  */
 FIRM_API ir_entity *create_compilerlib_entity(char const *name, ir_type *mt);
 
+
+FIRM_API void ces_special_instruction(ir_graph* irgs);
+
 /** @} */
 
 #include "end.h"

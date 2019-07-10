@@ -20,6 +20,9 @@ ir_graph *factor_bb(ir_graph *irg, ir_node *source_block);
    nodes in a nodeset. */
 ir_graph *factor_nodeset(ir_graph *irg, ir_nodeset_t *set);
 
+
+void factor_subset_core(struct factor_env* env, const char* name);
+
 struct factor_env {
 	subset_predicate *predicate;
 	void *clientdata; /* client data for predicate */

@@ -98,4 +98,7 @@ void lower_for_vhdl(ir_graph *irg)
 
 	insert_phi1(irg);
 	dump_ir_graph(irg, "insert-phi1");
+
+	//TODO
+	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 }

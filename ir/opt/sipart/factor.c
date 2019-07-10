@@ -204,7 +204,6 @@ static void wire_outputs_walker(ir_node *node, void *data) {
 	}
 }
 
-void factor_subset_core(struct factor_env* env, const char* name);
 
 ir_graph *factor_subset(ir_graph *irg, subset_predicate *predicate, void *predicate_data) {
 

@@ -1,2 +1,2 @@
-LIBFIRM_ARCHIVE=~/projects/firm/cparser/libfirm/build/debug/libfirm.a
-CPPFLAGS=-I$(HOME)/projects/firm/cparser/libfirm/include/libfirm -I$(HOME)/projects/firm/cparser/libfirm/build/gen/include/libfirm/
+LIBFIRM_ARCHIVE=../../../build/debug/libfirm.a
+CPPFLAGS=-I../../../include/libfirm -I../../../build/gen/include/libfirm/

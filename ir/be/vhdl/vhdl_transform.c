@@ -6,28 +6,70 @@
 #include "vhdl_transform.h"
 
 #include "betranshlp.h"
+#include "gen_vhdl_new_nodes.h"
+#include "gen_vhdl_regalloc_if.h"
+#include "ircons.h"
 #include "irnode_t.h"
 #include "panic.h"
 
+typedef ir_node *cons_unop(dbg_info*, ir_node*, ir_node*);
+typedef ir_node *cons_binop(dbg_info*, ir_node*, ir_node*, ir_node*);
+
+static ir_node *gen_binop(ir_node *node, cons_binop cons) {
+	ir_node *const l    = get_binop_left(node);
+	ir_node *const r    = get_binop_right(node);
+	ir_mode *const mode = get_irn_mode(node);
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	ir_node  *const new_l = be_transform_node(l);
+	ir_node *const new_r = be_transform_node(r);
+	ir_node *new = cons(dbgi, block, new_l, new_r);
+	set_irn_mode(new, mode);
+	return new;
+}
+
+static ir_node *gen_unop(ir_node *node, cons_unop cons) {
+	ir_node *const op    = get_irn_n(node, 0);
+	ir_mode *const mode = get_irn_mode(node);
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	ir_node  *const new_op = be_transform_node(op);
+	ir_node *new = cons(dbgi, block, new_op);
+	set_irn_mode(new, mode);
+	return new;
+}
 
 static ir_node *gen_Add(ir_node *const node)
 {
-	TODO(node);
+	return gen_binop(node, new_bd_vhdl_Add);
 }
 
 static ir_node *gen_And(ir_node *const node)
 {
-	TODO(node);
+	return gen_binop(node, new_bd_vhdl_And);
 }
 
 static ir_node *gen_Cmp(ir_node *const node)
 {
-	TODO(node);
+	ir_node *const l    = get_binop_left(node);
+	ir_node *const r    = get_binop_right(node);
+	ir_mode *const mode = get_irn_mode(node);
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	ir_node  *const new_l = be_transform_node(l);
+	ir_node *const new_r = be_transform_node(r);
+	ir_node *new = new_bd_vhdl_Cmp(dbgi, block, new_l, new_r, get_Cmp_relation(node));
+	set_irn_mode(new, mode);
+	return new;
 }
 
 static ir_node *gen_Cond(ir_node *const node)
 {
-	TODO(node);
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+
+	ir_node *cond = new_bd_vhdl_Cond(dbgi, block, be_transform_node(get_Cond_selector(node)));
+	return cond;
 }
 
 static ir_node *gen_Conv(ir_node *const node)
@@ -37,22 +79,24 @@ static ir_node *gen_Conv(ir_node *const node)
 
 static ir_node *gen_Eor(ir_node *const node)
 {
-	TODO(node);
+	return gen_binop(node, new_bd_vhdl_Eor);
 }
 
 static ir_node *gen_Jmp(ir_node *const node)
 {
-	TODO(node);
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	return new_bd_vhdl_Jmp(dbgi, block);
 }
 
 static ir_node *gen_Mul(ir_node *const node)
 {
-	TODO(node);
+	return gen_binop(node, new_bd_vhdl_Mul);
 }
 
 static ir_node *gen_Minus(ir_node *const node)
 {
-	TODO(node);
+	return gen_unop(node, new_bd_vhdl_Minus);
 }
 
 static ir_node *gen_Mux(ir_node *const node)
@@ -60,14 +104,13 @@ static ir_node *gen_Mux(ir_node *const node)
 	TODO(node);
 }
 
-static ir_node *gen_Not(ir_node *const node)
-{
-	TODO(node);
+static ir_node *gen_Not(ir_node *const node) {
+	return gen_unop(node, new_bd_vhdl_Not);
 }
 
 static ir_node *gen_Or(ir_node *const node)
 {
-	TODO(node);
+	return gen_binop(node, new_bd_vhdl_Or);
 }
 
 static ir_node *gen_Phi(ir_node *const node)
@@ -77,12 +120,15 @@ static ir_node *gen_Phi(ir_node *const node)
 
 static ir_node *gen_PinnedConst(ir_node *const node)
 {
-	TODO(node);
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	return new_bd_vhdl_Const(dbgi, block, NULL, get_tarval_long(get_PinnedConst_tarval(node)));
 }
 
 static ir_node *gen_Proj_Proj_Start(ir_node *const node)
 {
-	TODO(node);
+	ir_node *start = get_irg_start(get_irn_irg(node));
+	return be_new_Proj(start, get_Proj_num(node));
 }
 
 static ir_node *gen_Proj_Proj(ir_node *const node)
@@ -97,37 +143,68 @@ static ir_node *gen_Proj_Proj(ir_node *const node)
 
 static ir_node *gen_Proj_Start(ir_node *const node)
 {
-	TODO(node);
+	return node;
 }
 
 static ir_node *gen_Return(ir_node *const node)
 {
-	TODO(node);
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	ir_node *val = be_transform_node(get_irn_n(node, 1));
+
+	ir_node *assign_signal = new_bd_vhdl_AssignSig(dbgi, block, val, "OUTPUT0");
+
+	ir_node *ret = new_bd_vhdl_Return(dbgi, block, assign_signal);
+	return ret;
+}
+
+static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_binop *const cons_imm)
+{
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	ir_node  *const l     = get_binop_left(node);
+	ir_node  *const new_l = be_transform_node(l);
+	ir_node  *const r     = get_binop_right(node);
+	ir_node  *const new_r = be_transform_node(r);
+	if (is_PinnedConst(r)) {
+		return cons_imm(dbgi, block, new_l, new_r);
+	}
+	return cons(dbgi, block, new_l, new_r);
 }
 
 static ir_node *gen_Shl(ir_node *const node)
 {
-	TODO(node);
+	return gen_shift_op(node, new_bd_vhdl_Shl_Barrel, new_bd_vhdl_Shl_Const);
 }
 
 static ir_node *gen_Shr(ir_node *const node)
 {
-	TODO(node);
+	return gen_shift_op(node, new_bd_vhdl_Shr_Barrel, new_bd_vhdl_Shr_Const);
 }
 
 static ir_node *gen_Shrs(ir_node *const node)
 {
-	TODO(node);
+	return gen_shift_op(node, new_bd_vhdl_Shrs_Barrel, new_bd_vhdl_Shrs_Const);
 }
 
 static ir_node *gen_Start(ir_node *const node)
 {
-	TODO(node);
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	vhdl_varsig_attr_t *signals = malloc(sizeof(vhdl_varsig_attr_t)*3);
+	signals->name = "PARAM1";
+	signals[1].name = "PARAM2";
+	signals[2].name = "PARAM3";
+	ir_node *start = new_bd_vhdl_Start(dbgi, block, 3, &signals);
+	for (int i = 0; i < 3; i++) {
+		arch_set_irn_register_req_out(start, i, &vhdl_class_reg_req_gp);
+	}
+	return start;
 }
 
 static ir_node *gen_Sub(ir_node *const node)
 {
-	TODO(node);
+	return gen_binop(node, new_bd_vhdl_Sub);
 }
 
 static void vhdl_register_transformers(void)

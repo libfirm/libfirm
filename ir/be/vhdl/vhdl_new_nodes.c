@@ -55,6 +55,40 @@ int vhdl_varsig_attrs_equal(ir_node const *const a, ir_node const *const b)
 			!strcmp(a_attr->name, b_attr->name);
 }
 
+int vhdl_start_attrs_equal(ir_node const *const a, ir_node const *const b)
+{
+	vhdl_start_attr_t const *const a_attr = get_vhdl_start_attr_const(a);
+	vhdl_start_attr_t const *const b_attr = get_vhdl_start_attr_const(b);
+	return
+			vhdl_attrs_equal_(&a_attr->attr, &b_attr->attr) &&
+			(a_attr->signals == b_attr->signals);
+}
+
 void vhdl_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const reason)
 {
+	switch (reason) {
+		case dump_node_info_txt:
+		case dump_node_mode_txt:
+		case dump_node_nodeattr_txt:
+			break;
+
+		case dump_node_opcode_txt:
+			fprintf(F, "%s", get_irn_opname(n));
+			switch ((vhdl_opcodes)get_vhdl_irn_opcode(n)) {
+				case iro_vhdl_Const: {
+					vhdl_immediate_attr_t const *const imm = get_vhdl_immediate_attr_const(n);
+					fprintf(F, " 0x%04" PRIX32, (uint32_t)imm->val);
+					break;
+				}
+				case iro_vhdl_AssignSig:
+				case iro_vhdl_AssignVar: {
+					vhdl_varsig_attr_t const *const varsig = get_vhdl_varsig_attr_const(n);
+					fprintf(F, " %s", varsig->name);
+				default:
+					break;
+				}
+			}
+		default:
+			break;
+	}
 }
