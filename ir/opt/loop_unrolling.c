@@ -2744,19 +2744,20 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 			innermost = false;
 		}
 	}
-	/*
-	if (innermost && !outermost) {
-		unsigned const actual_factor =
-			determine_unroll_factor(loop, factor, maxsize);
-		if (actual_factor > 0) {
-			unroll_loop(loop, actual_factor, false);
-		}
-	}
-	 */
 	if (!innermost) {
 		DB((dbg, LEVEL_2, "DUFF: %+F not innermost\n", loop));
 		return;
 	}
+	DEBUG_ONLY(goto duff;)
+	if (!outermost) {
+		unsigned const actual_factor =
+			determine_unroll_factor(loop, factor, maxsize);
+		if (actual_factor > 0) {
+			unroll_loop(loop, actual_factor);
+			return;
+		}
+	}
+	DEBUG_ONLY(duff : DB((dbg, LEVEL_2, "Skipping normal unroll\n"));)
 	ir_node *header = get_loop_header(loop);
 	if (!header) {
 		DB((dbg, LEVEL_2,
