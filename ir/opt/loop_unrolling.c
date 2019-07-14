@@ -352,7 +352,7 @@ struct linear_unroll_info {
 
 #define linear_unroll_info struct linear_unroll_info
 
-void free_lin_unroll_info(linear_unroll_info *info)
+static void free_lin_unroll_info(linear_unroll_info *info)
 {
 	if (info->i) {
 		free(info->i);
@@ -401,10 +401,9 @@ static bool is_aliased(ir_node *node)
 	DB((dbg, LEVEL_4, "found no aliasing\n"));
 	return false;
 }
-static void walk_call_for_aliases(ir_node *call);
-static bool stored;
+static void walk_call_for_aliases(ir_node *call, pset *visited);
 
-void check_for_store(ir_node *node, ir_loop *loop)
+static void check_for_store_(ir_node *node, ir_loop *loop, pset *visited)
 {
 	assert(!is_Block(node));
 	if (is_Call(node)) {
@@ -437,19 +436,21 @@ void check_for_store(ir_node *node, ir_loop *loop)
 	*list_ptr = list;
 	alias_candidates = list_ptr;
 }
-static void walk_graph_aliasing(ir_node *block, void *_)
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+static void walk_graph_aliasing(ir_node *block, void *visited)
 {
+#pragma GCC diagnostic pop
 	DB((dbg, LEVEL_5, "Inspecting block in call graph: %+F\n", block));
 	if (!is_Block(block)) {
 		return;
 	}
 	for (unsigned i = 0; i < get_irn_n_outs(block); ++i) {
 		ir_node *node = get_irn_out(block, i);
-		check_for_store(node, NULL);
+		check_for_store_(node, NULL, visited);
 	}
 }
 
-static void walk_call_for_aliases(ir_node *call)
+static void walk_call_for_aliases(ir_node *call, pset *visited)
 {
 	DB((dbg, LEVEL_4, "Found call: %+F\n", call));
 	ir_entity *callee_entity = get_Call_callee(call);
@@ -497,14 +498,19 @@ static void walk_call_for_aliases(ir_node *call)
 		}
 		return;
 	}
-	if (callee_graph->reserved_resources & IR_RESOURCE_IRN_VISITED) {
+	if (pset_find_ptr(visited, callee_graph)) {
+		assert((callee_graph->reserved_resources &
+			IR_RESOURCE_IRN_VISITED));
 		DB((dbg, LEVEL_4,
 		    "Already visited target of call %+F - recursive\n", call));
 		return;
 	}
+	pset_insert_ptr(visited, callee_graph);
+	assert(!(callee_graph->reserved_resources & IR_RESOURCE_IRN_VISITED));
 	DB((dbg, LEVEL_4, "Walking graph %+F of call for aliases\n",
 	    callee_graph));
-	irg_walk_blkwise_graph(callee_graph, walk_graph_aliasing, NULL, NULL);
+	irg_walk_blkwise_graph(callee_graph, walk_graph_aliasing, NULL,
+			       visited);
 }
 
 static void clear_all_stores()
@@ -516,7 +522,10 @@ static void clear_all_stores()
 		free(tmp);
 	}
 }
-
+static void check_for_store(ir_node *node, ir_loop *loop)
+{
+	check_for_store_(node, loop, pset_new_ptr(512));
+}
 static void get_all_stores(ir_loop *loop)
 {
 	long n = get_loop_n_elements(loop);
@@ -554,11 +563,6 @@ struct irn_stack {
 
 #define iterate_stack(stack)                                                   \
 	for (struct irn_stack *curr = stack; curr; curr = curr->next)
-
-static size_t stack_size(struct irn_stack *stack)
-{
-	return stack->depth;
-}
 
 static void add_to_stack(ir_node *node, struct irn_stack **stack)
 {
@@ -871,7 +875,7 @@ static duff_unrollability check_phi(linear_unroll_info *unroll_info,
 	get_all_stores(loop);
 	long long incr_pred_index = -1;
 	ir_node **is = malloc((phi_preds - 1) * sizeof(ir_node *));
-	int is_size = 0;
+	unsigned is_size = 0;
 	duff_unrollability unrollability = duff_unrollable_all;
 	for (unsigned i = 0; i < phi_preds; ++i) {
 		ir_node *curr = get_Phi_pred(phi, i);
@@ -901,7 +905,7 @@ static duff_unrollability check_phi(linear_unroll_info *unroll_info,
 		unroll_info->i = is;
 	}
 	DB((dbg, LEVEL_5, "\tFound %u Is:\n", unroll_info->i_size));
-	for (int i = 0; i < unroll_info->i_size; i++) {
+	for (unsigned i = 0; i < unroll_info->i_size; i++) {
 		DB((dbg, LEVEL_5, "\t\tI_src[%u]: %+F\n", i, is[i]));
 		DB((dbg, LEVEL_5, "\t\tI[%u]: %+F\n", i, unroll_info->i[i]));
 	}
@@ -919,7 +923,7 @@ static bool has_multiple_loop_exits(ir_loop *loop, ir_node *header)
 	}
 	ir_node *after_block = get_block(out_of_loop_tgt);
 	unsigned loop_exits = 0;
-	for (unsigned i = 0; i < get_irn_arity(after_block); i++) {
+	for (int i = 0; i < get_irn_arity(after_block); i++) {
 		ir_node *curr = get_irn_n(after_block, i);
 		ir_node *curr_block = get_block(curr);
 		if (block_is_inside_loop(curr_block, loop)) {
@@ -937,7 +941,7 @@ determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop)
 	DB((dbg, LEVEL_4, "\tDetermining info for loop %+F\n", loop));
 	ir_node *header = get_loop_header(loop);
 	unsigned outs = get_irn_n_outs(header);
-	for (int i = 0; i < outs; ++i) {
+	for (unsigned i = 0; i < outs; ++i) {
 		ir_node *node = get_irn_out(header, i);
 		DB((dbg, LEVEL_4,
 		    "Assessing node %+F for check being compare\n", loop));
@@ -1043,9 +1047,10 @@ static unsigned find_suitable_factor(ir_node *const header, unsigned max,
 			continue;
 
 		if (is_Cmp(node)) {
-
 			ir_relation cmp_rel = get_Cmp_relation(node);
-			if (cmp_rel == ir_relation_less_greater || cmp_rel == ir_relation_equal || cmp_rel & ir_relation_unordered) {
+			if (cmp_rel == ir_relation_less_greater ||
+			    cmp_rel == ir_relation_equal ||
+			    cmp_rel & ir_relation_unordered) {
 				return DONT_UNROLL;
 			}
 
@@ -1342,12 +1347,12 @@ static void prune_block(ir_node *block, ir_node *header)
 			continue;
 		}
 
-		unsigned phi_n_preds = get_irn_arity(phi);
+		int phi_n_preds = get_irn_arity(phi);
 		if (get_irn_mode(phi) == mode_M) {
 			assert(phi_n_preds == 0);
 			continue;
 		}
-		ir_node **phi_preds = get_irn_in(phi);
+		DEBUG_ONLY(ir_node **phi_preds = get_irn_in(phi));
 		DB((dbg, LEVEL_5, "\t\t\tPruning phi %+F with links to ", phi));
 		if (phi_n_preds > 0) {
 			for (unsigned j = 0; j < phi_n_preds - 1; j++) {
@@ -1358,7 +1363,7 @@ static void prune_block(ir_node *block, ir_node *header)
 		}
 
 		DB((dbg, LEVEL_4, "\n"));
-		for (int j = 0; j < get_irn_n_outs(phi); ++j) {
+		for (unsigned j = 0; j < get_irn_n_outs(phi); ++j) {
 			ir_node *target = get_irn_out(phi, j);
 			ir_node *target_block = get_block(target);
 			if (is_in_stack(target_block, unrolled_headers)) {
@@ -1530,8 +1535,6 @@ static void remove_excess_headers(linear_unroll_info *info,
 		DB((dbg, LEVEL_2, "Link to header %+F\n", linked_header));
 
 		assert(info);
-		void *v = linked_header->o.out;
-		assert(v);
 		ir_node *in_loop_target;
 		ir_node *out_of_loop_target;
 		get_false_and_true_targets(linked_header, &in_loop_target,
@@ -1547,8 +1550,8 @@ static void remove_excess_headers(linear_unroll_info *info,
 			    "\tRewire %+F (arity: %u, outs: %u) to be pointed to by %+F\n",
 			    in_loop_preds[i], get_irn_arity(in_loop_preds[i]),
 			    get_irn_n_outs(in_loop_preds[i]), in_loop_target));
-			for (unsigned j = 0;
-			     j < get_irn_arity(in_loop_preds[i]); ++j) {
+			for (int j = 0; j < get_irn_arity(in_loop_preds[i]);
+			     ++j) {
 				DB((dbg, LEVEL_5,
 				    "\t\tCurrently %+F points to: %+F\n",
 				    in_loop_preds[i],
@@ -1589,7 +1592,7 @@ static void remove_excess_headers(linear_unroll_info *info,
 
 static void recursive_copy_in_loop(ir_node *node, ir_node *header)
 {
-	for (unsigned i = 0; i < get_irn_arity(node); ++i) {
+	for (int i = 0; i < get_irn_arity(node); ++i) {
 		ir_node *to_cpy = get_irn_n(node, i);
 		ir_node *to_cpy_block = get_block(to_cpy);
 		if (to_cpy_block == header ||
@@ -1646,8 +1649,7 @@ static ir_node *create_abs(ir_node *block, ir_node *node)
 enum Side { LEFT, RIGHT };
 #define Side enum Side
 
-static ir_node *update_header_condition_add(linear_unroll_info *info,
-					    ir_node *header, ir_node *N,
+static ir_node *update_header_condition_add(ir_node *header, ir_node *N,
 					    ir_node *c_cpy,
 					    ir_node *factor_const, bool less)
 {
@@ -1680,8 +1682,7 @@ static ir_node *create_r_pow(ir_node *block, ir_node *base,
 	}
 	return new_r_Mul(block, base, create_r_pow(block, base, exp - 1));
 }
-static ir_node *update_header_condition_mul(linear_unroll_info *info,
-					    ir_node *header, ir_node *N,
+static ir_node *update_header_condition_mul(ir_node *header, ir_node *N,
 					    ir_node *c_cpy,
 					    ir_node *factor_const, bool less)
 {
@@ -1777,11 +1778,11 @@ static void update_header_condition(linear_unroll_info *info, unsigned factor)
 	switch (info->op) {
 	case ADD:
 	case SUB:
-		new_N = update_header_condition_add(info, header, N, c_cpy,
+		new_N = update_header_condition_add(header, N, c_cpy,
 						    factor_const, less);
 		break;
 	case MUL:
-		new_N = update_header_condition_mul(info, header, N, c_cpy,
+		new_N = update_header_condition_mul(header, N, c_cpy,
 						    factor_const, less);
 		break;
 	default:
@@ -1832,7 +1833,7 @@ static void rewire_ins_linked(ir_node *node)
 }
 
 static void rewire_duplicated_block(ir_node *node, ir_loop *loop,
-				    ir_node *header, linear_unroll_info *info)
+				    ir_node *header)
 {
 	ir_node *const new_node = get_irn_link(node);
 	// rewire the successors outside the loop
@@ -1895,7 +1896,7 @@ static void rewire_duplicated_block(ir_node *node, ir_loop *loop,
 static void rewire_duplicated_header(ir_node *header, ir_loop *loop,
 				     linear_unroll_info *info)
 {
-	rewire_duplicated_block(header, loop, header, info);
+	rewire_duplicated_block(header, loop, header);
 	DB((dbg, LEVEL_5, "\t\tNode is header\n"));
 	ir_node *linked_header = get_irn_link(header);
 	unsigned header_arity = get_irn_arity(header);
@@ -1928,11 +1929,11 @@ static void rewire_duplicated_header(ir_node *header, ir_loop *loop,
 	}
 	DB((dbg, LEVEL_5, "\t\t\t\t\tnew arity of linked header: %u\n", i));
 	ir_node **header_new_ins_all = ALLOCAN(ir_node *, i);
-	for (int j = 0; j < i; ++j) {
+	for (unsigned j = 0; j < i; ++j) {
 		header_new_ins_all[j] = header_new_ins[j];
 	}
 	free(header_new_ins);
-	for (int j = 0; j < i; ++j) {
+	for (unsigned j = 0; j < i; ++j) {
 		DB((dbg, LEVEL_5, "\t\t\t\t\tLinked header in wired to %+F\n",
 		    header_new_ins_all[j]));
 	}
@@ -1997,7 +1998,7 @@ static void rewire_duplicated(ir_loop *loop, linear_unroll_info *info)
 		if (el.node == header) {
 			continue;
 		}
-		rewire_duplicated_block(el.node, loop, header, info);
+		rewire_duplicated_block(el.node, loop, header);
 	}
 	rewire_duplicated_header(header, loop, info);
 }
@@ -2024,7 +2025,7 @@ static ir_node *get_phi_M(ir_node *block)
 
 static ir_node *get_in_to_header(ir_node *node, ir_node *header)
 {
-	for (unsigned i = 0; i < get_irn_arity(node); i++) {
+	for (int i = 0; i < get_irn_arity(node); i++) {
 		ir_node *in = get_irn_n(node, i);
 		ir_node *in_block = get_block(in);
 		if (block_dominates(in_block, header) > 0) {
@@ -2037,7 +2038,7 @@ static ir_node *get_in_to_header(ir_node *node, ir_node *header)
 static unsigned get_in_n_to_header(ir_node *target, ir_node *header)
 {
 	unsigned header_idx = 0;
-	for (unsigned j = 0; j < get_irn_arity(target); j++) {
+	for (int j = 0; j < get_irn_arity(target); j++) {
 		ir_node *n_block = get_block(get_irn_n(target, j));
 		if (n_block == header) {
 			header_idx = j;
@@ -2056,7 +2057,7 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	DB((dbg, LEVEL_4, "\tCreating switch fixup header\n"));
 	ir_node *header = get_loop_header(loop);
 	ir_node **in = ALLOCAN(ir_node *, 1);
-	unsigned after_index = 0;
+	int after_index = 0;
 	for (; after_index < get_irn_arity(after_loop); after_index++) {
 		ir_node *curr = get_irn_n(after_loop, after_index);
 		if (get_block(curr) == header) {
@@ -2257,7 +2258,7 @@ static void add_keep_alives_to_all(struct irn_stack *nodes,
 			if (get_block(node) != block)                          \
 				continue;                                      \
 			ir_node *link = get_irn_link(node);                    \
-			for (unsigned bad_index = 0;                           \
+			for (int bad_index = 0;                                \
 			     bad_index < get_irn_arity(link); bad_index++) {   \
 				ir_node *in = get_irn_n(link, bad_index);      \
 				if (is_Bad(in)) {                              \
@@ -2297,9 +2298,10 @@ static void rewire_pointing_to_bad_first(ir_node *node, unsigned bad_index)
 	ir_node *link_in_at_bad_index = get_irn_n(node, bad_index);
 	set_irn_n(link, bad_index, link_in_at_bad_index);
 }
-
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 static void rewire_first(struct irn_stack *current, ir_graph *irg)
 {
+#pragma GCC diagnostic pop
 	assert(irg_has_properties(irg, IR_GRAPH_PROPERTY_NO_BADS));
 	rewire_bad(current, rewire_pointing_to_bad_first(node, bad_index))
 }
@@ -2451,8 +2453,8 @@ static void rewire_pointing_to_bad_intermediary(
 			add_to_stack(node, pointing_to_header);
 		}
 	} else {
-		unsigned arity = get_irn_arity(node);
-		unsigned blk_arity = get_irn_arity(get_block(node));
+		int arity = get_irn_arity(node);
+		int blk_arity = get_irn_arity(get_block(node));
 		assert(arity == blk_arity);
 		ir_node *phi = new_r_Phi(get_block(node), get_irn_arity(node),
 					 get_irn_in(node), get_irn_mode(node));
@@ -2530,7 +2532,7 @@ static pmap *duplicate_rewire_loop_body(ir_loop *const loop, ir_node *header,
 			first = curr;
 		add_to_stack(curr, &copied);
 	}
-	for (unsigned i = 0; i < get_irn_arity(header); i++) {
+	for (int i = 0; i < get_irn_arity(header); i++) {
 		ir_node *in = get_irn_n(header, i);
 		ir_node *in_block = get_block(in);
 		if (block_is_inside_loop(in_block, loop))
