@@ -407,7 +407,7 @@ static void check_for_store_(ir_node *node, ir_loop *loop, pset *visited)
 {
 	assert(!is_Block(node));
 	if (is_Call(node)) {
-		walk_call_for_aliases(node);
+		walk_call_for_aliases(node, visited);
 	}
 	if (!is_Store(node)) {
 		return;
