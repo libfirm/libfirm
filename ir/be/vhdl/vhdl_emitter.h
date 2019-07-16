@@ -12,8 +12,6 @@
 
 #include "irnode.h"
 
-void vhdl_emitf(ir_node const *node, char const *fmt, ...);
-
 void vhdl_emit_function(ir_graph *irg);
 
 #endif

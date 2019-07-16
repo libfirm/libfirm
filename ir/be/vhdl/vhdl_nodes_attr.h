@@ -29,12 +29,12 @@ typedef struct vhdl_immediate_attr_t {
 
 typedef struct vhdl_varsig_attr_t {
 	vhdl_attr_t attr;
-	const char *name;
+	char name[16];
 } vhdl_varsig_attr_t;
 
 typedef struct vhdl_start_attr_t {
 	vhdl_attr_t attr;
-	vhdl_varsig_attr_t **signals;
+	vhdl_varsig_attr_t *signals;
 } vhdl_start_attr_t;
 
 
@@ -56,6 +56,11 @@ static inline vhdl_cmp_attr_t const *get_vhdl_cmp_attr_const(ir_node const *cons
 static inline vhdl_varsig_attr_t const *get_vhdl_varsig_attr_const(ir_node const *const node)
 {
 	return (vhdl_varsig_attr_t const*)get_irn_generic_attr_const(node);
+}
+
+static inline vhdl_varsig_attr_t *get_vhdl_varsig_attr(ir_node const *const node)
+{
+	return (vhdl_varsig_attr_t*)get_irn_generic_attr_const(node);
 }
 
 static inline vhdl_start_attr_t const *get_vhdl_start_attr_const(ir_node const *const node)

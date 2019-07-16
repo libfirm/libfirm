@@ -595,7 +595,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 	ir_target.isa->generate_code(file_handle, cup_name);
 
 	/* Write additional VHDL if desired */
-	vhdl_generate_code(file_handle, cup_name);
+	vhdl_generate_code(cup_name);
 }
 
 ir_jit_function_t *be_jit_compile(ir_jit_segment_t *const segment,

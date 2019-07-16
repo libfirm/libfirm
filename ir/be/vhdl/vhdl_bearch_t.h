@@ -11,6 +11,6 @@
 void vhdl_init(void);
 void vhdl_finish(void);
 
-void vhdl_generate_code(FILE *output, const char *cup_name);
+void vhdl_generate_code(const char *cup_name);
 
 #endif

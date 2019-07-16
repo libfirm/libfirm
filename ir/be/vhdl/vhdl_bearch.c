@@ -6,6 +6,7 @@
 #include "vhdl_bearch_t.h"
 
 #include "be_t.h"
+#include "beemitter.h"
 #include "bemodule.h"
 #include "gen_vhdl_new_nodes.h"
 #include "gen_vhdl_regalloc_if.h"
@@ -71,15 +72,22 @@ static void vhdl_lower_for_target(ir_graph *irg)
 	be_after_irp_transform("lower-arch-dep");
 }
 
-void vhdl_generate_code(FILE *const output, char const *const cup_name)
+void vhdl_generate_code(char const *const cup_name)
 {
-	vhdl_be_begin(output, cup_name);
+
+	vhdl_be_begin(cup_name);
 
 
 	foreach_irp_irg(i, irg) {
 		if (!(mtp_special_instruction & get_entity_additional_properties(get_irg_entity(irg)))) {
 			continue;
 		}
+		const char *entity_name = get_entity_ld_name(get_irg_entity(irg));
+		char filename[1024];
+		snprintf(filename, sizeof filename, "%s%s", entity_name, ".vhd");
+		FILE *out = fopen(filename, "w");
+		be_emit_init(out);
+
 
 		vhdl_lower_for_target(irg);
 
@@ -87,6 +95,7 @@ void vhdl_generate_code(FILE *const output, char const *const cup_name)
 
 		vhdl_emit_function(irg);
 		vhdl_be_step_last(irg);
+		be_emit_exit();
 	}
 
 	vhdl_be_finish();

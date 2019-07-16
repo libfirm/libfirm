@@ -101,7 +101,13 @@ static ir_node *gen_Minus(ir_node *const node)
 
 static ir_node *gen_Mux(ir_node *const node)
 {
-	TODO(node);
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node *const block = be_transform_nodes_block(node);
+	ir_node *const new_sel = be_transform_node(get_Mux_sel(node));
+	ir_node *const new_true = be_transform_node(get_Mux_true(node));
+	ir_node *const new_false = be_transform_node(get_Mux_false(node));
+	ir_node *const mux   = new_bd_vhdl_Mux(dbgi, block, new_sel, new_true, new_false);
+	return mux;
 }
 
 static ir_node *gen_Not(ir_node *const node) {
@@ -115,6 +121,7 @@ static ir_node *gen_Or(ir_node *const node)
 
 static ir_node *gen_Phi(ir_node *const node)
 {
+	// TODO: add AssignSig nodes at phi inputs
 	TODO(node);
 }
 
@@ -191,14 +198,19 @@ static ir_node *gen_Start(ir_node *const node)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_node  *const block = be_transform_nodes_block(node);
-	vhdl_varsig_attr_t *signals = malloc(sizeof(vhdl_varsig_attr_t)*3);
-	signals->name = "PARAM1";
-	signals[1].name = "PARAM2";
-	signals[2].name = "PARAM3";
-	ir_node *start = new_bd_vhdl_Start(dbgi, block, 3, &signals);
-	for (int i = 0; i < 3; i++) {
+	ir_type *method_type = get_entity_type(get_irg_entity(get_irn_irg(node)));
+	int n_params = get_method_n_params(method_type);
+	vhdl_varsig_attr_t *signals = malloc(sizeof(vhdl_varsig_attr_t)*n_params);
+	// TODO free later
+
+	ir_node *start = new_bd_vhdl_Start(dbgi, block, n_params, signals);
+	for (int i = 0; i < n_params; i++) {
 		arch_set_irn_register_req_out(start, i, &vhdl_class_reg_req_gp);
+		char param[16];
+		sprintf(param, "PARAM%d", i);
+		strncpy(signals[i].name, param, 16);
 	}
+
 	return start;
 }
 

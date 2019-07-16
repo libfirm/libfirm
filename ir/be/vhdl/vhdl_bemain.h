@@ -15,7 +15,7 @@
 #include "irgraph.h"
 #include "stdio.h"
 
-void vhdl_be_begin(FILE *, const char *);
+void vhdl_be_begin(const char *);
 void vhdl_be_step_last(ir_graph *);
 void vhdl_be_finish(void);
 

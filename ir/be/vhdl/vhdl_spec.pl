@@ -20,7 +20,7 @@ my $mode_gp = "mode_Iu"; # TODO
 	vhdl_immediate_attr_t =>
 		"attr->ent = ent;\n" .
 			"\tattr->val = val;",
-	vhdl_varsig_attr_t    => "attr->name = name;",
+	vhdl_varsig_attr_t    => "strncpy(attr->name, name, 16);",
 	vhdl_start_attr_t     => "attr->signals = signals;"
 );
 
@@ -114,7 +114,7 @@ my $assignOp = {
 	Start       => {
 		out_reqs  => "...",
 		attr_type => "vhdl_start_attr_t",
-		attr      => "vhdl_varsig_attr_t **signals"
+		attr      => "vhdl_varsig_attr_t *signals"
 	},
 
 	AssignVar   => { template => $assignOp},
