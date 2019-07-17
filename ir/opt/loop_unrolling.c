@@ -2079,97 +2079,62 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	assert(phi_M);
 	ir_node *c_cpy = copy_and_rewire(info->incr, switch_header, phi_M);
 	ir_node *N_cpy = copy_and_rewire(info->bound, switch_header, phi_M);
-	ir_mode *phi_mode = get_irn_mode(info->i[0]);
-	for (unsigned i = 1; i < info->i_size; i++) {
-		ir_mode *m = get_irn_mode(info->i[i]);
-		if (larger_mode(m, phi_mode)) {
-			phi_mode = m;
-		}
-	}
-
-	ir_node **tmp_ins = ALLOCAN(ir_node *, get_irn_arity(header));
-
-	for (unsigned i = 0; i < get_irn_arity(header); i++) {
-		ir_node *target = get_irn_n(info->phi, i);
-		tmp_ins[i] = get_irn_n(info->phi, i);
-		if (block_is_inside_loop(get_block(target), loop)) {
-			tmp_ins[i] = new_r_Bad(irg, get_irn_mode(target));
-		}
-	}
-
-	ir_node *I_cpy =
-		new_r_Phi(header, get_irn_arity(info->phi), tmp_ins, phi_mode);
-
-	ir_node **new_phi_ins = ALLOCAN(ir_node *, get_irn_arity(header));
-
-	for (unsigned i = 0; i < get_irn_arity(header); i++) {
-		ir_node *target = get_irn_n(info->phi, i);
-		new_phi_ins[i] = target;
-		if (block_is_inside_loop(get_block(target), loop)) {
-			new_phi_ins[i] = I_cpy;
-		}
-	}
-
-	set_irn_in(I_cpy, get_irn_arity(I_cpy), new_phi_ins);
-	add_to_stack(I_cpy, &fixup_phis);
+	ir_node *N_abs = create_abs(switch_header, N_cpy);
 	ir_node *c_abs = create_abs(switch_header, c_cpy);
 	ir_node *one_const = new_r_Const_long(irg, get_irn_mode(c_abs), 1);
-	ir_node *N_minus_I = create_abs(switch_header,
-					new_r_Sub(switch_header, I_cpy, N_cpy));
-	if (info->rel == ir_relation_less_equal) {
-		N_minus_I = new_r_Add(switch_header, N_minus_I, one_const);
-	} else if (info->rel == ir_relation_greater_equal) {
-		N_minus_I = new_r_Sub(switch_header, N_minus_I, one_const);
+	ir_node *N_minus_i =
+		is_less(info) ? new_r_Sub(switch_header, N_abs, info->phi) :
+				new_r_Sub(switch_header, info->phi, N_abs);
+	if (info->rel == ir_relation_less_equal ||
+	    info->rel == ir_relation_greater_equal) {
+		N_minus_i = new_r_Add(switch_header, N_minus_i, one_const);
 	}
+
 	DB((dbg, LEVEL_4, "\t\tCreated %+F = |(N - I)| = |%+F - %+F|\n",
-	    N_minus_I, N_cpy, I_cpy));
+	    N_minus_i, N_cpy, info->phi));
 	ir_node *c_one = new_r_Sub(switch_header, c_abs, one_const);
-	ir_node *numerator = new_r_Add(switch_header, N_minus_I, c_one);
-	DB((dbg, LEVEL_4, "\t\tCreated %+F = (N - I) + (|c| - 1) = %+F + %+F\n",
-	    numerator, N_minus_I, c_one));
-	ir_node *pin = new_r_Pin(switch_header, new_r_NoMem(irg));
-	ir_node *denominator = c_abs;
-	ir_node *div = new_r_DivRL(switch_header, pin, numerator, denominator,
-				   op_pin_state_pinned);
-	ir_node *div_proj =
-		new_r_Proj(div, get_irn_mode(numerator), pn_Div_res);
-	DB((dbg, LEVEL_4, "\t\tCreated %+F -> %+F\n", div_proj, div));
-	ir_node *duff_factor_const =
-		new_r_Const_long(irg, get_irn_mode(div_proj), factor);
-	ir_node *mod = new_r_Mod(switch_header, pin, div_proj,
-				 duff_factor_const, op_pin_state_pinned);
-	ir_node *mod_Proj = new_r_Proj(mod, get_irn_mode(div_proj), pn_Mod_res);
-	DB((dbg, LEVEL_4, "\t\tCreated Proj %+F to %+F = %+F %s %+F\n",
-	    mod_Proj, mod, div_proj, "%", duff_factor_const));
-	ir_switch_table *switch_table = ir_new_switch_table(irg, factor);
-	for (unsigned i = 0; i < factor - 1; ++i) {
-		ir_tarval *tv = new_tarval_from_long(factor - 1 - i,
-						     get_irn_mode(div_proj));
-		ir_switch_table_set(switch_table, i, tv, tv, i + 1);
+	/*
+	ir_node *c_factor =
+		new_r_Mul(switch_header, c_abs,
+			  new_r_Const_long(irg, get_irn_mode(c_abs), factor));
+	ir_node *N_minus_i_mod = mod(switch_header, irg, N_minus_i, c_factor);
+	 */
+	ir_node *res = new_r_Add(switch_header, N_minus_i, c_one);
+
+	ir_node *prev_jmp = new_r_Jmp(switch_header);
+	ir_node **cmp_blocks = malloc((factor - 1) * sizeof(ir_node *));
+	ir_node **to_block = malloc((factor - 1) * sizeof(ir_node *));
+	for (int i = 0; i < factor - 1; i++) {
+		ir_node *const_i = new_r_Const_long(irg, get_irn_mode(c_abs),
+						    factor - 1 - i);
+		ir_node *c_times = new_r_Mul(switch_header, const_i, c_abs);
+		ir_node **blk_ins = ALLOCAN(ir_node *, 1);
+		blk_ins[0] = prev_jmp;
+		cmp_blocks[i] = new_r_Block(irg, 1, blk_ins);
+		ir_node *cmp = new_r_Cmp(cmp_blocks[i], res, c_times,
+					 ir_relation_greater_equal);
+		ir_node *cond = new_r_Cond(cmp_blocks[i], cmp);
+		to_block[i] = new_r_Proj(cond, mode_X, pn_Cond_true);
+		prev_jmp = new_r_Proj(cond, mode_X, pn_Cond_false);
 	}
-	ir_switch_table_set(switch_table, factor - 1, NULL, NULL,
-			    pn_Switch_default);
-	ir_node *switch_mod =
-		new_r_Switch(switch_header, mod_Proj, factor, switch_table);
-	DB((dbg, LEVEL_4, "\t\tCreated %+F that switches over %+F -> %+F\n",
-	    switch_mod, mod_Proj, mod));
 	ir_node **ins_first = ALLOCAN(ir_node *, 1);
-	ins_first[0] = new_r_Proj(switch_mod, mode_X, 1);
+	ins_first[0] = to_block[0];
 	set_irn_in(target_blocks[0], 1, ins_first);
 	DB((dbg, LEVEL_4, "\t\tSetting in of %+F to %+F\n", target_blocks[0],
 	    ins_first[0]));
 	// TODO: I side effect  => loop
 	for (unsigned i = 1; i < factor - 1; ++i) {
-		ir_node *proj = new_r_Proj(switch_mod, mode_X, i + 1);
+		ir_node *proj = to_block[i];
 		ir_node *target = target_blocks[i];
 		set_irn_n(target, get_in_n_to_header(target, header), proj);
 		DB((dbg, LEVEL_4, "\t\tSetting in of %+F to %+F\n", target,
 		    proj));
 	}
-	ir_node *proj = new_r_Proj(switch_mod, mode_X, pn_Switch_default);
 	ir_node *target = after_loop;
-	set_irn_n(target, get_in_n_to_header(target, header), proj);
-	DB((dbg, LEVEL_4, "\t\tSetting in of %+F to %+F\n", target, proj));
+	set_irn_n(target, get_in_n_to_header(target, header), prev_jmp);
+	free(cmp_blocks);
+	free(to_block);
+	DB((dbg, LEVEL_4, "\t\tSetting in of %+F to %+F\n", target, prev_jmp));
 	return switch_header;
 }
 
