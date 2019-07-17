@@ -1478,9 +1478,9 @@ static void rewire_memory_of_execess_header(ir_node *const linked_header,
 {
 	DB((dbg, LEVEL_4, "\t\t\tRewiring memory of %+F\n", linked_header));
 	ir_node *target = NULL;
-	for (unsigned i = 0; i < get_irn_n_outs(in_loop_target); ++i) {
-		ir_node *out = get_irn_out(in_loop_target, i);
-		if (get_block(out) != in_loop_target) {
+	for (unsigned i = 0; i < get_irn_n_outs(target_block); ++i) {
+		ir_node *out = get_irn_out(target_block, i);
+		if (get_block(out) != target_block) {
 			continue;
 		}
 		if (get_irn_mode(out) != mode_M) {
