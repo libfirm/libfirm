@@ -934,12 +934,25 @@ static bool has_multiple_loop_exits(ir_loop *loop, ir_node *header)
 	return loop_exits > 1;
 }
 
+static unsigned no_of_block_in_loop(ir_loop *loop)
+{
+	unsigned no_blocks = 0;
+	for (unsigned i = 0; i < get_loop_n_elements(loop); i++) {
+		if (*get_loop_element(loop, i).kind == k_ir_node)
+			no_blocks++;
+	}
+	return no_blocks;
+}
+
 static duff_unrollability
 determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop)
 {
 	unroll_info->i = NULL;
 	unroll_info->loop = loop;
 	DB((dbg, LEVEL_4, "\tDetermining info for loop %+F\n", loop));
+	if (no_of_block_in_loop(loop) <= 1) { // Empty loop
+		return duff_unrollable_none;
+	}
 	ir_node *header = get_loop_header(loop);
 	unsigned outs = get_irn_n_outs(header);
 	for (unsigned i = 0; i < outs; ++i) {
