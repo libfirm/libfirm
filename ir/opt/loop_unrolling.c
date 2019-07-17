@@ -2393,7 +2393,7 @@ static void rewire_post(ir_node *last_block, ir_node *post_block,
 			if (is_irn_constlike(in)) {
 				continue;
 			}
-			if (block_dominates(in_block, header) > 0) {
+			if (is_Phi(in) && in_block == header) {
 				rewire_post_out_into_header(
 					node, in, added, loop, header, final);
 			}
