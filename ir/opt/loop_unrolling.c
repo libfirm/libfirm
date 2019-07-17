@@ -1483,6 +1483,9 @@ static void rewire_memory_of_execess_header(ir_node *const linked_header,
 		if (get_block(out) != target_block) {
 			continue;
 		}
+		if (!is_Phi(out)) {
+			continue;
+		}
 		if (get_irn_mode(out) != mode_M) {
 			continue;
 		}
