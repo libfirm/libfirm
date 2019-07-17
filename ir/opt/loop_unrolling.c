@@ -1474,7 +1474,7 @@ static void remove_node_from_succ_ins(ir_node *node)
 	}
 }
 static void rewire_memory_of_execess_header(ir_node *const linked_header,
-					    ir_node *const in_loop_target)
+					    ir_node *const target_block)
 {
 	DB((dbg, LEVEL_4, "\t\t\tRewiring memory of %+F\n", linked_header));
 	ir_node *target = NULL;
@@ -1497,12 +1497,15 @@ static void rewire_memory_of_execess_header(ir_node *const linked_header,
 		if (get_irn_mode(out) != mode_M) {
 			continue;
 		}
+		if (!is_Phi(out)) {
+			continue;
+		}
 		remove_node_from_succ_ins(out);
+
 		unsigned arity = get_irn_arity(out);
 		DB((dbg, LEVEL_4, "\t\t\t\tMemory source is %+F (arity: %u)\n",
 		    out, arity));
 		assert(target);
-		assert(arity > 0);
 		for (unsigned j = 0; j < arity; ++j) {
 			DB((dbg, LEVEL_4,
 			    "\t\t\t\t\tWiring memory %+F to %+F\n", target,
