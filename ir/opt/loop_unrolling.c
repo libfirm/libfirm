@@ -1369,7 +1369,7 @@ static void prune_block(ir_node *block, ir_node *header)
 		DEBUG_ONLY(ir_node **phi_preds = get_irn_in(phi));
 		DB((dbg, LEVEL_5, "\t\t\tPruning phi %+F with links to ", phi));
 		if (phi_n_preds > 0) {
-			for (unsigned j = 0; j < phi_n_preds - 1; j++) {
+			for (int j = 0; j < phi_n_preds - 1; j++) {
 				DB((dbg, LEVEL_5, "(%+F), ", phi_preds[j]));
 			}
 			DB((dbg, LEVEL_5, "(%+F).",
@@ -1423,7 +1423,7 @@ static void prune_block(ir_node *block, ir_node *header)
 			ir_node **nodes = ALLOCAN(ir_node *, 1);
 			DB((dbg, LEVEL_5,
 			    "\t\t\t\t%+F will now have input: ", target));
-			for (unsigned k = 0; k < phi_n_preds; k++) {
+			for (int k = 0; k < phi_n_preds; k++) {
 				ir_node *curr_node = get_irn_n(phi, k);
 				ir_node *curr_block = get_block(curr_node);
 				if (!is_in_stack(curr_block,
