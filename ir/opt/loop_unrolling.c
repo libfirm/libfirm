@@ -1009,6 +1009,7 @@ determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop)
 		if (unroll_info->op == MUL ||
 		    has_multiple_loop_exits(loop, header)) {
 			ret &= ~duff_unrollable_switch_fixup;
+			ret &= ~duff_unrollable_loop_fixup;
 		}
 		DEBUG_ONLY(if (ret == duff_unrollable_none) {
 			DB((dbg, LEVEL_4,
