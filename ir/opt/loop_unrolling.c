@@ -455,7 +455,8 @@ static void walk_call_for_aliases(ir_node *call, pset *visited)
 {
 	DB((dbg, LEVEL_4, "Found call: %+F\n", call));
 	ir_entity *callee_entity = get_Call_callee(call);
-	ir_graph *callee_graph = get_entity_linktime_irg(callee_entity);
+	ir_graph *callee_graph =
+		!callee_entity ? NULL : get_entity_linktime_irg(callee_entity);
 	if (!callee_graph) {
 		// TODO: Library doing things? Should this be a straight "no unroll"-scenario
 		// TODO: This code is highly dangerous - definitely should be thoroughly tested and reviewed
