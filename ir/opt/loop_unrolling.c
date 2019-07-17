@@ -119,7 +119,8 @@ static void get_false_and_true_targets(ir_node *header,
 	*out_of_loop_target = NULL;
 	for (unsigned i = 0; i < n; ++i) {
 		ir_node *curr = get_irn_out(header, i);
-		if (!is_Proj(curr) || !is_Proj_attached_to_Cmp(curr)) {
+		if (!is_Proj(curr) || get_irn_mode(curr) != mode_X ||
+		    !is_Proj_attached_to_Cmp(curr)) {
 			continue;
 		}
 		if (get_Proj_num(curr) == pn_Cond_true ||
@@ -1469,9 +1470,6 @@ static void rewire_memory_of_execess_header(ir_node *const linked_header,
 		if (get_block(out) != in_loop_target) {
 			continue;
 		}
-		if (!is_Phi(out)) {
-			continue;
-		}
 		if (get_irn_mode(out) != mode_M) {
 			continue;
 		}
@@ -1481,9 +1479,6 @@ static void rewire_memory_of_execess_header(ir_node *const linked_header,
 	for (unsigned i = 0; i < get_irn_n_outs(linked_header); ++i) {
 		ir_node *out = get_irn_out(linked_header, i);
 		if (get_block(out) != linked_header) {
-			continue;
-		}
-		if (!is_Phi(out)) {
 			continue;
 		}
 		if (get_irn_mode(out) != mode_M) {
