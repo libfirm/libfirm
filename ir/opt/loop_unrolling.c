@@ -501,8 +501,6 @@ static void walk_call_for_aliases(ir_node *call, pset *visited)
 		return;
 	}
 	if (pset_find_ptr(visited, callee_graph)) {
-		assert((callee_graph->reserved_resources &
-			IR_RESOURCE_IRN_VISITED));
 		DB((dbg, LEVEL_4,
 		    "Already visited target of call %+F - recursive\n", call));
 		return;
