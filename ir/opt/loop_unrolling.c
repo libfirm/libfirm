@@ -18,7 +18,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 DEBUG_ONLY(
 #define DUMP_GRAPH(irg, name)                                                  \
-	if (dbg) {                                                             \
+	if (firm_dbg_get_mask(dbg)) {                                          \
 		dump_ir_graph(irg, name);                                      \
 	}
 )
