@@ -1951,6 +1951,8 @@ static void rewire_duplicated_header(ir_node *header, ir_loop *loop,
 		int index;
 		ir_node *target = get_irn_out_ex(proj, 0, &index);
 		DB((dbg, LEVEL_5, " that points to %+F\n", target));
+		DB((dbg, LEVEL_5, "\t\t\t\tChecking if %+F in loop %+F\n",
+		    target, loop));
 		if (!block_is_inside_loop(get_block(target), loop)) {
 			ir_node *linked_proj = get_irn_link(proj);
 			set_irn_n(target, index, linked_proj);
@@ -2022,6 +2024,10 @@ static void rewire_duplicated_header(ir_node *header, ir_loop *loop,
 			}
 			free(new_ins);
 			set_irn_in(linked, l, new_ins_all);
+			while (get_irn_arity(linked) <
+			       get_irn_arity(linked_header)) {
+				add_edge(linked, linked);
+			}
 		}
 	}
 }
