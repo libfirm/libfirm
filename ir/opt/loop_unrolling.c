@@ -870,6 +870,19 @@ static duff_unrollability check_phi(linear_unroll_info *unroll_info,
 		DB((dbg, LEVEL_4, "Phi has %u preds. Too few!F\n", phi_preds));
 		return duff_unrollable_none;
 	}
+	unsigned preds_in_loop = 0;
+	for (unsigned i = 0; i < phi_preds; i++) {
+		ir_node *curr = get_Phi_pred(phi, i);
+		if (block_is_inside_loop(get_block(curr), loop)) {
+			preds_in_loop++;
+		}
+	}
+	if (preds_in_loop > 1) {
+		DB((dbg, LEVEL_4,
+		    "Phi has %u preds in loop. Expecting multiple increments! Can't unroll\n",
+		    preds_in_loop));
+		return duff_unrollable_none;
+	}
 	// check for static beginning: neither in loop, nor aliased and for valid linear increment
 	clear_all_stores();
 	get_all_stores(loop);
