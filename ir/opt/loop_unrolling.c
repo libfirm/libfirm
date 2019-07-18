@@ -953,6 +953,14 @@ determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop)
 		return duff_unrollable_none;
 	}
 	ir_node *header = get_loop_header(loop);
+	if (get_irn_loop(header) != loop) {
+		return duff_unrollable_none;
+	}
+	for (int i = 0; i < get_irn_arity(header); i++) {
+		if (get_block(get_irn_n(header, i)) == header) {
+			return duff_unrollable_none;
+		}
+	}
 	unsigned outs = get_irn_n_outs(header);
 	for (unsigned i = 0; i < outs; ++i) {
 		ir_node *node = get_irn_out(header, i);
