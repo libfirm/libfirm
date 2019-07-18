@@ -1874,6 +1874,34 @@ static void rewire_ins_linked(ir_node *node)
 	set_irn_in(link, arity, new_ins);
 }
 
+static void rewire_left_over_phis(ir_node *post_block, ir_loop *loop)
+{
+	int in_loop_index = 0;
+	int post_arity = get_irn_arity(post_block);
+	for (; in_loop_index < post_arity; in_loop_index++) {
+		ir_node *in = get_irn_n(post_block, in_loop_index);
+		ir_node *in_block = get_block(in);
+		if (block_is_inside_loop(in_block, loop)) {
+			break;
+		}
+	}
+	if (in_loop_index == post_arity)
+		return;
+	for (unsigned i = 0; i < get_irn_n_outs(post_block); i++) {
+		ir_node *out = get_irn_out(post_block, i);
+		if (get_block(out) != post_block) {
+			continue;
+		}
+		if (!is_Phi(out)) {
+			continue;
+		}
+		ir_node *in_from_loop = get_irn_n(out, in_loop_index);
+		while (get_irn_arity(out) < post_arity) {
+			add_edge(out, in_from_loop);
+		}
+	}
+}
+
 static void rewire_duplicated_block(ir_node *node, ir_loop *loop,
 				    ir_node *header)
 {
@@ -1904,13 +1932,13 @@ static void rewire_duplicated_block(ir_node *node, ir_loop *loop,
 			int index_out;
 			ir_node *const out =
 				get_irn_out_ex(curr, k, &index_out);
+			ir_node *out_block = get_block(out);
 			if (is_End(out)) {
 				DB((dbg, LEVEL_5,
 				    "\t\t\tAdding keep alive from %+F to %+F (link of %+F)\n",
 				    out, curr_link, curr));
 				add_End_keepalive(out, curr_link);
-			} else if (!block_is_inside_loop(get_block(out),
-							 loop)) {
+			} else if (!block_is_inside_loop(out_block, loop)) {
 				if (get_block(node) == header) {
 					DB((dbg, LEVEL_5,
 					    "\t\t\tRewiring out of loop link starting at %+F to now point to %+F instead of link %+F\n",
@@ -1930,6 +1958,7 @@ static void rewire_duplicated_block(ir_node *node, ir_loop *loop,
 					    "\t\t\tRewiring out of loop link starting at %+F to now also point to %+F\n",
 					    out, curr_link));
 				}
+				rewire_left_over_phis(out_block, loop);
 			}
 		}
 	}
