@@ -961,6 +961,12 @@ determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop)
 			return duff_unrollable_none;
 		}
 	}
+	ir_node *in_loop_target, *out_of_loop_target;
+	get_false_and_true_targets(header, &in_loop_target,
+				   &out_of_loop_target);
+	if (!in_loop_target || !out_of_loop_target) {
+		return duff_unrollable_none;
+	}
 	unsigned outs = get_irn_n_outs(header);
 	for (unsigned i = 0; i < outs; ++i) {
 		ir_node *node = get_irn_out(header, i);
