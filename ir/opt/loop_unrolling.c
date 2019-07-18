@@ -16,6 +16,13 @@
 #include <assert.h>
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+DEBUG_ONLY(
+#define DUMP_GRAPH(irg, name)                                                  \
+	if (dbg) {                                                             \
+		dump_ir_graph(irg, name);                                      \
+	}
+)
+
 static void prepend_edge(ir_node *node, ir_node *const pred)
 {
 	int const arity = get_irn_arity(node);
@@ -2631,7 +2638,7 @@ static void create_fixup_switch(ir_loop *const loop, ir_graph *irg,
 			pmap_destroy(prevs);
 		prevs = new_prevs;
 	}
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-pre-switch-header-0"));
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-pre-switch-header-0"));
 
 	confirm_irg_properties(irg, irg->properties &
 					    ~IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
@@ -2641,7 +2648,7 @@ static void create_fixup_switch(ir_loop *const loop, ir_graph *irg,
 	pmap_destroy(prevs);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	set_optimize(opt);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-pre-switch-header-1"));
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-pre-switch-header-1"));
 
 	ir_node *end = get_irg_end(irg);
 	iterate_stack(kas)
@@ -2651,7 +2658,7 @@ static void create_fixup_switch(ir_loop *const loop, ir_graph *irg,
 	free_stack(&kas);
 	// Cleared when removing KAs
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-pre-switch-header-2"));
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-pre-switch-header-2"));
 	create_fixup_switch_header(loop, irg, factor, dups, out_of_loop_target,
 				   info);
 	free(dups);
@@ -2672,7 +2679,7 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	unrolled_nodes = NULL;
 	ir_graph *irg = get_irn_irg(header);
 	create_fixup_loop(loop, irg, info);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-pre-fix-graph"));
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-pre-fix-graph"));
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	assure_irg_properties(
 		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
@@ -2681,7 +2688,7 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
 			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
 			     IR_GRAPH_PROPERTY_NO_BADS);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup"));
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup"));
 	assure_lcssa(irg);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 	assure_irg_properties(
@@ -2691,7 +2698,7 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
 			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
 			     IR_GRAPH_PROPERTY_NO_BADS);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-fixup-lcssa"));
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-lcssa"));
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	rewire_loop(loop, header, factor);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
@@ -2702,9 +2709,10 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
 			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 	assert(unrolled_headers);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-unroll"));
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-unroll"));
 	remove_excess_headers(info, header);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-no-excess-header-pre-fix-graph"));
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-no-excess-header-pre-fix-graph"));
+
 	assure_irg_properties(irg,
 			      IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
 				      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
@@ -2713,9 +2721,9 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 				      IR_GRAPH_PROPERTY_NO_BADS);
 	info->loop = get_irn_loop(header);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-no-excess-header"));
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-no-excess-header"));
 	update_header_condition(info, factor);
-	DEBUG_ONLY(dump_ir_graph(irg, "duff-updated-header-condition"));
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-updated-header-condition"));
 	++n_loops_unrolled;
 	// TODO: Change main header
 	// TODO: Fixup
@@ -2851,7 +2859,7 @@ void unroll_loops(ir_graph *const irg, unsigned factor, unsigned maxsize)
 				      IR_GRAPH_PROPERTY_NO_BADS |
 				      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	dump_ir_graph(irg, "lcssa");
+	DEBUG_ONLY(DUMP_GRAPH(irg, "lcssa"));
 	duplicate_innermost_loops(get_irg_loop(irg), factor, maxsize, true);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
