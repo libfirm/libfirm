@@ -1453,9 +1453,10 @@ static void prune_block(ir_node *block, ir_node *header)
 			for (int k = 0; k < phi_n_preds; k++) {
 				ir_node *curr_node = get_irn_n(phi, k);
 				ir_node *curr_block = get_block(curr_node);
-				if (!is_in_stack(curr_block,
-						 unrolled_headers) &&
-				    is_in_stack(curr_block, unrolled_nodes)) {
+				if (is_irn_constlike(curr_node) ||
+				    (!is_in_stack(curr_block,
+						  unrolled_headers) &&
+				     is_in_stack(curr_block, unrolled_nodes))) {
 					nodes[0] = curr_node;
 					DB((dbg, LEVEL_5, "%+F.", curr_node));
 				}
