@@ -1910,6 +1910,7 @@ static void rewire_duplicated_block(ir_node *node, ir_loop *loop,
 	DB((dbg, LEVEL_5, "\tRewiring block %+F (link of %+F)\n", new_node,
 	    node));
 	unsigned const n_outs = get_irn_n_outs(node);
+	struct irn_stack *out_blocks = NULL;
 	for (unsigned j = 0; j < n_outs; ++j) {
 		int index;
 		ir_node *const curr = get_irn_out_ex(node, j, &index);
@@ -1939,6 +1940,7 @@ static void rewire_duplicated_block(ir_node *node, ir_loop *loop,
 				    out, curr_link, curr));
 				add_End_keepalive(out, curr_link);
 			} else if (!block_is_inside_loop(out_block, loop)) {
+				add_to_stack(out_block, &out_blocks);
 				if (get_block(node) == header) {
 					DB((dbg, LEVEL_5,
 					    "\t\t\tRewiring out of loop link starting at %+F to now point to %+F instead of link %+F\n",
@@ -1958,10 +1960,15 @@ static void rewire_duplicated_block(ir_node *node, ir_loop *loop,
 					    "\t\t\tRewiring out of loop link starting at %+F to now also point to %+F\n",
 					    out, curr_link));
 				}
-				rewire_left_over_phis(out_block, loop);
 			}
 		}
 	}
+	iterate_stack(out_blocks)
+	{
+		ir_node *out_block = curr->el;
+		rewire_left_over_phis(out_block, loop);
+	}
+	free_stack(&out_blocks);
 	rewire_ins_linked(node);
 }
 static void rewire_duplicated_header(ir_node *header, ir_loop *loop,
