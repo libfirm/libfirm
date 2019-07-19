@@ -3,13 +3,17 @@
  * Copyright (C) 2019 University of Karlsruhe.
  */
 
+#include <bepeephole.h>
 #include "vhdl_transform.h"
 
 #include "betranshlp.h"
 #include "gen_vhdl_new_nodes.h"
 #include "gen_vhdl_regalloc_if.h"
 #include "ircons.h"
+#include "irgmod.h"
+#include "irgwalk.h"
 #include "irnode_t.h"
+#include "irouts_t.h"
 #include "panic.h"
 
 typedef ir_node *cons_unop(dbg_info*, ir_node*, ir_node*);
@@ -106,8 +110,9 @@ static ir_node *gen_Mux(ir_node *const node)
 	ir_node *const new_sel = be_transform_node(get_Mux_sel(node));
 	ir_node *const new_true = be_transform_node(get_Mux_true(node));
 	ir_node *const new_false = be_transform_node(get_Mux_false(node));
-	ir_node *const mux   = new_bd_vhdl_Mux(dbgi, block, new_sel, new_true, new_false);
-	return mux;
+	char var_name[16];
+	sprintf(var_name, "mux%ld", get_irn_node_nr(node));
+	return new_bd_vhdl_Mux(dbgi, block, new_sel, new_true, new_false, var_name);
 }
 
 static ir_node *gen_Not(ir_node *const node) {
@@ -121,8 +126,7 @@ static ir_node *gen_Or(ir_node *const node)
 
 static ir_node *gen_Phi(ir_node *const node)
 {
-	// TODO: add AssignSig nodes at phi inputs
-	TODO(node);
+	return node;
 }
 
 static ir_node *gen_PinnedConst(ir_node *const node)
@@ -159,7 +163,9 @@ static ir_node *gen_Return(ir_node *const node)
 	ir_node  *const block = be_transform_nodes_block(node);
 	ir_node *val = be_transform_node(get_irn_n(node, 1));
 
-	ir_node *assign_signal = new_bd_vhdl_AssignSig(dbgi, block, val, "OUTPUT0");
+	char name[16];
+	sprintf(name, "OUTPUT0");
+	ir_node *assign_signal = new_bd_vhdl_AssignSig(dbgi, block, val, name);
 
 	ir_node *ret = new_bd_vhdl_Return(dbgi, block, assign_signal);
 	return ret;
@@ -203,7 +209,7 @@ static ir_node *gen_Start(ir_node *const node)
 	vhdl_varsig_attr_t *signals = malloc(sizeof(vhdl_varsig_attr_t)*n_params);
 	// TODO free later
 
-	ir_node *start = new_bd_vhdl_Start(dbgi, block, n_params, signals);
+	ir_node *start = new_bd_vhdl_Start(dbgi, block, n_params, n_params, signals);
 	for (int i = 0; i < n_params; i++) {
 		arch_set_irn_register_req_out(start, i, &vhdl_class_reg_req_gp);
 		char param[16];
@@ -248,8 +254,63 @@ static void vhdl_register_transformers(void)
 	be_set_transform_proj_function(op_Start,  gen_Proj_Start);
 }
 
+static void assign_walker(ir_node *const node, void *env) {
+	if (is_Block(node)) {
+		return;
+	}
+	(void)env;
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = get_nodes_block(node);
+	// assign phi operands in signals
+	if (is_Phi(node) && mode_is_int(get_irn_mode(node))) {
+		for (int i = 0; i < get_irn_arity(node); i++) {
+			ir_node *pred = get_irn_n(node, i);
+
+			if (!is_vhdl_AssignSig(pred)) {
+				char sig_name[16];
+				sprintf(sig_name, "PHI%ld", get_irn_node_nr(node));
+				ir_node *assign = new_bd_vhdl_AssignSig(dbgi, get_nodes_block(pred), pred, sig_name);
+				set_irn_n(node, i, assign);
+			}
+		}
+	}
+	// store results with multiple users in a temporary variable
+	if (!be_has_only_one_user(node)) {
+		if (!is_vhdl_irn(node)) {
+			return;
+		}
+		switch(get_vhdl_irn_opcode(node)) {
+			case iro_vhdl_AssignVar:
+			case iro_vhdl_AssignSig:
+			case iro_vhdl_Cond:
+			case iro_vhdl_Const:
+			case iro_vhdl_Mux:
+			case iro_vhdl_Start:
+				return;
+			default:
+				break;
+		}
+		char var_name[16];
+		sprintf(var_name, "node%ld", get_irn_node_nr(node));
+		ir_node *assign = new_bd_vhdl_AssignVar(dbgi, block, node, var_name);
+		foreach_irn_out(node, i, succ) {
+			if (succ == assign) {
+				continue;
+			}
+			for (int j = 0; j < get_irn_arity(succ); j++) {
+				if (get_irn_n(succ, j) == node) {
+					set_irn_n(succ, j, assign);
+				}
+			}
+		}
+	}
+}
+
 void vhdl_transform_graph(ir_graph *const irg)
 {
 	vhdl_register_transformers();
 	be_transform_graph(irg, NULL);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+	irg_walk_graph(irg, NULL, assign_walker, NULL);
+
 }

@@ -34,6 +34,7 @@ typedef struct vhdl_varsig_attr_t {
 
 typedef struct vhdl_start_attr_t {
 	vhdl_attr_t attr;
+	int n_signals;
 	vhdl_varsig_attr_t *signals;
 } vhdl_start_attr_t;
 

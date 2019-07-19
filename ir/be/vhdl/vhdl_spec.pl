@@ -21,7 +21,7 @@ my $mode_gp = "mode_Iu"; # TODO
 		"attr->ent = ent;\n" .
 			"\tattr->val = val;",
 	vhdl_varsig_attr_t    => "strncpy(attr->name, name, 16);",
-	vhdl_start_attr_t     => "attr->signals = signals;"
+	vhdl_start_attr_t     => "attr->n_signals = n_signals;\n\tattr->signals = signals;"
 );
 
 my $binOp = {
@@ -93,6 +93,8 @@ my $assignOp = {
 		in_reqs  => ["cls-gp", "cls-gp", "cls-gp"],
 		outs     => [ "res" ],
 		out_reqs => ["cls-gp"],
+		attr_type => "vhdl_varsig_attr_t",
+		attr      => "char *name"
 	},
 
 	Const       => {
@@ -114,7 +116,7 @@ my $assignOp = {
 	Start       => {
 		out_reqs  => "...",
 		attr_type => "vhdl_start_attr_t",
-		attr      => "vhdl_varsig_attr_t *signals"
+		attr      => "int n_signals, vhdl_varsig_attr_t *signals"
 	},
 
 	AssignVar   => { template => $assignOp},
