@@ -1343,7 +1343,15 @@ static unsigned n_loops_unrolled = 0;
 static struct irn_stack *unrolled_headers;
 static struct irn_stack *unrolled_nodes;
 static struct irn_stack *fixup_phis;
-static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
+
+static void create_link_map(ir_node *node, void *link_map)
+{
+	ir_node *link = get_irn_link(node);
+	if (link)
+		pmap_insert((pmap *)link_map, node, link);
+}
+static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor,
+			pmap *link_map)
 {
 	ir_graph *irg = get_irn_irg(header);
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
@@ -1379,6 +1387,8 @@ static void rewire_loop(ir_loop *loop, ir_node *header, unsigned factor)
 			}
 		}
 	}
+	if (link_map)
+		irg_walk_graph(irg, create_link_map, NULL, link_map);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 }
 
@@ -1553,17 +1563,39 @@ static void rewire_memory_of_execess_header(ir_node *const linked_header,
 		set_irn_in(out, 0, NULL);
 	}
 }
-static void remove_excess_headers(linear_unroll_info *info,
-				  ir_node *const header)
+static void prune_non_loop_variant_links_to_header(ir_node *node_with_links,
+						   pmap *link_map,
+						   ir_node *header)
 {
+	for (int i = 0; i < get_irn_arity(node_with_links); i++) {
+		ir_node *in = get_irn_n(node_with_links, i);
+		if (!is_in_stack(get_block(in), unrolled_headers)) {
+			continue;
+		}
+		ir_node *link = in;
+		while (get_block(link) != header) {
+			assert(pmap_contains(link_map, link));
+			link = pmap_get(ir_node, link_map, link);
+		}
+		set_irn_n(node_with_links, i, link);
+	}
+}
+
+static void remove_excess_headers(linear_unroll_info *info,
+				  ir_node *const header, pmap *link_map)
+{
+	DEBUG_ONLY(ir_graph *irg = get_irn_irg(header));
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-no-excess-header-tmp-0"));
 	iterate_stack(unrolled_headers)
 	{
 		ir_node *linked_header = curr->el;
+		DB((dbg, LEVEL_4, "Pruning mem of: %+F", linked_header));
 		ir_node *in_loop_target, *out_of_loop_target;
 		get_false_and_true_targets(linked_header, &in_loop_target,
 					   &out_of_loop_target);
 		rewire_memory_of_execess_header(linked_header, in_loop_target);
 	}
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-no-excess-header-tmp-1"));
 	iterate_stack(unrolled_headers)
 	{
 		ir_node *linked_header = curr->el;
@@ -1572,6 +1604,7 @@ static void remove_excess_headers(linear_unroll_info *info,
 		}
 		prune_block(linked_header, header);
 	}
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-no-excess-header-tmp-2"));
 	iterate_stack(unrolled_headers)
 	{
 		ir_node *linked_header = curr->el;
@@ -1635,6 +1668,23 @@ static void remove_excess_headers(linear_unroll_info *info,
 		}
 		set_irn_in(out_of_loop_block, out_of_loop_n_preds - 1,
 			   out_of_loop_preds);
+	}
+	iterate_stack(unrolled_nodes)
+	{
+		ir_node *block = curr->el;
+		if (is_in_stack(block, unrolled_headers)) {
+			continue;
+		}
+		for (unsigned i = 0; i < get_irn_n_outs(block); i++) {
+			ir_node *node = get_irn_out(block, i);
+			if (get_block(node) != block) {
+				continue;
+			}
+			if (node->node_nr == 168)
+				DB((dbg, LEVEL_5, "x"));
+			prune_non_loop_variant_links_to_header(node, link_map,
+							       header);
+		}
 	}
 	confirm_irg_properties(get_irn_irg(header), IR_GRAPH_PROPERTIES_NONE);
 }
@@ -2700,7 +2750,8 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 			     IR_GRAPH_PROPERTY_NO_BADS);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-lcssa"));
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	rewire_loop(loop, header, factor);
+	pmap *link_map_unroll = pmap_create();
+	rewire_loop(loop, header, factor, link_map_unroll);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	assure_irg_properties(
 		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
@@ -2710,7 +2761,8 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 	assert(unrolled_headers);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-unroll"));
-	remove_excess_headers(info, header);
+	remove_excess_headers(info, header, link_map_unroll);
+	pmap_destroy(link_map_unroll);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-no-excess-header-pre-fix-graph"));
 
 	assure_irg_properties(irg,
@@ -2747,7 +2799,7 @@ static void unroll_loop(ir_loop *const loop, unsigned factor)
 	}
 	DB((dbg, LEVEL_2, "unroll loop %+F\n", loop));
 	DB((dbg, LEVEL_3, "\tuse %d as unroll factor\n", factor));
-	rewire_loop(loop, header, factor);
+	rewire_loop(loop, header, factor, NULL);
 	++n_loops_unrolled;
 	// fully unroll: remove control flow loop
 	if (fully_unroll) {
