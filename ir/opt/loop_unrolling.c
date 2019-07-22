@@ -1608,7 +1608,8 @@ static void prune_non_loop_variant_links_to_header_switch_header(
 }
 
 static void remove_excess_headers(linear_unroll_info *info,
-				  ir_node *const header, pmap *link_map)
+				  ir_node *const header, ir_node *switch_header,
+				  pmap *link_map)
 {
 	DEBUG_ONLY(ir_graph *irg = get_irn_irg(header));
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-no-excess-header-tmp-0"));
@@ -2069,7 +2070,7 @@ static void rewire_duplicated_header(ir_node *header, ir_loop *loop,
 	DB((dbg, LEVEL_5, "\t\tNode is header\n"));
 	ir_node *linked_header = get_irn_link(header);
 	unsigned header_arity = get_irn_arity(header);
-	ir_node **header_new_ins = malloc(sizeof(ir_node *) * header_arity);
+	ir_node **header_new_ins = calloc(header_arity, sizeof(ir_node *));
 	ir_node *cond = get_irn_out(info->cmp, 0);
 	DB((dbg, LEVEL_5, "\t\t\tRewiring Condition %+F\n", cond));
 	for (unsigned j = 0; j < get_irn_n_outs(cond); ++j) {
