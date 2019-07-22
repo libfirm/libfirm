@@ -949,21 +949,37 @@ static duff_unrollability check_phi(linear_unroll_info *unroll_info,
 	    phi_preds));
 	return unrollability;
 }
+static unsigned loop_exits_from_block(ir_node *block, ir_loop *loop)
+{
+	unsigned loop_exits = 0;
+	for (int i = 0; i < get_irn_n_outs(block); ++i) {
+		ir_node *out = get_irn_out(block, i);
+		if (get_block(out) != block) {
+			continue;
+		}
+		if (get_irn_mode(out) != mode_X) {
+			continue;
+		}
+
+		for (int j = 0; j < get_irn_n_outs(out); ++j) {
+			ir_node *curr = get_irn_out(out, j);
+			ir_node *curr_block = get_block(curr);
+			if (block_is_inside_loop(curr_block, loop)) {
+				loop_exits++;
+			}
+		}
+	}
+	return loop_exits;
+}
 
 static bool has_multiple_loop_exits(ir_loop *loop, ir_node *header)
 {
-	ir_node *in_loop_tgt, *out_of_loop_tgt;
-	get_false_and_true_targets(header, &in_loop_tgt, &out_of_loop_tgt);
-	if (!out_of_loop_tgt) {
-		return false;
-	}
-	ir_node *after_block = get_block(out_of_loop_tgt);
 	unsigned loop_exits = 0;
-	for (int i = 0; i < get_irn_arity(after_block); i++) {
-		ir_node *curr = get_irn_n(after_block, i);
-		ir_node *curr_block = get_block(curr);
-		if (block_is_inside_loop(curr_block, loop)) {
-			loop_exits++;
+	for (int i = 0; i < get_loop_n_elements(loop) && loop_exits <= 1; i++) {
+		loop_element loopElement = get_loop_element(loop, i);
+		if (*loopElement.kind == k_ir_node) {
+			loop_exits +=
+				loop_exits_from_block(loopElement.node, loop);
 		}
 	}
 	return loop_exits > 1;
