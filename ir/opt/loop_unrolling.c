@@ -45,6 +45,19 @@ static void add_edge(ir_node *const node, ir_node *const pred)
 	set_irn_in(node, arity + 1, in);
 }
 
+static void remove_edge(ir_node *const node, int pos)
+{
+	int const arity = get_irn_arity(node);
+	assert(pos < arity && pos >= 0);
+	ir_node **const in = ALLOCAN(ir_node *, arity - 1);
+	int new_arity = 0;
+	for (int i = 0; i < arity; ++i) {
+		if (i != pos)
+			in[new_arity++] = get_irn_n(node, i);
+	}
+	set_irn_in(node, arity - 1, in);
+}
+
 static bool is_inner_loop(ir_loop *const outer_loop, ir_loop *inner_loop)
 {
 	ir_loop *old_inner_loop;
@@ -1581,6 +1594,19 @@ static void prune_non_loop_variant_links_to_header(ir_node *node_with_links,
 	}
 }
 
+static void prune_non_loop_variant_links_to_header_switch_header(
+	ir_node *node_with_links, pmap *link_map, ir_node *header)
+{
+	for (int i = 0; i < get_irn_arity(node_with_links); i++) {
+		ir_node *in = get_irn_n(node_with_links, i);
+		if (!is_in_stack(get_block(in), unrolled_headers)) {
+			continue;
+		}
+		remove_edge(node_with_links, i);
+		i = 0; // Reset as indicies shifted
+	}
+}
+
 static void remove_excess_headers(linear_unroll_info *info,
 				  ir_node *const header, pmap *link_map)
 {
@@ -1680,10 +1706,18 @@ static void remove_excess_headers(linear_unroll_info *info,
 			if (get_block(node) != block) {
 				continue;
 			}
-			if (node->node_nr == 168)
-				DB((dbg, LEVEL_5, "x"));
 			prune_non_loop_variant_links_to_header(node, link_map,
 							       header);
+		}
+	}
+	if (switch_header) {
+		for (unsigned i = 0; i < get_irn_n_outs(switch_header); i++) {
+			ir_node *node = get_irn_out(switch_header, i);
+			if (get_block(node) != switch_header) {
+				continue;
+			}
+			prune_non_loop_variant_links_to_header_switch_header(
+				node, link_map, header);
 		}
 	}
 	confirm_irg_properties(get_irn_irg(header), IR_GRAPH_PROPERTIES_NONE);
@@ -2207,7 +2241,6 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 		}
 	}
 	ir_node *switch_header = new_r_Block(irg, 1, in);
-	set_irn_n(after_loop, after_index, switch_header);
 	ir_node *phi_M = get_phi_M(header);
 	assert(phi_M);
 	ir_node *c_cpy = copy_and_rewire(info->incr, switch_header, phi_M);
@@ -2412,7 +2445,7 @@ static void rewire_first(struct irn_stack *current, ir_graph *irg)
 	rewire_bad(current, rewire_pointing_to_bad_first(node, bad_index))
 }
 
-static void rewire_post_out(ir_node *out, ir_node *node_to_add)
+static void rewire_post_out(ir_node *out, ir_node *node_to_add, unsigned ex)
 {
 	assert(out);
 	assert(node_to_add);
@@ -2433,7 +2466,8 @@ static void rewire_post_out_into_header(ir_node *out, ir_node *header_node,
 	DB((dbg, LEVEL_5, "\tLooking for outs in %+F (block: %+F)\n",
 	    header_node, get_block(header_node)));
 	for (unsigned i = 0; i < outs; i++) {
-		ir_node *node = get_irn_out(header_node, i);
+		int ex;
+		ir_node *node = get_irn_out_ex(header_node, i, &ex);
 		ir_node *link = get_irn_link(node);
 		if (!pmap_contains(final, node)) {
 			continue;
@@ -2454,7 +2488,7 @@ static void rewire_post_out_into_header(ir_node *out, ir_node *header_node,
 		DB((dbg, LEVEL_5,
 		    "\t\t\t\tHeader exit %+F pointed to by %+F (exit of %+F)\n",
 		    out, exit, link));
-		rewire_post_out(out, exit);
+		rewire_post_out(out, exit, ex);
 	}
 }
 static bool dominated_by_in_loop_not_header(ir_node *block, ir_loop *loop,
@@ -2664,8 +2698,8 @@ static pmap *duplicate_rewire_loop_body(ir_loop *const loop, ir_node *header,
 	free_stack(&copied);
 	return map;
 }
-static void create_fixup_switch(ir_loop *const loop, ir_graph *irg,
-				unsigned factor, linear_unroll_info *info)
+static ir_node *create_fixup_switch(ir_loop *const loop, ir_graph *irg,
+				    unsigned factor, linear_unroll_info *info)
 {
 	fixup_phis = NULL;
 	DB((dbg, LEVEL_4, "Creating switch-case fixup\n"));
@@ -2709,10 +2743,11 @@ static void create_fixup_switch(ir_loop *const loop, ir_graph *irg,
 	// Cleared when removing KAs
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-pre-switch-header-2"));
-	create_fixup_switch_header(loop, irg, factor, dups, out_of_loop_target,
-				   info);
+	ir_node *switch_header = create_fixup_switch_header(
+		loop, irg, factor, dups, out_of_loop_target, info);
 	free(dups);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+	return switch_header;
 }
 
 static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
@@ -2728,8 +2763,9 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	unrolled_headers = NULL;
 	unrolled_nodes = NULL;
 	ir_graph *irg = get_irn_irg(header);
+	ir_node *switch_header = NULL;
 	if (unrollability & duff_unrollable_switch_fixup) {
-		create_fixup_switch(loop, irg, factor, info);
+		switch_header = create_fixup_switch(loop, irg, factor, info);
 	} else {
 		create_fixup_loop(loop, irg, info);
 	}
@@ -2765,7 +2801,7 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 	assert(unrolled_headers);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-unroll"));
-	remove_excess_headers(info, header, link_map_unroll);
+	remove_excess_headers(info, header, switch_header, link_map_unroll);
 	pmap_destroy(link_map_unroll);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-no-excess-header-pre-fix-graph"));
 
