@@ -2652,6 +2652,63 @@ static void add_all_to_map(struct irn_stack *copied_blocks, pmap *map)
 	}
 }
 
+static void fill_connected_phis(struct irn_stack *copied, ir_loop *loop)
+{
+	struct irn_stack *out_blocks = NULL;
+	iterate_stack(copied)
+	{
+		ir_node *link_block = curr->el;
+		ir_node *block = get_irn_link(link_block);
+		for (unsigned i = 0; i < get_irn_n_outs(block); i++) {
+			ir_node *out = get_irn_out(block, i);
+			if (get_block(out) != block) {
+				continue;
+			}
+			unsigned n_outs = get_irn_n_outs(out);
+			for (unsigned j = 0; j < n_outs; j++) {
+				ir_node *target = get_irn_out(out, j);
+				if (block_is_inside_loop(get_block(target),
+							 loop)) {
+					continue;
+				}
+				add_to_stack(get_block(target), &out_blocks);
+			}
+		}
+	}
+	iterate_stack(out_blocks)
+	{
+		ir_node *out_block = curr->el;
+		int out_to_loops_n = 0;
+		int *out_of_loops =
+			malloc(sizeof(int) * get_irn_arity(out_block));
+		for (int i = 0; i < get_irn_arity(out_block); i++) {
+			ir_node *in = get_irn_n(out_block, i);
+			ir_node *in_block = get_block(in);
+			if (block_is_inside_loop(in_block, loop)) {
+				out_of_loops[out_to_loops_n++] = i;
+			}
+		}
+		for (unsigned i = 0; i < get_irn_n_outs(out_block); i++) {
+			ir_node *out = get_irn_out(out_block, i);
+			if (get_block(out) != out_block) {
+				continue;
+			}
+			if (!is_Phi(out)) {
+				continue;
+			}
+			if (get_irn_arity(out) < get_irn_arity(out_block)) {
+				for (int j = 0; j < out_to_loops_n; j++) {
+					ir_node *to_loop =
+						get_irn_n(out, out_of_loops[j]);
+					add_edge(out, to_loop);
+				}
+			}
+		}
+		free(out_of_loops);
+	}
+	free_stack(&out_blocks);
+}
+
 static pmap *duplicate_rewire_loop_body(ir_loop *const loop, ir_node *header,
 					ir_graph *irg, ir_node **dups,
 					unsigned dups_pos, pmap *prevs,
@@ -2695,6 +2752,7 @@ static pmap *duplicate_rewire_loop_body(ir_loop *const loop, ir_node *header,
 		rewire_first(copied, irg);
 	}
 	rewire_missing(copied, loop, header);
+	fill_connected_phis(copied, loop);
 	free_stack(&copied);
 	return map;
 }
