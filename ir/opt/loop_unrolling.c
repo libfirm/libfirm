@@ -2249,7 +2249,9 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	ir_node *switch_header = new_r_Block(irg, 1, in);
 	ir_node *phi_M = get_phi_M(header);
 	assert(phi_M);
-	ir_node *c_cpy = copy_and_rewire(info->incr, switch_header, phi_M);
+	ir_node *c = info->incr;
+	ir_node *c_cpy =
+		is_Phi(c) ? c : copy_and_rewire(c, switch_header, phi_M);
 	ir_node *N = info->bound;
 	ir_node *N_cpy =
 		is_Phi(N) ? N : copy_and_rewire(N, switch_header, phi_M);
