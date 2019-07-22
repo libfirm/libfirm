@@ -2728,7 +2728,11 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	unrolled_headers = NULL;
 	unrolled_nodes = NULL;
 	ir_graph *irg = get_irn_irg(header);
-	create_fixup_loop(loop, irg, info);
+	if (unrollability & duff_unrollable_switch_fixup) {
+		create_fixup_switch(loop, irg, factor, info);
+	} else {
+		create_fixup_loop(loop, irg, info);
+	}
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-pre-fix-graph"));
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	assure_irg_properties(
