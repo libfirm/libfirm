@@ -960,11 +960,10 @@ static unsigned loop_exits_from_block(ir_node *block, ir_loop *loop)
 		if (get_irn_mode(out) != mode_X) {
 			continue;
 		}
-
 		for (int j = 0; j < get_irn_n_outs(out); ++j) {
 			ir_node *curr = get_irn_out(out, j);
 			ir_node *curr_block = get_block(curr);
-			if (block_is_inside_loop(curr_block, loop)) {
+			if (!block_is_inside_loop(curr_block, loop)) {
 				loop_exits++;
 			}
 		}
@@ -1072,10 +1071,11 @@ determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop)
 			    unroll_info->bound));
 			ret = duff_unrollable_none;
 		}
-		if (unroll_info->op == MUL ||
-		    has_multiple_loop_exits(loop, header)) {
+		if (unroll_info->op == MUL) {
 			ret &= ~duff_unrollable_switch_fixup;
-			ret &= ~duff_unrollable_loop_fixup;
+		}
+		if (has_multiple_loop_exits(loop, header)) {
+			ret = duff_unrollable_none;
 		}
 		DEBUG_ONLY(if (ret == duff_unrollable_none) {
 			DB((dbg, LEVEL_4,
