@@ -1733,7 +1733,7 @@ static void recursive_copy_in_loop(ir_node *node, ir_node *header)
 		    block_dominates(to_cpy_block, header) > 0) {
 			continue;
 		}
-		if (get_irn_mode(to_cpy) != mode_M) {
+		if (get_irn_mode(to_cpy) != mode_M && !is_Phi(node)) {
 			duplicate_node(to_cpy, header);
 			recursive_copy_in_loop(to_cpy, header);
 		}
@@ -1755,6 +1755,8 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 		}
 		if (get_irn_mode(next) == mode_M) {
 			new_in[i] = phi_M;
+		} else if (is_Phi(next)) {
+			new_in[i] = next;
 		} else {
 			new_in[i] = get_irn_link(next);
 			recursive_rewire_in_loop(next, header, phi_M);
