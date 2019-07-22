@@ -937,6 +937,9 @@ static duff_unrollability check_phi(linear_unroll_info *unroll_info,
 		unroll_info->i_size = is_size;
 		unroll_info->i = is;
 	}
+	if (!mode_is_int(get_irn_mode(phi))) {
+		unrollability &= ~duff_unrollable_switch_fixup;
+	}
 	DB((dbg, LEVEL_5, "\tFound %u Is:\n", unroll_info->i_size));
 	for (unsigned i = 0; i < unroll_info->i_size; i++) {
 		DB((dbg, LEVEL_5, "\t\tI_src[%u]: %+F\n", i, is[i]));
