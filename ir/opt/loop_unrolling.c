@@ -3025,6 +3025,7 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 	duff_unrollability unrollability =
 		determine_lin_unroll_info(&info, curr_loop, DUFF_FACTOR);
 	if (unrollability != duff_unrollable_none) {
+		unrollability &= ~duff_unrollable_switch_fixup;
 		DB((dbg, LEVEL_2, "DUFF: Can unroll! (loop: %+F)\n", loop));
 		unroll_loop_duff(curr_loop, DUFF_FACTOR, &info, unrollability);
 	} else {
