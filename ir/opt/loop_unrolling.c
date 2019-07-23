@@ -994,8 +994,14 @@ static unsigned no_of_block_in_loop(ir_loop *loop)
 	return no_blocks;
 }
 
+static bool is_power_of_two(unsigned n)
+{
+	return (n & (n - 1)) == 0;
+}
+
 static duff_unrollability
-determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop)
+determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop,
+			  unsigned factor)
 {
 	unroll_info->i = NULL;
 	unroll_info->loop = loop;
@@ -1077,11 +1083,15 @@ determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop)
 		if (has_multiple_loop_exits(loop, header)) {
 			ret = duff_unrollable_none;
 		}
+		if (!is_power_of_two(factor)) {
+			ret &= ~duff_unrollable_switch_fixup;
+		}
 		DEBUG_ONLY(if (ret == duff_unrollable_none) {
 			DB((dbg, LEVEL_4,
 			    "Cannot unroll: phi checks failed %+F\n", loop));
 		} else { DB((dbg, LEVEL_4, "Can unroll %+F\n", loop)); })
-		return ret;
+		if (ret != duff_unrollable_none)
+			return ret;
 	}
 	DB((dbg, LEVEL_4, "Cannot unroll: Didn't find valid compare%+F\n",
 	    loop));
@@ -3013,7 +3023,7 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 	}
 	DB((dbg, LEVEL_3, "-------------\n", loop));
 	duff_unrollability unrollability =
-		determine_lin_unroll_info(&info, curr_loop);
+		determine_lin_unroll_info(&info, curr_loop, DUFF_FACTOR);
 	if (unrollability != duff_unrollable_none) {
 		DB((dbg, LEVEL_2, "DUFF: Can unroll! (loop: %+F)\n", loop));
 		unroll_loop_duff(curr_loop, DUFF_FACTOR, &info, unrollability);
