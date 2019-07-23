@@ -4,6 +4,7 @@
  */
 
 #include <bepeephole.h>
+#include <be_t.h>
 #include "vhdl_transform.h"
 
 #include "betranshlp.h"
@@ -282,7 +283,7 @@ static void assign_walker(ir_node *const node, void *env) {
 		for (int i = 0; i < get_irn_arity(node); i++) {
 			ir_node *pred = get_irn_n(node, i);
 
-			if (!is_vhdl_AssignSig(pred)) {
+			if (!is_vhdl_AssignSig(pred) && pred != node) {
 				char sig_name[16];
 				sprintf(sig_name, "PHI%ld", get_irn_node_nr(node));
 				ir_node *assign = new_bd_vhdl_AssignSig(dbgi, get_nodes_block(pred), pred, sig_name);
@@ -326,5 +327,7 @@ void vhdl_transform_graph(ir_graph *const irg)
 {
 	vhdl_register_transformers();
 	be_transform_graph(irg, NULL);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
+	be_dump(DUMP_BE, irg, "before-assigns");
 	irg_walk_graph(irg, NULL, assign_walker, NULL);
 }

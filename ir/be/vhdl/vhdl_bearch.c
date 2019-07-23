@@ -81,6 +81,9 @@ void vhdl_generate_code(char const *const cup_name)
 		if (!(mtp_special_instruction & get_entity_additional_properties(get_irg_entity(irg)))) {
 			continue;
 		}
+		opt_if_conv_cb(irg, vhdl_ifconv);
+		be_dump(DUMP_BE, irg, "if-conv");
+
 		const char *entity_name = get_entity_ld_name(get_irg_entity(irg));
 		char filename[1024];
 		snprintf(filename, sizeof filename, "%s%s", entity_name, ".vhd");

@@ -176,11 +176,11 @@ static void emit_Mul(ir_node const *const node) {
 static void emit_Mux(ir_node const *const node) {
 	be_emit_irprintf("\t\t\tif ");
 	emit_vhdl_node(get_irn_n(node, n_vhdl_Mux_sel));
-	be_emit_irprintf(" then %s := (", get_vhdl_varsig_attr_const(node)->name);
+	be_emit_irprintf(" then -- %+F\n\t\t\t\t%s := (", node, get_vhdl_varsig_attr_const(node)->name);
 	emit_vhdl_node(get_irn_n(node, n_vhdl_Mux_t));
-	be_emit_irprintf("); else %s := (", get_vhdl_varsig_attr_const(node)->name);
+	be_emit_irprintf(");\n\t\t\telse\n\t\t\t\t%s := (", get_vhdl_varsig_attr_const(node)->name);
 	emit_vhdl_node(get_irn_n(node, n_vhdl_Mux_f));
-	be_emit_irprintf("); end if; -- %+F", node);
+	be_emit_irprintf(");\n\t\t\tend if;\n");
 	be_emit_write_line();
 }
 
@@ -489,7 +489,6 @@ static void emit_entity(ir_graph *irg, char *arch_name) {
 
 void vhdl_emit_function(ir_graph *const irg)
 {
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	use_barrel_left = false;
 	use_barrel_right = false;
 	use_barrel_right_signed = false;
