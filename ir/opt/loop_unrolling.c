@@ -2839,6 +2839,7 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 			     duff_unrollability unrollability)
 {
 	assert(unrollability != duff_unrollable_none);
+	assert(factor > 1);
 	DB((dbg, LEVEL_3, "\tTrying to unroll %N\n", loop));
 	ir_node *const header = get_loop_header(loop);
 	if (!header)
