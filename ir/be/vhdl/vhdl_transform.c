@@ -126,7 +126,16 @@ static ir_node *gen_Or(ir_node *const node)
 
 static ir_node *gen_Phi(ir_node *const node)
 {
-	return node;
+	arch_register_req_t const *req;
+	ir_mode            *const  mode = get_irn_mode(node);
+	if (be_mode_needs_gp_reg(mode)) {
+		req = &vhdl_class_reg_req_gp;
+	} else if (mode == mode_M) {
+		req = arch_memory_req;
+	} else {
+		panic("unhandled mode");
+	}
+	return be_transform_phi(node, req);
 }
 
 static ir_node *gen_PinnedConst(ir_node *const node)
@@ -154,7 +163,13 @@ static ir_node *gen_Proj_Proj(ir_node *const node)
 
 static ir_node *gen_Proj_Start(ir_node *const node)
 {
-	return node;
+	ir_graph *const irg = get_irn_irg(node);
+	switch ((pn_Start)get_Proj_num(node)) {
+		case pn_Start_M:            return be_new_Proj(get_irg_start(irg), pn_Start_M);
+		case pn_Start_P_frame_base: return new_r_Bad(irg, mode_P);
+		case pn_Start_T_args:       return new_r_Bad(irg, mode_T);
+	}
+	panic("unexpected Proj");
 }
 
 static ir_node *gen_Return(ir_node *const node)
@@ -209,9 +224,10 @@ static ir_node *gen_Start(ir_node *const node)
 	vhdl_varsig_attr_t *signals = malloc(sizeof(vhdl_varsig_attr_t)*n_params);
 	// TODO free later
 
-	ir_node *start = new_bd_vhdl_Start(dbgi, block, n_params, n_params, signals);
+	ir_node *start = new_bd_vhdl_Start(dbgi, block, n_params + 1, n_params, signals);
+	arch_set_irn_register_req_out(start, 0, arch_memory_req);
 	for (int i = 0; i < n_params; i++) {
-		arch_set_irn_register_req_out(start, i, &vhdl_class_reg_req_gp);
+		arch_set_irn_register_req_out(start, i + 1, &vhdl_class_reg_req_gp);
 		char param[16];
 		sprintf(param, "PARAM%d", i);
 		strncpy(signals[i].name, param, 16);
@@ -310,7 +326,5 @@ void vhdl_transform_graph(ir_graph *const irg)
 {
 	vhdl_register_transformers();
 	be_transform_graph(irg, NULL);
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	irg_walk_graph(irg, NULL, assign_walker, NULL);
-
 }

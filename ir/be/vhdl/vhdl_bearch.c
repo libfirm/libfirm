@@ -61,7 +61,6 @@ static void vhdl_select_instructions(ir_graph *const irg)
 {
 	be_timer_push(T_CODEGEN);
 	vhdl_transform_graph(irg);
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	be_timer_pop(T_CODEGEN);
 	be_dump(DUMP_BE, irg, "code-selection");
 }
@@ -89,7 +88,6 @@ void vhdl_generate_code(char const *const cup_name)
 		be_emit_init(out);
 
 		vhdl_lower_for_target(irg);
-		assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 		be_after_transform(irg, "lower-arch-dep");
 
 

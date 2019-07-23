@@ -472,6 +472,7 @@ static void emit_entity(ir_graph *irg, char *arch_name) {
 
 	vhdl_start_attr_t const *start_attr = get_vhdl_start_attr_const(get_irg_start(irg));
 	for (int i = 0; i < start_attr->n_signals; i++) {
+		//TODO use correct data type for input and output
 		be_emit_irprintf("\t\t%s  : in  std_logic_vector(31 downto 0);\n", start_attr->signals[i].name);
 	}
 
@@ -488,6 +489,7 @@ static void emit_entity(ir_graph *irg, char *arch_name) {
 
 void vhdl_emit_function(ir_graph *const irg)
 {
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	use_barrel_left = false;
 	use_barrel_right = false;
 	use_barrel_right_signed = false;
