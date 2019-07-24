@@ -45,7 +45,7 @@ static void add_edge(ir_node *const node, ir_node *const pred)
 	set_irn_in(node, arity + 1, in);
 }
 
-static void remove_edge(ir_node *const node, int pos)
+static ir_node *remove_edge(ir_node *const node, int pos)
 {
 	int const arity = get_irn_arity(node);
 	assert(pos < arity && pos >= 0);
@@ -55,7 +55,9 @@ static void remove_edge(ir_node *const node, int pos)
 		if (i != pos)
 			in[new_arity++] = get_irn_n(node, i);
 	}
+	ir_node *tgt = get_irn_n(node, pos);
 	set_irn_in(node, arity - 1, in);
+	return tgt;
 }
 
 static bool is_inner_loop(ir_loop *const outer_loop, ir_loop *inner_loop)
@@ -938,7 +940,7 @@ static duff_unrollability check_phi(linear_unroll_info *unroll_info,
 		unroll_info->i = is;
 	}
 	if (!mode_is_int(get_irn_mode(phi))) {
-		unrollability &= ~duff_unrollable_switch_fixup;
+		unrollability = duff_unrollable_none;
 	}
 	DB((dbg, LEVEL_5, "\tFound %u Is:\n", unroll_info->i_size));
 	for (unsigned i = 0; i < unroll_info->i_size; i++) {
@@ -1774,6 +1776,8 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 {
 	unsigned arity = get_irn_arity(node);
 	ir_node **new_in = ALLOCAN(ir_node *, arity);
+	ir_node *link = get_irn_link(node);
+	DB((dbg, LEVEL_4, "Dup & rewire %+F linked to %+F\n", node, link));
 	for (unsigned i = 0; i < arity; ++i) {
 		ir_node *next = get_irn_n(node, i);
 		ir_node *next_block = get_block(next);
@@ -1787,11 +1791,16 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 		} else if (is_Phi(next)) {
 			new_in[i] = next;
 		} else {
-			new_in[i] = get_irn_link(next);
 			recursive_rewire_in_loop(next, header, phi_M);
+			ir_node *link_next = get_irn_link(next);
+			new_in[i] = link_next;
 		}
 	}
-	set_irn_in(get_irn_link(node), arity, new_in);
+	DB((dbg, LEVEL_4, "%+F linked to %+F will be wired to\n", link, node));
+	DEBUG_ONLY(for (unsigned i = 0; i < arity; ++i)
+			   DB((dbg, LEVEL_4, "\t%+F (linked to %+F)\n",
+			       new_in[i], get_irn_link(new_in[i]))););
+	set_irn_in(link, arity, new_in);
 }
 
 static ir_node *create_abs(ir_node *block, ir_node *node)
@@ -2847,6 +2856,146 @@ static ir_node *create_fixup_switch(ir_loop *const loop, ir_graph *irg,
 	return switch_header;
 }
 
+static void push_down_phis(ir_node *new_block, ir_node *header, ir_loop *loop,
+			   int in_loop_index, ir_node **phi_M)
+{
+	ir_node *end = get_irg_end(get_irn_irg(new_block));
+	for (unsigned i = 0; i < get_irn_n_outs(new_block); i++) {
+		ir_node *phi = get_irn_out(new_block, i);
+		if (get_block(phi) != new_block) {
+			continue;
+		}
+		if (!is_Phi(phi)) {
+			continue;
+		}
+		ir_node *in_loop = remove_edge(phi, in_loop_index);
+		ir_node **in = ALLOCAN(ir_node *, 2);
+		in[0] = phi;
+		in[1] = in_loop;
+		ir_mode *mode = get_irn_mode(phi);
+		ir_node *new_Phi = new_r_Phi(header, 2, in, mode);
+		for (unsigned j = 0; j < get_irn_n_outs(phi); j++) {
+			int in_index;
+			ir_node *out = get_irn_out_ex(phi, j, &in_index);
+			ir_node *out_block = get_block(out);
+			set_irn_n(out, in_index, new_Phi);
+			if (!is_End(out) &&
+			    !block_is_inside_loop(out_block, loop)) {
+				prepend_edge(out, phi);
+			}
+		}
+		remove_End_keepalive(end, phi);
+		int phi_loop = get_Phi_loop(phi);
+		if (phi_loop) {
+			if (mode == mode_M) {
+				*phi_M = phi;
+			}
+			set_Phi_loop(phi, 0);
+			set_Phi_loop(new_Phi, phi_loop);
+		}
+	}
+}
+
+#define PLUS_MINUS(greater, block, l, r)                                       \
+	greater ? new_r_Add(block, l, r) : new_r_Sub(block, l, r)
+#define MINUS_PLUS(less, block, l, r) PLUS_MINUS(!less, block, l, r)
+
+static int rewire_loop_to_header(ir_node *new_block, ir_node *header,
+				 ir_loop *loop)
+{
+	assert(!get_optimize());
+	for (int i = 0; i < get_irn_arity(new_block); i++) {
+		ir_node *in = get_irn_n(new_block, i);
+		ir_node *in_block = get_block(in);
+		if (block_is_inside_loop(in_block, loop)) {
+			remove_edge(new_block, i);
+			add_edge(header, in);
+			return i;
+		}
+	}
+	return -1;
+}
+static void create_condition(ir_node *new_block, ir_node *header, ir_loop *loop,
+			     ir_node *phi_M, ir_graph *irg, unsigned factor,
+			     linear_unroll_info *info)
+{
+	assert(!get_optimize());
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
+	ir_node *c_cpy = copy_and_rewire(info->incr, new_block, phi_M);
+
+	ir_node *c_abs = create_abs(new_block, c_cpy);
+	ir_mode *c_mode = get_irn_mode(c_abs);
+	ir_node *factor_minus_one = new_r_Const_long(irg, c_mode, factor - 1);
+	ir_node *c_times_factor = new_r_Mul(new_block, c_abs, factor_minus_one);
+	bool less = is_less(info);
+	ir_node *min_max = new_r_Const(irg, less ? get_mode_min(c_mode) :
+						   get_mode_max(c_mode));
+	ir_node *min_max_c_f =
+		MINUS_PLUS(less, new_block, min_max, c_times_factor);
+
+	ir_node *N_cpy = copy_and_rewire(info->bound, new_block, phi_M);
+	ir_node *N_abs = create_abs(new_block, N_cpy);
+
+	ir_relation rel = get_Cmp_relation(info->cmp);
+	ir_node *cmp = new_r_Cmp(new_block, min_max_c_f, N_abs, rel);
+	ir_node *cond = new_r_Cond(new_block, cmp);
+	ir_node *true_proj = new_r_Proj(cond, mode_X, pn_Cond_true);
+	ir_node *false_proj = new_r_Proj(cond, mode_X, pn_Cond_false);
+	ir_node *after_loop, *in_loop;
+	get_false_and_true_targets(header, &in_loop, &after_loop);
+	prepend_edge(after_loop, false_proj);
+	set_irn_n(header, 0, true_proj);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+}
+
+static void conditionalize_header_pre_check(ir_node *new_block, ir_node *header,
+					    ir_loop *loop,
+					    linear_unroll_info *info,
+					    unsigned factor)
+{
+	ir_graph *irg = get_irn_irg(new_block);
+
+	unsigned opt = get_optimize();
+	set_optimize(0);
+
+	// Add rewire loop to have correct header
+	int in_loop_index = rewire_loop_to_header(new_block, header, loop);
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-header-pre-check-pre-phi-fix"));
+
+	assert(in_loop_index >= 0);
+	ir_node *phi_M;
+	push_down_phis(new_block, header, loop, in_loop_index, &phi_M);
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-header-pre-check-pre-phi-cond"));
+
+	// create condition
+	create_condition(new_block, header, loop, phi_M, irg, factor, info);
+
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-header-pre-check-pre-opt"));
+	set_optimize(opt);
+	optimize_graph_df(irg);
+}
+
+static void create_header_pre_check(ir_loop *loop, linear_unroll_info *info,
+				    ir_node *header, unsigned factor)
+{
+	ir_graph *irg = get_irn_irg(header);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+	collect_phiprojs_and_start_block_nodes(get_irn_irg(header));
+	part_block(info->phi);
+	ir_free_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
+	assure_irg_properties(
+		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
+			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
+			     IR_GRAPH_PROPERTY_NO_BADS);
+	conditionalize_header_pre_check(get_block(get_irn_n(header, 0)), header,
+					get_irn_loop(header), info, factor);
+}
+
 static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 			     linear_unroll_info *info,
 			     duff_unrollability unrollability)
@@ -2914,9 +3063,20 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-no-excess-header"));
 	update_header_condition(info, factor);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-updated-header-condition"));
+	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	create_header_pre_check(loop, info, header, factor);
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-header-pre-check-pre-fix-graph"));
+	assure_irg_properties(
+		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
+			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
+			     IR_GRAPH_PROPERTY_NO_BADS);
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-header-pre-check"));
 	++n_loops_unrolled;
-	// TODO: Change main header
-	// TODO: Fixup
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
 static void unroll_loop(ir_loop *const loop, unsigned factor)
