@@ -1777,6 +1777,9 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 	unsigned arity = get_irn_arity(node);
 	ir_node **new_in = ALLOCAN(ir_node *, arity);
 	ir_node *link = get_irn_link(node);
+	if (get_irn_mode(node) == mode_M || is_irn_constlike(node) ||
+	    is_Phi(node) || !link)
+		return;
 	DB((dbg, LEVEL_4, "Dup & rewire %+F linked to %+F\n", node, link));
 	for (unsigned i = 0; i < arity; ++i) {
 		ir_node *next = get_irn_n(node, i);
@@ -1788,12 +1791,12 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 		}
 		if (get_irn_mode(next) == mode_M) {
 			new_in[i] = phi_M;
-		} else if (is_Phi(next)) {
+		} else if (is_Phi(next) || is_irn_constlike(next)) {
 			new_in[i] = next;
 		} else {
 			recursive_rewire_in_loop(next, header, phi_M);
 			ir_node *link_next = get_irn_link(next);
-			new_in[i] = link_next;
+			new_in[i] = link_next ? link_next : next;
 		}
 	}
 	DB((dbg, LEVEL_4, "%+F linked to %+F will be wired to\n", link, node));
@@ -1899,6 +1902,9 @@ static ir_node *copy_and_rewire(ir_node *node, ir_node *target_block,
 		return exact_copy(node);
 	}
 	if (block_dominates(get_block(node), target_block) > 0) {
+		return node;
+	}
+	if (is_Phi(node)) {
 		return node;
 	}
 	ir_node *cpy = duplicate_node(node, target_block);
