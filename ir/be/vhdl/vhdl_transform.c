@@ -16,31 +16,44 @@
 #include "irnode_t.h"
 #include "irouts_t.h"
 #include "panic.h"
+#include "vhdl_modes.h"
 
 typedef ir_node *cons_unop(dbg_info*, ir_node*, ir_node*);
 typedef ir_node *cons_binop(dbg_info*, ir_node*, ir_node*, ir_node*);
+
+static void set_correct_mode(ir_node *node, ir_mode *old_mode) {
+	ir_mode *new_mode = mode_is_signed(old_mode) ? get_mode_signed_vector(get_mode_size_bits(old_mode))
+	                                             : get_mode_unsigned_vector(get_mode_size_bits(old_mode));
+	set_irn_mode(node, new_mode);
+}
 
 static ir_node *gen_binop(ir_node *node, cons_binop cons) {
 	ir_node *const l    = get_binop_left(node);
 	ir_node *const r    = get_binop_right(node);
 	ir_mode *const mode = get_irn_mode(node);
+	if (!be_mode_needs_gp_reg(mode)) {
+		panic("only integer mode supported");
+	}
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_node  *const block = be_transform_nodes_block(node);
 	ir_node  *const new_l = be_transform_node(l);
 	ir_node *const new_r = be_transform_node(r);
 	ir_node *new = cons(dbgi, block, new_l, new_r);
-	set_irn_mode(new, mode);
+	set_correct_mode(new, mode);
 	return new;
 }
 
 static ir_node *gen_unop(ir_node *node, cons_unop cons) {
 	ir_node *const op    = get_irn_n(node, 0);
 	ir_mode *const mode = get_irn_mode(node);
+	if (!be_mode_needs_gp_reg(mode)) {
+		panic("only integer mode supported");
+	}
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_node  *const block = be_transform_nodes_block(node);
 	ir_node  *const new_op = be_transform_node(op);
 	ir_node *new = cons(dbgi, block, new_op);
-	set_irn_mode(new, mode);
+	set_correct_mode(new, mode);
 	return new;
 }
 
@@ -79,7 +92,7 @@ static ir_node *gen_Cond(ir_node *const node)
 
 static ir_node *gen_Conv(ir_node *const node)
 {
-	TODO(node);
+	return gen_unop(node, new_bd_vhdl_Conv);
 }
 
 static ir_node *gen_Eor(ir_node *const node)
@@ -107,13 +120,19 @@ static ir_node *gen_Minus(ir_node *const node)
 static ir_node *gen_Mux(ir_node *const node)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_mode *mode = get_irn_mode(node);
+	if (!be_mode_needs_gp_reg(mode)) {
+		panic("only integer mode supported");
+	}
 	ir_node *const block = be_transform_nodes_block(node);
 	ir_node *const new_sel = be_transform_node(get_Mux_sel(node));
 	ir_node *const new_true = be_transform_node(get_Mux_true(node));
 	ir_node *const new_false = be_transform_node(get_Mux_false(node));
 	char var_name[16];
 	sprintf(var_name, "mux%ld", get_irn_node_nr(node));
-	return new_bd_vhdl_Mux(dbgi, block, new_sel, new_true, new_false, var_name);
+	ir_node *new = new_bd_vhdl_Mux(dbgi, block, new_sel, new_true, new_false, var_name);
+	set_correct_mode(new, mode);
+	return new;
 }
 
 static ir_node *gen_Not(ir_node *const node) {
@@ -136,20 +155,41 @@ static ir_node *gen_Phi(ir_node *const node)
 	} else {
 		panic("unhandled mode");
 	}
-	return be_transform_phi(node, req);
+	ir_node *new = be_transform_phi(node, req);
+	if (be_mode_needs_gp_reg(mode)) {
+		set_correct_mode(new, mode);
+	}
+	return new;
 }
 
 static ir_node *gen_PinnedConst(ir_node *const node)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_mode *mode = get_irn_mode(node);
+	if (!be_mode_needs_gp_reg(mode)) {
+		panic("only integer mode supported");
+	}
 	ir_node  *const block = be_transform_nodes_block(node);
-	return new_bd_vhdl_Const(dbgi, block, NULL, get_tarval_long(get_PinnedConst_tarval(node)));
+	ir_node *new = new_bd_vhdl_Const(dbgi, block, NULL, get_tarval_long(get_PinnedConst_tarval(node)));
+	set_correct_mode(new, mode);
+	return new;
 }
 
 static ir_node *gen_Proj_Proj_Start(ir_node *const node)
 {
 	ir_node *start = get_irg_start(get_irn_irg(node));
-	return be_new_Proj(start, get_Proj_num(node));
+	ir_mode *mode = get_irn_mode(node);
+	if (!be_mode_needs_gp_reg(mode)) {
+		panic("only integer mode supported");
+	}
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node  *const block = be_transform_nodes_block(node);
+	ir_node *new_proj = be_new_Proj(start, get_Proj_num(node));
+	set_irn_mode(new_proj, get_mode_std_logic_vector(get_mode_size_bits(mode)));
+	// convert input to standard logic vector
+	ir_node *conv = new_bd_vhdl_Conv(dbgi, block, new_proj);
+	set_correct_mode(conv, get_irn_mode(node));
+	return conv;
 }
 
 static ir_node *gen_Proj_Proj(ir_node *const node)
@@ -181,24 +221,34 @@ static ir_node *gen_Return(ir_node *const node)
 
 	char name[16];
 	sprintf(name, "OUTPUT0");
-	ir_node *assign_signal = new_bd_vhdl_AssignSig(dbgi, block, val, name);
+	// convert output to standard logic vector
+	ir_node *conv = new_bd_vhdl_Conv(dbgi, block, val);
+	set_irn_mode(conv, get_mode_std_logic_vector(get_mode_size_bits(get_irn_mode(val))));
+	ir_node *assign_signal = new_bd_vhdl_AssignSig(dbgi, block, conv, name);
 
-	ir_node *ret = new_bd_vhdl_Return(dbgi, block, assign_signal);
-	return ret;
+	return new_bd_vhdl_Return(dbgi, block, assign_signal);
 }
 
 static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_binop *const cons_imm)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
-	ir_node  *const block = be_transform_nodes_block(node);
-	ir_node  *const l     = get_binop_left(node);
-	ir_node  *const new_l = be_transform_node(l);
-	ir_node  *const r     = get_binop_right(node);
-	ir_node  *const new_r = be_transform_node(r);
-	if (is_PinnedConst(r)) {
-		return cons_imm(dbgi, block, new_l, new_r);
+	ir_mode *mode = get_irn_mode(node);
+	if (!be_mode_needs_gp_reg(mode)) {
+		panic("only integer mode supported");
 	}
-	return cons(dbgi, block, new_l, new_r);
+	ir_node *const block = be_transform_nodes_block(node);
+	ir_node *const l     = get_binop_left(node);
+	ir_node *const new_l = be_transform_node(l);
+	ir_node *const r     = get_binop_right(node);
+	ir_node *const new_r = be_transform_node(r);
+	ir_node *new;
+	if (is_PinnedConst(r)) {
+		new = cons_imm(dbgi, block, new_l, new_r);
+	} else {
+		new = cons(dbgi, block, new_l, new_r);
+	}
+	set_correct_mode(new, mode);
+	return new;
 }
 
 static ir_node *gen_Shl(ir_node *const node)

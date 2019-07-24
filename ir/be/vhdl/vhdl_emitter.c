@@ -151,6 +151,57 @@ static void emit_Const(ir_node const *const node) {
 	be_emit_irprintf("%d", get_vhdl_immediate_attr_const(node)->val);
 }
 
+static int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
+{
+	return (get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode));
+}
+
+#define get_sign_string(mode) mode_is_signed(dest_mode) ? "signed" : "unsigned"
+
+static void emit_Conv(ir_node const *const node) {
+	ir_mode *src_mode = get_irn_mode(get_irn_n(node, n_vhdl_Conv_val));
+	ir_mode *dest_mode = get_irn_mode(node);
+	if (get_mode_arithmetic(src_mode) == irma_none) {
+		// convert from std logic vector to signed/unsigned (entity inputs)
+		be_emit_irprintf("%s(", get_sign_string(dest_mode));
+		emit_vhdl_node(get_irn_n(node, n_vhdl_Conv_val));
+		be_emit_irprintf(")");
+		return;
+	}
+	if (get_mode_arithmetic(dest_mode) == irma_none) {
+		// convert to std logic vector from signed/unsigned (entity outputs)
+		be_emit_irprintf("std_logic_vector(");
+		emit_vhdl_node(get_irn_n(node, n_vhdl_Conv_val));
+		be_emit_irprintf(")");
+		return;
+	}
+	bool change_sign = false;
+	if (mode_is_signed(src_mode) != mode_is_signed(dest_mode)) {
+		be_emit_irprintf("%s(", get_sign_string(dest_mode));
+		change_sign = true;
+	}
+	if (get_mode_size_bits(dest_mode) != get_mode_size_bits(src_mode)) {
+		be_emit_irprintf("resize(", get_sign_string(dest_mode));
+		/* IEEE.numeric_std transplants the sign bit on downconv from a
+		 * signed type.  Avoid this case to maintain C semantics. */
+		bool vhdl_hack = is_downconv(src_mode, dest_mode) && mode_is_signed(src_mode);
+		if (vhdl_hack) {
+			be_emit_irprintf("unsigned(");
+		}
+		emit_vhdl_node(get_irn_n(node, n_vhdl_Conv_val));
+		if (vhdl_hack) {
+			be_emit_irprintf(")");
+		}
+		be_emit_irprintf(", %d)", get_mode_size_bits(dest_mode));
+	} else {
+		emit_vhdl_node(get_irn_n(node, n_vhdl_Conv_val));
+	}
+
+	if (change_sign) {
+		be_emit_irprintf(")");
+	}
+}
+
 static void emit_Eor(ir_node const *const node) {
 	emit_binop(node, "xor");
 }
@@ -261,6 +312,7 @@ static void vhdl_register_emitters(void)
 	be_set_emitter(op_vhdl_Cmp,         emit_Cmp);
 	be_set_emitter(op_vhdl_Cond,        emit_Cond);
 	be_set_emitter(op_vhdl_Const,       emit_Const);
+	be_set_emitter(op_vhdl_Conv,        emit_Conv);
 	be_set_emitter(op_vhdl_Eor,         emit_Eor);
 	be_set_emitter(op_vhdl_Jmp,         emit_Jmp);
 	be_set_emitter(op_vhdl_Minus,       emit_Minus);
@@ -312,8 +364,12 @@ static void collect_walk(ir_node *const node, void *env)
 	if (is_vhdl_AssignSig(node)) {
 		vhdl_varsig_attr_t *varsig = get_vhdl_varsig_attr(node);
 		if (strcmp("OUTPUT0", varsig->name) != 0) {
+			// do not include entity output signal in process signals
 			cpset_insert(&signals, varsig);
 		}
+	}
+	if (is_vhdl_Mux(node)) {
+		cpset_insert(&variables, get_vhdl_varsig_attr(node));
 	}
 	if (is_Block(node)) {
 		vhdl_varsig_attr_t *sig = malloc(sizeof(vhdl_varsig_attr_t));
@@ -479,12 +535,13 @@ static void emit_entity(ir_graph *irg, char *arch_name) {
 	be_emit_irprintf("\t\tOUTPUT0 : out std_logic_vector(31 downto 0);\n");
 	be_emit_irprintf("\t\tSTART   : in  std_logic;\n");
 	be_emit_irprintf("\t\tREADY   : out std_logic\n\t);\n");
-	be_emit_irprintf("\t--attribute mult_style         : string;\n");
-	be_emit_irprintf("\t--attribute mult_style of Atom : entity is \"lut\";\n");
-	be_emit_irprintf("\t---- alternative mult_styles are: {auto|block|lut|pipe_lut|CSD|KCM}\n");
 
 	be_emit_irprintf("end %s_ent;\n\n", arch_name);
 	be_emit_write_line();
+}
+
+static unsigned hash_varsig_attr(void *data) {
+	return hash_data(data, sizeof(vhdl_varsig_attr_t));
 }
 
 void vhdl_emit_function(ir_graph *const irg)
@@ -493,8 +550,8 @@ void vhdl_emit_function(ir_graph *const irg)
 	use_barrel_right = false;
 	use_barrel_right_signed = false;
 	vhdl_register_emitters();
-	cpset_init(&variables, hash_ptr, (cpset_cmp_function) vhdl_varsig_attrs_equal);
-	cpset_init(&signals, hash_ptr, (cpset_cmp_function) vhdl_varsig_attrs_equal);
+	cpset_init(&variables, (cpset_hash_function) hash_varsig_attr, (cpset_cmp_function) vhdl_varsig_attrs_equal);
+	cpset_init(&signals, (cpset_hash_function) hash_varsig_attr, (cpset_cmp_function) vhdl_varsig_attrs_equal);
 	temp_attrs = plist_new();
 
 	char name[strlen(get_entity_name(get_irg_entity(irg)))];

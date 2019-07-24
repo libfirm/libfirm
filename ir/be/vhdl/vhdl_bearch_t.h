@@ -7,6 +7,7 @@
 #define FIRM_BE_VHDL_VHDL_BEARCH_T_H
 
 #include <stdio.h>
+#include "vhdl_modes.h"
 
 void vhdl_init(void);
 void vhdl_finish(void);

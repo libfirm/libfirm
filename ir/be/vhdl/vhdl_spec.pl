@@ -3,7 +3,7 @@
 
 $arch = "vhdl";
 
-my $mode_gp = "mode_Iu"; # TODO
+my $mode_gp = "get_mode_unsigned_vector(32)"; # TODO
 
 %reg_classes = (
 	gp => {

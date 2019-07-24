@@ -432,6 +432,8 @@ add_backend(vhdl
 	ir/be/vhdl/vhdl_bemain.h
 	ir/be/vhdl/vhdl_lower.c
 	ir/be/vhdl/vhdl_lower.h
+	ir/be/vhdl/vhdl_modes.c
+	ir/be/vhdl/vhdl_modes.h
 )
 
 add_backend(TEMPLATE

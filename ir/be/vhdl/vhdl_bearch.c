@@ -16,6 +16,7 @@
 #include "vhdl_bemain.h"
 #include "vhdl_emitter.h"
 #include "vhdl_lower.h"
+#include "vhdl_modes.h"
 #include "vhdl_transform.h"
 
 /*
@@ -43,6 +44,7 @@ static int vhdl_ifconv(ir_node const *const sel, ir_node const *const mux_false,
 
 void vhdl_init(void)
 {
+	vhdl_init_modes();
 	vhdl_create_opcodes();
 	vhdl_register_init();
 
