@@ -2977,10 +2977,9 @@ static void conditionalize_header_pre_check(ir_node *new_block, ir_node *header,
 
 	// create condition
 	create_condition(new_block, header, loop, phi_M, irg, factor, info);
-
-	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-header-pre-check-pre-opt"));
+	DEBUG_ONLY(DUMP_GRAPH(
+		irg, "duff-header-pre-check-pre-opt-pre-check-pre-fix-graph"));
 	set_optimize(opt);
-	optimize_graph_df(irg);
 }
 
 static void create_header_pre_check(ir_loop *loop, linear_unroll_info *info,
@@ -2991,6 +2990,7 @@ static void create_header_pre_check(ir_loop *loop, linear_unroll_info *info,
 	collect_phiprojs_and_start_block_nodes(get_irn_irg(header));
 	part_block(info->phi);
 	ir_free_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 	assure_irg_properties(
 		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
 			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
@@ -3000,6 +3000,14 @@ static void create_header_pre_check(ir_loop *loop, linear_unroll_info *info,
 			     IR_GRAPH_PROPERTY_NO_BADS);
 	conditionalize_header_pre_check(get_block(get_irn_n(header, 0)), header,
 					get_irn_loop(header), info, factor);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+	assure_irg_properties(
+		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
+			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
+			     IR_GRAPH_PROPERTY_NO_BADS);
 }
 
 static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
