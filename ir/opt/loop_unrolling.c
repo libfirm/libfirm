@@ -1802,6 +1802,9 @@ static ir_node *create_abs(ir_node *block, ir_node *node)
 	 */
 	assert(block_dominates(block, get_block(node)) >= 0);
 	ir_mode *mode = get_irn_mode(node);
+	if (!mode_is_signed(mode)) {
+		return node;
+	}
 	ir_graph *irg = get_irn_irg(block);
 	ir_node *shrs = new_r_Shrs(
 		block, node,
