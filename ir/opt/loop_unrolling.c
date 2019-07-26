@@ -677,13 +677,11 @@ static bool is_valid_base_(ir_node *node, ir_loop *loop)
 			return !is_aliased(proj_call);
 		} else if (is_Load(pre_proj)) {
 			ir_node *pre_load = get_Load_ptr(pre_proj);
-			if (is_Proj(pre_load)) {
-				DB((dbg, LEVEL_4,
-				    "Load points further to %+F. Investigating further\n",
-				    pre_load));
-				if (!is_valid_base_(pre_load, loop)) {
-					return false;
-				}
+			DB((dbg, LEVEL_4,
+			    "Load points further to %+F. Investigating further\n",
+			    pre_load));
+			if (!is_valid_base_(pre_load, loop)) {
+				return false;
 			}
 			DB((dbg, LEVEL_4, "Load; Checking on aliasing\n"));
 			return !is_aliased(pre_proj);
@@ -725,6 +723,20 @@ static bool is_valid_base_(ir_node *node, ir_loop *loop)
 		DB((dbg, LEVEL_4, "Found cast. Checking target of cast (%+F)\n",
 		    conved));
 		return is_valid_base_(conved, loop);
+	}
+	if (is_Member(node)) {
+		ir_node *member_ptr = get_Member_ptr(node);
+		DB((dbg, LEVEL_4, "Checking member ptr (%+F)\n", member_ptr));
+		return is_valid_base_(member_ptr, loop);
+	}
+	if (is_binop(node)) {
+		ir_node *left = get_binop_left(node);
+		ir_node *right = get_binop_right(node);
+		DB((dbg, LEVEL_4,
+		    "Is binop. Checking left (%+F) and right (%+F) are valid bases\n",
+		    left, right));
+		return is_valid_base_(left, loop) &&
+		       is_valid_base_(right, loop);
 	}
 	return false;
 }
