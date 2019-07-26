@@ -627,7 +627,7 @@ static bool is_valid_base_(ir_node *node, ir_loop *loop)
 		return false;
 	}
 	add_to_stack(node, &visited_base);
-	if (is_Const(node)) {
+	if (is_irn_constlike(node)) {
 		DB((dbg, LEVEL_4, "Node is const. Valid base.\n"));
 		return true;
 	}
