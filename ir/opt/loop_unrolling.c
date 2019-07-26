@@ -1794,26 +1794,27 @@ static void recursive_copy_in_loop(ir_node *node, ir_node *header)
 	}
 }
 
-static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
-				     ir_node *mem)
+static ir_node *recursive_rewire_in_loop(ir_node *node, ir_node *header,
+					 ir_node *mem, ir_node *phi_M)
 {
 	int arity = get_irn_arity(node);
 	ir_node **new_in = ALLOCAN(ir_node *, arity);
 	ir_node *link = get_irn_link(node);
 	if (get_irn_mode(node) == mode_M || is_irn_constlike(node) ||
 	    is_Phi(node) || !link)
-		return;
+		return mem;
 	DB((dbg, LEVEL_4, "Dup & rewire %+F linked to %+F\n", node, link));
 	for (int i = 0; i < arity; ++i) {
 		ir_node *next = get_irn_n(node, i);
 		ir_node *next_block = get_block(next);
+		assert(!is_Store(next));
 		if (block_dominates(next_block, header) > 0 ||
 		    next_block == header) {
 			new_in[i] = next;
 			continue;
 		}
 		if (get_irn_mode(next) == mode_M) {
-			new_in[i] = mem;
+			new_in[i] = phi_M;
 			unsigned pn;
 			bool pn_found = false;
 			for (unsigned j = 0; j < get_irn_n_outs(node); j++) {
@@ -1832,10 +1833,10 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 			DB((dbg, LEVEL_4,
 			    "Chaning memory flow with intermed %+F\n",
 			    new_mem));
-			for (unsigned j = 0; j < get_irn_n_outs(mem); j++) {
+			for (unsigned j = 0; j < get_irn_n_outs(phi_M); j++) {
 				int in_index;
 				ir_node *mem_out =
-					get_irn_out_ex(mem, j, &in_index);
+					get_irn_out_ex(phi_M, j, &in_index);
 				if (is_End(mem_out)) {
 					continue; // skip keep-alive edges
 				}
@@ -1845,10 +1846,12 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 				set_irn_n(mem_out, in_index, new_mem);
 			}
 			mem = new_mem;
+
 		} else if (is_Phi(next) || is_irn_constlike(next)) {
 			new_in[i] = next;
 		}
 	}
+	ir_node *new_mem = NULL;
 	for (int i = 0; i < arity; ++i) {
 		ir_node *next = get_irn_n(node, i);
 		ir_node *next_block = get_block(next);
@@ -1861,7 +1864,8 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 		} else if (is_Phi(next) || is_irn_constlike(next)) {
 			continue;
 		} else {
-			recursive_rewire_in_loop(next, header, mem);
+			new_mem = recursive_rewire_in_loop(next, header, mem,
+							   phi_M);
 			ir_node *link_next = get_irn_link(next);
 			new_in[i] = link_next ? link_next : next;
 		}
@@ -1871,6 +1875,7 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 			   DB((dbg, LEVEL_4, "\t%+F (linked to %+F)\n",
 			       new_in[i], get_irn_link(new_in[i]))););
 	set_irn_in(link, arity, new_in);
+	return new_mem ? new_mem : mem;
 }
 
 static ir_node *create_abs(ir_node *block, ir_node *node)
@@ -1963,7 +1968,7 @@ static ir_node *update_header_condition_mul(ir_node *header, ir_node *N,
 	return new_N;
 }
 static ir_node *copy_and_rewire(ir_node *node, ir_node *target_block,
-				ir_node *phi_M)
+				ir_node **init_mem)
 {
 	if (is_irn_constlike(node)) {
 		return exact_copy(node);
@@ -1976,7 +1981,8 @@ static ir_node *copy_and_rewire(ir_node *node, ir_node *target_block,
 	}
 	ir_node *cpy = duplicate_node(node, target_block);
 	recursive_copy_in_loop(cpy, target_block);
-	recursive_rewire_in_loop(node, target_block, phi_M);
+	*init_mem = recursive_rewire_in_loop(node, target_block, *init_mem,
+					     *init_mem);
 	return cpy;
 }
 static bool is_less(linear_unroll_info *info)
@@ -2019,7 +2025,7 @@ static void update_header_condition(linear_unroll_info *info, unsigned factor)
 		}
 	}
 	assert(phi_M);
-	c_cpy = copy_and_rewire(info->incr, header, phi_M);
+	c_cpy = copy_and_rewire(info->incr, header, &phi_M);
 	DB((dbg, LEVEL_4, "\tcopied c: %+F\n", c_cpy));
 	ir_node *factor_const = new_r_Const_long(get_irn_irg(header),
 						 get_irn_mode(c_cpy), factor);
@@ -2369,13 +2375,14 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	}
 	ir_node *switch_header = new_r_Block(irg, 1, in);
 	ir_node *phi_M = get_phi_M(header);
+	ir_node *cpy_mem = phi_M;
 	assert(phi_M);
 	ir_node *c = info->incr;
 	ir_node *c_cpy =
-		is_Phi(c) ? c : copy_and_rewire(c, switch_header, phi_M);
+		is_Phi(c) ? c : copy_and_rewire(c, switch_header, &cpy_mem);
 	ir_node *N = info->bound;
 	ir_node *N_cpy =
-		is_Phi(N) ? N : copy_and_rewire(N, switch_header, phi_M);
+		is_Phi(N) ? N : copy_and_rewire(N, switch_header, &cpy_mem);
 	ir_node *N_abs = create_abs(switch_header, N_cpy);
 	ir_node *c_abs = create_abs(switch_header, c_cpy);
 	ir_node *one_const = new_r_Const_long(irg, get_irn_mode(c_abs), 1);
@@ -3006,7 +3013,8 @@ static void create_condition(ir_node *new_block, ir_node *header, ir_loop *loop,
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
-	ir_node *c_cpy = copy_and_rewire(info->incr, new_block, phi_M);
+	ir_node *cpy_mem = phi_M;
+	ir_node *c_cpy = copy_and_rewire(info->incr, new_block, &cpy_mem);
 
 	ir_node *c_abs = create_abs(new_block, c_cpy);
 	ir_mode *c_mode = get_irn_mode(c_abs);
@@ -3018,7 +3026,7 @@ static void create_condition(ir_node *new_block, ir_node *header, ir_loop *loop,
 	ir_node *min_max_c_f =
 		MINUS_PLUS(less, new_block, min_max, c_times_factor);
 
-	ir_node *N_cpy = copy_and_rewire(info->bound, new_block, phi_M);
+	ir_node *N_cpy = copy_and_rewire(info->bound, new_block, &cpy_mem);
 	ir_node *N_abs = create_abs(new_block, N_cpy);
 
 	ir_relation rel = get_Cmp_relation(info->cmp);
