@@ -23,6 +23,17 @@ DEBUG_ONLY(
 	}
 )
 
+static void restore_properties(ir_graph *irg)
+{
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+	assure_irg_properties(
+		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
+			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+}
+
 static void prepend_edge(ir_node *node, ir_node *const pred)
 {
 	int const arity = get_irn_arity(node);
@@ -1784,16 +1795,16 @@ static void recursive_copy_in_loop(ir_node *node, ir_node *header)
 }
 
 static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
-				     ir_node *phi_M)
+				     ir_node *mem)
 {
-	unsigned arity = get_irn_arity(node);
+	int arity = get_irn_arity(node);
 	ir_node **new_in = ALLOCAN(ir_node *, arity);
 	ir_node *link = get_irn_link(node);
 	if (get_irn_mode(node) == mode_M || is_irn_constlike(node) ||
 	    is_Phi(node) || !link)
 		return;
 	DB((dbg, LEVEL_4, "Dup & rewire %+F linked to %+F\n", node, link));
-	for (unsigned i = 0; i < arity; ++i) {
+	for (int i = 0; i < arity; ++i) {
 		ir_node *next = get_irn_n(node, i);
 		ir_node *next_block = get_block(next);
 		if (block_dominates(next_block, header) > 0 ||
@@ -1802,11 +1813,55 @@ static void recursive_rewire_in_loop(ir_node *node, ir_node *header,
 			continue;
 		}
 		if (get_irn_mode(next) == mode_M) {
-			new_in[i] = phi_M;
+			new_in[i] = mem;
+			unsigned pn;
+			bool pn_found = false;
+			for (unsigned j = 0; j < get_irn_n_outs(node); j++) {
+				ir_node *out = get_irn_out(node, j);
+				if (is_Proj(out) &&
+				    get_irn_mode(out) == mode_M) {
+					pn = get_Proj_num(out);
+					pn_found = true;
+					break;
+				}
+			}
+			if (!pn_found) {
+				continue;
+			}
+			ir_node *new_mem = new_r_Proj(link, mode_M, pn);
+			DB((dbg, LEVEL_4,
+			    "Chaning memory flow with intermed %+F\n",
+			    new_mem));
+			for (unsigned j = 0; j < get_irn_n_outs(mem); j++) {
+				int in_index;
+				ir_node *mem_out =
+					get_irn_out_ex(mem, j, &in_index);
+				if (is_End(mem_out)) {
+					continue; // skip keep-alive edges
+				}
+				DB((dbg, LEVEL_4,
+				    "Rewiring %+F to intermd (%+F) at index %d\n",
+				    mem_out, new_mem, in_index));
+				set_irn_n(mem_out, in_index, new_mem);
+			}
+			mem = new_mem;
 		} else if (is_Phi(next) || is_irn_constlike(next)) {
 			new_in[i] = next;
+		}
+	}
+	for (int i = 0; i < arity; ++i) {
+		ir_node *next = get_irn_n(node, i);
+		ir_node *next_block = get_block(next);
+		if (block_dominates(next_block, header) > 0 ||
+		    next_block == header) {
+			continue;
+		}
+		if (get_irn_mode(next) == mode_M) {
+			continue;
+		} else if (is_Phi(next) || is_irn_constlike(next)) {
+			continue;
 		} else {
-			recursive_rewire_in_loop(next, header, phi_M);
+			recursive_rewire_in_loop(next, header, mem);
 			ir_node *link_next = get_irn_link(next);
 			new_in[i] = link_next ? link_next : next;
 		}
@@ -1855,7 +1910,7 @@ static ir_node *update_header_condition_add(ir_node *header, ir_node *N,
 		less ? new_r_Sub(header, N, mul) : new_r_Add(header, N, mul);
 	DEBUG_ONLY(char *symb_fac = less ? "+" : "-";
 		   char *symb_N = less ? "-" : "+";)
-	DB((dbg, LEVEL_4, "\t(|c|) * (factor %s 1): %+F\n", symb_fac, mul));
+	DB((dbg, LEVEL_4, "\t(|c|) * (factor - 1): %+F\n", mul));
 	DB((dbg, LEVEL_4,
 	    "\tAttaching (N %s (|c|* (factor %s 1))): (%+F %s (%+F * %+F)  = %+F %s %+F = %+F",
 	    symb_N, symb_fac, N, symb_N, c_abs, factor_offset, N, symb_N, mul,
@@ -2116,6 +2171,7 @@ static void rewire_duplicated_block(ir_node *node, ir_loop *loop,
 			}
 		}
 	}
+	DB((dbg, LEVEL_5, "Test"));
 	iterate_stack(out_blocks)
 	{
 		ir_node *out_block = curr->el;
@@ -2284,7 +2340,16 @@ static unsigned get_in_n_to_header(ir_node *target, ir_node *header)
 	}
 	return header_idx;
 }
-
+static ir_node *mod(ir_node *block, ir_graph *irg, ir_node *x, ir_node *n)
+{
+	ir_node *pin = new_r_Pin(block, new_r_NoMem(irg));
+	ir_node *rem = new_r_Mod(block, pin, x, n, op_pin_state_pinned);
+	ir_node *rem_proj = new_r_Proj(rem, get_irn_mode(x), pn_Mod_res);
+	ir_node *rem_plus_n = new_r_Add(block, rem_proj, n);
+	ir_node *mod =
+		new_r_Mod(block, pin, rem_plus_n, n, op_pin_state_pinned);
+	return new_r_Proj(mod, get_irn_mode(x), pn_Mod_res);
+}
 static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 					   unsigned factor,
 					   ir_node **target_blocks,
@@ -2968,6 +3033,47 @@ static void create_condition(ir_node *new_block, ir_node *header, ir_loop *loop,
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
+static void fixup_post_memory(ir_loop *loop, ir_node *header)
+{
+	ir_node *_, *post_block;
+	get_false_and_true_targets(header, &_, &post_block);
+	ir_node *post_loop_phi_M = NULL;
+	for (unsigned i = 0; i < get_irn_n_outs(post_block); i++) {
+		ir_node *out = get_irn_out(post_block, i);
+		if (get_block(out) != post_block) {
+			continue;
+		}
+		if (get_irn_mode(out) == mode_M && is_Phi(out)) {
+			post_loop_phi_M = out;
+			break;
+		}
+	}
+	if (!post_loop_phi_M ||
+	    get_irn_arity(post_block) == get_irn_arity(post_loop_phi_M)) {
+		return;
+	}
+	ir_node *phi_loop = NULL;
+	for (unsigned i = 0; i < get_irn_n_outs(header); i++) {
+		ir_node *out = get_irn_out(header, i);
+		if (get_block(out) != header) {
+			continue;
+		}
+		if (is_Phi(out) && get_Phi_loop(out)) {
+			phi_loop = out;
+			break;
+		}
+	}
+	assert(phi_loop);
+	for (int i = 0; i < get_irn_arity(phi_loop); i++) {
+		ir_node *in = get_irn_n(phi_loop, i);
+		ir_node *in_block = get_block(in);
+		if (!block_is_inside_loop(in_block, loop)) {
+			prepend_edge(post_loop_phi_M, in);
+			break;
+		}
+	}
+}
+
 static void conditionalize_header_pre_check(ir_node *new_block, ir_node *header,
 					    ir_loop *loop,
 					    linear_unroll_info *info,
@@ -2986,9 +3092,10 @@ static void conditionalize_header_pre_check(ir_node *new_block, ir_node *header,
 	ir_node *phi_M;
 	push_down_phis(new_block, header, loop, in_loop_index, &phi_M);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-header-pre-check-pre-phi-cond"));
-
+	restore_properties(irg);
 	// create condition
 	create_condition(new_block, header, loop, phi_M, irg, factor, info);
+	fixup_post_memory(loop, header);
 	DEBUG_ONLY(DUMP_GRAPH(
 		irg, "duff-header-pre-check-pre-opt-pre-check-pre-fix-graph"));
 	set_optimize(opt);
@@ -3002,24 +3109,10 @@ static void create_header_pre_check(ir_loop *loop, linear_unroll_info *info,
 	collect_phiprojs_and_start_block_nodes(get_irn_irg(header));
 	part_block(info->phi);
 	ir_free_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
-	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
-	assure_irg_properties(
-		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
-			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
-			     IR_GRAPH_PROPERTY_NO_BADS);
+	restore_properties(irg);
 	conditionalize_header_pre_check(get_block(get_irn_n(header, 0)), header,
 					get_irn_loop(header), info, factor);
-	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
-	assure_irg_properties(
-		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
-			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
-			     IR_GRAPH_PROPERTY_NO_BADS);
+	restore_properties(irg);
 }
 
 static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
@@ -3044,46 +3137,22 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	}
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-pre-fix-graph"));
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-	assure_irg_properties(
-		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
-			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
-			     IR_GRAPH_PROPERTY_NO_BADS);
+	restore_properties(irg);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup"));
 	assure_lcssa(irg);
-	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
-	assure_irg_properties(
-		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
-			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
-			     IR_GRAPH_PROPERTY_NO_BADS);
+	restore_properties(irg);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-lcssa"));
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	pmap *link_map_unroll = pmap_create();
 	rewire_loop(loop, header, factor, link_map_unroll);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-	assure_irg_properties(
-		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
-			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+	restore_properties(irg);
 	assert(unrolled_headers);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-unroll"));
 	remove_excess_headers(info, header, switch_header, link_map_unroll);
 	pmap_destroy(link_map_unroll);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-no-excess-header-pre-fix-graph"));
-
-	assure_irg_properties(irg,
-			      IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
-				      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
-				      IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
-				      IR_GRAPH_PROPERTY_NO_BADS);
+	restore_properties(irg);
 	info->loop = get_irn_loop(header);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-no-excess-header"));
@@ -3093,13 +3162,7 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	create_header_pre_check(loop, info, header, factor);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-header-pre-check-pre-fix-graph"));
-	assure_irg_properties(
-		irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
-			     IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
-			     IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES |
-			     IR_GRAPH_PROPERTY_NO_BADS);
+	restore_properties(irg);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-header-pre-check"));
 	++n_loops_unrolled;
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
