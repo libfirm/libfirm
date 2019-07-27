@@ -3042,8 +3042,8 @@ static void create_condition(ir_node *new_block, ir_node *header, ir_loop *loop,
 	ir_node *false_proj = new_r_Proj(cond, mode_X, pn_Cond_false);
 	ir_node *after_loop, *in_loop;
 	get_false_and_true_targets(header, &in_loop, &after_loop);
-	prepend_edge(after_loop, false_proj);
-	set_irn_n(header, 0, true_proj);
+	prepend_edge(after_loop, true_proj);
+	set_irn_n(header, 0, false_proj);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
