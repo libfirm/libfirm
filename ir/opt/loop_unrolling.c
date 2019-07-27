@@ -840,7 +840,8 @@ static ir_node *check_cycle_and_find_exit(ir_node *initial_phi,
 	return NULL;
 }
 
-static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
+static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node,
+			  unsigned factor)
 {
 	DB((dbg, LEVEL_4, "Checking if increment\n"));
 
@@ -895,10 +896,20 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
 		    "Mul currently only supports const addition\n"));
 		return false;
 	}
-	if (!is_valid_base(node_to_check,
-			   get_irn_loop(get_block(node_to_check)))) {
-		DB((dbg, LEVEL_4,
-		    "Incr does not have valid base, but has correct Phi\n"));
+	if (!is_Const(node_to_check)) {
+		return false;
+	}
+	ir_mode *const_mode = get_irn_mode(unroll_info->phi);
+	ir_tarval *tv = get_Const_tarval(node_to_check);
+	if (tarval_cmp(tv,
+		       tarval_div(get_mode_max(const_mode),
+				  new_tarval_from_long(factor, const_mode))) ==
+	    ir_relation_greater) {
+		if (is_valid_base(node_to_check,
+				  get_irn_loop(get_block(node_to_check)))) {
+			DB((dbg, LEVEL_4,
+			    "Incr does not have valid base, but has correct Phi\n"));
+		}
 		return false;
 	}
 	DB((dbg, LEVEL_4, "Valid incr found %+F\n", node_to_check));
@@ -906,7 +917,7 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node)
 	return true;
 }
 static duff_unrollability check_phi(linear_unroll_info *unroll_info,
-				    ir_loop *loop)
+				    ir_loop *loop, unsigned factor)
 {
 	ir_node *phi = unroll_info->phi;
 	assert(is_Phi(phi));
@@ -938,7 +949,7 @@ static duff_unrollability check_phi(linear_unroll_info *unroll_info,
 	for (unsigned i = 0; i < phi_preds; ++i) {
 		ir_node *curr = get_Phi_pred(phi, i);
 		DB((dbg, LEVEL_5, "\tChecking for valid incr %+F\n", curr));
-		if (is_valid_incr(unroll_info, curr)) {
+		if (is_valid_incr(unroll_info, curr, factor)) {
 			DB((dbg, LEVEL_5, "\tFound valid incr %+F\n", curr));
 			if (incr_pred_index != -1) {
 				incr_pred_index = -1;
@@ -1088,13 +1099,13 @@ determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop,
 			unroll_info->phi = left;
 			unroll_info->bound = right;
 			DB((dbg, LEVEL_4, "Checking Phi left %+F\n", left));
-			ret |= check_phi(unroll_info, loop);
+			ret |= check_phi(unroll_info, loop, factor);
 		}
 		if (is_Phi(right)) {
 			unroll_info->phi = right;
 			unroll_info->bound = left;
 			DB((dbg, LEVEL_4, "Checking Phi right %+F\n", right));
-			ret |= check_phi(unroll_info, loop);
+			ret |= check_phi(unroll_info, loop, factor);
 		}
 		DB((dbg, LEVEL_4, "Checking bound %+F\n", unroll_info->bound));
 		if (!is_valid_base(unroll_info->bound, loop)) {
