@@ -905,11 +905,6 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node,
 		       tarval_div(get_mode_max(const_mode),
 				  new_tarval_from_long(factor, const_mode))) ==
 	    ir_relation_greater) {
-		if (is_valid_base(node_to_check,
-				  get_irn_loop(get_block(node_to_check)))) {
-			DB((dbg, LEVEL_4,
-			    "Incr does not have valid base, but has correct Phi\n"));
-		}
 		return false;
 	}
 	DB((dbg, LEVEL_4, "Valid incr found %+F\n", node_to_check));
