@@ -892,9 +892,8 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node,
 			return false;
 		}
 	}
-	if (unroll_info->op == MUL && !is_Const(node_to_check)) {
-		DB((dbg, LEVEL_1,
-		    "Mul currently only supports const addition\n"));
+	if (unroll_info->op == MUL) {
+		DB((dbg, LEVEL_1, "Mul is unsupported\n"));
 		return false;
 	}
 	if (!is_Const(node_to_check)) {
