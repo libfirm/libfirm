@@ -2362,6 +2362,100 @@ static ir_node *mod(ir_node *block, ir_graph *irg, ir_node *x, ir_node *n)
 		new_r_Mod(block, pin, rem_plus_n, n, op_pin_state_pinned);
 	return new_r_Proj(mod, get_irn_mode(x), pn_Mod_res);
 }
+
+static ir_node *get_M_exit(ir_node *block, ir_loop *loop)
+{
+	for (int i = 0; i < get_irn_n_outs(block); i++) {
+		ir_node *node = get_irn_out(block, i);
+		if (get_irn_mode(node) != mode_M) {
+			continue;
+		}
+		for (int j = 0; j < get_irn_n_outs(node); j++) {
+			ir_node *out = get_irn_out(node, j);
+			if (is_End(out)) {
+				continue;
+			}
+			ir_node *out_block = get_block(out);
+			if (out_block != block &&
+			    !block_is_inside_loop(out_block, loop)) {
+				return node;
+			}
+		}
+	}
+	return NULL;
+}
+
+#define ALLOCAN_1(type, name, val)                                             \
+	type *name = ALLOCAN(type, 1);                                         \
+	name[0] = val;
+
+static bool array_contains(ir_node **arr, unsigned length, ir_node *query)
+{
+	for (unsigned i = 0; i < length; i++) {
+		if (arr[i] == query)
+			return true;
+	}
+	return false;
+}
+
+static ir_node *create_fixup_switch_phi_M(ir_node *switch_header,
+					  ir_node *header, ir_node *after_loop,
+					  ir_node **target_blocks,
+					  unsigned factor, ir_loop *loop)
+{
+	ir_node *phi_M_header = get_M_exit(header, loop);
+	ALLOCAN_1(ir_node *, phi_ins, phi_M_header);
+	ir_node *phi_M = new_r_Phi(switch_header, 1, phi_ins, mode_M);
+	for (int i = 0; i < get_irn_n_outs(phi_M_header); i++) {
+		int in_index;
+		ir_node *out = get_irn_out_ex(phi_M_header, i, &in_index);
+		ir_node *block = get_block(out);
+		if (after_loop == block ||
+		    block_dominates(after_loop, block) > 0 ||
+		    array_contains(target_blocks, factor - 1, block)) {
+			set_irn_n(out, in_index, phi_M);
+		}
+	}
+	ir_graph *irg = get_irn_irg(header);
+	confirm_irg_properties(
+		irg, IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE |
+			     IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+			     IR_GRAPH_PROPERTY_CONSISTENT_POSTDOMINANCE);
+	assure_irg_properties(irg,
+			      IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+	return phi_M;
+}
+
+static bool is_cond_w_eq(linear_unroll_info *info)
+{
+	ir_relation rel = get_Cmp_relation(info->cmp);
+	return rel == ir_relation_less_equal ||
+	       rel == ir_relation_greater_equal;
+}
+
+static ir_relation get_clean_rel(linear_unroll_info *info)
+{
+	bool cond_has_eq = is_cond_w_eq(info);
+	if (is_less(info)) {
+		if (cond_has_eq) {
+			return ir_relation_less_equal;
+		} else {
+			return ir_relation_less;
+		}
+	} else {
+		if (cond_has_eq) {
+			return ir_relation_greater_equal;
+		} else {
+			return ir_relation_greater;
+		}
+	}
+}
+
+#define PLUS_MINUS(greater, block, l, r)                                       \
+	greater ? new_r_Add(block, l, r) : new_r_Sub(block, l, r)
+#define MINUS_PLUS(less, block, l, r) PLUS_MINUS(!less, block, l, r)
+
 static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 					   unsigned factor,
 					   ir_node **target_blocks,
@@ -2379,8 +2473,10 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 			break;
 		}
 	}
+
 	ir_node *switch_header = new_r_Block(irg, 1, in);
-	ir_node *phi_M = get_phi_M(header);
+	ir_node *phi_M = create_fixup_switch_phi_M(
+		switch_header, header, after_loop, target_blocks, factor, loop);
 	ir_node *cpy_mem = phi_M;
 	assert(phi_M);
 	ir_node *c = info->incr;
@@ -2389,41 +2485,44 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	ir_node *N = info->bound;
 	ir_node *N_cpy =
 		is_Phi(N) ? N : copy_and_rewire(N, switch_header, &cpy_mem);
-	ir_node *N_abs = create_abs(switch_header, N_cpy);
-	ir_node *c_abs = create_abs(switch_header, c_cpy);
-	ir_node *one_const = new_r_Const_long(irg, get_irn_mode(c_abs), 1);
-	ir_node *N_minus_i =
-		is_less(info) ? new_r_Sub(switch_header, N_abs, info->phi) :
-				new_r_Sub(switch_header, info->phi, N_abs);
-	if (info->rel == ir_relation_less_equal ||
-	    info->rel == ir_relation_greater_equal) {
-		N_minus_i = new_r_Add(switch_header, N_minus_i, one_const);
-	}
+	ir_node *one_const = new_r_Const_long(irg, get_irn_mode(N_cpy), 1);
+	bool less = is_less(info);
+	ir_node *N_minus_i = new_r_Sub(switch_header, N_cpy, info->phi);
 
 	DB((dbg, LEVEL_4, "\t\tCreated %+F = |(N - I)| = |%+F - %+F|\n",
 	    N_minus_i, N_cpy, info->phi));
-	ir_node *c_one = new_r_Sub(switch_header, c_abs, one_const);
+	ir_node *c_one = is_cond_w_eq(info) ? c_cpy :
+					      MINUS_PLUS(less, switch_header,
+							 c_cpy, one_const);
 	/*
 	ir_node *c_factor =
 		new_r_Mul(switch_header, c_abs,
 			  new_r_Const_long(irg, get_irn_mode(c_abs), factor));
 	ir_node *N_minus_i_mod = mod(switch_header, irg, N_minus_i, c_factor);
 	 */
-	ir_node *res = new_r_Add(switch_header, N_minus_i, c_one);
+	ir_node *res = PLUS_MINUS(less, switch_header, N_minus_i, c_one);
 
 	ir_node *prev_jmp = new_r_Jmp(switch_header);
 	ir_node **cmp_blocks = malloc((factor - 1) * sizeof(ir_node *));
 	ir_node **to_block = malloc((factor - 1) * sizeof(ir_node *));
+	ir_relation rel =
+		is_less(info) ? ir_relation_less : ir_relation_greater;
+
 	for (int i = 0; i < factor - 1; i++) {
-		ir_node *const_i = new_r_Const_long(irg, get_irn_mode(c_abs),
+		ir_node *const_i = new_r_Const_long(irg, get_irn_mode(c_cpy),
 						    factor - 1 - i);
-		ir_node *c_times = new_r_Mul(switch_header, const_i, c_abs);
+		ir_node *const_i_1 = new_r_Const_long(irg, get_irn_mode(c_cpy),
+						      factor - 1 - i + 1);
+		ir_node *c_times = new_r_Mul(switch_header, const_i, c_cpy);
+		ir_node *c_times_1 = new_r_Mul(switch_header, const_i_1, c_cpy);
 		ir_node **blk_ins = ALLOCAN(ir_node *, 1);
 		blk_ins[0] = prev_jmp;
 		cmp_blocks[i] = new_r_Block(irg, 1, blk_ins);
-		ir_node *cmp = new_r_Cmp(cmp_blocks[i], res, c_times,
-					 ir_relation_greater_equal);
-		ir_node *cond = new_r_Cond(cmp_blocks[i], cmp);
+		ir_node *cmp = new_r_Cmp(cmp_blocks[i], res, c_times_1, rel);
+		ir_node *cmp_g = new_r_Cmp(cmp_blocks[i], res, c_times,
+					   get_negated_relation(rel));
+		ir_node *and = new_r_And(cmp_blocks[i], cmp, cmp_g);
+		ir_node *cond = new_r_Cond(cmp_blocks[i], and);
 		to_block[i] = new_r_Proj(cond, mode_X, pn_Cond_true);
 		prev_jmp = new_r_Proj(cond, mode_X, pn_Cond_false);
 	}
@@ -2683,6 +2782,7 @@ static void rewire_missing(struct irn_stack *head, ir_loop *loop,
 		}
 	}
 }
+#define is_Proj_M(node) (is_Proj(node) && get_irn_mode(node) == mode_M)
 
 static void rewire_post(ir_node *last_block, ir_node *post_block,
 			ir_node *header, ir_graph *irg, ir_loop *loop,
@@ -2704,7 +2804,8 @@ static void rewire_post(ir_node *last_block, ir_node *post_block,
 			if (is_irn_constlike(in)) {
 				continue;
 			}
-			if (is_Phi(in) && in_block == header) {
+			if ((is_Proj_M(in) || is_Phi(in)) &&
+			    in_block == header) {
 				rewire_post_out_into_header(
 					node, in, added, loop, header, final);
 			}
@@ -2933,8 +3034,11 @@ static ir_node *create_fixup_switch(ir_loop *const loop, ir_graph *irg,
 	rewire_post(last_block, out_of_loop_target, header, irg, loop, prevs);
 	pmap_destroy(prevs);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
-	set_optimize(opt);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-pre-switch-header-1"));
+
+	ir_node *switch_header = create_fixup_switch_header(
+		loop, irg, factor, dups, out_of_loop_target, info);
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-switch-header-with-kas"));
 
 	ir_node *end = get_irg_end(irg);
 	iterate_stack(kas)
@@ -2942,12 +3046,9 @@ static ir_node *create_fixup_switch(ir_loop *const loop, ir_graph *irg,
 		remove_End_keepalive(end, curr->el);
 	}
 	free_stack(&kas);
-	// Cleared when removing KAs
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
-	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-pre-switch-header-2"));
-	ir_node *switch_header = create_fixup_switch_header(
-		loop, irg, factor, dups, out_of_loop_target, info);
+
 	free(dups);
+	set_optimize(opt);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 	return switch_header;
 }
@@ -2997,10 +3098,6 @@ static void push_down_phis(ir_node *new_block, ir_node *header, ir_loop *loop,
 	}
 }
 
-#define PLUS_MINUS(greater, block, l, r)                                       \
-	greater ? new_r_Add(block, l, r) : new_r_Sub(block, l, r)
-#define MINUS_PLUS(less, block, l, r) PLUS_MINUS(!less, block, l, r)
-
 static int rewire_loop_to_header(ir_node *new_block, ir_node *header,
 				 ir_loop *loop)
 {
@@ -3017,12 +3114,6 @@ static int rewire_loop_to_header(ir_node *new_block, ir_node *header,
 	return -1;
 }
 
-static bool is_cond_w_eq(linear_unroll_info *info)
-{
-	ir_relation rel = get_Cmp_relation(info->cmp);
-	return rel == ir_relation_less_equal ||
-	       rel == ir_relation_greater_equal;
-}
 static void create_condition(ir_node *new_block, ir_node *header, ir_loop *loop,
 			     ir_node *phi_M, ir_graph *irg, unsigned factor,
 			     linear_unroll_info *info)
@@ -3041,20 +3132,8 @@ static void create_condition(ir_node *new_block, ir_node *header, ir_loop *loop,
 
 	ir_node *N_cpy = copy_and_rewire(info->bound, new_block, &cpy_mem);
 	ir_node *N_minus_min_max = new_r_Sub(new_block, N_cpy, I);
-	ir_relation rel;
-	if (is_less(info)) {
-		if (is_cond_w_eq(info)) {
-			rel = ir_relation_less_equal;
-		} else {
-			rel = ir_relation_less;
-		}
-	} else {
-		if (is_cond_w_eq(info)) {
-			rel = ir_relation_greater_equal;
-		} else {
-			rel = ir_relation_greater;
-		}
-	}
+	ir_relation rel = get_clean_rel(info);
+
 	ir_node *cmp =
 		new_r_Cmp(new_block, c_times_factor, N_minus_min_max, rel);
 	ir_node *cond = new_r_Cond(new_block, cmp);
@@ -3163,6 +3242,7 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	unrolled_headers = NULL;
 	unrolled_nodes = NULL;
 	ir_graph *irg = get_irn_irg(header);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_BADS);
 	ir_node *switch_header = NULL;
 	unrollability &= ~duff_unrollable_switch_fixup;
 	if (unrollability & duff_unrollable_switch_fixup) {
