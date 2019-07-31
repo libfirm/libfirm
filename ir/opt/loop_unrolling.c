@@ -1910,26 +1910,6 @@ static ir_node *recursive_rewire_in_loop(ir_node *node, ir_node *header,
 	return new_mem ? new_mem : mem;
 }
 
-static ir_node *create_abs(ir_node *block, ir_node *node)
-{
-	/*
-	 * Compile the following with O3 to get this form:
-	 * int abs(int n) { return n < 0 ? -n : n }
-	 */
-	assert(block_dominates(block, get_block(node)) >= 0);
-	ir_mode *mode = get_irn_mode(node);
-	if (!mode_is_signed(mode)) {
-		return node;
-	}
-	ir_graph *irg = get_irn_irg(block);
-	ir_node *shrs = new_r_Shrs(
-		block, node,
-		new_r_Const_long(irg, mode_Iu, get_mode_size_bits(mode) - 1));
-	ir_node *eor = new_r_Eor(block, shrs, node);
-	ir_node *sub = new_r_Sub(block, eor, shrs);
-	return sub;
-}
-
 enum Side { LEFT, RIGHT };
 #define Side enum Side
 
@@ -1937,14 +1917,12 @@ static ir_node *update_header_condition_add(ir_node *header, ir_node *N,
 					    ir_node *c_cpy,
 					    ir_node *factor_const, bool less)
 {
-	ir_node *c_abs = create_abs(header, c_cpy);
 	DB((dbg, LEVEL_4, "\t(|c|,c) = (%+F,%+F)\n", c_abs, c_cpy));
 	ir_node *one_const =
-		new_r_Const_long(get_irn_irg(header), get_irn_mode(c_abs), 1);
+		new_r_Const_long(get_irn_irg(header), get_irn_mode(c_cpy), 1);
 	ir_node *factor_offset = new_r_Sub(header, factor_const, one_const);
-	ir_node *mul = new_r_Mul(header, c_abs, factor_offset);
-	ir_node *new_N =
-		less ? new_r_Sub(header, N, mul) : new_r_Add(header, N, mul);
+	ir_node *mul = new_r_Mul(header, c_cpy, factor_offset);
+	ir_node *new_N = new_r_Sub(header, N, mul);
 	DEBUG_ONLY(char *symb_fac = less ? "+" : "-";
 		   char *symb_N = less ? "-" : "+";)
 	DB((dbg, LEVEL_4, "\t(|c|) * (factor - 1): %+F\n", mul));
