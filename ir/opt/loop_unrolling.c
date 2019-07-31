@@ -3250,7 +3250,7 @@ static void move_invariants(ir_node *header, ir_node *new_block, ir_graph *irg)
 				       NULL, NULL);
 			ir_node *new = copy_and_rewire(node, new_block, &mem);
 			for (unsigned j = 0; j < get_irn_n_outs(node); j++) {
-				ir_node *out = get_irn_out(node, i);
+				ir_node *out = get_irn_out(node, j);
 				ir_node *out_block = get_block(out);
 				if (!block_is_inside_loop(out_block, loop) &&
 				    get_irn_arity(out) !=
