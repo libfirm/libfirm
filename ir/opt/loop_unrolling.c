@@ -1917,7 +1917,6 @@ static ir_node *update_header_condition_add(ir_node *header, ir_node *N,
 					    ir_node *c_cpy,
 					    ir_node *factor_const, bool less)
 {
-	DB((dbg, LEVEL_4, "\t(|c|,c) = (%+F,%+F)\n", c_abs, c_cpy));
 	ir_node *one_const =
 		new_r_Const_long(get_irn_irg(header), get_irn_mode(c_cpy), 1);
 	ir_node *factor_offset = new_r_Sub(header, factor_const, one_const);
@@ -1928,7 +1927,7 @@ static ir_node *update_header_condition_add(ir_node *header, ir_node *N,
 	DB((dbg, LEVEL_4, "\t(|c|) * (factor - 1): %+F\n", mul));
 	DB((dbg, LEVEL_4,
 	    "\tAttaching (N %s (|c|* (factor %s 1))): (%+F %s (%+F * %+F)  = %+F %s %+F = %+F",
-	    symb_N, symb_fac, N, symb_N, c_abs, factor_offset, N, symb_N, mul,
+	    symb_N, symb_fac, N, symb_N, c_cpy, factor_offset, N, symb_N, mul,
 	    new_N));
 	return new_N;
 }
