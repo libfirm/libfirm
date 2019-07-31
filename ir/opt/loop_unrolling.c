@@ -2436,6 +2436,9 @@ static ir_node *create_fixup_switch_phi_M(ir_node *switch_header,
 		int in_index;
 		ir_node *out = get_irn_out_ex(phi_M_header, i, &in_index);
 		ir_node *block = get_block(out);
+		if (get_irn_loop(block) == loop) {
+			continue;
+		}
 		if (after_loop == block ||
 		    block_dominates(after_loop, block) > 0 ||
 		    array_contains(target_blocks, factor - 1, block)) {
@@ -2503,6 +2506,7 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	ir_node *switch_header = new_r_Block(irg, 1, in);
 	ir_node *phi_M = create_fixup_switch_phi_M(
 		switch_header, header, after_loop, target_blocks, factor, loop);
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-fixup-switch-header-with-kas-mem"));
 	ir_node *cpy_mem = phi_M;
 	assert(phi_M);
 	ir_node *c = info->incr;
