@@ -3217,6 +3217,53 @@ static void fixup_post_memory(ir_loop *loop, ir_node *header)
 	}
 }
 
+static bool has_usages_out_side_of_loop(ir_node *query, ir_loop *loop)
+{
+	DEBUG_ONLY(ir_node *query_block = get_block(query));
+	assert(block_is_inside_loop(query_block, loop));
+	assert(irg_has_properties(get_irn_irg(query),
+				  IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO));
+	assert(irg_has_properties(get_irn_irg(query),
+				  IR_GRAPH_PROPERTY_CONSISTENT_OUTS));
+	for (unsigned i = 0; i < get_irn_n_outs(query); i++) {
+		ir_node *out = get_irn_out(query, i);
+		ir_node *out_block = get_block(out);
+		if (!block_is_inside_loop(out_block, loop) &&
+		    get_irn_arity(out) != get_irn_arity(out_block)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static void move_invariants(ir_node *header, ir_node *new_block, ir_graph *irg)
+{
+	restore_properties(irg);
+	for (unsigned i = 0; i < get_irn_n_outs(header); i++) {
+		ir_node *node = get_irn_out(header, i);
+		ir_loop *loop = get_irn_loop(header);
+		if (!is_Phi(node) && get_irn_mode(node) != mode_X &&
+		    has_usages_out_side_of_loop(node, loop)) {
+			ir_node *mem = get_phi_M(new_block);
+			ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+			irg_walk_graph(get_irn_irg(header), firm_clear_link,
+				       NULL, NULL);
+			ir_node *new = copy_and_rewire(node, new_block, &mem);
+			for (unsigned j = 0; j < get_irn_n_outs(node); j++) {
+				ir_node *out = get_irn_out(node, i);
+				ir_node *out_block = get_block(out);
+				if (!block_is_inside_loop(out_block, loop) &&
+				    get_irn_arity(out) !=
+					    get_irn_arity(out_block)) {
+					prepend_edge(out, new);
+				}
+			}
+			ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+			restore_properties(irg);
+		}
+	}
+}
+
 static void conditionalize_header_pre_check(ir_node *new_block, ir_node *header,
 					    ir_loop *loop,
 					    linear_unroll_info *info,
@@ -3239,8 +3286,12 @@ static void conditionalize_header_pre_check(ir_node *new_block, ir_node *header,
 	// create condition
 	create_condition(new_block, header, loop, phi_M, irg, factor, info);
 	fixup_post_memory(loop, header);
-	DEBUG_ONLY(DUMP_GRAPH(
-		irg, "duff-header-pre-check-pre-opt-pre-check-pre-fix-graph"));
+
+	DEBUG_ONLY(
+		DUMP_GRAPH(irg, "duff-header-pre-check-pre-opt-pre-move-inv"));
+	move_invariants(header, new_block, irg);
+	DEBUG_ONLY(
+		DUMP_GRAPH(irg, "duff-header-pre-check-pre-opt-pre-fix-graph"));
 	set_optimize(opt);
 }
 
