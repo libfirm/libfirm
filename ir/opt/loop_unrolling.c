@@ -401,6 +401,7 @@ struct alias_list {
 	struct alias_list *next;
 };
 static struct alias_list *alias_candidates;
+static bool unknown_addrs = false;
 
 static bool is_aliased(ir_node *node)
 {
@@ -408,7 +409,12 @@ static bool is_aliased(ir_node *node)
 
 	const ir_node *addr;
 	ir_type *type;
-
+	if (unknown_addrs) {
+		DB((dbg, LEVEL_4,
+		    "Assuming %+F is aliasing, as unknown addrs exist\n",
+		    node));
+		return true;
+	}
 	if (is_Load(node)) {
 		addr = get_Load_ptr(node);
 		type = get_Load_type(node);
@@ -422,6 +428,11 @@ static bool is_aliased(ir_node *node)
 		DB((dbg, LEVEL_4, "%+F neither, load, nor store, nor call\n",
 		    node));
 		return false;
+	}
+	if (!is_irn_constlike(addr)) {
+		DB((dbg, LEVEL_4,
+		    "Loading from non const place. Assuming aliasing\n"));
+		return true;
 	}
 	for (struct alias_list *curr = alias_candidates; curr;
 	     curr = curr->next) {
@@ -459,6 +470,9 @@ static void check_for_store_(ir_node *node, ir_loop *loop, pset *visited)
 	}
 	ir_type *type = get_Store_type(node);
 	ir_node *addr = get_Store_ptr(node);
+	if (!is_irn_constlike(addr)) {
+		unknown_addrs = true;
+	}
 	unsigned int size = get_type_size(type);
 	struct alias_list list = { .type = type,
 				   .addr = addr,
@@ -500,6 +514,9 @@ static void walk_call_for_aliases(ir_node *call, pset *visited)
 			DB((dbg, LEVEL_4, "Has param %+F of type!\n", param));
 			struct alias_list list = { .addr = NULL,
 						   .next = alias_candidates };
+			if (get_irn_mode(param) == mode_M) {
+				continue;
+			}
 			if (is_Proj(param)) {
 				ir_node *pre_proj = get_Proj_pred(param);
 				if (is_Load(pre_proj)) {
@@ -521,8 +538,16 @@ static void walk_call_for_aliases(ir_node *call, pset *visited)
 						list.node = pre_proj;
 					}
 				}
+			} else if (is_irn_constlike(param)) {
+				list.addr = param;
+				list.type = get_irn_type_attr(param);
+				list.node = param;
+				list.size = get_type_size(list.type);
 			}
 			if (list.addr) {
+				if (!is_irn_constlike(list.addr)) {
+					unknown_addrs = true;
+				}
 				DB((dbg, LEVEL_4,
 				    "Adding store to potential alias list\n"));
 				struct alias_list *list_ptr =
@@ -1039,6 +1064,7 @@ determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop,
 {
 	unroll_info->i = NULL;
 	unroll_info->loop = loop;
+	unknown_addrs = false;
 	DB((dbg, LEVEL_4, "\tDetermining info for loop %+F\n", loop));
 	if (no_of_block_in_loop(loop) <= 1) { // Empty loop
 		return duff_unrollable_none;
