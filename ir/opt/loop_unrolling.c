@@ -568,9 +568,6 @@ static void walk_call_for_aliases(ir_node *call, pset *visited)
 	assert(!(callee_graph->reserved_resources & IR_RESOURCE_IRN_VISITED));
 	DB((dbg, LEVEL_4, "Walking graph %+F of call for aliases\n",
 	    callee_graph));
-	ir_graph *irg = get_irn_irg(call);
-	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	irg_walk_blkwise_graph(callee_graph, walk_graph_aliasing, NULL,
 			       visited);
 }
