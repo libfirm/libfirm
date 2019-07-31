@@ -2439,6 +2439,9 @@ static ir_node *create_fixup_switch_phi_M(ir_node *switch_header,
 		if (get_irn_loop(block) == loop) {
 			continue;
 		}
+		if (is_End(out)) {
+			continue;
+		}
 		if (after_loop == block ||
 		    block_dominates(after_loop, block) > 0 ||
 		    array_contains(target_blocks, factor - 1, block)) {
