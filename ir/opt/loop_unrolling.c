@@ -3310,7 +3310,7 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	ir_graph *irg = get_irn_irg(header);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_BADS);
 	ir_node *switch_header = NULL;
-	unrollability &= ~duff_unrollable_switch_fixup;
+	//unrollability &= ~duff_unrollable_switch_fixup;
 	if (unrollability & duff_unrollable_switch_fixup) {
 		switch_header = create_fixup_switch(loop, irg, factor, info);
 	} else {
