@@ -2661,7 +2661,7 @@ static void add_keep_alives_to_all(struct irn_stack *nodes,
 	}
 
 static ir_node *get_exit_(ir_node *start, ir_mode *mode, ir_node *header,
-			  pmap *map)
+			  pmap *map, pset *visited)
 {
 	unsigned app_outs = 0;
 	if (is_Block(start)) {
@@ -2670,11 +2670,15 @@ static ir_node *get_exit_(ir_node *start, ir_mode *mode, ir_node *header,
 	for (unsigned i = 0; i < get_irn_n_outs(start); ++i) {
 		ir_node *out = get_irn_out(start, i);
 		ir_node *out_block = get_block(out);
+		if (pset_find_ptr(visited, out)) {
+			continue;
+		}
+		pset_insert_ptr(visited, out);
 		if (out_block == header || !pmap_contains(map, out)) {
 			continue;
 		}
 		app_outs++;
-		ir_node *exit = get_exit_(out, mode, header, map);
+		ir_node *exit = get_exit_(out, mode, header, map, visited);
 		if (exit)
 			return exit;
 	}
@@ -2682,7 +2686,8 @@ static ir_node *get_exit_(ir_node *start, ir_mode *mode, ir_node *header,
 }
 
 #define get_exit(start, header, map)                                           \
-	get_exit_(start, get_irn_mode(start), header, map)
+	get_exit_(start, get_irn_mode(start), header, map,                     \
+		  pset_new_ptr_default())
 
 static void rewire_pointing_to_bad_first(ir_node *node, unsigned bad_index)
 {
