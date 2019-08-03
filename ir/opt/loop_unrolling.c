@@ -2716,39 +2716,39 @@ static void rewire_post_out(ir_node *out, ir_node *node_to_add, unsigned ex)
 		set_irn_in(out, 1, phi_arr);
 	}
 }
+
 static void rewire_post_out_into_header(ir_node *out, ir_node *header_node,
 					pset *added, ir_loop *loop,
 					ir_node *header, pmap *final)
 {
-	unsigned outs = get_irn_n_outs(header_node);
-	DB((dbg, LEVEL_5, "\tLooking for outs in %+F (block: %+F)\n",
-	    header_node, get_block(header_node)));
-	for (unsigned i = 0; i < outs; i++) {
-		int ex;
-		ir_node *node = get_irn_out_ex(header_node, i, &ex);
-		ir_node *link = get_irn_link(node);
-		if (!pmap_contains(final, node)) {
+	ir_mode *mode = get_irn_mode(header_node);
+	ir_node *header_exit = header_node;
+	while (!is_Phi(header_exit)) {
+		for (int i = 0; i < get_irn_arity(header_exit); i++) {
+			ir_node *in = get_irn_n(header_exit, i);
+			if (get_block(in) != get_block(header_exit)) {
+				continue;
+			}
+			ir_mode *in_mode = get_irn_mode(in);
+			if (in_mode != mode && in_mode != mode_T) {
+				continue;
+			}
+			header_exit = in;
+			break;
+		}
+	}
+	for (int i = 0; i < get_irn_arity(header_exit); i++) {
+		ir_node *in = get_irn_n(header_exit, i);
+		if (!block_is_inside_loop(get_block(in), loop)) {
 			continue;
 		}
-		DB((dbg, LEVEL_5, "\t\tChecking exit %+F\n", link));
-		ir_node *exit = get_exit(link, header, final);
-		DB((dbg, LEVEL_5, "\t\t\tFinal exit %+F\n", exit));
-		if (!exit) {
-			exit = link;
-		}
-		if (pset_find_ptr(added, exit)) {
-			continue;
-		}
-		pset_insert_ptr(added, exit);
-		if (block_is_inside_loop(get_block(exit), loop)) {
-			continue;
-		}
-		DB((dbg, LEVEL_5,
-		    "\t\t\t\tHeader exit %+F pointed to by %+F (exit of %+F)\n",
-		    out, exit, link));
-		rewire_post_out(out, exit, ex);
+		ir_node *link = get_irn_link(in);
+		DB((dbg, LEVEL_5, "\t\t\t\tHeader exit %+F pointed to by %+F\n",
+		    out, link));
+		rewire_post_out(out, link, i);
 	}
 }
+
 static bool dominated_by_in_loop_not_header(ir_node *block, ir_loop *loop,
 					    ir_node *header)
 {
@@ -3205,7 +3205,7 @@ static void fixup_post_memory(ir_loop *loop, ir_node *header)
 static bool has_usages_out_side_of_loop(ir_node *query, ir_loop *loop)
 {
 	DEBUG_ONLY(ir_node *query_block = get_block(query));
-	assert(block_is_inside_loop(query_block, loop));
+	DEBUG_ONLY(assert(block_is_inside_loop(query_block, loop)));
 	assert(irg_has_properties(get_irn_irg(query),
 				  IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO));
 	assert(irg_has_properties(get_irn_irg(query),
