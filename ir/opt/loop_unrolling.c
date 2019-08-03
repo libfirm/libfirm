@@ -943,6 +943,9 @@ static void walk_for_recursion(ir_node *node, void *rec)
 		return;
 	}
 	ir_entity *callee = get_Call_callee(node);
+	if (!callee) {
+		return;
+	}
 	ir_graph *callee_graph = get_entity_irg(callee);
 	if (callee_graph == get_irn_irg(node)) {
 		*((bool *)rec) = true;
