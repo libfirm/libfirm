@@ -936,6 +936,19 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node,
 	unroll_info->incr = node_to_check;
 	return true;
 }
+
+static void walk_for_recursion(ir_node *node, void *rec)
+{
+	if (!is_Call(node)) {
+		return;
+	}
+	ir_entity *callee = get_Call_callee(node);
+	ir_graph *callee_graph = get_entity_irg(callee);
+	if (callee_graph == get_irn_irg(node)) {
+		*((bool *)rec) = true;
+	}
+}
+
 static duff_unrollability check_phi(linear_unroll_info *unroll_info,
 				    ir_loop *loop, unsigned factor)
 {
@@ -962,6 +975,15 @@ static duff_unrollability check_phi(linear_unroll_info *unroll_info,
 	// check for static beginning: neither in loop, nor aliased and for valid linear increment
 	clear_all_stores();
 	get_all_stores(loop);
+	bool recursion = false;
+	irg_walk_graph(get_irn_irg(phi), walk_for_recursion, NULL, &recursion);
+
+	if (recursion) {
+		DB((dbg, LEVEL_4,
+		    "Can't unroll loops in a recursive function\n"));
+		return duff_unrollable_none;
+	}
+
 	long long incr_pred_index = -1;
 	ir_node **is = malloc((phi_preds - 1) * sizeof(ir_node *));
 	unsigned is_size = 0;
