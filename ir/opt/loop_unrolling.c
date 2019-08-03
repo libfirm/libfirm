@@ -2724,6 +2724,7 @@ static void rewire_post_out_into_header(ir_node *out, ir_node *header_node,
 	ir_mode *mode = get_irn_mode(header_node);
 	ir_node *header_exit = header_node;
 	while (!is_Phi(header_exit)) {
+		int found = 0;
 		for (int i = 0; i < get_irn_arity(header_exit); i++) {
 			ir_node *in = get_irn_n(header_exit, i);
 			if (get_block(in) != get_block(header_exit)) {
@@ -2734,6 +2735,10 @@ static void rewire_post_out_into_header(ir_node *out, ir_node *header_node,
 				continue;
 			}
 			header_exit = in;
+			found++;
+			break;
+		}
+		if (!found) {
 			break;
 		}
 	}
@@ -2843,10 +2848,45 @@ static void rewire_pointing_to_bad_intermediary(
 	struct irn_stack **pointing_to_header, ir_node *header)
 {
 	ir_node *link = get_irn_link(node);
+	ir_loop *loop = get_irn_loop(header);
 	if (is_Phi(node)) {
-		ir_node *exit = get_exit(link, header, prevs);
-		exit = exit ? exit : link;
-		ir_node *target = pmap_get(ir_node, prevs, exit);
+		ir_node *tgt = link;
+		ir_mode *mode = get_irn_mode(tgt);
+		while (!is_Phi(tgt) || get_block(tgt) != header) {
+			int found = 0;
+			for (int i = 0; i < get_irn_arity(tgt); i++) {
+				ir_node *in = get_irn_n(tgt, i);
+				if (get_block(in) != header &&
+				    !block_is_inside_loop(get_block(in),
+							  loop)) {
+					continue;
+				}
+				ir_mode *in_mode = get_irn_mode(in);
+				if (in_mode != mode && in_mode != mode_T) {
+					continue;
+				}
+				found++;
+				tgt = in;
+				break;
+			}
+			if (!found) {
+				break;
+			}
+		}
+		for (int i = 0; i < get_irn_arity(tgt); i++) {
+			ir_node *in = get_irn_n(tgt, i);
+			if (!block_is_inside_loop(get_block(in), loop)) {
+				continue;
+			}
+			ir_mode *in_mode = get_irn_mode(in);
+			if (in_mode != mode && in_mode != mode_T) {
+				continue;
+			}
+			tgt = in;
+			break;
+		}
+		ir_node *target = pmap_get(ir_node, prevs, tgt);
+		target = target ? target : link;
 		assert(target);
 		set_irn_n(node, bad_index, target);
 		if (!is_in_stack(node, *pointing_to_header)) {
@@ -3002,10 +3042,12 @@ static pmap *duplicate_rewire_loop_body(ir_loop *const loop, ir_node *header,
 	rewire_interally(copied, irg, loop);
 	confirm_irg_properties(
 		irg, irg->properties & ~IR_GRAPH_PROPERTY_CONSISTENT_OUTS &
-			     ~IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+			     ~IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES &
+			     ~IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	assure_irg_properties(irg,
 			      IR_GRAPH_PROPERTY_CONSISTENT_OUTS &
-				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+				      IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES &
+				      IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO);
 	if (prevs) {
 		rewire_intermediary(copied, prevs, first, header);
 	} else {
