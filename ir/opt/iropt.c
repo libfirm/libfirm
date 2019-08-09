@@ -5081,7 +5081,7 @@ restart:
 	ir_relation rel_eq = get_complementary_relations(ir_relation_equal, relation, possible);
 	/* The following operations are NOT safe for floating point operations, for instance
 	 * 1.0 + inf == 2.0 + inf, =/=> x == y */
-	if (rel_eq != ir_relation_false && mode_is_int(mode)) {
+	if (rel_eq != ir_relation_false && (mode_is_int(mode) || mode_is_reference(mode))) {
 		unsigned const lop = get_irn_opcode(left);
 		if (lop == get_irn_opcode(right)) {
 			/* same operation on both sides, try to remove */
@@ -5169,6 +5169,7 @@ restart:
 			}
 			if (x) {
 cmp_x_eq_0:
+				mode     = get_irn_mode(x);
 				left     = x;
 				right    = new_r_Const_null(irg, mode);
 				relation = rel_eq;
