@@ -101,6 +101,7 @@ static ir_node *create_fpu_mode_reload(void *const env, ir_node *const state, ir
 			create_ent(&fpcw_truncate, 0x37F, "_fpcw_truncate");
 		ia32_attr_t *const attr = get_ia32_attr(reload);
 		attr->addr.immediate.entity = rounding_mode;
+		attr->addr.immediate.kind   = X86_IMM_ADDR;
 		attr->addr.variant          = X86_ADDR_JUST_IMM;
 	} else {
 		ir_node       *mem;
