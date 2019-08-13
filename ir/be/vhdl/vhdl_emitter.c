@@ -550,8 +550,8 @@ void vhdl_emit_function(ir_graph *const irg)
 	use_barrel_right = false;
 	use_barrel_right_signed = false;
 	vhdl_register_emitters();
-	cpset_init(&variables, (cpset_hash_function) hash_varsig_attr, (cpset_cmp_function) vhdl_varsig_attrs_equal);
-	cpset_init(&signals, (cpset_hash_function) hash_varsig_attr, (cpset_cmp_function) vhdl_varsig_attrs_equal);
+	cpset_init(&variables, (cpset_hash_function) hash_varsig_attr, (cpset_cmp_function) vhdl_varsig_attrs_equal_);
+	cpset_init(&signals, (cpset_hash_function) hash_varsig_attr, (cpset_cmp_function) vhdl_varsig_attrs_equal_);
 	temp_attrs = plist_new();
 
 	char name[strlen(get_entity_name(get_irg_entity(irg)))];

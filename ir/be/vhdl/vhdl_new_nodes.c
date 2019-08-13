@@ -50,9 +50,12 @@ int vhdl_varsig_attrs_equal(ir_node const *const a, ir_node const *const b)
 {
 	vhdl_varsig_attr_t const *const a_attr = get_vhdl_varsig_attr_const(a);
 	vhdl_varsig_attr_t const *const b_attr = get_vhdl_varsig_attr_const(b);
-	return
-			vhdl_attrs_equal_(&a_attr->attr, &b_attr->attr) &&
-			strcmp(a_attr->name, b_attr->name) == 0;
+	return vhdl_varsig_attrs_equal_(a_attr, b_attr);
+}
+
+int vhdl_varsig_attrs_equal_(vhdl_varsig_attr_t const *const a, vhdl_varsig_attr_t const *const b)
+{
+	return vhdl_attrs_equal_(&a->attr, &b->attr) && strcmp(a->name, b->name) == 0;
 }
 
 int vhdl_start_attrs_equal(ir_node const *const a, ir_node const *const b)
