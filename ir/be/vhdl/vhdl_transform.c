@@ -21,10 +21,16 @@
 typedef ir_node *cons_unop(dbg_info*, ir_node*, ir_node*);
 typedef ir_node *cons_binop(dbg_info*, ir_node*, ir_node*, ir_node*);
 
+static ir_mode *get_correct_mode(ir_mode *old_mode) {
+	if (old_mode == mode_b) {
+		return mode_b;
+	}
+	return mode_is_signed(old_mode) ? get_mode_signed_vector(get_mode_size_bits(old_mode))
+	                                : get_mode_unsigned_vector(get_mode_size_bits(old_mode));
+}
+
 static void set_correct_mode(ir_node *node, ir_mode *old_mode) {
-	ir_mode *new_mode = mode_is_signed(old_mode) ? get_mode_signed_vector(get_mode_size_bits(old_mode))
-	                                             : get_mode_unsigned_vector(get_mode_size_bits(old_mode));
-	set_irn_mode(node, new_mode);
+	set_irn_mode(node, get_correct_mode(old_mode));
 }
 
 static ir_node *gen_binop(ir_node *node, cons_binop cons) {
@@ -75,9 +81,14 @@ static ir_node *gen_Cmp(ir_node *const node)
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_node  *const block = be_transform_nodes_block(node);
 	ir_node  *const new_l = be_transform_node(l);
-	ir_node *const new_r = be_transform_node(r);
+	ir_node *new_r = be_transform_node(r);
+	if (get_irn_mode(new_l) != get_irn_mode(new_r)) {
+		new_r = new_bd_vhdl_Conv(get_irn_dbg_info(new_r), block, new_r);
+		set_irn_mode(new_r, get_irn_mode(new_l));
+	}
+
 	ir_node *new = new_bd_vhdl_Cmp(dbgi, block, new_l, new_r, get_Cmp_relation(node));
-	set_irn_mode(new, mode);
+	set_correct_mode(new, mode);
 	return new;
 }
 
@@ -130,7 +141,7 @@ static ir_node *gen_Mux(ir_node *const node)
 	ir_node *const new_false = be_transform_node(get_Mux_false(node));
 	char var_name[16];
 	sprintf(var_name, "mux%ld", get_irn_node_nr(node));
-	ir_node *new = new_bd_vhdl_Mux(dbgi, block, new_sel, new_true, new_false, var_name);
+	ir_node *new = new_bd_vhdl_Mux(dbgi, block, new_sel, new_true, new_false, var_name, get_correct_mode(mode));
 	set_correct_mode(new, mode);
 	return new;
 }
@@ -148,7 +159,7 @@ static ir_node *gen_Phi(ir_node *const node)
 {
 	arch_register_req_t const *req;
 	ir_mode            *const  mode = get_irn_mode(node);
-	if (be_mode_needs_gp_reg(mode)) {
+	if (be_mode_needs_gp_reg(mode) || mode == mode_b) {
 		req = &vhdl_class_reg_req_gp;
 	} else if (mode == mode_M) {
 		req = arch_memory_req;
@@ -156,7 +167,7 @@ static ir_node *gen_Phi(ir_node *const node)
 		panic("unhandled mode");
 	}
 	ir_node *new = be_transform_phi(node, req);
-	if (be_mode_needs_gp_reg(mode)) {
+	if (be_mode_needs_gp_reg(mode) || mode == mode_b) {
 		set_correct_mode(new, mode);
 	}
 	return new;
@@ -186,7 +197,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *const node)
 	ir_node  *const block = be_transform_nodes_block(node);
 	ir_node *new_proj = be_new_Proj(start, get_Proj_num(node));
 	set_irn_mode(new_proj, get_mode_std_logic_vector(get_mode_size_bits(mode)));
-	// convert input to standard logic vector
+	// convert input from standard logic vector
 	ir_node *conv = new_bd_vhdl_Conv(dbgi, block, new_proj);
 	set_correct_mode(conv, get_irn_mode(node));
 	return conv;
@@ -223,13 +234,14 @@ static ir_node *gen_Return(ir_node *const node)
 	sprintf(name, "OUTPUT0");
 	// convert output to standard logic vector
 	ir_node *conv = new_bd_vhdl_Conv(dbgi, block, val);
-	set_irn_mode(conv, get_mode_std_logic_vector(get_mode_size_bits(get_irn_mode(val))));
-	ir_node *assign_signal = new_bd_vhdl_AssignSig(dbgi, block, conv, name);
+	ir_mode *mode = get_mode_std_logic_vector(get_mode_size_bits(get_irn_mode(val)));
+	set_irn_mode(conv, mode);
+	ir_node *assign_signal = new_bd_vhdl_AssignSig(dbgi, block, conv, name, mode);
 
 	return new_bd_vhdl_Return(dbgi, block, assign_signal);
 }
 
-static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_binop *const cons_imm)
+static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_binop *const cons_imm, bool left_op_signed)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_mode *mode = get_irn_mode(node);
@@ -238,11 +250,26 @@ static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_b
 	}
 	ir_node *const block = be_transform_nodes_block(node);
 	ir_node *const l     = get_binop_left(node);
-	ir_node *const new_l = be_transform_node(l);
+	ir_node *new_l = be_transform_node(l);
 	ir_node *const r     = get_binop_right(node);
-	ir_node *const new_r = be_transform_node(r);
+	ir_node *new_r = be_transform_node(r);
+
+	ir_mode *r_mode = get_irn_mode(new_r);
+	if (mode_is_signed(r_mode) && is_vhdl_Const(new_r)) {
+		new_r = new_bd_vhdl_Conv(get_irn_dbg_info(new_r), block, new_r);
+		set_irn_mode(new_r, get_mode_unsigned_vector(get_mode_size_bits(r_mode)));
+	}
+	ir_mode *l_mode = get_irn_mode(new_l);
+	if (mode_is_signed(l_mode) && !left_op_signed) {
+		new_l = new_bd_vhdl_Conv(get_irn_dbg_info(new_l), block, new_l);
+		set_irn_mode(new_l, get_mode_unsigned_vector(get_mode_size_bits(l_mode)));
+	} else if (!mode_is_signed(l_mode) && left_op_signed) {
+		new_l = new_bd_vhdl_Conv(get_irn_dbg_info(new_l), block, new_l);
+		set_irn_mode(new_l, get_mode_signed_vector(get_mode_size_bits(l_mode)));
+	}
+
 	ir_node *new;
-	if (is_PinnedConst(r)) {
+	if (is_vhdl_Const(new_r)) {
 		new = cons_imm(dbgi, block, new_l, new_r);
 	} else {
 		new = cons(dbgi, block, new_l, new_r);
@@ -253,17 +280,17 @@ static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_b
 
 static ir_node *gen_Shl(ir_node *const node)
 {
-	return gen_shift_op(node, new_bd_vhdl_Shl_Barrel, new_bd_vhdl_Shl_Const);
+	return gen_shift_op(node, new_bd_vhdl_Shl_Barrel, new_bd_vhdl_Shl_Const, false);
 }
 
 static ir_node *gen_Shr(ir_node *const node)
 {
-	return gen_shift_op(node, new_bd_vhdl_Shr_Barrel, new_bd_vhdl_Shr_Const);
+	return gen_shift_op(node, new_bd_vhdl_Shr_Barrel, new_bd_vhdl_Shr_Const, false);
 }
 
 static ir_node *gen_Shrs(ir_node *const node)
 {
-	return gen_shift_op(node, new_bd_vhdl_Shrs_Barrel, new_bd_vhdl_Shrs_Const);
+	return gen_shift_op(node, new_bd_vhdl_Shrs_Barrel, new_bd_vhdl_Shrs_Const, true);
 }
 
 static ir_node *gen_Start(ir_node *const node)
@@ -282,6 +309,7 @@ static ir_node *gen_Start(ir_node *const node)
 		char param[16];
 		sprintf(param, "PARAM%d", i);
 		strncpy(signals[i].name, param, 16);
+		signals[i].mode = get_mode_std_logic_vector(get_mode_size_bits(get_type_mode(get_method_param_type(method_type, i))));
 	}
 
 	return start;
@@ -336,7 +364,8 @@ static void assign_walker(ir_node *const node, void *env) {
 			if (!is_vhdl_AssignSig(pred) && pred != node) {
 				char sig_name[16];
 				sprintf(sig_name, "PHI%ld", get_irn_node_nr(node));
-				ir_node *assign = new_bd_vhdl_AssignSig(dbgi, get_nodes_block(pred), pred, sig_name);
+				ir_node *assign = new_bd_vhdl_AssignSig(dbgi, get_nodes_block(pred), pred, sig_name, get_irn_mode(pred));
+				set_irn_mode(assign, get_irn_mode(pred));
 				set_irn_n(node, i, assign);
 			}
 		}
@@ -359,7 +388,8 @@ static void assign_walker(ir_node *const node, void *env) {
 		}
 		char var_name[16];
 		sprintf(var_name, "node%ld", get_irn_node_nr(node));
-		ir_node *assign = new_bd_vhdl_AssignVar(dbgi, block, node, var_name);
+		ir_node *assign = new_bd_vhdl_AssignVar(dbgi, block, node, var_name, get_irn_mode(node));
+		set_irn_mode(assign, get_irn_mode(node));
 		foreach_irn_out(node, i, succ) {
 			if (succ == assign) {
 				continue;
@@ -376,7 +406,10 @@ static void assign_walker(ir_node *const node, void *env) {
 void vhdl_transform_graph(ir_graph *const irg)
 {
 	vhdl_register_transformers();
+	int before = get_optimize();
+	set_optimize(0);
 	be_transform_graph(irg, NULL);
+	set_optimize(before);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	be_dump(DUMP_BE, irg, "before-assigns");
 	irg_walk_graph(irg, NULL, assign_walker, NULL);

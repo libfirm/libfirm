@@ -55,7 +55,8 @@ int vhdl_varsig_attrs_equal(ir_node const *const a, ir_node const *const b)
 
 int vhdl_varsig_attrs_equal_(vhdl_varsig_attr_t const *const a, vhdl_varsig_attr_t const *const b)
 {
-	return vhdl_attrs_equal_(&a->attr, &b->attr) && strcmp(a->name, b->name) == 0;
+	return vhdl_attrs_equal_(&a->attr, &b->attr) && strcmp(a->name, b->name) == 0 &&
+	       a->mode == b->mode;
 }
 
 int vhdl_start_attrs_equal(ir_node const *const a, ir_node const *const b)
@@ -73,6 +74,8 @@ void vhdl_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 	switch (reason) {
 		case dump_node_info_txt:
 		case dump_node_mode_txt:
+			fprintf(F, " %s", get_mode_name(get_irn_mode(n)));
+			break;
 		case dump_node_nodeattr_txt:
 			break;
 
@@ -87,7 +90,7 @@ void vhdl_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 				case iro_vhdl_AssignSig:
 				case iro_vhdl_AssignVar: {
 					vhdl_varsig_attr_t const *const varsig = get_vhdl_varsig_attr_const(n);
-					fprintf(F, " %s", varsig->name);
+					fprintf(F, " '%s'", varsig->name);
 				default:
 					break;
 				}

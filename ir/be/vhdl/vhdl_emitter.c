@@ -17,6 +17,7 @@
 #include "panic.h"
 #include "plist.h"
 #include "vhdl_new_nodes_t.h"
+#include "vhdl_modes.h"
 
 #include <stdbool.h>
 
@@ -147,16 +148,17 @@ static void emit_Cond(ir_node const *const node) {
 	be_emit_write_line();
 }
 
+#define get_sign_string(mode) mode_is_signed(mode) ? "signed" : "unsigned"
+
 static void emit_Const(ir_node const *const node) {
-	be_emit_irprintf("%d", get_vhdl_immediate_attr_const(node)->val);
+	ir_mode *mode = get_irn_mode(node);
+	be_emit_irprintf("to_%s(%d, %d)", get_sign_string(mode), get_vhdl_immediate_attr_const(node)->val, get_mode_size_bits(mode));
 }
 
 static int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
 {
 	return (get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode));
 }
-
-#define get_sign_string(mode) mode_is_signed(dest_mode) ? "signed" : "unsigned"
 
 static void emit_Conv(ir_node const *const node) {
 	ir_mode *src_mode = get_irn_mode(get_irn_n(node, n_vhdl_Conv_val));
@@ -262,17 +264,26 @@ static void emit_Return(ir_node const *const node) {
 	be_emit_write_line();
 }
 
+static void emit_const_shiftop(ir_node const *const node, const char *op) {
+	be_emit_irprintf("%s((", op);
+	emit_vhdl_node(get_irn_n(node, n_vhdl_Shl_Const_left));
+	// print natural constant for shift_left and shift_right
+	assert(is_vhdl_Const(get_irn_n(node, n_vhdl_Shl_Const_right)));
+	be_emit_irprintf("), ", op);
+	be_emit_irprintf("%d", get_vhdl_immediate_attr_const(get_irn_n(node, n_vhdl_Shl_Const_right))->val);
+	be_emit_irprintf(")");
+}
+
 static void emit_shiftop(ir_node const *const node, const char *op) {
 	be_emit_irprintf("%s((", op);
 	emit_vhdl_node(get_irn_n(node, n_vhdl_Shl_Const_left));
-	be_emit_irprintf(") , (", op);
+	be_emit_irprintf("), (", op);
 	emit_vhdl_node(get_irn_n(node, n_vhdl_Shl_Const_right));
 	be_emit_irprintf("))");
-	//TODO casts
 }
 
 static void emit_Shl_Const(ir_node const *const node) {
-	emit_shiftop(node, "shift_left");
+	emit_const_shiftop(node, "shift_left");
 }
 
 static void emit_Shl_Barrel(ir_node const *const node) {
@@ -280,19 +291,19 @@ static void emit_Shl_Barrel(ir_node const *const node) {
 }
 
 static void emit_Shr_Const(ir_node const *const node) {
-	emit_shiftop(node, "shift_right");
+	emit_const_shiftop(node, "shift_right");
 }
 
 static void emit_Shr_Barrel(ir_node const *const node) {
-	emit_shiftop(node, "barrel_right");
+	emit_shiftop(node, "barrel_unsigned_right");
 }
 
 static void emit_Shrs_Const(ir_node const *const node) {
-	emit_shiftop(node, "shift_right");
+	emit_const_shiftop(node, "shift_right");
 }
 
 static void emit_Shrs_Barrel(ir_node const *const node) {
-	emit_shiftop(node, "barrel_right");
+	emit_shiftop(node, "barrel_signed_right");
 }
 
 static void emit_Sub(ir_node const *const node) {
@@ -376,6 +387,7 @@ static void collect_walk(ir_node *const node, void *env)
 		char block_signal[16];
 		sprintf(block_signal, "EXEC%ld", get_irn_node_nr(node));
 		strncpy(sig->name, block_signal, 16);
+		sig->mode = get_mode_std_logic();
 		plist_insert_back(temp_attrs, sig);
 		cpset_insert(&signals, sig);
 	}
@@ -493,6 +505,22 @@ static void emit_barrel_functions(void) {
 	be_emit_write_line();
 }
 
+static void print_mode_init_string(ir_mode *mode) {
+	if (mode == mode_b) {
+		be_emit_irprintf("boolean := false;\n");
+	} else if (mode == get_mode_std_logic()) {
+		be_emit_irprintf("std_logic := '0';\n");
+	} else {
+		const char *type;
+		if (be_mode_needs_gp_reg(mode)) {
+			type = get_sign_string(mode);
+		} else {
+			type = "std_logic_vector";
+		}
+		be_emit_irprintf("%s(%d downto 0) := (others => '0');\n", type, get_mode_size_bits(mode) - 1);
+	}
+}
+
 static void emit_architecture(ir_graph *irg, char *arch_name)
 {
 	be_emit_irprintf("architecture %s of %s_ent is\n", arch_name, arch_name);
@@ -500,7 +528,8 @@ static void emit_architecture(ir_graph *irg, char *arch_name)
 	cpset_iterator_init(&it, &signals);
 	vhdl_varsig_attr_t *varsig;
 	while((varsig = cpset_iterator_next(&it)) != NULL) {
-		be_emit_irprintf("\tsignal %s : std_logic := '0';\n", varsig->name);
+		be_emit_irprintf("\tsignal %s : ", varsig->name);
+		print_mode_init_string(varsig->mode);
 	}
 
 	emit_barrel_functions();
@@ -508,7 +537,8 @@ static void emit_architecture(ir_graph *irg, char *arch_name)
 	be_emit_irprintf("begin\n\nprocess (CLK)\n");
 	cpset_iterator_init(&it, &variables);
 	while((varsig = cpset_iterator_next(&it)) != NULL) {
-		be_emit_irprintf("\tvariable %s : unsigned(31 downto 0) := (others => '0');\n", varsig->name);
+		be_emit_irprintf("\tvariable %s : ", varsig->name);
+		print_mode_init_string(varsig->mode);
 	}
 	be_emit_irprintf("begin\n\tif rising_edge(CLK) then\n");
 	emit_process_start(irg);
@@ -528,8 +558,8 @@ static void emit_entity(ir_graph *irg, char *arch_name) {
 
 	vhdl_start_attr_t const *start_attr = get_vhdl_start_attr_const(get_irg_start(irg));
 	for (int i = 0; i < start_attr->n_signals; i++) {
-		//TODO use correct data type for input and output
-		be_emit_irprintf("\t\t%s  : in  std_logic_vector(31 downto 0);\n", start_attr->signals[i].name);
+		be_emit_irprintf("\t\t%s  : in  std_logic_vector(%d downto 0);\n", start_attr->signals[i].name,
+		                 get_mode_size_bits(start_attr->signals[i].mode) - 1);
 	}
 
 	be_emit_irprintf("\t\tOUTPUT0 : out std_logic_vector(31 downto 0);\n");

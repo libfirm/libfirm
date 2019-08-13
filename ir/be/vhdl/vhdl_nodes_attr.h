@@ -30,6 +30,7 @@ typedef struct vhdl_immediate_attr_t {
 typedef struct vhdl_varsig_attr_t {
 	vhdl_attr_t attr;
 	char name[16];
+	ir_mode *mode;
 } vhdl_varsig_attr_t;
 
 typedef struct vhdl_start_attr_t {

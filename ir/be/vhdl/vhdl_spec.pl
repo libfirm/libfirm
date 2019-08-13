@@ -20,7 +20,7 @@ my $mode_gp = "get_mode_unsigned_vector(32)"; # TODO
 	vhdl_immediate_attr_t =>
 		"attr->ent = ent;\n" .
 			"\tattr->val = val;",
-	vhdl_varsig_attr_t    => "strncpy(attr->name, name, 16);",
+	vhdl_varsig_attr_t    => "strncpy(attr->name, name, 16);\n\tattr->mode = mode;",
 	vhdl_start_attr_t     => "attr->n_signals = n_signals;\n\tattr->signals = signals;"
 );
 
@@ -43,7 +43,7 @@ my $assignOp = {
 	outs      => [ "res" ],
 	out_reqs  => ["cls-gp"],
 	attr_type => "vhdl_varsig_attr_t",
-	attr      => "char *name"
+	attr      => "char *name, ir_mode *mode"
 };
 
 %nodes = (
@@ -94,7 +94,7 @@ my $assignOp = {
 		outs     => [ "res" ],
 		out_reqs => ["cls-gp"],
 		attr_type => "vhdl_varsig_attr_t",
-		attr      => "char *name"
+		attr      => "char *name, ir_mode *mode"
 	},
 
 	Const       => {

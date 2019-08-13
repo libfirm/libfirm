@@ -17,6 +17,7 @@
 ir_mode *signed_vectors[64];
 ir_mode *unsigned_vectors[64];
 ir_mode *std_logic_vectors[4];
+ir_mode *std_logic;
 
 #define MAX_BITS 64
 
@@ -45,6 +46,9 @@ ir_mode *get_mode_std_logic_vector(unsigned bits) {
 	}
 }
 
+ir_mode *get_mode_std_logic(void) {
+	return std_logic;
+}
 
 void vhdl_init_modes(void)
 {
@@ -60,4 +64,5 @@ void vhdl_init_modes(void)
 	std_logic_vectors[2] = new_non_arithmetic_mode("slv32", 32);
 	std_logic_vectors[3] = new_non_arithmetic_mode("slv64", 64);
 
+	std_logic = new_non_arithmetic_mode("std_logic", 1);
 }
