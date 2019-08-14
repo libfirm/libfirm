@@ -37,8 +37,8 @@ static ir_node *gen_binop(ir_node *node, cons_binop cons) {
 	ir_node *const l    = get_binop_left(node);
 	ir_node *const r    = get_binop_right(node);
 	ir_mode *const mode = get_irn_mode(node);
-	if (!be_mode_needs_gp_reg(mode)) {
-		panic("only integer mode supported");
+	if (!be_mode_needs_gp_reg(mode) && mode != mode_b) {
+		panic("only integer mode or mode_b supported");
 	}
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_node  *const block = be_transform_nodes_block(node);
@@ -52,8 +52,8 @@ static ir_node *gen_binop(ir_node *node, cons_binop cons) {
 static ir_node *gen_unop(ir_node *node, cons_unop cons) {
 	ir_node *const op    = get_irn_n(node, 0);
 	ir_mode *const mode = get_irn_mode(node);
-	if (!be_mode_needs_gp_reg(mode)) {
-		panic("only integer mode supported");
+	if (!be_mode_needs_gp_reg(mode) && mode != mode_b) {
+		panic("only integer mode or mode_b supported");
 	}
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_node  *const block = be_transform_nodes_block(node);
@@ -120,7 +120,21 @@ static ir_node *gen_Jmp(ir_node *const node)
 
 static ir_node *gen_Mul(ir_node *const node)
 {
-	return gen_binop(node, new_bd_vhdl_Mul);
+	ir_node *const block = be_transform_nodes_block(node);
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_node *mul = gen_binop(node, new_bd_vhdl_Mul);
+	ir_mode *mode = get_irn_mode(node);
+	unsigned new_bit_size = get_mode_size_bits(mode) * 2;
+	ir_mode *new_mode;
+	if (mode_is_signed(mode)) {
+		new_mode = get_mode_signed_vector(new_bit_size);
+	} else {
+		new_mode = get_mode_unsigned_vector(new_bit_size);
+	}
+	set_irn_mode(mul, new_mode);
+	ir_node *conv = new_bd_vhdl_Conv(dbgi, block, mul);
+	set_correct_mode(conv, get_irn_mode(node));
+	return conv;
 }
 
 static ir_node *gen_Minus(ir_node *const node)
@@ -132,8 +146,8 @@ static ir_node *gen_Mux(ir_node *const node)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_mode *mode = get_irn_mode(node);
-	if (!be_mode_needs_gp_reg(mode)) {
-		panic("only integer mode supported");
+	if (!be_mode_needs_gp_reg(mode) && mode != mode_b) {
+		panic("only integer mode or mode_b supported");
 	}
 	ir_node *const block = be_transform_nodes_block(node);
 	ir_node *const new_sel = be_transform_node(get_Mux_sel(node));
@@ -241,7 +255,7 @@ static ir_node *gen_Return(ir_node *const node)
 	return new_bd_vhdl_Return(dbgi, block, assign_signal);
 }
 
-static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_binop *const cons_imm, bool left_op_signed)
+static ir_node *gen_right_shift_op(ir_node *const node, cons_binop *const cons, cons_binop *const cons_imm, bool arithmetic)
 {
 	dbg_info *const dbgi  = get_irn_dbg_info(node);
 	ir_mode *mode = get_irn_mode(node);
@@ -255,18 +269,21 @@ static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_b
 	ir_node *new_r = be_transform_node(r);
 
 	ir_mode *r_mode = get_irn_mode(new_r);
-	if (mode_is_signed(r_mode) && is_vhdl_Const(new_r)) {
+	if (mode_is_signed(r_mode) && !is_vhdl_Const(new_r)) {
 		new_r = new_bd_vhdl_Conv(get_irn_dbg_info(new_r), block, new_r);
 		set_irn_mode(new_r, get_mode_unsigned_vector(get_mode_size_bits(r_mode)));
 	}
 	ir_mode *l_mode = get_irn_mode(new_l);
-	if (mode_is_signed(l_mode) && !left_op_signed) {
+	// a logical shift_right expects unsigned operands
+	if (mode_is_signed(l_mode) && !arithmetic) {
 		new_l = new_bd_vhdl_Conv(get_irn_dbg_info(new_l), block, new_l);
 		set_irn_mode(new_l, get_mode_unsigned_vector(get_mode_size_bits(l_mode)));
-	} else if (!mode_is_signed(l_mode) && left_op_signed) {
+	} else if (!mode_is_signed(l_mode) && arithmetic) {
+		// a arithmetic shift_right ("shrs") expects signed operands
 		new_l = new_bd_vhdl_Conv(get_irn_dbg_info(new_l), block, new_l);
 		set_irn_mode(new_l, get_mode_signed_vector(get_mode_size_bits(l_mode)));
 	}
+	l_mode = get_irn_mode(new_l);
 
 	ir_node *new;
 	if (is_vhdl_Const(new_r)) {
@@ -274,23 +291,66 @@ static ir_node *gen_shift_op(ir_node *const node, cons_binop *const cons, cons_b
 	} else {
 		new = cons(dbgi, block, new_l, new_r);
 	}
-	set_correct_mode(new, mode);
+	set_correct_mode(new, l_mode);
+	// cast result back to original mode if needed
+	if (mode_is_signed(l_mode) != mode_is_signed(mode)) {
+		new = new_bd_vhdl_Conv(get_irn_dbg_info(new), block, new);
+		set_correct_mode(new, mode);
+	}
 	return new;
 }
 
 static ir_node *gen_Shl(ir_node *const node)
 {
-	return gen_shift_op(node, new_bd_vhdl_Shl_Barrel, new_bd_vhdl_Shl_Const, false);
+	dbg_info *const dbgi  = get_irn_dbg_info(node);
+	ir_mode *mode = get_irn_mode(node);
+	if (!be_mode_needs_gp_reg(mode)) {
+		panic("only integer mode supported");
+	}
+	ir_node *const block = be_transform_nodes_block(node);
+	ir_node *const l     = get_binop_left(node);
+	ir_node *new_l = be_transform_node(l);
+	ir_node *const r     = get_binop_right(node);
+	ir_node *new_r = be_transform_node(r);
+
+	ir_mode *r_mode = get_irn_mode(new_r);
+
+	if (mode_is_signed(r_mode) && !is_vhdl_Const(new_r)) {
+		new_r = new_bd_vhdl_Conv(get_irn_dbg_info(new_r), block, new_r);
+		set_irn_mode(new_r, get_mode_unsigned_vector(get_mode_size_bits(r_mode)));
+	}
+	//TODO check for signed constants
+
+	ir_node *new;
+	if (is_vhdl_Const(new_r)) {
+		new = new_bd_vhdl_Shl_Const(dbgi, block, new_l, new_r);
+		set_correct_mode(new, mode);
+	} else {
+		ir_mode *l_mode = get_irn_mode(new_l);
+		// barrel_left always expects unsigned operands
+		if (mode_is_signed(l_mode)) {
+			new_l = new_bd_vhdl_Conv(get_irn_dbg_info(new_l), block, new_l);
+			set_irn_mode(new_l, get_mode_unsigned_vector(get_mode_size_bits(l_mode)));
+		}
+		new = new_bd_vhdl_Shl_Barrel(dbgi, block, new_l, new_r);
+		set_irn_mode(new, get_mode_unsigned_vector(get_mode_size_bits(l_mode)));
+		// cast resukt back to original signed if needed
+		if (mode_is_signed(mode)) {
+			new = new_bd_vhdl_Conv(dbgi, block, new);
+			set_correct_mode(new, mode);
+		}
+	}
+	return new;
 }
 
 static ir_node *gen_Shr(ir_node *const node)
 {
-	return gen_shift_op(node, new_bd_vhdl_Shr_Barrel, new_bd_vhdl_Shr_Const, false);
+	return gen_right_shift_op(node, new_bd_vhdl_Shr_Barrel, new_bd_vhdl_Shr_Const, false);
 }
 
 static ir_node *gen_Shrs(ir_node *const node)
 {
-	return gen_shift_op(node, new_bd_vhdl_Shrs_Barrel, new_bd_vhdl_Shrs_Const, true);
+	return gen_right_shift_op(node, new_bd_vhdl_Shrs_Barrel, new_bd_vhdl_Shrs_Const, true);
 }
 
 static ir_node *gen_Start(ir_node *const node)
@@ -406,10 +466,10 @@ static void assign_walker(ir_node *const node, void *env) {
 void vhdl_transform_graph(ir_graph *const irg)
 {
 	vhdl_register_transformers();
-	int before = get_optimize();
-	set_optimize(0);
+	int before = get_opt_cse();
+	set_opt_cse(0);
 	be_transform_graph(irg, NULL);
-	set_optimize(before);
+	set_opt_cse(before);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	be_dump(DUMP_BE, irg, "before-assigns");
 	irg_walk_graph(irg, NULL, assign_walker, NULL);

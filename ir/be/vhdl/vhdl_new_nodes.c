@@ -84,7 +84,7 @@ void vhdl_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 			switch ((vhdl_opcodes)get_vhdl_irn_opcode(n)) {
 				case iro_vhdl_Const: {
 					vhdl_immediate_attr_t const *const imm = get_vhdl_immediate_attr_const(n);
-					fprintf(F, " 0x%04" PRIX32, (uint32_t)imm->val);
+					fprintf(F, " 0x%" PRIX64, imm->val);
 					break;
 				}
 				case iro_vhdl_AssignSig:

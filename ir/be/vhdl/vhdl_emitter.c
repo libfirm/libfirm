@@ -19,6 +19,7 @@
 #include "vhdl_new_nodes_t.h"
 #include "vhdl_modes.h"
 
+#include <inttypes.h>
 #include <stdbool.h>
 
 
@@ -48,6 +49,7 @@ static const char *format_relation(ir_relation rel)
 			return "/=";
 		default:
 			panic("unsupported_relation");
+			//TODO unordered relations? (see t_point_filter.c)
 	}
 }
 
@@ -152,7 +154,10 @@ static void emit_Cond(ir_node const *const node) {
 
 static void emit_Const(ir_node const *const node) {
 	ir_mode *mode = get_irn_mode(node);
-	be_emit_irprintf("to_%s(%d, %d)", get_sign_string(mode), get_vhdl_immediate_attr_const(node)->val, get_mode_size_bits(mode));
+	int64_t val = get_vhdl_immediate_attr_const(node)->val;
+	//TODO: problem: sub(a, const) was optimized to add(a, -const) but mode of const remains unsigned
+	be_emit_irprintf("to_%s(%" PRId64 ", %d)", get_sign_string(mode), val, get_mode_size_bits(mode));
+
 }
 
 static int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
@@ -177,8 +182,9 @@ static void emit_Conv(ir_node const *const node) {
 		be_emit_irprintf(")");
 		return;
 	}
+	bool vhdl_hack = is_downconv(src_mode, dest_mode) && mode_is_signed(src_mode);
 	bool change_sign = false;
-	if (mode_is_signed(src_mode) != mode_is_signed(dest_mode)) {
+	if (mode_is_signed(src_mode) != mode_is_signed(dest_mode) || (vhdl_hack && mode_is_signed(dest_mode))) {
 		be_emit_irprintf("%s(", get_sign_string(dest_mode));
 		change_sign = true;
 	}
@@ -186,7 +192,6 @@ static void emit_Conv(ir_node const *const node) {
 		be_emit_irprintf("resize(", get_sign_string(dest_mode));
 		/* IEEE.numeric_std transplants the sign bit on downconv from a
 		 * signed type.  Avoid this case to maintain C semantics. */
-		bool vhdl_hack = is_downconv(src_mode, dest_mode) && mode_is_signed(src_mode);
 		if (vhdl_hack) {
 			be_emit_irprintf("unsigned(");
 		}
@@ -270,7 +275,7 @@ static void emit_const_shiftop(ir_node const *const node, const char *op) {
 	// print natural constant for shift_left and shift_right
 	assert(is_vhdl_Const(get_irn_n(node, n_vhdl_Shl_Const_right)));
 	be_emit_irprintf("), ", op);
-	be_emit_irprintf("%d", get_vhdl_immediate_attr_const(get_irn_n(node, n_vhdl_Shl_Const_right))->val);
+	be_emit_irprintf("%" PRId64, get_vhdl_immediate_attr_const(get_irn_n(node, n_vhdl_Shl_Const_right))->val);
 	be_emit_irprintf(")");
 }
 

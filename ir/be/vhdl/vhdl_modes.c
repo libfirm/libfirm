@@ -14,20 +14,20 @@
 #include "irmode_t.h"
 #include "vhdl_modes.h"
 
-ir_mode *signed_vectors[64];
-ir_mode *unsigned_vectors[64];
+#define MAX_BITS 128
+
+ir_mode *signed_vectors[MAX_BITS];
+ir_mode *unsigned_vectors[MAX_BITS];
 ir_mode *std_logic_vectors[4];
 ir_mode *std_logic;
 
-#define MAX_BITS 64
-
 ir_mode *get_mode_signed_vector(unsigned bits) {
-	assert(bits < MAX_BITS);
+	assert(bits <= MAX_BITS && bits > 0);
 	return signed_vectors[bits - 1];
 }
 
 ir_mode *get_mode_unsigned_vector(unsigned bits) {
-	assert(bits < MAX_BITS);
+	assert(bits <= MAX_BITS && bits > 0);
 	return unsigned_vectors[bits - 1];
 }
 
@@ -53,7 +53,7 @@ ir_mode *get_mode_std_logic(void) {
 void vhdl_init_modes(void)
 {
 	for (int i = 0; i < MAX_BITS; i++) {
-		char name[4];
+		char name[5];
 		sprintf(name, "V%ds", i + 1);
 		signed_vectors[i] = new_int_mode(name, i + 1, 1, 32);
 		sprintf(name, "V%du", i + 1);
