@@ -926,10 +926,16 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node,
 	}
 	ir_mode *const_mode = get_irn_mode(unroll_info->phi);
 	ir_tarval *tv = get_Const_tarval(node_to_check);
-	if (tarval_cmp(tv,
-		       tarval_div(get_mode_max(const_mode),
-				  new_tarval_from_long(factor, const_mode))) ==
+	if (tarval_cmp(tv, tarval_div(get_mode_max(const_mode),
+				      new_tarval_from_long(factor + 1,
+							   const_mode))) ==
 	    ir_relation_greater) {
+		return false;
+	}
+	if (tarval_cmp(tv, tarval_div(get_mode_min(const_mode),
+				      new_tarval_from_long(factor + 1,
+							   const_mode))) ==
+	    ir_relation_less) {
 		return false;
 	}
 	DB((dbg, LEVEL_4, "Valid incr found %+F\n", node_to_check));
