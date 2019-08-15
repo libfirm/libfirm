@@ -2524,8 +2524,7 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 	ir_node *c_cpy =
 		is_Phi(c) ? c : copy_and_rewire(c, switch_header, &cpy_mem);
 	ir_node *N = info->bound;
-	ir_node *N_cpy =
-		is_Phi(N) ? N : copy_and_rewire(N, switch_header, &cpy_mem);
+	ir_node *N_cpy = N;
 	ir_node *one_const = new_r_Const_long(irg, get_irn_mode(N_cpy), 1);
 	bool less = is_less(info);
 	ir_node *N_minus_i = new_r_Sub(switch_header, N_cpy, info->phi);
@@ -2541,7 +2540,7 @@ static ir_node *create_fixup_switch_header(ir_loop *const loop, ir_graph *irg,
 			  new_r_Const_long(irg, get_irn_mode(c_abs), factor));
 	ir_node *N_minus_i_mod = mod(switch_header, irg, N_minus_i, c_factor);
 	 */
-	ir_node *res = PLUS_MINUS(less, switch_header, N_minus_i, c_one);
+	ir_node *res = new_r_Add(switch_header, N_minus_i, c_one);
 
 	ir_node *prev_jmp = new_r_Jmp(switch_header);
 	ir_node **cmp_blocks = malloc((factor - 1) * sizeof(ir_node *));
