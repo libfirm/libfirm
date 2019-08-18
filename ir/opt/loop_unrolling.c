@@ -894,6 +894,10 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node,
 	    ir_relation_less) {
 		return false;
 	}
+	if (tarval_cmp(tv, new_tarval_from_long(0, const_mode)) ==
+	    ir_relation_equal) {
+		return false;
+	}
 	DB((dbg, LEVEL_4, "Valid incr found %+F\n", node_to_check));
 	unroll_info->incr = node_to_check;
 	return true;
