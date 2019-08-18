@@ -498,7 +498,7 @@ static void walk_graph_aliasing(ir_node *block, void *visited)
 		check_for_store_(node, NULL, visited);
 	}
 }
-
+static bool unknown_call = false;
 static void walk_call_for_aliases(ir_node *call, pset *visited)
 {
 	DB((dbg, LEVEL_4, "Found call: %+F\n", call));
@@ -509,54 +509,7 @@ static void walk_call_for_aliases(ir_node *call, pset *visited)
 		// TODO: Library doing things? Should this be a straight "no unroll"-scenario
 		// TODO: This code is highly dangerous - definitely should be thoroughly tested and reviewed
 		DB((dbg, LEVEL_4, "Unknown call found!\n"));
-		for (int i = 0; i < get_Call_n_params(call); i++) {
-			ir_node *param = get_Call_param(call, i);
-			DB((dbg, LEVEL_4, "Has param %+F of type!\n", param));
-			struct alias_list list = { .addr = NULL,
-						   .next = alias_candidates };
-			if (get_irn_mode(param) == mode_M) {
-				continue;
-			}
-			if (is_Proj(param)) {
-				ir_node *pre_proj = get_Proj_pred(param);
-				if (is_Load(pre_proj)) {
-					list.addr = get_Load_ptr(pre_proj);
-					ir_type *type = get_Load_type(pre_proj);
-					list.type = type;
-					list.size = get_type_size(type);
-					list.node = pre_proj;
-				} else if (is_Proj(pre_proj)) {
-					ir_node *pre_pre_proj =
-						get_Proj_pred(pre_proj);
-					if (is_Call(pre_pre_proj)) {
-						list.addr = get_Call_ptr(
-							pre_pre_proj);
-						ir_type *type = get_Call_type(
-							pre_pre_proj);
-						list.type = type;
-						list.size = get_type_size(type);
-						list.node = pre_proj;
-					}
-				}
-			} else if (is_irn_constlike(param)) {
-				list.addr = param;
-				list.type = get_irn_type_attr(param);
-				list.node = param;
-				list.size = get_type_size(list.type);
-			}
-			if (list.addr) {
-				if (!is_irn_constlike(list.addr)) {
-					unknown_addrs = true;
-				}
-				DB((dbg, LEVEL_4,
-				    "Adding store to potential alias list\n"));
-				struct alias_list *list_ptr =
-					(struct alias_list *)malloc(
-						sizeof(struct alias_list));
-				*list_ptr = list;
-				alias_candidates = list_ptr;
-			}
-		}
+		unknown_call = true;
 		return;
 	}
 	if (pset_find_ptr(visited, callee_graph)) {
@@ -717,6 +670,9 @@ static bool is_valid_base_(ir_node *node, ir_loop *loop)
 			DB((dbg, LEVEL_4,
 			    "Load points further to %+F. Investigating further\n",
 			    pre_load));
+			if (unknown_call) {
+				return false;
+			}
 			if (!is_valid_base_(pre_load, loop)) {
 				return false;
 			}
@@ -1093,6 +1049,7 @@ determine_lin_unroll_info(linear_unroll_info *unroll_info, ir_loop *loop,
 	unroll_info->i = NULL;
 	unroll_info->loop = loop;
 	unknown_addrs = false;
+	unknown_call = false;
 	DB((dbg, LEVEL_4, "\tDetermining info for loop %+F\n", loop));
 	if (no_of_block_in_loop(loop) <= 1) { // Empty loop
 		return duff_unrollable_none;
