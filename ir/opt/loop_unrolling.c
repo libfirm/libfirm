@@ -3177,7 +3177,7 @@ static void create_condition(ir_node *new_block, ir_node *header, ir_loop *loop,
 		ir_node *under =
 			new_r_And(new_block, c_greater_zero, cmp_under);
 		ir_node *over = new_r_And(new_block, c_less_zero, cmp_over);
-		cmp = new_r_Not(new_block, new_r_Or(new_block, under, over));
+		cmp = new_r_Not(new_block, less ? under : over);
 	} else {
 		ir_node *cmp_under =
 			new_r_Cmp(new_block, N_cpy, c_times_factor, rel);
