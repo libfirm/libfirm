@@ -3162,28 +3162,27 @@ static void create_condition(ir_node *new_block, ir_node *header, ir_loop *loop,
 
 	ir_node *cmp;
 
-	if (mode_is_signed(c_mode)) {
-		ir_node *c_less_zero =
-			new_r_Cmp(new_block, c_cpy,
-				  new_r_Const_long(irg, c_mode, 0),
-				  ir_relation_less);
-		ir_node *c_plus_max = new_r_Sub(new_block, c_times_factor, max);
-		ir_node *c_plus_min = new_r_Sub(new_block, c_times_factor, min);
-		ir_node *c_greater_zero = new_r_Not(new_block, c_less_zero);
-		ir_node *cmp_over = new_r_Cmp(new_block, N_cpy, c_plus_max,
-					      ir_relation_greater);
-		ir_node *cmp_under = new_r_Cmp(new_block, N_cpy, c_plus_min,
-					       ir_relation_less);
-		ir_node *under =
-			new_r_And(new_block, c_greater_zero, cmp_under);
-		ir_node *over = new_r_And(new_block, c_less_zero, cmp_over);
-		cmp = new_r_Not(new_block, less ? under : over);
-	} else {
-		ir_node *cmp_under =
-			new_r_Cmp(new_block, N_cpy, c_times_factor, rel);
-		cmp = less ? new_r_Not(new_block, cmp_under) :
-			     new_r_Const(irg, tarval_b_true);
-	}
+	ir_node *overflowable_signed =
+		new_r_Cmp(new_block, c_cpy, new_r_Const_long(irg, c_mode, 0),
+			  ir_relation_less);
+	ir_node *overflowable_unsigned = new_r_Cmp(
+		new_block, c_cpy,
+		new_r_Const_long(irg, c_mode,
+				 1u << (get_mode_size_bits(c_mode) - 1)),
+		ir_relation_greater_equal);
+	ir_node *c_less_zero = mode_is_signed(c_mode) ? overflowable_signed :
+							overflowable_unsigned;
+	ir_node *c_plus_max = new_r_Sub(new_block, c_times_factor, max);
+	ir_node *c_plus_min = new_r_Sub(new_block, c_times_factor, min);
+	ir_node *c_greater_zero = new_r_Not(new_block, c_less_zero);
+	ir_node *cmp_over =
+		new_r_Cmp(new_block, N_cpy, c_plus_max, ir_relation_greater);
+	ir_node *cmp_under =
+		new_r_Cmp(new_block, N_cpy, c_plus_min, ir_relation_less);
+	ir_node *under = new_r_And(new_block, c_greater_zero, cmp_under);
+	ir_node *over = new_r_And(new_block, c_less_zero, cmp_over);
+	cmp = new_r_Not(new_block, less ? under : over);
+
 	ir_node *cond = new_r_Cond(new_block, cmp);
 	ir_node *true_proj = new_r_Proj(cond, mode_X, pn_Cond_true);
 	ir_node *false_proj = new_r_Proj(cond, mode_X, pn_Cond_false);
