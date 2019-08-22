@@ -3434,9 +3434,39 @@ static int load_duff_factor()
 	}
 	return atoi(factor);
 }
-#define DUFF_DEFAULT_FACTOR 4
-#define DUFF_FACTOR                                                            \
-	load_duff_factor() ? load_duff_factor() : DUFF_DEFAULT_FACTOR
+static unsigned get_next_power_of_two(unsigned value)
+{ // https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+	value--;
+	value |= value >> 1;
+	value |= value >> 2;
+	value |= value >> 4;
+	value |= value >> 8;
+	value |= value >> 16;
+	value++;
+	return value;
+}
+
+static unsigned get_closer(unsigned a, unsigned b, long target)
+{
+	long da = labs(target - a);
+	long db = labs(target - b);
+	return da > db ? b : a;
+}
+
+static unsigned determine_duff_factor(long max_size, ir_loop *loop)
+{
+	size_t loop_size = count_nodes(loop);
+	if (loop_size > 1l << 31u) { // Loop is way to large anyways
+		return 0;
+	}
+	unsigned unroll_factor_no_p_2 = max_size / loop_size;
+	unsigned candidate_1 = get_next_power_of_two(unroll_factor_no_p_2);
+	unsigned candidate_2 = candidate_1 / 2;
+	unsigned result_size = get_closer(candidate_1 * loop_size,
+					  candidate_2 * loop_size, max_size);
+	return result_size / loop_size;
+}
+
 static void duplicate_innermost_loops(ir_loop *const loop,
 				      unsigned const factor,
 				      unsigned const maxsize,
@@ -3487,11 +3517,23 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 		    get_loop_element(loop, i)));
 	}
 	DB((dbg, LEVEL_3, "-------------\n", loop));
+
+	unsigned duff_factor = determine_duff_factor(maxsize * 2, loop);
+	DEBUG_ONLY(unsigned loadDuffFactor = load_duff_factor();
+		   if (loadDuffFactor > 1) duff_factor = loadDuffFactor;)
+	DB((dbg, LEVEL_2, "Duff factor: %u\n", duff_factor));
+
+	if (duff_factor < 2) {
+		DB((dbg, LEVEL_2, "Duff factor < 2: Cannot unroll\n",
+		    duff_factor));
+		return;
+	}
 	duff_unrollability unrollability =
-		determine_lin_unroll_info(&info, curr_loop, DUFF_FACTOR);
+		determine_lin_unroll_info(&info, curr_loop, duff_factor);
+
 	if (unrollability != duff_unrollable_none) {
 		DB((dbg, LEVEL_2, "DUFF: Can unroll! (loop: %+F)\n", loop));
-		unroll_loop_duff(curr_loop, DUFF_FACTOR, &info, unrollability);
+		unroll_loop_duff(curr_loop, duff_factor, &info, unrollability);
 	} else {
 		DB((dbg, LEVEL_2, "DUFF: Cannot unroll! (loop: %+F)\n", loop));
 	}
