@@ -64,6 +64,7 @@ void vhdl_be_begin(const char *cup_name)
 	/* First: initialize all birgs */
 	size_t          num_birgs = 0;
 	/* we might need 1 birg more for instrumentation constructor */
+	//TODO: Allocating too many birgs as only birgs for special instructions are needed
 	be_irg_t *const birgs     = OALLOCN(&obst, be_irg_t, get_irp_n_irgs()+1);
 	foreach_irp_irg(i, irg) {
 		ir_entity *entity = get_irg_entity(irg);

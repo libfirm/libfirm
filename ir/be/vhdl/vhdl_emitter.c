@@ -7,7 +7,6 @@
 
 #include "beemithlp.h"
 #include "beemitter.h"
-#include "cpset.h"
 #include "gen_vhdl_emitter.h"
 #include "gen_vhdl_new_nodes.h"
 #include "irgwalk.h"
@@ -23,8 +22,8 @@
 #include <stdbool.h>
 
 
-static cpset_t variables;
-static cpset_t signals;
+static plist_t *variables;
+static plist_t *signals;
 
 static plist_t *temp_attrs;
 
@@ -371,21 +370,44 @@ static void vhdl_walk_emit_node(ir_node *node, void *env) {
 	}
 }
 
+static void plist_add_sorted_varsig_attr(plist_t *list, vhdl_varsig_attr_t *new) {
+	plist_element_t* current;
+
+	if (plist_count(list) == 0) {
+		plist_insert_front(list, new);
+		return;
+	}
+
+	current = plist_first(list);
+
+	do {
+		vhdl_varsig_attr_t *cur_attr = plist_element_get_value(current);
+		int cmp = strcmp(cur_attr->name, new->name);
+		if (cmp == 0)
+			return;
+		else if (cmp > 0) {
+			plist_insert_before(list, current, new);
+			return;
+		}
+	} while (plist_element_has_next(current) && (current = plist_element_get_next(current)));
+	plist_insert_after(list, current, new);
+}
+
 static void collect_walk(ir_node *const node, void *env)
 {
 	(void)env;
 	if (is_vhdl_AssignVar(node)) {
-		cpset_insert(&variables, get_vhdl_varsig_attr(node));
+		plist_add_sorted_varsig_attr(variables, get_vhdl_varsig_attr(node));
 	}
 	if (is_vhdl_AssignSig(node)) {
 		vhdl_varsig_attr_t *varsig = get_vhdl_varsig_attr(node);
 		if (strcmp("OUTPUT0", varsig->name) != 0) {
 			// do not include entity output signal in process signals
-			cpset_insert(&signals, varsig);
+			plist_add_sorted_varsig_attr(signals, varsig);
 		}
 	}
 	if (is_vhdl_Mux(node)) {
-		cpset_insert(&variables, get_vhdl_varsig_attr(node));
+		plist_add_sorted_varsig_attr(variables, get_vhdl_varsig_attr(node));
 	}
 	if (is_Block(node)) {
 		vhdl_varsig_attr_t *sig = malloc(sizeof(vhdl_varsig_attr_t));
@@ -394,7 +416,7 @@ static void collect_walk(ir_node *const node, void *env)
 		strncpy(sig->name, block_signal, 16);
 		sig->mode = get_mode_std_logic();
 		plist_insert_back(temp_attrs, sig);
-		cpset_insert(&signals, sig);
+		plist_add_sorted_varsig_attr(signals, sig);
 	}
 	use_barrel_left = use_barrel_left || is_vhdl_Shl_Barrel(node);
 	use_barrel_right = use_barrel_right || is_vhdl_Shr_Barrel(node);
@@ -529,10 +551,8 @@ static void print_mode_init_string(ir_mode *mode) {
 static void emit_architecture(ir_graph *irg, char *arch_name)
 {
 	be_emit_irprintf("architecture %s of %s_ent is\n", arch_name, arch_name);
-	cpset_iterator_t it;
-	cpset_iterator_init(&it, &signals);
-	vhdl_varsig_attr_t *varsig;
-	while((varsig = cpset_iterator_next(&it)) != NULL) {
+	foreach_plist(signals, el) {
+		vhdl_varsig_attr_t *varsig = plist_element_get_value(el);
 		be_emit_irprintf("\tsignal %s : ", varsig->name);
 		print_mode_init_string(varsig->mode);
 	}
@@ -540,8 +560,8 @@ static void emit_architecture(ir_graph *irg, char *arch_name)
 	emit_barrel_functions();
 
 	be_emit_irprintf("begin\n\nprocess (CLK)\n");
-	cpset_iterator_init(&it, &variables);
-	while((varsig = cpset_iterator_next(&it)) != NULL) {
+	foreach_plist(variables, el) {
+		vhdl_varsig_attr_t *varsig = plist_element_get_value(el);
 		be_emit_irprintf("\tvariable %s : ", varsig->name);
 		print_mode_init_string(varsig->mode);
 	}
@@ -575,19 +595,15 @@ static void emit_entity(ir_graph *irg, char *arch_name) {
 	be_emit_write_line();
 }
 
-static unsigned hash_varsig_attr(void *data) {
-	return hash_data(data, sizeof(vhdl_varsig_attr_t));
-}
-
 void vhdl_emit_function(ir_graph *const irg)
 {
 	use_barrel_left = false;
 	use_barrel_right = false;
 	use_barrel_right_signed = false;
 	vhdl_register_emitters();
-	cpset_init(&variables, (cpset_hash_function) hash_varsig_attr, (cpset_cmp_function) vhdl_varsig_attrs_equal_);
-	cpset_init(&signals, (cpset_hash_function) hash_varsig_attr, (cpset_cmp_function) vhdl_varsig_attrs_equal_);
 	temp_attrs = plist_new();
+	variables = plist_new();
+	signals = plist_new();
 
 	char name[strlen(get_entity_name(get_irg_entity(irg)))];
 	get_arch_name(irg, name);
@@ -600,10 +616,10 @@ void vhdl_emit_function(ir_graph *const irg)
 	irg_walk_blkwise_graph(irg, NULL, vhdl_walk_emit_node, NULL);
 
 	emit_architecture_end(name);
-	cpset_destroy(&variables);
-	cpset_destroy(&signals);
 	foreach_plist(temp_attrs, element) {
 		free(element->data);
 	}
 	plist_free(temp_attrs);
+	plist_free(signals);
+	plist_free(variables);
 }
