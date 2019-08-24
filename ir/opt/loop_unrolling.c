@@ -3147,15 +3147,11 @@ static void create_condition(ir_node *new_block, ir_node *header, ir_loop *loop,
 	ir_mode *c_mode = get_irn_mode(c_cpy);
 	ir_node *factor_node = new_r_Const_long(irg, c_mode, factor);
 	bool less = is_less(info);
-	ir_node *factor_minus_one =
-		MINUS_PLUS(less, new_block, factor_node,
-			   new_r_Const_long(irg, c_mode, 1l));
+	ir_node *factor_minus_one = new_r_Sub(
+		new_block, factor_node, new_r_Const_long(irg, c_mode, 1l));
 	ir_node *c_times_factor = new_r_Mul(new_block, c_cpy, factor_minus_one);
 
 	ir_node *N_cpy = copy_and_rewire(info->bound, new_block, &cpy_mem);
-	ir_relation rel = get_clean_rel(info);
-
-	ir_node *new_N = new_r_Sub(new_block, N_cpy, c_times_factor);
 
 	ir_node *min = new_r_Const(irg, get_mode_min(c_mode));
 	ir_node *max = new_r_Const(irg, get_mode_max(c_mode));
@@ -3340,7 +3336,15 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	unrolled_headers = NULL;
 	unrolled_nodes = NULL;
 	ir_graph *irg = get_irn_irg(header);
-	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_BADS);
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-begin-pre-fix"));
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	confirm_irg_properties(irg,
+			       IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
+				       IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
+					   IR_GRAPH_PROPERTY_NO_BADS);
+	DEBUG_ONLY(DUMP_GRAPH(irg, "duff-begin"));
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	ir_node *switch_header = NULL;
 	//unrollability &= ~duff_unrollable_switch_fixup;
 	if (unrollability & duff_unrollable_switch_fixup) {
