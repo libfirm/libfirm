@@ -607,16 +607,16 @@ static void free_stack(struct irn_stack **head)
 	*head = NULL;
 }
 
-static struct irn_stack *visited_base;
+static pset *visited_base_set;
 
 static bool is_valid_base_(ir_node *node, ir_loop *loop)
 {
 	DB((dbg, LEVEL_4, "Checking if %+F is a valid base\n", node));
 	// Const
-	if (is_in_stack(node, visited_base)) {
+	if (pset_find_ptr(visited_base_set, node)) {
 		return false;
 	}
-	add_to_stack(node, &visited_base);
+	pset_insert_ptr(visited_base_set, node);
 	if (is_irn_constlike(node)) {
 		DB((dbg, LEVEL_4, "Node is const. Valid base.\n"));
 		return true;
@@ -670,9 +670,6 @@ static bool is_valid_base_(ir_node *node, ir_loop *loop)
 			DB((dbg, LEVEL_4,
 			    "Load points further to %+F. Investigating further\n",
 			    pre_load));
-			if (unknown_call) {
-				return false;
-			}
 			if (!is_valid_base_(pre_load, loop)) {
 				return false;
 			}
@@ -736,9 +733,9 @@ static bool is_valid_base_(ir_node *node, ir_loop *loop)
 
 static bool is_valid_base(ir_node *node, ir_loop *loop)
 {
-	visited_base = NULL;
+	visited_base_set = pset_new_ptr(1024);
 	bool ret = is_valid_base_(node, loop);
-	free_stack(&visited_base);
+	pset_break(visited_base_set);
 	return ret;
 }
 
@@ -753,12 +750,10 @@ static ir_node *climb_single_phi(ir_node *phi)
 
 static void phi_cycle_dfs(ir_node *curr, ir_node *searched, ir_loop *loop,
 			  bool *foundCycle, bool *valid, ir_node **outside,
-			  struct irn_stack **stack_head)
+			  pset *set)
 {
 	assert(is_Phi(curr));
-	struct irn_stack stack_el = { .next = *stack_head, .el = curr };
-	*stack_head = (struct irn_stack *)malloc(sizeof(struct irn_stack));
-	**stack_head = stack_el;
+	pset_insert_ptr(set, curr);
 	unsigned n = get_Phi_n_preds(curr);
 	DB((dbg, LEVEL_5, "Querying %+F for phi cycle check\n", curr));
 	if (n == 0) {
@@ -785,13 +780,13 @@ static void phi_cycle_dfs(ir_node *curr, ir_node *searched, ir_loop *loop,
 			}
 			continue;
 		}
-		if (is_in_stack(w, *stack_head)) {
+		if (pset_find_ptr(set, w)) {
 			DB((dbg, LEVEL_5, "\t\tAlready visited %+F. Skipping\n",
 			    w));
 			return;
 		}
 		phi_cycle_dfs(w, searched, loop, foundCycle, valid, outside,
-			      stack_head);
+			      set);
 	}
 	if (*outside != curr && !block_is_inside_loop(get_block(curr), loop)) {
 		DB((dbg, LEVEL_5,
@@ -805,18 +800,13 @@ static ir_node *check_cycle_and_find_exit(ir_node *initial_phi,
 	if (!is_Phi(initial_phi)) {
 		return initial_phi;
 	}
-	struct irn_stack *stack = NULL;
+	pset *set = pset_new_ptr(2048);
 	bool valid = true;
 	bool foundCycle = false;
 	ir_node *outside = NULL;
 	phi_cycle_dfs(initial_phi, searched, loop, &foundCycle, &valid,
-		      &outside, &stack);
-	struct irn_stack *curr = stack;
-	while (curr) {
-		struct irn_stack *clear = curr;
-		curr = curr->next;
-		free(clear);
-	}
+		      &outside, set);
+	pset_break(set);
 	if (outside && valid && foundCycle)
 		return outside;
 	return NULL;
