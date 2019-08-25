@@ -3393,12 +3393,12 @@ static void unroll_loop_duff(ir_loop *const loop, unsigned factor,
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
-static void unroll_loop(ir_loop *const loop, unsigned factor)
+static bool unroll_loop(ir_loop *const loop, unsigned factor)
 {
 	DB((dbg, LEVEL_3, "\tTrying to unroll %N\n", loop));
 	ir_node *const header = get_loop_header(loop);
 	if (header == NULL)
-		return;
+		return false;
 	DB((dbg, LEVEL_3, "\tfound loop header %N\n", header));
 
 	bool fully_unroll = false;
@@ -3407,7 +3407,7 @@ static void unroll_loop(ir_loop *const loop, unsigned factor)
 		DB((dbg, LEVEL_3,
 		    "\tCan't unroll %+F, factor is %u, fully unroll: %u\n",
 		    loop, factor, fully_unroll));
-		return;
+		return false;
 	}
 	DB((dbg, LEVEL_2, "unroll loop %+F\n", loop));
 	DB((dbg, LEVEL_3, "\tuse %d as unroll factor\n", factor));
@@ -3417,6 +3417,7 @@ static void unroll_loop(ir_loop *const loop, unsigned factor)
 	if (fully_unroll) {
 		rewire_fully_unrolled(loop, header, factor);
 	}
+	return true;
 }
 
 static size_t count_nodes(ir_loop *const loop)
@@ -3481,7 +3482,7 @@ static unsigned determine_duff_factor(long max_size, ir_loop *loop)
 
 static void duplicate_innermost_loops(ir_loop *const loop,
 				      unsigned const factor,
-				      unsigned const maxsize,
+				      unsigned const maxsize, ir_graph *irg,
 				      bool const outermost)
 {
 	bool innermost = true;
@@ -3490,7 +3491,7 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 		loop_element const element = get_loop_element(loop, i);
 		if (*element.kind == k_ir_loop) {
 			duplicate_innermost_loops(element.son, factor, maxsize,
-						  false);
+						  irg, false);
 			innermost = false;
 		}
 	}
@@ -3498,16 +3499,19 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 		DB((dbg, LEVEL_2, "DUFF: %+F not innermost\n", loop));
 		return;
 	}
-	DEBUG_ONLY(goto duff;)
+
 	if (!outermost) {
 		unsigned const actual_factor =
 			determine_unroll_factor(loop, factor, maxsize);
+		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+		restore_properties(irg);
+		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 		if (actual_factor > 0) {
-			unroll_loop(loop, actual_factor);
-			return;
+			if (unroll_loop(loop, actual_factor)) {
+				return;
+			}
 		}
 	}
-	DEBUG_ONLY(duff : DB((dbg, LEVEL_2, "Skipping normal unroll\n"));)
 	ir_node *header = get_loop_header(loop);
 	if (!header) {
 		DB((dbg, LEVEL_2,
@@ -3529,8 +3533,7 @@ static void duplicate_innermost_loops(ir_loop *const loop,
 		    get_loop_element(loop, i)));
 	}
 	DB((dbg, LEVEL_3, "-------------\n", loop));
-
-	unsigned duff_factor = determine_duff_factor(maxsize * 2, loop);
+	unsigned duff_factor = determine_duff_factor(maxsize, loop);
 	DEBUG_ONLY(unsigned loadDuffFactor = load_duff_factor();
 		   if (loadDuffFactor > 1) duff_factor = loadDuffFactor;)
 	DB((dbg, LEVEL_2, "Duff factor: %u\n", duff_factor));
@@ -3559,6 +3562,7 @@ void unroll_loops(ir_graph *const irg, unsigned factor, unsigned maxsize)
 	FIRM_DBG_REGISTER(dbg, "firm.opt.loop-unrolling");
 	n_loops_unrolled = 0;
 	assure_lcssa(irg);
+	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 	assure_irg_properties(irg,
 			      IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO |
 				      IR_GRAPH_PROPERTY_CONSISTENT_OUTS |
@@ -3566,7 +3570,8 @@ void unroll_loops(ir_graph *const irg, unsigned factor, unsigned maxsize)
 				      IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	DEBUG_ONLY(DUMP_GRAPH(irg, "lcssa"));
-	duplicate_innermost_loops(get_irg_loop(irg), factor, maxsize, true);
+	duplicate_innermost_loops(get_irg_loop(irg), factor, maxsize, irg,
+				  true);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 	DB((dbg, LEVEL_1, "%+F: %d loops unrolled\n", irg, n_loops_unrolled));
