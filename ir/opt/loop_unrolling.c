@@ -508,8 +508,26 @@ static void walk_call_for_aliases(ir_node *call, pset *visited)
 	if (!callee_graph) {
 		// TODO: Library doing things? Should this be a straight "no unroll"-scenario
 		// TODO: This code is highly dangerous - definitely should be thoroughly tested and reviewed
-		DB((dbg, LEVEL_4, "Unknown call found!\n"));
-		unknown_call = true;
+		for (int i = 0; i < get_Call_n_params(call); i++) {
+			ir_node *param = get_Call_param(call, i);
+			if (!is_Member(param)) {
+				continue;
+			}
+			ir_type *param_type =
+				get_entity_type(get_Member_entity(param));
+			struct alias_list new_node = {
+				.addr = get_Member_ptr(param),
+				.node = param,
+				.size = get_type_size(param_type),
+				.type = param_type,
+				.next = alias_candidates
+			};
+			struct alias_list *new_head =
+				(struct alias_list *)malloc(
+					sizeof(struct alias_list));
+			*new_head = new_node;
+			alias_candidates = new_head;
+		}
 		return;
 	}
 	if (pset_find_ptr(visited, callee_graph)) {
