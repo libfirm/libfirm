@@ -909,14 +909,17 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node,
 		DB((dbg, LEVEL_1, "Mul is unsupported\n"));
 		return false;
 	}
-	if (unroll_info->op == SUB) {
-		unroll_info->op = ADD;
-		node_to_check =
-			new_r_Minus(get_block(node_to_check), node_to_check);
-	}
 	if (!is_Const(node_to_check)) {
 		return false;
 	}
+	if (unroll_info->op == SUB) {
+		unroll_info->op = ADD;
+		node_to_check = new_r_Const(
+			get_irn_irg(node_to_check),
+			tarval_neg(get_Const_tarval(node_to_check)));
+		DB((dbg, LEVEL_4, "Inverting SUB c to %+F\n", node_to_check));
+	}
+
 	ir_mode *const_mode = get_irn_mode(unroll_info->phi);
 	ir_tarval *tv = get_Const_tarval(node_to_check);
 
