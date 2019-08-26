@@ -830,6 +830,30 @@ static ir_node *check_cycle_and_find_exit(ir_node *initial_phi,
 	return NULL;
 }
 
+static bool out_of_range(ir_tarval *tv, ir_mode *mode, unsigned factor)
+{
+	bool too_large =
+		tarval_cmp(tv, tarval_div(get_mode_max(mode),
+					  new_tarval_from_long(factor + 1,
+							       mode))) ==
+		ir_relation_greater;
+
+	bool too_small =
+		tarval_cmp(tv, tarval_div(get_mode_min(mode),
+					  new_tarval_from_long(factor + 1,
+							       mode))) ==
+		ir_relation_less;
+	return too_large || too_small;
+}
+
+static bool is_less(linear_unroll_info *info)
+{
+	bool less = info->rel == ir_relation_less ||
+		    info->rel == ir_relation_less_equal;
+	bool inverted = info->phi == get_Cmp_right(info->cmp);
+	return less ^ inverted;
+}
+
 static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node,
 			  unsigned factor)
 {
@@ -885,25 +909,23 @@ static bool is_valid_incr(linear_unroll_info *unroll_info, ir_node *node,
 		DB((dbg, LEVEL_1, "Mul is unsupported\n"));
 		return false;
 	}
+	if (unroll_info->op == SUB) {
+		unroll_info->op = ADD;
+		node_to_check =
+			new_r_Minus(get_block(node_to_check), node_to_check);
+	}
 	if (!is_Const(node_to_check)) {
 		return false;
 	}
 	ir_mode *const_mode = get_irn_mode(unroll_info->phi);
 	ir_tarval *tv = get_Const_tarval(node_to_check);
-	if (tarval_cmp(tv, tarval_div(get_mode_max(const_mode),
-				      new_tarval_from_long(factor + 1,
-							   const_mode))) ==
-	    ir_relation_greater) {
-		return false;
-	}
-	if (tarval_cmp(tv, tarval_div(get_mode_min(const_mode),
-				      new_tarval_from_long(factor + 1,
-							   const_mode))) ==
-	    ir_relation_less) {
-		return false;
-	}
+
 	if (tarval_cmp(tv, new_tarval_from_long(0, const_mode)) ==
 	    ir_relation_equal) {
+		return false;
+	}
+
+	if (out_of_range(tv, const_mode, factor)) {
 		return false;
 	}
 	DB((dbg, LEVEL_4, "Valid incr found %+F\n", node_to_check));
@@ -1186,7 +1208,6 @@ static unsigned find_suitable_factor(ir_node *const header, unsigned max,
 	unsigned const DONT_UNROLL = 0;
 	unsigned const n_outs = get_irn_n_outs(header);
 	unsigned factor = 1;
-	return 0;
 	for (unsigned i = 0; i < n_outs; ++i) {
 		ir_node *const node = get_irn_out(header, i);
 		assert(!is_Block(node));
@@ -1993,13 +2014,6 @@ static ir_node *copy_and_rewire(ir_node *node, ir_node *target_block,
 	*init_mem = recursive_rewire_in_loop(node, target_block, *init_mem,
 					     *init_mem);
 	return cpy;
-}
-static bool is_less(linear_unroll_info *info)
-{
-	bool less = info->rel == ir_relation_less ||
-		    info->rel == ir_relation_less_equal;
-	bool inverted = info->phi == get_Cmp_right(info->cmp);
-	return less ^ inverted;
 }
 
 static void update_header_condition(linear_unroll_info *info, unsigned factor)
