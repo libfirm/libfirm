@@ -578,7 +578,6 @@ static void emit_architecture_end(char *arch_name) {
 
 static void emit_entity(ir_graph *irg, char *arch_name) {
 	be_emit_irprintf("library IEEE;\nuse IEEE.NUMERIC_STD.ALL;\nuse IEEE.STD_LOGIC_1164.ALL;\n\nentity %s_ent is\n\tport(\n", arch_name);
-	be_emit_irprintf("\t\tCONTROL : in  std_logic_vector(7 downto 0);\n");
 	be_emit_irprintf("\t\tCLK     : in  std_logic;\n");
 
 	vhdl_start_attr_t const *start_attr = get_vhdl_start_attr_const(get_irg_start(irg));

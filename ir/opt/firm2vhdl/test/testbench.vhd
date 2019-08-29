@@ -9,16 +9,16 @@ entity testbench is
 end;
 
 architecture testbench of testbench is
-      component test_atom is
+      component test_atom_ent is
         port(
-          control : in  std_logic_vector(7 downto 0);
           clk     : in  std_logic;
-          input0  : in  std_logic_vector(31 downto 0);
-          input1  : in  std_logic_vector(31 downto 0);
+          param0  : in  std_logic_vector(7 downto 0);
+          param1  : in  std_logic_vector(31 downto 0);
+          param2  : in  std_logic_vector(31 downto 0);
           output0 : out std_logic_vector(31 downto 0);
           start   : in  std_logic;
           ready   : out std_logic);
-      end component test_atom;
+      end component test_atom_ent;
 
       signal a_clk: std_logic := '0';
       signal a_control: std_logic_vector(7 downto 0) := (others=>'0');
@@ -28,7 +28,7 @@ architecture testbench of testbench is
       signal a_start: std_logic := '0';
       signal a_ready: std_logic := '0';
 begin
-  testee: test_atom port map(a_control, a_clk, a_input0, a_input1, a_output0, a_start, a_ready);
+  testee: test_atom_ent port map(a_clk, a_control, a_input0, a_input1, a_output0, a_start, a_ready);
 
   process
   variable iline,oline : line;

@@ -360,7 +360,6 @@ static ir_node *gen_Start(ir_node *const node)
 	ir_type *method_type = get_entity_type(get_irg_entity(get_irn_irg(node)));
 	int n_params = get_method_n_params(method_type);
 	vhdl_varsig_attr_t *signals = malloc(sizeof(vhdl_varsig_attr_t)*n_params);
-	// TODO free later
 
 	ir_node *start = new_bd_vhdl_Start(dbgi, block, n_params + 1, n_params, signals);
 	arch_set_irn_register_req_out(start, 0, arch_memory_req);

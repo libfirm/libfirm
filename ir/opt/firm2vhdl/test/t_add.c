@@ -1,6 +1,6 @@
 #include "testcase.h"
 
-uint32_t __attribute__((special_instruction)) testvhdl(uint8_t control, uint32_t input0, uint32_t input1)
+uint32_t test_atom(uint8_t control, uint32_t input0, uint32_t input1)
 {
   return input0 - 2;
 }
@@ -14,7 +14,3 @@ pattern patterns[] = {
 };
 
 int npatterns = sizeof(patterns)/sizeof(patterns[0]);
-
-int main() {
-    return testvhdl(0, 3, 4);
-}

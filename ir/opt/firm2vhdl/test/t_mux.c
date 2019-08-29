@@ -1,14 +1,13 @@
 #include "testcase.h"
 
-int32_t __attribute__((special_instruction)) test_atom(uint8_t control, int32_t input0, uint32_t input1)
+uint32_t test_atom(uint8_t control, uint32_t input0, uint32_t input1)
 {
-//  uint32_t r;
-  return input0 < 3 ? 42 : -input0;
-/*  if (control)
-    r = 1;
+  uint32_t r;
+  if (control)
+    r = input0;
   else
-    r = 0;
-  return r;*/
+    r = input1;
+  return r;
 }
 
 pattern patterns[] = {
