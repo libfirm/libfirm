@@ -22,7 +22,6 @@ int vhdl_attrs_equal(ir_node const *a, ir_node const *b);
 int vhdl_cmp_attrs_equal(ir_node const *a, ir_node const *b);
 int vhdl_immediate_attrs_equal(ir_node const *a, ir_node const *b);
 int vhdl_varsig_attrs_equal(ir_node const *a, ir_node const *b);
-int vhdl_varsig_attrs_equal_(vhdl_varsig_attr_t const *a, vhdl_varsig_attr_t const *b);
 int vhdl_start_attrs_equal(ir_node const *a, ir_node const *b);
 
 #endif

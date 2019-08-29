@@ -4,7 +4,7 @@
  * @author  Daniel Biester, Johannes Bucher
  *
  * Define signed and unsigned integer modes w/ sizes at bit
- * granularity to allow efficient hardware synthetisation.
+ * granularity to allow efficient hardware synthesis.
  *
  */
 
@@ -21,17 +21,20 @@ ir_mode *unsigned_vectors[MAX_BITS];
 ir_mode *std_logic_vectors[4];
 ir_mode *std_logic;
 
-ir_mode *get_mode_signed_vector(unsigned bits) {
+ir_mode *get_mode_signed_vector(unsigned bits)
+{
 	assert(bits <= MAX_BITS && bits > 0);
 	return signed_vectors[bits - 1];
 }
 
-ir_mode *get_mode_unsigned_vector(unsigned bits) {
+ir_mode *get_mode_unsigned_vector(unsigned bits)
+{
 	assert(bits <= MAX_BITS && bits > 0);
 	return unsigned_vectors[bits - 1];
 }
 
-ir_mode *get_mode_std_logic_vector(unsigned bits) {
+ir_mode *get_mode_std_logic_vector(unsigned bits)
+{
 	switch (bits) {
 		case 8:
 			return std_logic_vectors[0];
@@ -46,7 +49,8 @@ ir_mode *get_mode_std_logic_vector(unsigned bits) {
 	}
 }
 
-ir_mode *get_mode_std_logic(void) {
+ir_mode *get_mode_std_logic(void)
+{
 	return std_logic;
 }
 

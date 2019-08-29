@@ -20,7 +20,7 @@
 #include "vhdl_bearch_t.h"
 
 static struct obstack obst;
-static be_main_env_t  env;
+static be_main_env_t env;
 
 /**
  * Prepare a backend graph for code generation and initialize its irg
@@ -62,10 +62,10 @@ void vhdl_be_begin(const char *cup_name)
 	env.cup_name = cup_name;
 
 	/* First: initialize all birgs */
-	size_t          num_birgs = 0;
+	size_t num_birgs = 0;
 	/* we might need 1 birg more for instrumentation constructor */
 	//TODO: Allocating too many birgs as only birgs for special instructions are needed
-	be_irg_t *const birgs     = OALLOCN(&obst, be_irg_t, get_irp_n_irgs()+1);
+	be_irg_t *const birgs = OALLOCN(&obst, be_irg_t, get_irp_n_irgs() + 1);
 	foreach_irp_irg(i, irg) {
 		ir_entity *entity = get_irg_entity(irg);
 		if (!(mtp_special_instruction & get_entity_additional_properties(entity)))

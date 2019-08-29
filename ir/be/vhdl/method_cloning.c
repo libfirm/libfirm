@@ -46,11 +46,11 @@ static void copy_irn_to_irg(ir_node *n, ir_graph *irg)
 
 		case iro_Member: {
 			ir_graph *const old_irg = get_irn_irg(n);
-			ir_node  *const old_ptr = get_Member_ptr(n);
+			ir_node *const old_ptr = get_Member_ptr(n);
 			if (old_ptr == get_irg_frame(old_irg)) {
-				dbg_info  *const dbgi  = get_irn_dbg_info(n);
-				ir_node   *const block = get_irg_start_block(irg);
-				ir_entity *const ent   = get_entity_link(get_Member_entity(n));
+				dbg_info *const dbgi = get_irn_dbg_info(n);
+				ir_node *const block = get_irg_start_block(irg);
+				ir_entity *const ent = get_entity_link(get_Member_entity(n));
 				nn = new_rd_Member(dbgi, block, old_ptr, ent);
 			}
 			break;
@@ -99,7 +99,7 @@ static void copy_irn_to_irg(ir_node *n, ir_graph *irg)
 
 static inline ir_node *get_irn_copy(ir_node *const irn)
 {
-	return (ir_node*)get_irn_link(irn);
+	return (ir_node *) get_irn_link(irn);
 }
 
 /**
@@ -112,7 +112,7 @@ static inline ir_node *get_irn_copy(ir_node *const irn)
  */
 static void copy_nodes(ir_node *irn, void *env)
 {
-	ir_graph *const clone_irg = (ir_graph*)env;
+	ir_graph *const clone_irg = (ir_graph *) env;
 
 	copy_irn_to_irg(irn, clone_irg);
 }
@@ -124,18 +124,18 @@ static void copy_nodes(ir_node *irn, void *env)
  */
 static void set_preds(ir_node *irn, void *env)
 {
-	ir_graph *const clone_irg = (ir_graph*)env;
+	ir_graph *const clone_irg = (ir_graph *) env;
 
 	/* Arg is the method argument, that we have replaced by a constant.*/
-	ir_node *const arg = (ir_node*)get_irg_link(clone_irg);
+	ir_node *const arg = (ir_node *) get_irg_link(clone_irg);
 	if (arg == irn)
 		return;
 
-	ir_node  *const irn_copy = get_irn_copy(irn);
+	ir_node *const irn_copy = get_irn_copy(irn);
 
 	if (is_Block(irn)) {
-		ir_graph *const irg       = get_irn_irg(irn);
-		ir_node  *const end_block = get_irg_end_block(irg);
+		ir_graph *const irg = get_irn_irg(irn);
+		ir_node *const end_block = get_irg_end_block(irg);
 		for (int i = get_Block_n_cfgpreds(irn); i-- > 0;) {
 			ir_node *const pred = get_Block_cfgpred(irn, i);
 			/* "End" block must be handled extra, because it is not matured. */
@@ -167,7 +167,7 @@ static void clone_frame(ir_graph *const src_irg, ir_graph *const dst_irg)
 	ir_type *const dst_frame = get_irg_frame_type(dst_irg);
 	for (size_t i = 0, n = get_compound_n_members(src_frame); i != n; ++i) {
 		ir_entity *const src_ent = get_compound_member(src_frame, i);
-		ident     *const name    = get_entity_name(src_ent);
+		ident *const name = get_entity_name(src_ent);
 		ir_entity *const dst_ent = clone_entity(src_ent, name, dst_frame);
 		set_entity_link(src_ent, dst_ent);
 	}
@@ -185,7 +185,7 @@ static void create_clone_proc_irg(ir_entity *new)
 	ir_reserve_resources(method_irg, IR_RESOURCE_IRN_LINK);
 
 	/* We create the skeleton of the clone irg.*/
-	ir_graph *const clone_irg  = new_ir_graph(new, 0);
+	ir_graph *const clone_irg = new_ir_graph(new, 0);
 	clone_frame(method_irg, clone_irg);
 
 	/* We copy the blocks and nodes, that must be in
@@ -206,17 +206,16 @@ ir_entity *clone_method(ir_graph *irg)
 {
 	/* We get a new ident for our clone method.*/
 	ir_entity *ent = get_irg_entity(irg);
-	ident     *const clone_ident = id_unique(get_entity_ident(ent));
+	ident *const clone_ident = id_unique(get_entity_ident(ent));
 	/* We get our entity for the clone method. */
-	ir_type   *const owner       = get_entity_owner(ent);
-	ir_entity *const new_entity  = clone_entity(ent, clone_ident, owner);
+	ir_type *const owner = get_entity_owner(ent);
+	ir_entity *const new_entity = clone_entity(ent, clone_ident, owner);
 
 	/* a cloned entity is always local */
 	set_entity_visibility(new_entity, ir_visibility_local);
 
 	/* We need now a new ir_graph for our clone method. */
 	create_clone_proc_irg(new_entity);
-	//TODO check properties of new graph
 	return new_entity;
 
 }

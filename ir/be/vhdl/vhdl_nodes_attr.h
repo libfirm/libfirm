@@ -23,8 +23,8 @@ typedef struct vhdl_cmp_attr_t {
 
 typedef struct vhdl_immediate_attr_t {
 	vhdl_attr_t attr;
-	ir_entity  *ent;
-	int64_t     val;
+	ir_entity *ent;
+	int64_t val;
 } vhdl_immediate_attr_t;
 
 typedef struct vhdl_varsig_attr_t {
@@ -42,32 +42,32 @@ typedef struct vhdl_start_attr_t {
 
 static inline vhdl_attr_t const *get_vhdl_attr_const(ir_node const *const node)
 {
-	return (vhdl_attr_t const*)get_irn_generic_attr_const(node);
+	return (vhdl_attr_t const *) get_irn_generic_attr_const(node);
 }
 
 static inline vhdl_immediate_attr_t const *get_vhdl_immediate_attr_const(ir_node const *const node)
 {
-	return (vhdl_immediate_attr_t const*)get_irn_generic_attr_const(node);
+	return (vhdl_immediate_attr_t const *) get_irn_generic_attr_const(node);
 }
 
 static inline vhdl_cmp_attr_t const *get_vhdl_cmp_attr_const(ir_node const *const node)
 {
-	return (vhdl_cmp_attr_t const*)get_irn_generic_attr_const(node);
+	return (vhdl_cmp_attr_t const *) get_irn_generic_attr_const(node);
 }
 
 static inline vhdl_varsig_attr_t const *get_vhdl_varsig_attr_const(ir_node const *const node)
 {
-	return (vhdl_varsig_attr_t const*)get_irn_generic_attr_const(node);
+	return (vhdl_varsig_attr_t const *) get_irn_generic_attr_const(node);
 }
 
 static inline vhdl_varsig_attr_t *get_vhdl_varsig_attr(ir_node const *const node)
 {
-	return (vhdl_varsig_attr_t*)get_irn_generic_attr_const(node);
+	return (vhdl_varsig_attr_t *) get_irn_generic_attr_const(node);
 }
 
 static inline vhdl_start_attr_t const *get_vhdl_start_attr_const(ir_node const *const node)
 {
-	return (vhdl_start_attr_t const*)get_irn_generic_attr_const(node);
+	return (vhdl_start_attr_t const *) get_irn_generic_attr_const(node);
 }
 
 #endif

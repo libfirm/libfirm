@@ -8,7 +8,7 @@
 
 #include "vhdl_lower.h"
 
-#include "irdump.h"
+#include "be_t.h"
 #include "irgraph.h"
 #include "irgwalk.h"
 #include "irnode.h"
@@ -16,14 +16,14 @@
 
 static ir_node *pin_const(ir_node *konst, ir_node *where)
 {
-	dbg_info  *dbgi = get_irn_dbg_info(konst);
-	ir_tarval *tv   = get_Const_tarval(konst);
+	dbg_info *dbgi = get_irn_dbg_info(konst);
+	ir_tarval *tv = get_Const_tarval(konst);
 	return new_rd_PinnedConst(dbgi, where, tv);
 }
 
 static void do_place_consts(ir_node *node, void *env)
 {
-	(void)env;
+	(void) env;
 
 	int arity = get_irn_arity(node);
 
@@ -50,7 +50,7 @@ static void place_consts(ir_graph *irg)
 
 static void do_insert_phi1(ir_node *node, void *env)
 {
-	(void)env;
+	(void) env;
 
 	if (is_Phi(node) || is_Block(node)) {
 		return;
@@ -94,10 +94,10 @@ static void insert_phi1(ir_graph *irg)
 void lower_for_vhdl(ir_graph *irg)
 {
 	place_consts(irg);
-	dump_ir_graph(irg, "place-consts");
+	be_dump(DUMP_BE, irg, "place-consts");
 
 	insert_phi1(irg);
-	dump_ir_graph(irg, "insert-phi1");
+	be_dump(DUMP_BE, irg, "insert-phi1");
 
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
 }

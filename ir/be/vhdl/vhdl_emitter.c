@@ -15,7 +15,6 @@
 #include "irprintf.h"
 #include "panic.h"
 #include "plist.h"
-#include "vhdl_new_nodes_t.h"
 #include "vhdl_modes.h"
 
 #include <inttypes.h>
@@ -33,7 +32,7 @@ static bool use_barrel_right_signed;
 
 static const char *format_relation(ir_relation rel)
 {
-	switch(rel) {
+	switch (rel) {
 		case ir_relation_equal:
 			return "=";
 		case ir_relation_less:
@@ -52,13 +51,21 @@ static const char *format_relation(ir_relation rel)
 	}
 }
 
-static void emit_vhdl_node(ir_node const *const node) {
+/**
+ * Emit function for nodes. For nodes that write a variable or signal, emit only the name of the var/sig instead of an
+ * assignment. All other nodes are emitted using the be_emit_node function.
+ * This function is called in all node specific emit functions to traverse the graph. Traversing ends at
+ * var/sig assigning nodes.
+ * @param node node to emit
+ */
+static void emit_vhdl_node(ir_node const *const node)
+{
 	if (!is_vhdl_irn(node)) {
 		be_emit_node(node);
 		return;
 	}
 
-	switch(get_vhdl_irn_opcode(node)) {
+	switch (get_vhdl_irn_opcode(node)) {
 		case iro_vhdl_AssignVar:
 		case iro_vhdl_AssignSig:
 		case iro_vhdl_Mux:
@@ -69,7 +76,8 @@ static void emit_vhdl_node(ir_node const *const node) {
 	}
 }
 
-static void emit_binop(ir_node const *const node, const char *op) {
+static void emit_binop(ir_node const *const node, const char *op)
+{
 	be_emit_irprintf("(");
 	emit_vhdl_node(get_irn_n(node, n_vhdl_Add_left));
 	be_emit_irprintf(") %s (", op);
@@ -77,15 +85,18 @@ static void emit_binop(ir_node const *const node, const char *op) {
 	be_emit_irprintf(")");
 }
 
-static void emit_Add(ir_node const *const node) {
+static void emit_Add(ir_node const *const node)
+{
 	emit_binop(node, "+");
 }
 
-static void emit_And(ir_node const *const node) {
+static void emit_And(ir_node const *const node)
+{
 	emit_binop(node, "and");
 }
 
-static void emit_AssignSig(ir_node const *const node) {
+static void emit_AssignSig(ir_node const *const node)
+{
 	vhdl_varsig_attr_t const *const attr = get_vhdl_varsig_attr_const(node);
 	be_emit_irprintf("\t\t\t%s <= ", attr->name);
 	emit_vhdl_node(get_irn_n(node, n_vhdl_AssignSig_val));
@@ -93,7 +104,8 @@ static void emit_AssignSig(ir_node const *const node) {
 	be_emit_write_line();
 }
 
-static void emit_AssignVar(ir_node const *const node) {
+static void emit_AssignVar(ir_node const *const node)
+{
 	vhdl_varsig_attr_t const *const attr = get_vhdl_varsig_attr_const(node);
 	be_emit_irprintf("\t\t\t%s := ", attr->name);
 	emit_vhdl_node(get_irn_n(node, n_vhdl_AssignVar_val));
@@ -101,7 +113,8 @@ static void emit_AssignVar(ir_node const *const node) {
 	be_emit_write_line();
 }
 
-static void emit_Block(ir_node const *const node) {
+static void emit_Block(ir_node const *const node)
+{
 	be_emit_irprintf("\t\tend if;\n\n");
 	be_emit_write_line();
 	if (get_irg_end_block(get_irn_irg(node)) == node) {
@@ -112,11 +125,13 @@ static void emit_Block(ir_node const *const node) {
 	be_emit_write_line();
 }
 
-static void emit_Cmp(ir_node const *const node) {
+static void emit_Cmp(ir_node const *const node)
+{
 	emit_binop(node, format_relation(get_vhdl_cmp_attr_const(node)->rel));
 }
 
-static void emit_Cond(ir_node const *const node) {
+static void emit_Cond(ir_node const *const node)
+{
 	ir_node *cmp = get_irn_n(node, n_vhdl_Cond_cond);
 	ir_node *block_true = NULL;
 	ir_node *block_false = NULL;
@@ -151,7 +166,8 @@ static void emit_Cond(ir_node const *const node) {
 
 #define get_sign_string(mode) mode_is_signed(mode) ? "signed" : "unsigned"
 
-static void emit_Const(ir_node const *const node) {
+static void emit_Const(ir_node const *const node)
+{
 	ir_mode *mode = get_irn_mode(node);
 	int64_t val = get_vhdl_immediate_attr_const(node)->val;
 	//TODO: problem: sub(a, const) was optimized to add(a, -const) but mode of const remains unsigned
@@ -164,7 +180,8 @@ static int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
 	return (get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode));
 }
 
-static void emit_Conv(ir_node const *const node) {
+static void emit_Conv(ir_node const *const node)
+{
 	ir_mode *src_mode = get_irn_mode(get_irn_n(node, n_vhdl_Conv_val));
 	ir_mode *dest_mode = get_irn_mode(node);
 	if (get_mode_arithmetic(src_mode) == irma_none) {
@@ -208,11 +225,13 @@ static void emit_Conv(ir_node const *const node) {
 	}
 }
 
-static void emit_Eor(ir_node const *const node) {
+static void emit_Eor(ir_node const *const node)
+{
 	emit_binop(node, "xor");
 }
 
-static void emit_Jmp(ir_node const *const node) {
+static void emit_Jmp(ir_node const *const node)
+{
 	assert(get_irn_n_outs(node) == 1);
 	ir_node *next_block = get_irn_out(node, 0);
 	be_emit_irprintf("\t\t\tEXEC%N <= '1'; -- %+F\n", next_block, node);
@@ -220,17 +239,20 @@ static void emit_Jmp(ir_node const *const node) {
 }
 
 
-static void emit_Minus(ir_node const *const node) {
+static void emit_Minus(ir_node const *const node)
+{
 	be_emit_irprintf("- (");
 	emit_vhdl_node(get_irn_n(node, n_vhdl_Minus_val));
 	be_emit_irprintf(")");
 }
 
-static void emit_Mul(ir_node const *const node) {
+static void emit_Mul(ir_node const *const node)
+{
 	emit_binop(node, "*");
 }
 
-static void emit_Mux(ir_node const *const node) {
+static void emit_Mux(ir_node const *const node)
+{
 	be_emit_irprintf("\t\t\tif ");
 	emit_vhdl_node(get_irn_n(node, n_vhdl_Mux_sel));
 	be_emit_irprintf(" then -- %+F\n\t\t\t\t%s := (", node, get_vhdl_varsig_attr_const(node)->name);
@@ -241,34 +263,40 @@ static void emit_Mux(ir_node const *const node) {
 	be_emit_write_line();
 }
 
-static void emit_Not(ir_node const *const node) {
+static void emit_Not(ir_node const *const node)
+{
 	be_emit_irprintf("not (");
 	emit_vhdl_node(get_irn_n(node, n_vhdl_Not_val));
 	be_emit_irprintf(")");
 }
 
-static void emit_Or(ir_node const *const node) {
+static void emit_Or(ir_node const *const node)
+{
 	emit_binop(node, "or");
 }
 
-static void emit_Phi(ir_node const *const node) {
+static void emit_Phi(ir_node const *const node)
+{
 	// all predecessors should have the same signal name set
 	be_emit_irprintf("%s", get_vhdl_varsig_attr_const(get_irn_n(node, 0))->name);
 }
 
-static void emit_Proj(ir_node const *const node) {
+static void emit_Proj(ir_node const *const node)
+{
 	assert(is_vhdl_Start(get_Proj_pred(node)));
 	vhdl_start_attr_t const *start_attr = get_vhdl_start_attr_const(get_Proj_pred(node));
 	be_emit_irprintf("%s", start_attr->signals[get_Proj_num(node)].name);
 }
 
-static void emit_Return(ir_node const *const node) {
-	(void)node;
+static void emit_Return(ir_node const *const node)
+{
+	(void) node;
 	be_emit_irprintf("\t\t\tREADY <= '1';\n");
 	be_emit_write_line();
 }
 
-static void emit_const_shiftop(ir_node const *const node, const char *op) {
+static void emit_const_shiftop(ir_node const *const node, const char *op)
+{
 	be_emit_irprintf("%s((", op);
 	emit_vhdl_node(get_irn_n(node, n_vhdl_Shl_Const_left));
 	// print natural constant for shift_left and shift_right
@@ -278,7 +306,8 @@ static void emit_const_shiftop(ir_node const *const node, const char *op) {
 	be_emit_irprintf(")");
 }
 
-static void emit_shiftop(ir_node const *const node, const char *op) {
+static void emit_shiftop(ir_node const *const node, const char *op)
+{
 	be_emit_irprintf("%s((", op);
 	emit_vhdl_node(get_irn_n(node, n_vhdl_Shl_Const_left));
 	be_emit_irprintf("), (", op);
@@ -286,31 +315,38 @@ static void emit_shiftop(ir_node const *const node, const char *op) {
 	be_emit_irprintf("))");
 }
 
-static void emit_Shl_Const(ir_node const *const node) {
+static void emit_Shl_Const(ir_node const *const node)
+{
 	emit_const_shiftop(node, "shift_left");
 }
 
-static void emit_Shl_Barrel(ir_node const *const node) {
+static void emit_Shl_Barrel(ir_node const *const node)
+{
 	emit_shiftop(node, "barrel_left");
 }
 
-static void emit_Shr_Const(ir_node const *const node) {
+static void emit_Shr_Const(ir_node const *const node)
+{
 	emit_const_shiftop(node, "shift_right");
 }
 
-static void emit_Shr_Barrel(ir_node const *const node) {
+static void emit_Shr_Barrel(ir_node const *const node)
+{
 	emit_shiftop(node, "barrel_unsigned_right");
 }
 
-static void emit_Shrs_Const(ir_node const *const node) {
+static void emit_Shrs_Const(ir_node const *const node)
+{
 	emit_const_shiftop(node, "shift_right");
 }
 
-static void emit_Shrs_Barrel(ir_node const *const node) {
+static void emit_Shrs_Barrel(ir_node const *const node)
+{
 	emit_shiftop(node, "barrel_signed_right");
 }
 
-static void emit_Sub(ir_node const *const node) {
+static void emit_Sub(ir_node const *const node)
+{
 	emit_binop(node, "-");
 }
 
@@ -345,19 +381,28 @@ static void vhdl_register_emitters(void)
 	be_set_emitter(op_vhdl_Sub,         emit_Sub);
 }
 
-static void vhdl_walk_emit_node(ir_node *node, void *env) {
-	(void)env;
+/**
+ * walker function for emitting the graph as VHDL code
+ * @param node
+ * @param env
+ */
+static void vhdl_walk_emit_node(ir_node *node, void *env)
+{
+	(void) env;
+	/*
+	 * Only start emitting at the following opcodes. Other nodes are visited by the emit function itself.
+	 */
+
 	if (!is_vhdl_irn(node)) {
-		switch(get_irn_opcode(node)) {
+		switch (get_irn_opcode(node)) {
 			case iro_Block:
 				emit_Block(node);
 			default:
 				break;
 		}
-		//be_emit_node(node);
 		return;
 	}
-	switch(get_vhdl_irn_opcode(node)) {
+	switch (get_vhdl_irn_opcode(node)) {
 		case iro_vhdl_AssignVar:
 		case iro_vhdl_AssignSig:
 		case iro_vhdl_Cond:
@@ -370,8 +415,9 @@ static void vhdl_walk_emit_node(ir_node *node, void *env) {
 	}
 }
 
-static void plist_add_sorted_varsig_attr(plist_t *list, vhdl_varsig_attr_t *new) {
-	plist_element_t* current;
+static void plist_add_sorted_varsig_attr(plist_t *list, vhdl_varsig_attr_t *new)
+{
+	plist_element_t *current;
 
 	if (plist_count(list) == 0) {
 		plist_insert_front(list, new);
@@ -384,6 +430,7 @@ static void plist_add_sorted_varsig_attr(plist_t *list, vhdl_varsig_attr_t *new)
 		vhdl_varsig_attr_t *cur_attr = plist_element_get_value(current);
 		int cmp = strcmp(cur_attr->name, new->name);
 		if (cmp == 0)
+			// make sure each name is only inserted once
 			return;
 		else if (cmp > 0) {
 			plist_insert_before(list, current, new);
@@ -393,9 +440,18 @@ static void plist_add_sorted_varsig_attr(plist_t *list, vhdl_varsig_attr_t *new)
 	plist_insert_after(list, current, new);
 }
 
+/**
+ * walker function for collecting signal and variable names.
+ * AssignVar, AssignSig, Mux and Block nodes set signal and variables. The names are used to get distinct lists of
+ * variable and signal names.
+ *
+ * Check if any barrel shift function is needed in the graph.
+ * @param node visited node
+ * @param env walker env
+ */
 static void collect_walk(ir_node *const node, void *env)
 {
-	(void)env;
+	(void) env;
 	if (is_vhdl_AssignVar(node)) {
 		plist_add_sorted_varsig_attr(variables, get_vhdl_varsig_attr(node));
 	}
@@ -418,13 +474,19 @@ static void collect_walk(ir_node *const node, void *env)
 		plist_insert_back(temp_attrs, sig);
 		plist_add_sorted_varsig_attr(signals, sig);
 	}
+	// set flags if a barrel function is used
 	use_barrel_left = use_barrel_left || is_vhdl_Shl_Barrel(node);
 	use_barrel_right = use_barrel_right || is_vhdl_Shr_Barrel(node);
 	use_barrel_right_signed = use_barrel_right_signed || is_vhdl_Shrs_Barrel(node);
 }
 
-static void get_arch_name(ir_graph *irg, char *name) {
-	strcpy(name, get_entity_name(get_irg_entity(irg)));
+/**
+ * terminates a string at the first '.'
+ * This is used for entity and architecture names, since dots are not allowed in VHDL entity and architecture names.
+ * @param name string
+ */
+static void fix_arch_name(char *name)
+{
 	char *location = strchr(name, '.');
 	if (location) {
 		*location = '\0';
@@ -439,100 +501,106 @@ static void emit_process_start(ir_graph *irg)
 	be_emit_write_line();
 }
 
-static void emit_barrel_functions(void) {
+static void emit_barrel_functions(void)
+{
 	if (use_barrel_left) {
 		be_emit_irprintf(
-		        "\n"
-		        "\tfunction barrel_left(x : unsigned; n : unsigned) return unsigned is\n"
-		        "\t\tvariable xvec : std_logic_vector(x'length-1 downto 0);\n"
-		        "\t\tvariable nvec : std_logic_vector(4 downto 0);\n"
-		        "\t\tvariable result : std_logic_vector(31 downto 0);\n"
-		        "\tbegin\n"
-		        "\t\txvec := std_logic_vector(x);\n"
-		        "\t\tnvec := std_logic_vector(n(4 downto 0));\n"
-		        "\t\tresult := xvec;\n"
-		        "\t\tif nvec(4) = '1' then\n"
-		        "\t\t\tresult := result(15 downto 0) & \"0000000000000000\";\n"
-		        "\t\tend if;\n"
-		        "\t\tif nvec(3) = '1' then\n"
-		        "\t\t\tresult := result(23 downto 0) & \"00000000\";\n"
-		        "\t\tend if;\n"
-		        "\t\tif nvec(2) = '1' then\n"
-		        "\t\t\tresult := result(27 downto 0) & \"0000\";\n"
-		        "\t\tend if;\n"
-		        "\t\tif nvec(1) = '1' then\n"
-		        "\t\t\tresult := result(29 downto 0) & \"00\";\n"
-		        "\t\tend if;\n"
-		        "\t\tif nvec(0) = '1' then\n"
-		        "\t\t\tresult := result(30 downto 0) & \"0\";\n"
-		        "\t\tend if;\n"
-		        "\t\treturn unsigned(result);\n"
-		        "\tend barrel_left;\n");
+				"\n"
+				"\tfunction barrel_left(x : unsigned; n : unsigned) return unsigned is\n"
+				"\t\tvariable xvec : std_logic_vector(x'length-1 downto 0);\n"
+				"\t\tvariable nvec : std_logic_vector(4 downto 0);\n"
+				"\t\tvariable result : std_logic_vector(31 downto 0);\n"
+				"\tbegin\n"
+				"\t\txvec := std_logic_vector(x);\n"
+				"\t\tnvec := std_logic_vector(n(4 downto 0));\n"
+				"\t\tresult := xvec;\n"
+				"\t\tif nvec(4) = '1' then\n"
+				"\t\t\tresult := result(15 downto 0) & \"0000000000000000\";\n"
+				"\t\tend if;\n"
+				"\t\tif nvec(3) = '1' then\n"
+				"\t\t\tresult := result(23 downto 0) & \"00000000\";\n"
+				"\t\tend if;\n"
+				"\t\tif nvec(2) = '1' then\n"
+				"\t\t\tresult := result(27 downto 0) & \"0000\";\n"
+				"\t\tend if;\n"
+				"\t\tif nvec(1) = '1' then\n"
+				"\t\t\tresult := result(29 downto 0) & \"00\";\n"
+				"\t\tend if;\n"
+				"\t\tif nvec(0) = '1' then\n"
+				"\t\t\tresult := result(30 downto 0) & \"0\";\n"
+				"\t\tend if;\n"
+				"\t\treturn unsigned(result);\n"
+				"\tend barrel_left;\n");
 	}
 	if (use_barrel_right) {
 		be_emit_irprintf(
-		        "\n"
-		        "\tfunction barrel_unsigned_right(x : unsigned; n : unsigned) return unsigned is\n"
-		        "\t\tvariable xvec : std_logic_vector(x'length-1 downto 0);\n"
-		        "\t\tvariable nvec : std_logic_vector(4 downto 0);\n"
-		        "\t\tvariable result : std_logic_vector(31 downto 0);\n"
-		        "\tbegin\n"
-		        "\t\txvec := std_logic_vector(x);\n"
-		        "\t\tnvec := std_logic_vector(n(4 downto 0));\n"
-		        "\t\tresult := xvec;\n"
-		        "\t\tif nvec(4) = '1' then\n"
-		        "\t\t\tresult := \"0000000000000000\" & result(31 downto 16);\n"
-		        "\t\tend if;\n"
-		        "\t\tif nvec(3) = '1' then\n"
-		        "\t\t\tresult := \"00000000\" & result(31 downto 8);\n"
-		        "\t\tend if;\n"
-		        "\t\tif nvec(2) = '1' then\n"
-		        "\t\t\tresult := \"0000\" & result(31 downto 4);\n"
-		        "\t\tend if;\n"
-		        "\t\tif nvec(1) = '1' then\n"
-		        "\t\t\tresult := \"00\" & result(31 downto 2);\n"
-		        "\t\tend if;\n"
-		        "\t\tif nvec(0) = '1' then\n"
-		        "\t\t\tresult := \"0\" & result(31 downto 1);\n"
-		        "\t\tend if;\n"
-		        "\t\treturn unsigned(result);\n"
-		        "\tend barrel_unsigned_right;\n");
+				"\n"
+				"\tfunction barrel_unsigned_right(x : unsigned; n : unsigned) return unsigned is\n"
+				"\t\tvariable xvec : std_logic_vector(x'length-1 downto 0);\n"
+				"\t\tvariable nvec : std_logic_vector(4 downto 0);\n"
+				"\t\tvariable result : std_logic_vector(31 downto 0);\n"
+				"\tbegin\n"
+				"\t\txvec := std_logic_vector(x);\n"
+				"\t\tnvec := std_logic_vector(n(4 downto 0));\n"
+				"\t\tresult := xvec;\n"
+				"\t\tif nvec(4) = '1' then\n"
+				"\t\t\tresult := \"0000000000000000\" & result(31 downto 16);\n"
+				"\t\tend if;\n"
+				"\t\tif nvec(3) = '1' then\n"
+				"\t\t\tresult := \"00000000\" & result(31 downto 8);\n"
+				"\t\tend if;\n"
+				"\t\tif nvec(2) = '1' then\n"
+				"\t\t\tresult := \"0000\" & result(31 downto 4);\n"
+				"\t\tend if;\n"
+				"\t\tif nvec(1) = '1' then\n"
+				"\t\t\tresult := \"00\" & result(31 downto 2);\n"
+				"\t\tend if;\n"
+				"\t\tif nvec(0) = '1' then\n"
+				"\t\t\tresult := \"0\" & result(31 downto 1);\n"
+				"\t\tend if;\n"
+				"\t\treturn unsigned(result);\n"
+				"\tend barrel_unsigned_right;\n");
 	}
 	if (use_barrel_right_signed) {
 		be_emit_irprintf(
-		        "\n"
-		        "\tfunction barrel_signed_right(x : signed; n : unsigned) return signed is\n"
-		        "\t\tvariable xvec : std_logic_vector(x'length-1 downto 0);\n"
-		        "\t\tvariable nvec : std_logic_vector(4 downto 0);\n"
-		        "\t\tvariable result : std_logic_vector(31 downto 0);\n"
-		        "\t\tvariable signbit : std_logic_vector(31 downto 0);\n"
-		        "\tbegin\n"
-		        "\t\txvec := std_logic_vector(x);\n"
-		        "\t\tnvec := std_logic_vector(n(4 downto 0));\n"
-		        "\t\tresult := xvec;\n"
-		        "\t\tsignbit := (others => xvec(x'length-1));\n"
-		        "\t\tif nvec(4) = '1' then\n"
-		        "\t\t\tresult := signbit(15 downto 0) & result(31 downto 16);\n"
-		        "\t\tend if;\n"
-		        "\t\tif nvec(3) = '1' then\n"
-		        "\t\t\tresult := signbit(7 downto 0) & result(31 downto 8);\n"
-		        "\t\tend if;\n"
-		        "\t\tif nvec(2) = '1' then\n"
-		        "\t\t\tresult := signbit(3 downto 0) & result(31 downto 4);\n"
-		        "\t\tend if;\n"
-		        "\t\tif nvec(1) = '1' then\n"
-		        "\t\t\tresult := signbit(1 downto 0) & result(31 downto 2);\n"
-		        "\t\tend if;\n"
-		        "\t\tif nvec(0) = '1' then\n"
-		        "\t\t\tresult := signbit(0 downto 0) & result(31 downto 1);\n"
-		        "\t\tend if;\n"
-		        "\t\treturn signed(result);\n"
-		        "\tend barrel_signed_right;\n");
+				"\n"
+				"\tfunction barrel_signed_right(x : signed; n : unsigned) return signed is\n"
+				"\t\tvariable xvec : std_logic_vector(x'length-1 downto 0);\n"
+				"\t\tvariable nvec : std_logic_vector(4 downto 0);\n"
+				"\t\tvariable result : std_logic_vector(31 downto 0);\n"
+				"\t\tvariable signbit : std_logic_vector(31 downto 0);\n"
+				"\tbegin\n"
+				"\t\txvec := std_logic_vector(x);\n"
+				"\t\tnvec := std_logic_vector(n(4 downto 0));\n"
+				"\t\tresult := xvec;\n"
+				"\t\tsignbit := (others => xvec(x'length-1));\n"
+				"\t\tif nvec(4) = '1' then\n"
+				"\t\t\tresult := signbit(15 downto 0) & result(31 downto 16);\n"
+				"\t\tend if;\n"
+				"\t\tif nvec(3) = '1' then\n"
+				"\t\t\tresult := signbit(7 downto 0) & result(31 downto 8);\n"
+				"\t\tend if;\n"
+				"\t\tif nvec(2) = '1' then\n"
+				"\t\t\tresult := signbit(3 downto 0) & result(31 downto 4);\n"
+				"\t\tend if;\n"
+				"\t\tif nvec(1) = '1' then\n"
+				"\t\t\tresult := signbit(1 downto 0) & result(31 downto 2);\n"
+				"\t\tend if;\n"
+				"\t\tif nvec(0) = '1' then\n"
+				"\t\t\tresult := signbit(0 downto 0) & result(31 downto 1);\n"
+				"\t\tend if;\n"
+				"\t\treturn signed(result);\n"
+				"\tend barrel_signed_right;\n");
 	}
 	be_emit_write_line();
 }
 
-static void print_mode_init_string(ir_mode *mode) {
+/**
+ * print the signal or variable initialisation code including bit size and 0-initialized value
+ * @param mode mode of the signal or variable
+ */
+static void print_mode_init_string(ir_mode *mode)
+{
 	if (mode == mode_b) {
 		be_emit_irprintf("boolean := false;\n");
 	} else if (mode == get_mode_std_logic()) {
@@ -571,13 +639,17 @@ static void emit_architecture(ir_graph *irg, char *arch_name)
 	be_emit_write_line();
 }
 
-static void emit_architecture_end(char *arch_name) {
+static void emit_architecture_end(char *arch_name)
+{
 	be_emit_irprintf("\tend if;\nend process;\nend %s;", arch_name);
 	be_emit_write_line();
 }
 
-static void emit_entity(ir_graph *irg, char *arch_name) {
-	be_emit_irprintf("library IEEE;\nuse IEEE.NUMERIC_STD.ALL;\nuse IEEE.STD_LOGIC_1164.ALL;\n\nentity %s_ent is\n\tport(\n", arch_name);
+static void emit_entity(ir_graph *irg, char *arch_name)
+{
+	be_emit_irprintf(
+			"library IEEE;\nuse IEEE.NUMERIC_STD.ALL;\nuse IEEE.STD_LOGIC_1164.ALL;\n\nentity %s_ent is\n\tport(\n",
+			arch_name);
 	be_emit_irprintf("\t\tCLK     : in  std_logic;\n");
 
 	vhdl_start_attr_t const *start_attr = get_vhdl_start_attr_const(get_irg_start(irg));
@@ -605,7 +677,8 @@ void vhdl_emit_function(ir_graph *const irg)
 	signals = plist_new();
 
 	char name[strlen(get_entity_name(get_irg_entity(irg)))];
-	get_arch_name(irg, name);
+	strcpy(name, get_entity_name(get_irg_entity(irg)));
+	fix_arch_name(name);
 	emit_entity(irg, name);
 
 	irg_walk_blkwise_graph(irg, NULL, collect_walk, NULL);
