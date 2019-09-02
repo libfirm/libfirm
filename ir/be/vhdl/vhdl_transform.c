@@ -200,7 +200,7 @@ static ir_node *gen_PinnedConst(ir_node *const node)
 		panic("only integer mode supported");
 	}
 	ir_node *const block = be_transform_nodes_block(node);
-	ir_node *new = new_bd_vhdl_Const(dbgi, block, NULL, get_tarval_long(get_PinnedConst_tarval(node)));
+	ir_node *new = new_bd_vhdl_Const(dbgi, block, NULL, get_PinnedConst_tarval(node));
 	set_correct_mode(new, mode);
 	return new;
 }

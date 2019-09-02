@@ -102,7 +102,7 @@ my $assignOp = {
 		outs      => [ "res" ],
 		out_reqs  => ["cls-gp"],
 		attr_type => "vhdl_immediate_attr_t",
-		attr      => "ir_entity *const ent, int32_t const val",
+		attr      => "ir_entity *const ent, ir_tarval *const val",
 	},
 
 	Return      => {

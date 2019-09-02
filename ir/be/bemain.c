@@ -581,13 +581,14 @@ void be_finish(void)
 
 void be_main(FILE *file_handle, const char *cup_name)
 {
-
+	bool use_vhdl = false;
 	foreach_irp_irg(i, irg) {
 		ir_entity *ent = get_irg_entity(irg);
 		if (mtp_special_instruction & get_entity_additional_properties(ent)) {
 			ir_entity *new_ent = clone_method(irg);
-			set_entity_additional_properties(ent, (get_entity_additional_properties(ent) ^ mtp_special_instruction));
+			set_entity_additional_properties(ent, (get_entity_additional_properties(ent) & ~mtp_special_instruction));
 			set_entity_linkage(new_ent, IR_LINKAGE_NO_CODEGEN);
+			use_vhdl = true;
 		}
 	}
 
@@ -595,7 +596,9 @@ void be_main(FILE *file_handle, const char *cup_name)
 	ir_target.isa->generate_code(file_handle, cup_name);
 
 	/* Write additional VHDL if desired */
-	vhdl_generate_code(cup_name);
+	if (use_vhdl) {
+		vhdl_generate_code(cup_name);
+	}
 }
 
 ir_jit_function_t *be_jit_compile(ir_jit_segment_t *const segment,

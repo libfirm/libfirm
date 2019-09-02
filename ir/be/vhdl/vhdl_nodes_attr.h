@@ -24,7 +24,7 @@ typedef struct vhdl_cmp_attr_t {
 typedef struct vhdl_immediate_attr_t {
 	vhdl_attr_t attr;
 	ir_entity *ent;
-	int64_t val;
+	ir_tarval *val;
 } vhdl_immediate_attr_t;
 
 typedef struct vhdl_varsig_attr_t {

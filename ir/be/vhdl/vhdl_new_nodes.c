@@ -7,6 +7,7 @@
 
 #include "gen_vhdl_new_nodes.h"
 #include "ircons_t.h"
+#include "irprintf.h"
 #include <inttypes.h>
 
 static int vhdl_attrs_equal_(vhdl_attr_t const *const a_attr, vhdl_attr_t const *const b_attr)
@@ -78,7 +79,7 @@ void vhdl_dump_node(FILE *const F, ir_node const *const n, dump_reason_t const r
 			switch ((vhdl_opcodes) get_vhdl_irn_opcode(n)) {
 				case iro_vhdl_Const: {
 					vhdl_immediate_attr_t const *const imm = get_vhdl_immediate_attr_const(n);
-					fprintf(F, " 0x%" PRIX64, imm->val);
+					ir_fprintf(F, " %T", imm->val);
 					break;
 				}
 				case iro_vhdl_AssignSig:

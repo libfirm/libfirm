@@ -19,7 +19,11 @@
 
 #include <inttypes.h>
 #include <stdbool.h>
+#include <strcalc.h>
+#include <tv_t.h>
 
+#define VHDL_INT_MAX 2147483647
+#define VHDL_INT_MIN -2147483648
 
 static plist_t *variables;
 static plist_t *signals;
@@ -32,6 +36,7 @@ static bool use_barrel_right_signed;
 
 static const char *format_relation(ir_relation rel)
 {
+	rel &= ~ir_relation_unordered;
 	switch (rel) {
 		case ir_relation_equal:
 			return "=";
@@ -47,7 +52,6 @@ static const char *format_relation(ir_relation rel)
 			return "/=";
 		default:
 			panic("unsupported_relation");
-			//TODO unordered relations? (see t_point_filter.c)
 	}
 }
 
@@ -169,10 +173,29 @@ static void emit_Cond(ir_node const *const node)
 static void emit_Const(ir_node const *const node)
 {
 	ir_mode *mode = get_irn_mode(node);
-	int64_t val = get_vhdl_immediate_attr_const(node)->val;
-	//TODO: problem: sub(a, const) was optimized to add(a, -const) but mode of const remains unsigned
-	be_emit_irprintf("to_%s(%" PRId64 ", %d)", get_sign_string(mode), val, get_mode_size_bits(mode));
+	ir_tarval *val = get_vhdl_immediate_attr_const(node)->val;
+	unsigned    bits = get_mode_size_bits(get_tarval_mode(val));
+	if (tarval_is_long(val) && (get_tarval_long(val) <= VHDL_INT_MAX && get_tarval_long(val) >= VHDL_INT_MIN)) {
+		const char *str  = sc_print(val->value, bits, SC_DEC, 0);
+		be_emit_irprintf("to_%s(%s, %d)", get_sign_string(mode), str, get_mode_size_bits(mode));
+	} else {
+		unsigned buffer_len = bits / CHAR_BIT + (bits % CHAR_BIT != 0);
+		unsigned char buffer[buffer_len];
+		sc_val_to_bytes((const sc_word *) val->value, buffer, buffer_len);
 
+		int pos = 0;
+		char buf[bits];
+		unsigned char *ptr = (unsigned char *) &buffer;
+		for (int i = (int) buffer_len - 1; i >= 0; i--) {
+			for (int j = CHAR_BIT - 1; j >= 0; j--) {
+				buf[pos++] = '0' + ((ptr[i] & 1U << j) != 0);
+			}
+		}
+
+		buf[pos] = '\0';
+
+		be_emit_irprintf("\"%s\"", buf);
+	}
 }
 
 static int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
@@ -302,7 +325,10 @@ static void emit_const_shiftop(ir_node const *const node, const char *op)
 	// print natural constant for shift_left and shift_right
 	assert(is_vhdl_Const(get_irn_n(node, n_vhdl_Shl_Const_right)));
 	be_emit_irprintf("), ", op);
-	be_emit_irprintf("%" PRId64, get_vhdl_immediate_attr_const(get_irn_n(node, n_vhdl_Shl_Const_right))->val);
+	ir_tarval *val = get_vhdl_immediate_attr_const(get_irn_n(node, n_vhdl_Shl_Const_right))->val;
+	unsigned    bits = get_mode_size_bits(get_tarval_mode(val));
+	const char *str  = sc_print(val->value, bits, SC_DEC, 0);
+	be_emit_irprintf("%s", str);
 	be_emit_irprintf(")");
 }
 
