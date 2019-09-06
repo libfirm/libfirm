@@ -22,6 +22,8 @@
  * @{
  */
 
+FIRM_API int is_initialized(void);
+
 /**
  * Initializes the firm library and prepares code generation for the host.
  *

@@ -1358,7 +1358,7 @@ void init_tarval_2(void)
 
 void finish_tarval(void)
 {
-	finish_strcalc();
+	finish_fltcalc();
 	del_set(tarvals); tarvals = NULL;
 }
 

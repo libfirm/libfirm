@@ -241,4 +241,6 @@ bool fc_is_exact(void);
 
 void init_fltcalc(unsigned precision);
 
+void finish_fltcalc(void);
+
 #endif

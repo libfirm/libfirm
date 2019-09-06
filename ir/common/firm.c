@@ -37,9 +37,12 @@
 #include "type_t.h"
 #include "version.h"
 #include <stdio.h>
-#include <stdio.h>
 
 static bool initialized;
+
+int is_initialized() {
+	return initialized;
+}
 
 /* returns the firm root */
 lc_opt_entry_t *firm_opt_get_root(void)

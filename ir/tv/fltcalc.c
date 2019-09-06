@@ -1049,13 +1049,12 @@ fc_rounding_mode_t fc_get_rounding_mode(void)
 	return rounding_mode;
 }
 
+static bool initialized;
+
 void init_fltcalc(unsigned precision)
 {
-#ifndef NDEBUG
-	static bool initialized;
 	assert(!initialized);
 	initialized = true;
-#endif
 
 	init_strcalc(precision + 2 + ROUNDING_BITS);
 
@@ -1077,6 +1076,11 @@ void init_fltcalc(unsigned precision)
 #else
 #error "Unsupported long double format"
 #endif
+}
+
+void finish_fltcalc() {
+	finish_strcalc();
+	initialized = false;
 }
 
 /* definition of interface functions */
