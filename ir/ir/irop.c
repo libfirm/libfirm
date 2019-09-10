@@ -25,7 +25,7 @@
 
 static ir_op **opcodes;
 /** the available next opcode */
-static unsigned next_iro = iro_last+1;
+static unsigned next_iro;
 
 static ir_type *default_get_type_attr(const ir_node *node);
 static ir_entity *default_get_entity_attr(const ir_node *node);
@@ -573,6 +573,7 @@ void set_op_dump(ir_op *op, dump_node_func func)
 
 void firm_init_op(void)
 {
+	next_iro = iro_last+1;
 	opcodes = NEW_ARR_F(ir_op*, 0);
 	ir_init_opcodes();
 	be_init_op();
