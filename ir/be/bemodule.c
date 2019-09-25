@@ -60,16 +60,16 @@ void be_init_state(void);
 
 void be_quit_pbqp(void);
 
+static bool initialized = false;
 /**
  * Driver for module initialization.
  * Call your module initialization function here.
  */
 void be_init_modules(void)
 {
-	static bool run_once = false;
-	if (run_once)
+	if (initialized)
 		return;
-	run_once = true;
+	initialized = true;
 
 	be_init_2addr();
 	be_init_arch();
@@ -122,6 +122,7 @@ void be_init_modules(void)
 
 void be_quit_modules(void)
 {
+	initialized = false;
 #ifdef FIRM_GRGEN_BE
 	be_quit_pbqp();
 #endif
