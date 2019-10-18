@@ -20,11 +20,13 @@ typedef struct riscv_calling_convention_t {
 	                                           save/restore) */
 	unsigned             param_stack_size;
 	unsigned             n_mem_param;
+	unsigned             va_arg_first_slot;
 	riscv_reg_or_slot_t *parameters;
 	riscv_reg_or_slot_t *results;
+	ir_entity           *va_start_addr;
 } riscv_calling_convention_t;
 
-void riscv_determine_calling_convention(riscv_calling_convention_t *cconv, ir_type *fun_type, ir_graph *irg);
+void riscv_determine_calling_convention(riscv_calling_convention_t *cconv, ir_type *fun_type, unsigned named_parameters, ir_graph *irg);
 
 void riscv_layout_parameter_entities(riscv_calling_convention_t *cconv, ir_graph *irg);
 

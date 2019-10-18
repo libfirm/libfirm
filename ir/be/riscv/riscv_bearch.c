@@ -16,6 +16,7 @@
 #include "bestack.h"
 #include "betranshlp.h"
 #include "beutil.h"
+#include "bevarargs.h"
 #include "gen_riscv_new_nodes.h"
 #include "gen_riscv_regalloc_if.h"
 #include "irarch.h"
@@ -27,6 +28,7 @@
 #include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lowering.h"
+#include "platform_t.h"
 #include "riscv_emitter.h"
 #include "riscv_lower64.h"
 #include "riscv_transform.h"
@@ -85,6 +87,7 @@ static void riscv_init(void)
 
 	ir_target.allow_ifconv       = riscv_ifconv;
 	ir_target.float_int_overflow = ir_overflow_indefinite;
+	ir_platform_set_va_list_type_pointer();
 }
 
 static void riscv_finish(void)
@@ -179,7 +182,7 @@ static ir_node *riscv_new_IncSP(ir_node *const block, ir_node *const sp, int con
 	return be_new_IncSP(block, sp, offset, align);
 }
 
-static void riscv_introduce_prologue(ir_graph *const irg, unsigned const size, bool omit_fp)
+static void riscv_introduce_prologue(ir_graph *const irg, unsigned size, bool omit_fp, bool is_variadic)
 {
 	ir_node *const start    = get_irg_start(irg);
 	ir_node *const block    = get_nodes_block(start);
@@ -196,6 +199,7 @@ static void riscv_introduce_prologue(ir_graph *const irg, unsigned const size, b
 
 		unsigned aligned = round_up2(size, 1u << RISCV_PO2_STACK_ALIGNMENT);
 
+		int fp_save_offset = is_variadic ? -(RISCV_N_PARAM_REGS + 1) * RISCV_REGISTER_SIZE : -RISCV_REGISTER_SIZE;
 		if (!is_simm12(aligned)) {
 			/* if desired size is not as 12 bit immediate encodeable, first compute the large offset in t0 */
 			riscv_hi_lo_imm imm = calc_hi_lo(aligned);
@@ -218,7 +222,7 @@ static void riscv_introduce_prologue(ir_graph *const irg, unsigned const size, b
 			sched_add_after(res, add);
 
 			/* save fp to stack */
-			ir_node *const store_fp = new_bd_riscv_sw(NULL, block, mem, add, start_fp, NULL, -RISCV_REGISTER_SIZE);
+			ir_node *const store_fp = new_bd_riscv_sw(NULL, block, mem, add, start_fp, NULL, fp_save_offset);
 			sched_add_after(add, store_fp);
 			edges_reroute_except(mem, store_fp, store_fp);
 
@@ -229,7 +233,7 @@ static void riscv_introduce_prologue(ir_graph *const irg, unsigned const size, b
 			edges_reroute_except(start_fp, curr_fp, store_fp);
 		} else {
 			/* save fp to stack */
-			ir_node *const store_fp = new_bd_riscv_sw(NULL, block, mem, start_sp, start_fp, NULL, aligned - RISCV_REGISTER_SIZE);
+			ir_node *const store_fp = new_bd_riscv_sw(NULL, block, mem, start_sp, start_fp, NULL, aligned + fp_save_offset);
 			sched_add_after(inc_sp, store_fp);
 			edges_reroute_except(mem, store_fp, store_fp);
 
@@ -248,7 +252,7 @@ static void riscv_introduce_prologue(ir_graph *const irg, unsigned const size, b
 	}
 }
 
-static void riscv_introduce_epilogue(ir_node *const ret, unsigned const size, bool omit_fp)
+static void riscv_introduce_epilogue(ir_node *const ret, unsigned const size, bool omit_fp, bool is_variadic)
 {
 	ir_node *const block  = get_nodes_block(ret);
 	if (!omit_fp) {
@@ -257,7 +261,8 @@ static void riscv_introduce_epilogue(ir_node *const ret, unsigned const size, bo
 		ir_node  *curr_mem = get_irn_n(ret, n_riscv_ret_mem);
 
 		/* restore old fp */
-		ir_node *const load_old_fp = new_bd_riscv_lw(NULL, block, curr_mem, curr_fp, NULL, -RISCV_REGISTER_SIZE);
+		int fp_save_offset = is_variadic ? -(RISCV_N_PARAM_REGS + 1) * RISCV_REGISTER_SIZE : -RISCV_REGISTER_SIZE;
+		ir_node *const load_old_fp = new_bd_riscv_lw(NULL, block, curr_mem, curr_fp, NULL, fp_save_offset);
 		curr_mem = be_new_Proj(load_old_fp, pn_riscv_lw_M);
 		ir_node *const old_fp  = be_new_Proj_reg(load_old_fp, pn_riscv_lw_res, &riscv_registers[REG_T0]);
 		sched_add_before(ret, load_old_fp);
@@ -287,8 +292,11 @@ static void riscv_introduce_epilogue(ir_node *const ret, unsigned const size, bo
 static void riscv_introduce_prologue_epilogue(ir_graph *const irg, bool omit_fp)
 {
 	ir_type *const frame = get_irg_frame_type(irg);
+	ir_entity *const fun_ent  = get_irg_entity(irg);
+	ir_type         *fun_type = get_entity_type(fun_ent);
 	unsigned size  = get_type_size(frame);
-	if (size == 0 && omit_fp)
+	bool is_variadic = is_method_variadic(fun_type);
+	if (size == 0 && omit_fp && !is_variadic)
 		return;
 
 	if (!omit_fp) {
@@ -296,12 +304,16 @@ static void riscv_introduce_prologue_epilogue(ir_graph *const irg, bool omit_fp)
 		size += RISCV_REGISTER_SIZE;
 	}
 
-	foreach_irn_in(get_irg_end_block(irg), i, ret) {
-		assert(is_riscv_ret(ret));
-		riscv_introduce_epilogue(ret, size, omit_fp);
+	if (is_variadic) {
+		size += 32;
 	}
 
-	riscv_introduce_prologue(irg, size, omit_fp);
+	foreach_irn_in(get_irg_end_block(irg), i, ret) {
+		assert(is_riscv_ret(ret));
+		riscv_introduce_epilogue(ret, size, omit_fp, is_variadic);
+	}
+
+	riscv_introduce_prologue(irg, size, omit_fp, is_variadic);
 }
 
 static void riscv_sp_sim(ir_node *const node, stack_pointer_state_t *const state)
@@ -340,8 +352,11 @@ static void riscv_sp_sim(ir_node *const node, stack_pointer_state_t *const state
 				}
 				imm->val += get_entity_offset(ent);
 			}
+			break;
 		}
-
+		case iro_riscv_SubSP:
+		case iro_riscv_SubSPimm:
+			state->align_padding = 0;
 		default:
 			break;
 		}
@@ -376,7 +391,10 @@ static void riscv_generate_code(FILE *const output, char const *const cup_name)
 
 		ir_type *const frame = get_irg_frame_type(irg);
 		be_sort_frame_entities(frame, omit_fp);
-		be_layout_frame_type(frame, 0, 0);
+		ir_entity *const fun_ent  = get_irg_entity(irg);
+		ir_type         *fun_type = get_entity_type(fun_ent);
+		int begin = is_method_variadic(fun_type) ? -(RISCV_REGISTER_SIZE * RISCV_N_PARAM_REGS) : 0;
+		be_layout_frame_type(frame, begin, 0);
 
 		riscv_introduce_prologue_epilogue(irg, omit_fp);
 		be_fix_stack_nodes(irg, &riscv_registers[REG_SP]);
@@ -391,6 +409,12 @@ static void riscv_generate_code(FILE *const output, char const *const cup_name)
 	}
 
 	be_finish();
+}
+
+static void riscv32_lower_va_arg(ir_node *node)
+{
+	be_default_lower_va_arg(node, false, 4);
+	//TODO RISC-V specific implementation needed due to alignment of variadic arguments
 }
 
 static void riscv_lower_for_target(void)
@@ -411,8 +435,12 @@ static void riscv_lower_for_target(void)
 
 	static ir_builtin_kind const supported[] = {
 		ir_bk_saturating_increment,
+		ir_bk_va_start
 	};
-	lower_builtins(ARRAY_SIZE(supported), supported, NULL);
+	lower_builtins(ARRAY_SIZE(supported), supported, riscv32_lower_va_arg);
+	foreach_irp_irg(i, irg) {
+		be_after_transform(irg, "lower-builtins");
+	}
 
 	ir_mode *const mode_gp = riscv_reg_classes[CLASS_riscv_gp].mode;
 	foreach_irp_irg(i, irg) {

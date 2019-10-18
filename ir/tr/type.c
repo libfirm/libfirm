@@ -617,6 +617,11 @@ int get_method_variadic_index(ir_type const *const method) {
 	return method->attr.method.variadic;
 }
 
+void set_method_variadic_index(ir_type *const method, int variadic_index) {
+	assert(is_Method_type(method) && variadic_index >= -1);
+	method->attr.method.variadic = variadic_index;
+}
+
 mtp_additional_properties (get_method_additional_properties)(const ir_type *method)
 {
 	return get_method_additional_properties_(method);

@@ -318,6 +318,15 @@ static inline size_t get_method_n_ress_(const ir_type *method)
 
 int get_method_variadic_index(ir_type const *const method);
 
+/**
+ * Set the variadic index of a method.
+ * Values >= 0 represent the index of the first variadic parameter which equals the number of named parameters.
+ * A value of -1 marks the method as not variadic.
+ * @param method
+ * @param variadic_index >= -1
+ */
+void set_method_variadic_index(ir_type *const method, int variadic_index);
+
 static inline mtp_additional_properties get_method_additional_properties_(const ir_type *method)
 {
 	assert(is_Method_type(method));

@@ -9,6 +9,7 @@
 #define RISCV_MACHINE_SIZE 32
 #define RISCV_PO2_STACK_ALIGNMENT 4
 #define RISCV_REGISTER_SIZE 4
+#define RISCV_N_PARAM_REGS  8
 
 #include <stdbool.h>
 #include <stdint.h>
