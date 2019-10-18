@@ -91,7 +91,7 @@ void ir_init_type(ir_prog *irp)
 
 void ir_finish_type(ir_prog *irp)
 {
-	/** nothing todo. (The code, unknown types are in the global type list
+	/** nothing to do. (The code, unknown types are in the global type list
 	 * and freed there */
 	(void)irp;
 }
@@ -525,7 +525,7 @@ ir_type *new_type_method(size_t const n_param, size_t const n_res, int const is_
 	res->attr.method.params           = XMALLOCNZ(ir_type*, n_param);
 	res->attr.method.n_res            = n_res;
 	res->attr.method.res_type         = XMALLOCNZ(ir_type*, n_res);
-	res->attr.method.variadic         = is_variadic;
+	res->attr.method.variadic         = is_variadic ? (int)n_param : -1;
 	res->attr.method.irg_calling_conv = cc_mask;
 	res->attr.method.properties       = property_mask;
 	set_type_alignment(res, 1);
@@ -533,7 +533,7 @@ ir_type *new_type_method(size_t const n_param, size_t const n_res, int const is_
 	return res;
 }
 
-ir_type *clone_type_method(ir_type *const tp, bool const is_variadic, mtp_additional_properties const property_mask)
+ir_type *clone_type_method(ir_type *const tp, int const variadic_index, mtp_additional_properties const property_mask)
 {
 	assert(is_Method_type(tp));
 	ir_mode       *mode     = tp->mode;
@@ -551,7 +551,7 @@ ir_type *clone_type_method(ir_type *const tp, bool const is_variadic, mtp_additi
 	res->attr.method.n_res            = n_res;
 	res->attr.method.res_type         = XMALLOCN(ir_type*, n_res);
 	MEMCPY(res->attr.method.res_type, tp->attr.method.res_type, n_res);
-	res->attr.method.variadic         = is_variadic;
+	res->attr.method.variadic         = variadic_index;
 	res->attr.method.properties       = property_mask;
 	res->attr.method.irg_calling_conv = tp->attr.method.irg_calling_conv;
 	set_type_alignment(res, get_type_alignment(tp));
@@ -608,6 +608,11 @@ void set_method_res_type(ir_type *method, size_t pos, ir_type *tp)
 
 int is_method_variadic(ir_type const *const method)
 {
+	assert(is_Method_type(method));
+	return method->attr.method.variadic > -1;
+}
+
+int get_method_variadic_index(ir_type const *const method) {
 	assert(is_Method_type(method));
 	return method->attr.method.variadic;
 }

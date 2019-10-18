@@ -881,12 +881,12 @@ static pmap *mtp_map;
  *
  * @param tp  the type to clone
  */
-static ir_type *clone_type_and_cache(ir_type *const tp, bool const is_variadic)
+static ir_type *clone_type_and_cache(ir_type *const tp, int const variadic_index)
 {
 	ir_type *res = pmap_get(ir_type, mtp_map, tp);
 	if (res == NULL) {
 		mtp_additional_properties const props = get_method_additional_properties(tp);
-		res = clone_type_method(tp, is_variadic, props | mtp_property_private);
+		res = clone_type_method(tp, variadic_index, props | mtp_property_private);
 		pmap_insert(mtp_map, tp, res);
 	}
 
@@ -912,7 +912,7 @@ static void update_calls_to_private(ir_node *call, void *env)
 		ir_type *const entity_ctp = get_entity_type(callee);
 		/* clear mismatches in variadicity that can happen in obscure C
 		 * programs and break when changing to private calling convention. */
-		ctp = clone_type_and_cache(ctp, is_method_variadic(entity_ctp));
+		ctp = clone_type_and_cache(ctp, get_method_variadic_index(entity_ctp));
 		set_Call_type(call, ctp);
 		DB((dbgcall, LEVEL_1,
 		    "changed call to private method %+F using cloned type %+F\n",
@@ -938,7 +938,7 @@ void mark_private_methods(void)
 			DB((dbgcall, LEVEL_1, "found private method %+F\n", ent));
 			if ((get_method_additional_properties(mtp) & mtp_property_private) == 0) {
 				/* need a new type */
-				mtp = clone_type_and_cache(mtp, is_method_variadic(mtp));
+				mtp = clone_type_and_cache(mtp, get_method_variadic_index(mtp));
 				set_entity_type(ent, mtp);
 				DB((dbgcall, LEVEL_2, "changed entity type of %+F to %+F\n", ent, mtp));
 				changed = true;

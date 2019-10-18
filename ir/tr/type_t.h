@@ -66,7 +66,8 @@ typedef struct {
 	ir_type                 **params;           /**< Array of parameter types. */
 	size_t                    n_res;            /**< Number of results. */
 	ir_type                 **res_type;         /**< Array of result types. */
-	bool                      variadic;         /**< The variadicity of the method. */
+	int                       variadic;         /**< The variadicity of the method. -1: method is not variadic
+                                                     Values >= 0 represent the index of the first variadic parameter. */
 	mtp_additional_properties properties;       /**< Set of additional method properties. */
 	unsigned                  irg_calling_conv; /**< A set of calling convention flags. */
 } method_attr;
@@ -153,12 +154,12 @@ void ir_finish_type(ir_prog *irp);
 /** Clone an existing method type.
  *
  * @param tp             the method type to clone.
- * @param is_variadic    whether the cloned type is variadic
+ * @param variadic_index index of the first variadic parameter, -1 if method is not variadic
  * @param property_mask  additional method properties for the cloned type
  *
  * @return the cloned method type.
  */
-ir_type *clone_type_method(ir_type *tp, bool is_variadic, mtp_additional_properties property_mask);
+ir_type *clone_type_method(ir_type *tp, int variadic_index, mtp_additional_properties property_mask);
 
 extern ir_visited_t firm_type_visited;
 
@@ -314,6 +315,8 @@ static inline size_t get_method_n_ress_(const ir_type *method)
 	assert(is_Method_type(method));
 	return method->attr.method.n_res;
 }
+
+int get_method_variadic_index(ir_type const *const method);
 
 static inline mtp_additional_properties get_method_additional_properties_(const ir_type *method)
 {
