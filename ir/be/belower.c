@@ -403,7 +403,9 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 				reg_pair_t const *const q = oregmap[p->in_reg->index];
 				if (q == start)
 					break;
-				rbitset_clear(inregs, q->out_reg->index);
+				for (int j = 0; j < arch_get_irn_register_req_width(q->out_node); j++) {
+					rbitset_clear(inregs, q->out_reg->index + j);
+				}
 				p->in_reg = q->in_reg;
 
 				ir_node *const in[] = { p->in_node, q->in_node };
@@ -419,7 +421,9 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 				p = oregmap[q->in_reg->index];
 				if (p == start) {
 					if (start->in_reg == start->out_reg) {
-						rbitset_clear(inregs, q->in_reg->index);
+						for (int j = 0; j < arch_get_irn_register_req_width(q->in_node); j++) {
+							rbitset_clear(inregs, q->in_reg->index + j);
+						}
 						exchange(start->out_node, start->in_node);
 					}
 					break;
