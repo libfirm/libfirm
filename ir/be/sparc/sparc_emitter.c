@@ -236,6 +236,24 @@ static bool emits_multiple_instructions(const ir_node *node)
 	if (is_sparc_Call(node))
 		return arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return;
 
+	if (be_is_Copy(node)) {
+		// TODO This repeats most of the logic of emit_be_Copy
+		// We should have two nodes to copy the halves of a double register separately
+		const arch_register_t *src_reg = arch_get_irn_register_in(node, 0);
+		const arch_register_t *dst_reg = arch_get_irn_register_out(node, 0);
+		if (src_reg == dst_reg)
+			return false;
+
+		arch_register_class_t const *const cls = dst_reg->cls;
+		if (cls == &sparc_reg_classes[CLASS_sparc_fp]) {
+			ir_mode *mode = get_irn_mode(node);
+			unsigned bits = get_mode_size_bits(mode);
+			return bits > 32;
+		} else {
+			return false;
+		}
+	}
+
 	return is_sparc_SMulh(node) || is_sparc_UMulh(node)
 		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
 		|| be_is_MemPerm(node) || be_is_Perm(node)
