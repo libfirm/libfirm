@@ -357,7 +357,9 @@ static void lower_perm_node(ir_node *const perm, arch_register_class_t const *co
 				p = oregmap[in_idx];
 			} while (p != start);
 
-			rbitset_clear(inregs, start->in_reg->index);
+			for (int j = 0; j < arch_get_irn_register_req_width(start->in_node); j++) {
+				rbitset_clear(inregs, start->in_reg->index + j);
+			}
 
 			ir_node *const restore_copy = be_new_Copy_before_reg(save_copy, new_perm, start->out_reg);
 			DBG((dbg, LEVEL_2, "\t[D] inserting %+F for %+F from %s to %s\n", restore_copy, save_copy, free_reg->name, start->out_reg->name));
