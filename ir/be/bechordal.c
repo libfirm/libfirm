@@ -249,18 +249,18 @@ static void handle_constraints(be_chordal_env_t *const env, ir_node *const irn)
 		// TODO it would be better if this constraint is already stored in the operand
 		/* allow only even indices for double registers */
 		unsigned const *const bs_orig = get_decisive_partner_regs(op, n_regs);
-		unsigned *const bs = rbitset_alloca(n_regs);
-		rbitset_copy(bs, bs_orig, n_regs);
-		if (double_register_capable && arch_get_irn_register_req_width(op->carrier) == 2) {
-			rbitset_foreach(bs_orig, n_regs, col) {
-				if (col % 2 != 0) {
-					rbitset_clear(bs, col);
+
+		if (bs_orig) {
+			unsigned *const bs = rbitset_alloca(n_regs);
+			rbitset_copy(bs, bs_orig, n_regs);
+			if (double_register_capable && arch_get_irn_register_req_width(op->carrier) == 2) {
+				rbitset_foreach(bs_orig, n_regs, col) {
+					if (col % 2 != 0) {
+						rbitset_clear(bs, col);
+					}
 				}
 			}
-		}
 
-
-		if (bs) {
 #ifdef DEBUG_libfirm
 			DBG((dbg, LEVEL_2, "\tallowed registers for %+F:", op->carrier, bs[0]));
 			rbitset_foreach(bs, n_regs, col) {
