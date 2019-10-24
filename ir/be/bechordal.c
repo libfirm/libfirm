@@ -44,7 +44,7 @@ static int get_next_free_reg(bitset_t *const available, unsigned consecutive)
 			continue;
 		}
 		free_length = 1; // we don't need to check the pos index again
-		while (bitset_is_set(available, pos + free_length) && free_length < consecutive) {
+		while (free_length < consecutive && bitset_is_set(available, pos + free_length)) {
 			free_length++;
 		}
 	}
