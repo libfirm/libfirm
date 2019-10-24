@@ -210,7 +210,8 @@ static bool is_no_instruction(const ir_node *node)
 	if (is_sparc_Ba(node) && be_is_fallthrough(node))
 		return true;
 
-	return be_is_Keep(node) || be_is_Start(node) || be_is_Unknown(node) || is_Phi(node);
+	return be_is_Keep(node) || be_is_Start(node) || be_is_Unknown(node) || is_Phi(node)
+		|| be_is_RegSplit(node) || be_is_RegJoin(node);
 }
 
 static bool has_delay_slot(const ir_node *node)
