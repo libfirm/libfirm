@@ -490,16 +490,6 @@ static ir_node *pick_delay_slot_for(ir_node *node)
 			if (!get_irn_pinned(schedpoint) && !is_memop(schedpoint) && can_move_up_into_delayslot(schedpoint, node)) {
 				/* it's fine to move the insn across blocks */
 				return schedpoint;
-			} else if (is_sparc_cond_branch(node)) {
-				ir_node *proj = get_Block_cfgpred(succ, 0);
-				unsigned nr   = get_Proj_num(proj);
-				if ((nr == pn_sparc_Bicc_true || nr == pn_sparc_fbfcc_true)
-					&& be_can_move_up(heights, schedpoint, succ)) {
-					/* we can use it with the annul flag */
-					sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr(node);
-					attr->annul_delay_slot = true;
-					return schedpoint;
-				}
 			}
 		}
 	}
