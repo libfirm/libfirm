@@ -20,10 +20,11 @@
 #include "gen_riscv_new_nodes.h"
 #include "gen_riscv_regalloc_if.h"
 #include "irarch.h"
+#include "ircons.h"
 #include "iredges.h"
+#include "irgmod.h"
 #include "irgwalk.h"
 #include "irprog_t.h"
-#include "irprintf.h"
 #include "lower_alloc.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
@@ -411,8 +412,49 @@ static void riscv_generate_code(FILE *const output, char const *const cup_name)
 
 static void riscv32_lower_va_arg(ir_node *node)
 {
-	be_default_lower_va_arg(node, false, 4);
-	//TODO RISC-V specific implementation needed due to alignment of variadic arguments
+	ir_node  *block = get_nodes_block(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_graph *irg   = get_irn_irg(node);
+
+	ir_type       *aptype   = get_method_res_type(get_Builtin_type(node), 0);
+	ir_node       *ap       = get_irn_n(node, 1);
+	ir_node *const node_mem = get_Builtin_mem(node);
+
+	ir_mode *const offset_mode = get_reference_offset_mode(mode_P);
+	unsigned round_up;
+
+	ir_mode *apmode = get_type_mode(aptype);
+	ir_node *res;
+	ir_node *new_mem;
+	if (apmode) {
+		goto load;
+	} else {
+		apmode = mode_P;
+		aptype = get_type_for_mode(apmode);
+		load:;
+		round_up = round_up2(get_type_alignment(aptype), RISCV_PARAM_STACK_ALIGN);
+
+		if (round_up > RISCV_PARAM_STACK_ALIGN) {
+			ir_node *const align_min_1 = new_rd_Const_long(dbgi, irg, offset_mode, (int) round_up - 1);
+			ir_node *const align_add = new_rd_Add(dbgi, block, ap, align_min_1);
+			ir_node *const align_neg = new_rd_Const_long(dbgi, irg, offset_mode, -round_up);
+			ir_node *const align_add_conv = new_rd_Conv(dbgi, block, align_add, offset_mode);
+			ir_node *const align_and = new_rd_And(dbgi, block, align_add_conv, align_neg);
+			ir_node *const align_and_conv = new_rd_Conv(dbgi, block, align_and, mode_P);
+			ap = align_and_conv;
+		}
+
+		ir_node *const load = new_rd_Load(dbgi, block, node_mem, ap, apmode, aptype, cons_none);
+		res = new_r_Proj(load, apmode, pn_Load_res);
+		new_mem = new_r_Proj(load, mode_M, pn_Load_M);
+	}
+
+	round_up = round_up2(get_type_size(aptype), RISCV_PARAM_STACK_ALIGN);
+	ir_node *const offset      = new_r_Const_long(irg, offset_mode, round_up);
+	ir_node *const new_ap      = new_rd_Add(dbgi, block, ap, offset);
+
+	ir_node *const in[] = { new_mem, res, new_ap };
+	turn_into_tuple(node, ARRAY_SIZE(in), in);
 }
 
 static void riscv_lower_for_target(void)
@@ -420,6 +462,7 @@ static void riscv_lower_for_target(void)
 	ir_arch_lower(&riscv_arch_dep);
 	be_after_irp_transform("lower-arch-dep");
 
+	//TODO correct lowering of compounds
 	lower_calls_with_compounds(LF_RETURN_HIDDEN,
 	                           lower_aggregates_as_pointers, NULL,
 	                           lower_aggregates_as_pointers, NULL,
