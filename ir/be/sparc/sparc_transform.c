@@ -2206,9 +2206,9 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 			if (reg1 != NULL) {
 				value1 = be_get_Start_proj(irg, reg1);
 			} else if (param->entity != NULL) {
-				ir_node *fp  = get_initial_fp(irg);
-				ir_node *mem = be_get_Start_mem(irg);
-				ir_node *ld  = new_bd_sparc_Ld_imm(NULL, new_block, mem, fp, mode_gp, param->entity, 0, true);
+				ir_node *frame = get_irg_frame(irg);
+				ir_node *mem   = be_get_Start_mem(irg);
+				ir_node *ld    = new_bd_sparc_Ld_imm(NULL, new_block, mem, frame, mode_gp, param->entity, 0, true);
 				value1 = be_new_Proj(ld, pn_sparc_Ld_res);
 			}
 
