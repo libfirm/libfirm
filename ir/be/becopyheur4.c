@@ -116,6 +116,7 @@ typedef struct co_mst_irn_t {
 	unsigned           col;           /**< color currently assigned */
 	unsigned           init_col;      /**< the initial color */
 	int                tmp_col;       /**< a temporary assigned color */
+	unsigned           width;         /**< number of registers assigned for this node */
 	struct list_head   list;          /**< Queue for coloring undo. */
 	real_t             constr_factor;
 	bool               fixed:1;       /**< the color is fixed */
@@ -145,6 +146,16 @@ static co_mst_irn_t *co_mst_irn_init(co_mst_env_t *env, const ir_node *irn)
 	bitset_t *const adm    = bitset_obstack_alloc(&env->obst, n_regs);
 	res->adm_colors = adm;
 	bitset_copy(adm, env->allocatable_regs);
+
+	// remove unallowed registers from admission
+	res->width = arch_get_irn_register_req_width(irn);
+	if (res->width > 1) {
+		for (size_t i = 0; i < env->n_regs; ++i) {
+			if (i % res->width != 0) {
+				rbitset_clear(adm->data, i);
+			}
+		}
+	}
 
 	/* Exclude colors not assignable to the irn */
 	arch_register_req_t const *const req = arch_get_irn_register_req(irn);
@@ -843,6 +854,17 @@ static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node,
 	}
 }
 
+static bool colors_overlap(co_mst_irn_t *node, unsigned col, unsigned char width)
+{
+	unsigned node_col = get_mst_irn_col(node);
+	unsigned char node_width = node->width;
+
+	if (col <= node_col + node_width - 1 && node_col <= col + width - 1) {
+		return true;
+	}
+	return false;
+}
+
 /* need forward declaration due to recursive call */
 static bool recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node,
                           col_cost_t *costs, struct list_head *changed_ones,
@@ -853,14 +875,14 @@ static bool recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node,
  * @return true if succeeded, false otherwise.
  */
 static bool change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node,
-                                       unsigned exclude_col,
+                                       unsigned exclude_col, unsigned exclude_width,
                                        struct list_head *changed, unsigned depth,
                                        unsigned *max_depth, unsigned *trip)
 {
 	unsigned col = get_mst_irn_col(node);
 
 	/* neighbours has already a different color -> good, temporary fix it */
-	if (col != exclude_col) {
+	if (!colors_overlap(node, exclude_col, exclude_width)) {
 		if (is_loose(node))
 			set_temp_color(node, col, changed);
 		return true;
@@ -874,7 +896,9 @@ static bool change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node,
 		determine_color_costs(env, node, costs);
 
 		/* Since the node must not have the not_col, set the costs for that color to "infinity" */
-		costs[exclude_col].cost = REAL(0.0);
+		for (unsigned i = exclude_col; i < exclude_col + exclude_width; ++i) {
+			costs[i].cost = REAL(0.0);
+		}
 
 		/* sort the colors according costs, cheapest first. */
 		QSORT(costs, env->n_regs, cmp_col_cost_gt);
@@ -909,6 +933,7 @@ static bool recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node,
 		return false;
 	}
 
+	unsigned width = node->width;
 	struct list_head local_changed;
 	for (unsigned i = 0, n = env->n_regs; i < n; ++i) {
 		unsigned tgt_col = costs[i].col;
@@ -939,9 +964,9 @@ static bool recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node,
 				that color. If we did not succeed to change the color of the neighbor,
 				we bail out and try the next color.
 			*/
-			if (get_mst_irn_col(nn) == tgt_col) {
+			if (colors_overlap(nn, tgt_col, width)) {
 				/* try to color neighbour with tgt_col forbidden */
-				neigh_ok = change_node_color_excluded(env, nn, tgt_col, &local_changed, depth + 1, max_depth, trip);
+				neigh_ok = change_node_color_excluded(env, nn, tgt_col, width, &local_changed, depth + 1, max_depth, trip);
 
 				if (!neigh_ok)
 					break;
