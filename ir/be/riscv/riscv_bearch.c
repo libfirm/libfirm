@@ -322,8 +322,6 @@ static void riscv_sp_sim(ir_node *const node, stack_pointer_state_t *const state
 		ir_graph *irg = get_irn_irg(node);
 		if (riscv_get_irg_data(irg)->omit_fp) {
 			be_set_MemPerm_offset(node, state->offset);
-		} else {
-			be_set_MemPerm_offset(node, -RISCV_REGISTER_SIZE);
 		}
 		return;
 	}
@@ -346,9 +344,6 @@ static void riscv_sp_sim(ir_node *const node, stack_pointer_state_t *const state
 				ir_graph *const irg = get_irn_irg(node);
 				if (riscv_get_irg_data(irg)->omit_fp) {
 					imm->val += state->offset;
-				} else if (!(arch_get_irn_flags(node) & (arch_irn_flags_t)riscv_arch_irn_flag_ignore_fp_offset_fix)) {
-					// consider additional slot for saved frame pointer
-					imm->val -= RISCV_REGISTER_SIZE;
 				}
 				imm->val += get_entity_offset(ent);
 			}
@@ -393,7 +388,10 @@ static void riscv_generate_code(FILE *const output, char const *const cup_name)
 		be_sort_frame_entities(frame, omit_fp);
 		ir_entity *const fun_ent  = get_irg_entity(irg);
 		ir_type         *fun_type = get_entity_type(fun_ent);
+		// variadic functions copy the register arguments to the vararg save area on the stack
 		int begin = is_method_variadic(fun_type) ? -(RISCV_REGISTER_SIZE * RISCV_N_PARAM_REGS) : 0;
+		// slot for saved frame pointer
+		begin -= omit_fp ? 0 : RISCV_REGISTER_SIZE;
 		be_layout_frame_type(frame, begin, 0);
 
 		riscv_introduce_prologue_epilogue(irg, omit_fp);

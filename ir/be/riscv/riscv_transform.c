@@ -399,7 +399,6 @@ static ir_node *gen_va_start(ir_node *node)
 		ir_entity *entity = cur_cconv.va_start_addr;
 		ir_node   *frame  = cur_cconv.omit_fp ? get_Start_sp(irg): get_Start_fp(irg);
 		ir_node   *ap     = new_bd_riscv_FrameAddr(dbgi, block, frame, entity, 0);
-		arch_add_irn_flags(ap, (arch_irn_flags_t)riscv_arch_irn_flag_ignore_fp_offset_fix);
 		initial_va_list = ap;
 	}
 	return initial_va_list;
@@ -982,7 +981,6 @@ static ir_node *gen_Proj_Proj_Start(ir_node *const node)
 		ir_node  *const mem   = be_get_Start_mem(irg);
 		ir_node  *const base  = cur_cconv.omit_fp ? get_Start_sp(irg) : get_Start_fp(irg);
 		ir_node  *const load  = new_bd_riscv_lw(dbgi, block, mem, base, param->entity, 0);
-		arch_add_irn_flags(load, (arch_irn_flags_t)riscv_arch_irn_flag_ignore_fp_offset_fix);
 		return be_new_Proj(load, pn_riscv_lw_res);
 	}
 }
@@ -1177,10 +1175,6 @@ static ir_node *gen_Store(ir_node *const node)
 		ir_node   *const val   = be_transform_node(old_val);
 		riscv_addr const addr  = make_addr(get_Store_ptr(node));
 		ir_node *const store = cons(dbgi, block, mem, addr.base, val, addr.ent, addr.val);
-
-		if (addr.ent && is_parameter_entity(addr.ent) ) {
-			arch_add_irn_flags(store, (arch_irn_flags_t)riscv_arch_irn_flag_ignore_fp_offset_fix);
-		}
 
 		return store;
 	}
