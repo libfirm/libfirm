@@ -16,7 +16,6 @@
 #include "bestack.h"
 #include "betranshlp.h"
 #include "beutil.h"
-#include "bevarargs.h"
 #include "gen_riscv_new_nodes.h"
 #include "gen_riscv_regalloc_if.h"
 #include "irarch.h"
@@ -30,6 +29,7 @@
 #include "lower_calls.h"
 #include "lowering.h"
 #include "platform_t.h"
+#include "riscv_abi.h"
 #include "riscv_emitter.h"
 #include "riscv_lower64.h"
 #include "riscv_transform.h"
@@ -426,24 +426,34 @@ static void riscv32_lower_va_arg(ir_node *node)
 	ir_mode *apmode = get_type_mode(aptype);
 	ir_node *res;
 	ir_node *new_mem;
-	if (apmode) {
-		goto load;
-	} else {
+	ir_type *const original_aptype = aptype;
+
+	if (!apmode) {
+		// compounds are generally passed by reference
+		assert(is_compound_type(aptype));
 		apmode = mode_P;
 		aptype = get_type_for_mode(apmode);
-		load:;
-		round_up = round_up2(get_type_alignment(aptype), RISCV_PARAM_STACK_ALIGN);
+	}
 
-		if (round_up > RISCV_PARAM_STACK_ALIGN) {
-			ir_node *const align_min_1 = new_rd_Const_long(dbgi, irg, offset_mode, (int) round_up - 1);
-			ir_node *const align_add = new_rd_Add(dbgi, block, ap, align_min_1);
-			ir_node *const align_neg = new_rd_Const_long(dbgi, irg, offset_mode, -round_up);
-			ir_node *const align_add_conv = new_rd_Conv(dbgi, block, align_add, offset_mode);
-			ir_node *const align_and = new_rd_And(dbgi, block, align_add_conv, align_neg);
-			ir_node *const align_and_conv = new_rd_Conv(dbgi, block, align_and, mode_P);
-			ap = align_and_conv;
-		}
+	// align the va_arg pointer according to the argument alignment
+	round_up = round_up2(get_type_alignment(aptype), RISCV_PARAM_STACK_ALIGN);
+	if (round_up > RISCV_PARAM_STACK_ALIGN) {
+		// ap = (ap + (round_up - 1)) & -(round_up)
+		ir_node *const align_min_1 = new_rd_Const_long(dbgi, irg, offset_mode, (int) round_up - 1);
+		ir_node *const align_add = new_rd_Add(dbgi, block, ap, align_min_1);
+		ir_node *const align_neg = new_rd_Const_long(dbgi, irg, offset_mode, -round_up);
+		ir_node *const align_add_conv = new_rd_Conv(dbgi, block, align_add, offset_mode);
+		ir_node *const align_and = new_rd_And(dbgi, block, align_add_conv, align_neg);
+		ir_node *const align_and_conv = new_rd_Conv(dbgi, block, align_and, mode_P);
+		ap = align_and_conv;
+	}
 
+	if (is_compound_type(original_aptype) && get_type_size(original_aptype) <= 2 * RISCV_REGISTER_SIZE) {
+		// structs with size <= 2*XLEN are passed by value, not by reference
+		res = ap;
+		new_mem = node_mem;
+		aptype = original_aptype;
+	} else {
 		ir_node *const load = new_rd_Load(dbgi, block, node_mem, ap, apmode, aptype, cons_none);
 		res = new_r_Proj(load, apmode, pn_Load_res);
 		new_mem = new_r_Proj(load, mode_M, pn_Load_M);
@@ -462,10 +472,9 @@ static void riscv_lower_for_target(void)
 	ir_arch_lower(&riscv_arch_dep);
 	be_after_irp_transform("lower-arch-dep");
 
-	//TODO correct lowering of compounds
 	lower_calls_with_compounds(LF_RETURN_HIDDEN,
-	                           lower_aggregates_as_pointers, NULL,
-	                           lower_aggregates_as_pointers, NULL,
+	                           riscv_lower_parameter, NULL,
+	                           riscv_lower_result, NULL,
 	                           reset_stateless_abi);
 	be_after_irp_transform("lower-calls");
 

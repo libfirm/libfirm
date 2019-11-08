@@ -404,6 +404,7 @@ add_backend(mips
 	ir/be/mips/mips_transform.h
 )
 add_backend(riscv
+	ir/be/riscv/riscv_abi.c
 	ir/be/riscv/riscv_bearch.c
 	ir/be/riscv/riscv_cconv.c
 	ir/be/riscv/riscv_emitter.c
