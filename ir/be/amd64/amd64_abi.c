@@ -77,14 +77,20 @@ static ir_mode *classify_compound_by_members(ir_type const *const tp, unsigned m
 	ir_mode *current_class = mode_BAD;
 	for (unsigned i = 0; i < n; i++) {
 		ir_entity *member = get_compound_member(tp, i);
-		unsigned offset = get_entity_offset(member);
+		ir_type *member_type = get_entity_type(member);
+		unsigned member_size = get_type_size(member_type);
 
-		if (min <= offset && offset < max) {
+		unsigned member_begin = get_entity_offset(member);
+		unsigned member_end = member_begin + member_size;
+
+		// Is the member (at least partially) between min and max?
+		if (min < member_end && max > member_begin) {
 			if (get_entity_aligned(member) == align_non_aligned) {
 				return mode_M;
 			}
-			ir_type *member_type = get_entity_type(member);
-			ir_mode *member_class = classify_slice_for_amd64(member_type, 0, max - offset);
+			unsigned min_in_member = min <= member_begin ? 0 : min - member_begin;
+			unsigned max_in_member = member_end < max ? member_size : max - member_begin;
+			ir_mode *member_class = classify_slice_for_amd64(member_type, min_in_member, max_in_member);
 			current_class = fold_classes(current_class, member_class);
 		}
 	}
