@@ -73,9 +73,10 @@ libfirm_CPPFLAGS    = $(foreach dir,$(libfirm_INCLUDEDIRS),-I$(dir))
 libfirm_OBJECTS     = $(libfirm_SOURCES:%.c=$(builddir)/%.o) $(libfirm_GEN_SOURCES:%.c=$(builddir)/%.o)
 libfirm_DEPS        = $(libfirm_OBJECTS:%.o=%.d)
 libfirm_BUILDDIRS   = $(sort $(dir $(libfirm_OBJECTS))) $(addprefix $(gendir)/, $(libfirm_GEN_DIRS))
+libfirm_RUNTIME     = $(builddir)/liblfmalloc.a
 
 .PHONY: firm
-firm: $(libfirm_dll) $(libfirm_a)
+firm: $(libfirm_dll) $(libfirm_a) $(libfirm_RUNTIME)
 
 # backends
 backends = amd64 arm ia32 mips riscv sparc TEMPLATE
@@ -142,7 +143,7 @@ $(gendir)/include/libfirm/% : scripts/templates/% $(IR_SPEC_GENERATOR_DEPS) $(IR
 	@echo GEN $@
 	$(Q)$(IR_SPEC_GENERATOR) $(IR_SPEC) "$<" > "$@"
 
-libfirm_GEN_DIRS += ir/ir include/libfirm
+libfirm_GEN_DIRS += ir/ir ir/opt include/libfirm
 
 $(libfirm_a): $(libfirm_OBJECTS)
 	@echo AR $@
@@ -153,12 +154,28 @@ $(libfirm_dll): $(libfirm_OBJECTS)
 	@echo LINK $@
 	$(Q)$(LINK) $(LINKDLLFLAGS) $^ -o $@ $(LINKFLAGS)
 
+# lfmalloc runtime library
+lfpath ?= runtime/lfmalloc
+lfname ?= liblfmalloc
+lf_builddir ?= $(builddir)/lfmalloc
+lf_gen_include ?= $(gendir)/ir/opt
+lf_gen_include_header ?= $(lf_gen_include)/gen_lfasan_sizes.h
+$(lf_gen_include_header): scripts/gen_lf_sizes.py
+	@echo 'GEN $@'
+	$(Q)$< > $@
+
+.PHONY: $(builddir)/$(lfname).a
+$(builddir)/$(lfname).a: $(lf_gen_include_header)
+	$(Q)mkdir -p $(builddir)/lfmalloc
+	$(Q)$(MAKE) sizes_include=../../$(lf_gen_include) builddir=../../$(lf_builddir) -C $(lfpath)
+	$(Q)cp $(builddir)/lfmalloc/$(lfname).a $(builddir) #Always copy, not sure how to fix
+
 # Determine if we can use cparser-beta for quickcheck
 QUICKCHECK_DEFAULT := $(shell which cparser-beta 2> /dev/null || echo true) -fsyntax-only
 QUICKCHECK ?= $(QUICKCHECK_DEFAULT)
 QUICKCHECK_FLAGS ?= -m32 -Wno-compat-option -Wno-shadow -Wno-shadow-local -Wunreachable-code
 
-$(builddir)/%.o: %.c $(IR_SPEC_GENERATED_INCLUDES)
+$(builddir)/%.o: %.c $(IR_SPEC_GENERATED_INCLUDES) $(lf_gen_include_header)
 	@echo CC $@
 	$(Q)$(QUICKCHECK) $(QUICKCHECK_FLAGS) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) $(QUICKCHECK_FLAGS) $<
 	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) $(libfirm_CPPFLAGS) -MP -MMD -c -o $@ $<

@@ -107,5 +107,6 @@
 #include "tv.h"
 #include "typerep.h"
 #include "vrp.h"
+#include "lfasan.h"
 
 #endif
