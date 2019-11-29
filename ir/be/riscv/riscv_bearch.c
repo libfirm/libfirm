@@ -24,9 +24,12 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irprog_t.h"
+#include "irtools.h"
+#include "lc_opts_enum.h"
 #include "lower_alloc.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
+#include "lower_softfloat.h"
 #include "lowering.h"
 #include "platform_t.h"
 #include "riscv_abi.h"
@@ -35,6 +38,45 @@
 #include "riscv_transform.h"
 #include "target_t.h"
 #include "util.h"
+
+typedef enum {
+	ilp32d,
+	ilp32,
+} riscv_abi_t;
+static const lc_opt_enum_int_items_t abi_items[] = {
+		{ "ilp32d", ilp32d },
+		{ "ilp32",  ilp32  },
+		{ NULL,     0      },
+};
+
+static int abi;
+static lc_opt_enum_int_var_t abi_var = {
+		&abi, abi_items
+};
+
+typedef enum {
+	rv32imafd,
+	rv32ima,
+} riscv_isa_t;
+static const lc_opt_enum_int_items_t isa_items[] = {
+		{ "rv32g",     rv32imafd },
+		{ "rv32imafd", rv32imafd },
+		{ "rv32ima",   rv32ima   },
+		{ NULL,        0         },
+};
+
+static int isa;
+static lc_opt_enum_int_var_t isa_var = {
+		&isa, isa_items
+};
+
+static const lc_opt_table_entry_t riscv_options[] = {
+		LC_OPT_ENT_ENUM_INT("arch", "Generate code for given RISC-V ISA", &isa_var),
+		LC_OPT_ENT_ENUM_INT("abi",  "Specify integer and floating-point calling convention",  &abi_var),
+		LC_OPT_LAST
+};
+
+static bool use_softfloat;
 
 static ir_settings_arch_dep_t const riscv_arch_dep = {
 	.replace_muls         = true,
@@ -87,8 +129,15 @@ static void riscv_init(void)
 	ir_target.experimental = "the RISC-V backend is highly experimental and unfinished";
 
 	ir_target.allow_ifconv       = riscv_ifconv;
-	ir_target.float_int_overflow = ir_overflow_indefinite;
+	ir_target.float_int_overflow = ir_overflow_min_max;
 	ir_platform_set_va_list_type_pointer();
+
+	use_softfloat = ((riscv_isa_t)isa == rv32ima);
+	if (use_softfloat && (riscv_abi_t)abi == ilp32d) {
+		panic("requested ABI requires -march to subsume the 'D' extension");
+	} else if (!use_softfloat && (riscv_abi_t)abi == ilp32) {
+		panic("Use of hard-float instructions with soft-float ABI not supported yet");
+	}
 }
 
 static void riscv_finish(void)
@@ -483,6 +532,11 @@ static void riscv_lower_for_target(void)
 		be_after_transform(irg, "lower-copyb");
 	}
 
+	if (use_softfloat) {
+		lower_floating_point();
+		be_after_irp_transform("lower-fp");
+	}
+
 	static ir_builtin_kind const supported[] = {
 		ir_bk_saturating_increment,
 		ir_bk_va_start
@@ -531,7 +585,10 @@ arch_isa_if_t const riscv32_isa_if = {
 	.get_op_estimated_cost = riscv_get_op_estimated_cost,
 };
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_riscv)
-void be_init_arch_riscv(void)
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_riscv32)
+void be_init_arch_riscv32(void)
 {
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *riscv_grp = lc_opt_get_grp(be_grp, "riscv32");
+	lc_opt_add_table(riscv_grp, riscv_options);
 }
