@@ -231,15 +231,29 @@ static ir_entity* string_literal(char const* string) {
 		set_initializer_compound_value(init, i, init_const);
 	}
 	ir_type *type = new_type_array(get_type_for_mode(get_modeBu()), len);
-	ir_entity *entity = new_entity(get_glob_type(), id_unique(string), type);
+	ir_entity *entity = new_entity(get_glob_type(), id_unique("filename"), type);
 	set_entity_initializer(entity, init);
 	return entity;
 }
 
+static ir_entity *current_filename_entity(const char* filename) {
+	/* For filename in error output, an entity with the current filename bytes is remembered here. */
+	static ir_entity *current_file_entity = NULL;
+	static const char *current_file = NULL;
+
+	if (current_file == NULL || !streq(current_file, filename)) {
+		current_file = filename;
+		DB((dbg, LEVEL_5, "Creating new filename entity\n"));
+		current_file_entity = string_literal(current_file);
+	}
+	assert(current_file != NULL);
+	assert(current_file_entity != NULL);
+	return current_file_entity;
+}
+
 /* Returns the Call node to lf_error for the node irn (which is the OOB pointer) */
 static ir_node* error_call(ir_node *irn, ir_node *block, pmap* lf_map,
-		unsigned int reason) {
-	dbg_info *dbgi = get_irn_dbg_info(irn);
+	                   unsigned int reason, dbg_info *dbgi) {
 	ir_graph *irg = get_irn_irg(irn);
 
 	src_loc_t src_loc = ir_retrieve_dbg_info(dbgi);
@@ -247,7 +261,7 @@ static ir_node* error_call(ir_node *irn, ir_node *block, pmap* lf_map,
 
 	ir_node *file_name;
 	if (src_loc.file != NULL) {
-		ir_entity *file_entity = string_literal(src_loc.file);
+		ir_entity *file_entity = current_filename_entity(src_loc.file);
 		file_name = new_rd_Address(dbgi, irg, file_entity);
 	} else {
 		file_name = new_r_Const_long(irg, get_modeP(), 0);
@@ -328,7 +342,7 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr, pmap *lf_map,
 	ir_node *bb_false_in[1] = { proj_false };
 	ir_node *bb_err = new_rd_Block(dbgi, irg, ARRAY_SIZE(bb_false_in), bb_false_in);
 
-	ir_node* abort_call = error_call(ptr, bb_err, lf_map, reason);
+	ir_node* abort_call = error_call(ptr, bb_err, lf_map, reason, dbgi);
 	mark_irn_visited(abort_call);
 	keep_alive(abort_call);
 	keep_alive(bb_err);
@@ -365,18 +379,26 @@ static void insert_instrumentation(ir_node *irn, void * env) {
 			assert(get_irn_mode(meta->base) == get_modeP());
 			assert(get_irn_mode(meta->size) == get_modeLu());
 			pmap_insert(lf_map, meta->base, meta);
-		} else if (is_Add(irn)) {
+		} else if (is_Add(irn) || is_Sub(irn)) {
 			DB((dbg, LEVEL_5, "%+F", irn));
-			ir_node* left = get_Add_left(irn);
-			ir_node* right = get_Add_right(irn);
+			ir_node* left;
+			ir_node* right;
+			if (is_Add(irn)) {
+				left = get_Add_left(irn);
+				right = get_Add_right(irn);
+			} else {
+				left = get_Sub_left(irn);
+				right = get_Sub_right(irn);
+			}
 			ir_node* p_pred = NULL;
 			/*TODO: is this necessary? Maybe Add always has ptr on one side.*/
 			if (get_irn_mode(left) == get_modeP()) {
 				assert(pmap_contains(lf_map, left));
 				p_pred = left;
 			} else if (get_irn_mode(right) == get_modeP()) {
-				assert(pmap_contains(lf_map, right));
-				p_pred = right;
+				panic("Pointer on the right!");
+				//assert(pmap_contains(lf_map, right));
+				//p_pred = right;
 			}
 			assert(p_pred != NULL);
 			lfptr_meta *add_meta = pmap_find(lf_map, left)->value;
@@ -416,17 +438,17 @@ static void insert_instrumentation(ir_node *irn, void * env) {
 		}
 	} else if (is_Store(irn)) {
 		ir_node* ptr = get_Store_ptr(irn);
-		insert_bound_check_between(irn, ptr, lf_map, 0);
+		insert_bound_check_between(irn, ptr, lf_map, MEMORY_WRITE);
 	} else if (is_Load(irn)) {
 		ir_node* ptr = get_Load_ptr(irn);
-		insert_bound_check_between(irn, ptr, lf_map, 1);
+		insert_bound_check_between(irn, ptr, lf_map, MEMORY_READ);
 	} else if (is_Call(irn)) {
 		int call_params = get_Call_n_params(irn);
 		for (int i = 0; i < call_params; i++) {
 			ir_node *param = get_Call_param(irn, i);
 			DB((dbg, LEVEL_5, "%+F and %+F\n", irn, param));
 			if (get_irn_mode(param) == get_modeP()) {
-				insert_bound_check_between(irn, param, lf_map, 2);
+				insert_bound_check_between(irn, param, lf_map, FUNCTION_ESCAPE);
 			}
 		}
 	}

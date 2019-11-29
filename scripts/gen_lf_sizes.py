@@ -44,7 +44,7 @@ print('#define MAX_SIZE '      + hex(MAX_SIZE))
 print('#define REGION_COUNT '  + hex(region_count));
 print('const uint64_t SIZES[' + hex(len(sizes)) + '] = {\n' + ',\n'.join(sizes) + '};')
 
-print('#define MEMORY_STORE 0')
+print('#define MEMORY_WRITE 0')
 print('#define MEMORY_READ 1')
 print('#define FUNCTION_ESCAPE 2')
 print('#define MEMORY_ESCAPE 3')

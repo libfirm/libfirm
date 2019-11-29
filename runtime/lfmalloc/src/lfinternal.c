@@ -353,8 +353,8 @@ void __lf_error(void *ptr, void* base, unsigned long size, unsigned int reason,
                 char* filename, unsigned int line) {
 	char *s_reason = NULL;
 	switch (reason) {
-		case MEMORY_STORE:
-			s_reason = "MEMORY STORE";
+		case MEMORY_WRITE:
+			s_reason = "MEMORY WRITE";
 			break;
 		case MEMORY_READ:
 			s_reason = "MEMORY READ";
