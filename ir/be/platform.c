@@ -179,6 +179,7 @@ void ir_platform_set(ir_machine_triple_t const *machine,
 		goto BSD;
 	} else if (strstart(os, "openbsd")) {
 		ppdef1("__OpenBSD__");
+		ir_platform.pic_is_default = true;
 		goto BSD;
 	} else if (strstr(os, "bsd") != NULL) {
 BSD:
