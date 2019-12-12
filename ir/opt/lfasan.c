@@ -70,7 +70,7 @@ static void func_ptr_rename(ir_node *irn, void *env) {
 #define SIZES_LD_NAME "LF_ASAN_SIZES"
 
 static ir_entity *create_global_lookup_table(void) {
-	ir_graph* const_irg = get_const_code_irg();
+	ir_graph *const_irg = get_const_code_irg();
 
 	ir_type *glob_type = get_glob_type();
 	int glob_members = get_compound_n_members(glob_type);
@@ -117,6 +117,11 @@ static lfptr_meta *new_lfptr_meta(ir_node* base, ir_node *size) {
 }
 
 static lfptr_meta *is_alloc_res(ir_node *irn) {
+	dbg_info *dbgi = get_irn_dbg_info(irn);
+
+	ir_node *block = get_nodes_block(irn);
+
+	assert(get_irn_mode(irn) == get_modeP());
 	if (is_Proj(irn)) {
 		ir_node *call_proj = get_Proj_pred(irn);
 		if (is_Proj(call_proj)) {
@@ -124,10 +129,26 @@ static lfptr_meta *is_alloc_res(ir_node *irn) {
 			if (is_Call(call)) {
 				ir_node* ptr = get_Call_ptr(call);
 				const char* ld_name = get_entity_ld_name(get_irn_entity_attr(ptr));
-				/*TODO: also consider other allocation functions.*/
-				if (streq(ld_name, "lf_malloc")) {
-					ir_node* size = get_Call_param(call, 0);
+				ir_node *size = NULL;
+				// Check every allocation (except lf_posix_memalign) to infer the correc
+				// metadata by their parameters.
+				// lf_posix_memalign metadata is calculated when it is used.
+				if (streq(ld_name, "lf_malloc")
+						|| streq(ld_name, "lf_pvalloc")
+						|| streq(ld_name, "lf_valloc")) {
+					size = get_Call_param(call, 0);
+				} else if (streq(ld_name, "lf_realloc")
+						|| streq(ld_name, "lf_aligned_alloc")
+						|| streq(ld_name, "lf_memalign")) {
+					size = get_Call_param(call, 1);
+				} else if (streq(ld_name, "lf_calloc")) {
+					size = new_rd_Mul(dbgi, block, get_Call_param(call, 0),
+					                  get_Call_param(call, 1));
+				}
+				if (size != NULL) {
 					return new_lfptr_meta(irn, size);
+				} else {
+					return NULL;
 				}
 			}
 		}
@@ -145,24 +166,26 @@ static lfptr_meta *calc_metadata(ir_node *irn, ir_node *sizes_lookup) {
 	mark_irn_visited(sizes_lookup);
 
 	ir_node *const_region_bits = new_r_Const_long(irg, get_modeLu(), REGION_BITS);
-	ir_node *conv_p_lu = new_rd_Conv(dbgi, block, irn, get_modeLu());
-	ir_node *index = new_rd_Shr(dbgi, block, conv_p_lu, const_region_bits);
-	ir_node *byte_offset = new_rd_Mul(dbgi, block, index,
-									 new_rd_Const_long(dbgi, irg, get_modeLu(), 8));
-	ir_node *conv_lu_ls = new_rd_Conv(dbgi, block, byte_offset, get_modeLs());
+	ir_node *conv_p_lu         = new_rd_Conv(dbgi, block, irn, get_modeLu());
+	ir_node *index             = new_rd_Shr(dbgi, block, conv_p_lu, const_region_bits);
+	ir_node *byte_offset       = new_rd_Mul(dbgi, block, index,
+	                                    new_rd_Const_long(dbgi, irg, get_modeLu(), 8));
+	ir_node *conv_lu_ls   = new_rd_Conv(dbgi, block, byte_offset, get_modeLs());
 	ir_node *size_address = new_rd_Add(dbgi, block, sizes_lookup, conv_lu_ls);
 	mark_irn_visited(size_address);
 
 	ir_node *load = new_rd_Load(dbgi, block, nomem, size_address,
-			get_modeLu(), get_type_for_mode(get_modeLu()), cons_none);
+	                            get_modeLu(),
+	                            get_type_for_mode(get_modeLu()),
+	                            cons_none);
 	ir_node *size = new_rd_Proj(dbgi, load, get_modeLu(), pn_Load_res);
 	mark_irn_visited(size);
 
-	ir_node *mod = new_rd_Mod(dbgi, block, nomem, conv_p_lu, size, false);
-	ir_node *mod_res = new_rd_Proj(dbgi, mod, get_modeLu(), pn_Mod_res);
+	ir_node *mod          = new_rd_Mod(dbgi, block, nomem, conv_p_lu, size, false);
+	ir_node *mod_res      = new_rd_Proj(dbgi, mod, get_modeLu(), pn_Mod_res);
 	ir_node *conv_mod_res = new_rd_Conv(dbgi, block, mod_res, get_modeLs());
-	ir_node *sub = new_rd_Sub(dbgi, block, irn, conv_mod_res);
-	ir_node *base = new_rd_Conv(dbgi, block, sub, get_modeP());
+	ir_node *sub          = new_rd_Sub(dbgi, block, irn, conv_mod_res);
+	ir_node *base         = new_rd_Conv(dbgi, block, sub, get_modeP());
 	mark_irn_visited(base);
 
 	lfptr_meta *res = new_lfptr_meta(base, size);
@@ -176,7 +199,7 @@ static void pp_metadata_map(pmap* map) {
 	}
 
 	foreach_pmap(map, cur) {
-		lfptr_meta* ptr = (lfptr_meta*) cur->key;
+		lfptr_meta* ptr  = (lfptr_meta*) cur->key;
 		lfptr_meta* meta = (lfptr_meta*) cur->value;
 		DB((dbg, LEVEL_5, "%+F\t->\tbase: %+F, size: %+F\n", ptr, meta->base, meta->size));
 	}
@@ -193,7 +216,8 @@ static void move_node(ir_node *node, ir_node *to_bl)
 
 	for (ir_node *proj = (ir_node*)get_irn_link(node);
 	     proj != NULL; proj = (ir_node*)get_irn_link(proj)) {
-		set_nodes_block(proj, to_bl);
+
+         set_nodes_block(proj, to_bl);
 	}
 }
 
@@ -220,7 +244,7 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 }
 
 static ir_entity* string_literal(char const* string) {
-	ir_graph* const_irg = get_const_code_irg();
+	ir_graph *const_irg = get_const_code_irg();
 
 	long len = strlen(string) + 1; //including 0-terminator
 
@@ -230,7 +254,7 @@ static ir_entity* string_literal(char const* string) {
 		ir_initializer_t *init_const = create_initializer_const(const_node);
 		set_initializer_compound_value(init, i, init_const);
 	}
-	ir_type *type = new_type_array(get_type_for_mode(get_modeBu()), len);
+	ir_type   *type   = new_type_array(get_type_for_mode(get_modeBu()), len);
 	ir_entity *entity = new_entity(get_glob_type(), id_unique("filename"), type);
 	set_entity_initializer(entity, init);
 	return entity;
@@ -305,7 +329,13 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr, pmap *lf_map,
 
 	assert(get_irn_mode(ptr) == get_modeP());
 	assert(pmap_contains(lf_map, ptr));
-	DB((dbg, LEVEL_5, "inserting check between %+F and %+F\n", irn, ptr));
+
+	// No bounds checking when ptr is constant.
+	if (is_Address(ptr) || is_Const(ptr)) {
+		return;
+	}
+
+	DB((dbg, LEVEL_5, "inserting check between %+F and %+F (reason: %i)\n", irn, ptr, reason));
 
 	ir_graph *irg = get_irn_irg(irn);
 
@@ -336,6 +366,7 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr, pmap *lf_map,
 
 	ir_node *cond = new_rd_Cond(dbgi, new_block, in_bounds);
 	mark_irn_visited(cond);
+
 	ir_node *proj_true  = new_rd_Proj(dbgi, cond, get_modeX(), pn_Cond_true);
 	ir_node *proj_false = new_rd_Proj(dbgi, cond, get_modeX(), pn_Cond_false);
 
@@ -344,6 +375,7 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr, pmap *lf_map,
 
 	ir_node* abort_call = error_call(ptr, bb_err, lf_map, reason, dbgi);
 	mark_irn_visited(abort_call);
+
 	keep_alive(abort_call);
 	keep_alive(bb_err);
 
@@ -358,9 +390,9 @@ typedef struct {
 } insert_instrumentation_env;
 
 static void insert_instrumentation(ir_node *irn, void * env) {
-	pmap *lf_map = ((insert_instrumentation_env*)env)->lf_map;
-	ir_node *sizes_address = ((insert_instrumentation_env*)env)->sizes_address;
-	lfptr_meta *nonlf_meta = ((insert_instrumentation_env*)env)->nonlf_meta;
+	pmap       *lf_map        = ((insert_instrumentation_env*) env)->lf_map;
+	ir_node    *sizes_address = ((insert_instrumentation_env*) env)->sizes_address;
+	lfptr_meta *nonlf_meta    = ((insert_instrumentation_env*) env)->nonlf_meta;
 	mark_irn_visited(nonlf_meta->base);
 	mark_irn_visited(nonlf_meta->size);
 
@@ -384,10 +416,10 @@ static void insert_instrumentation(ir_node *irn, void * env) {
 			ir_node* left;
 			ir_node* right;
 			if (is_Add(irn)) {
-				left = get_Add_left(irn);
+				left  = get_Add_left(irn);
 				right = get_Add_right(irn);
 			} else {
-				left = get_Sub_left(irn);
+				left  = get_Sub_left(irn);
 				right = get_Sub_right(irn);
 			}
 			ir_node* p_pred = NULL;
@@ -413,7 +445,7 @@ static void insert_instrumentation(ir_node *irn, void * env) {
 			ir_node **base_phi_preds = (ir_node**)malloc(sizeof(ir_node*) * phi_arity);
 			ir_node **size_phi_preds = (ir_node**)malloc(sizeof(ir_node*) * phi_arity);
 			for (int i = 0; i < phi_arity; i++) {
-				lfptr_meta* meta = pmap_find(lf_map, get_Phi_pred(irn, i))->value;
+				lfptr_meta* meta  = pmap_find(lf_map, get_Phi_pred(irn, i))->value;
 				base_phi_preds[i] = meta->base;
 				size_phi_preds[i] = meta->size;
 			}
@@ -434,11 +466,15 @@ static void insert_instrumentation(ir_node *irn, void * env) {
 			assert(get_irn_mode(meta->size) == get_modeLu());
 			pmap_insert(lf_map, irn, meta);
 			DB((dbg, LEVEL_5, " with calculated metadata: base: %+F, size: %+F\n",
-				meta->base, meta->size));
+			    meta->base, meta->size));
 		}
 	} else if (is_Store(irn)) {
 		ir_node* ptr = get_Store_ptr(irn);
 		insert_bound_check_between(irn, ptr, lf_map, MEMORY_WRITE);
+		ir_node* val = get_Store_value(irn);
+		if (get_irn_mode(val) == get_modeP() && !is_Const(irn) && !is_Address(irn)) {
+			insert_bound_check_between(irn, val, lf_map, MEMORY_ESCAPE);
+		}
 	} else if (is_Load(irn)) {
 		ir_node* ptr = get_Load_ptr(irn);
 		insert_bound_check_between(irn, ptr, lf_map, MEMORY_READ);
@@ -484,18 +520,18 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 	irg_walk_graph(irg, NULL, func_ptr_rename, NULL);
 
 	DB((dbg, LEVEL_2, "=> Creating global lookup table.\n"));
-	ir_entity *sizes_entity = create_global_lookup_table();
-	ir_node *sizes_address = new_r_Address(irg, sizes_entity);
+	ir_entity *sizes_entity  = create_global_lookup_table();
+	ir_node   *sizes_address = new_r_Address(irg, sizes_entity);
 	DB((dbg, LEVEL_4, "Global Lookup node: %+F\n", sizes_address));
 
 	DB((dbg, LEVEL_2, "=> Inserting instrumentation nodes.\n"));
 	pmap* lf_map = pmap_create(); /*ir_node -> lfptr_meta*/
 	lfptr_meta *nonlf_meta = new_lfptr_meta(new_r_Const_long(irg, get_modeP(), 0),
-			new_r_Const_long(irg, get_modeLu(), -1));
+	                                        new_r_Const_long(irg, get_modeLu(), -1));
 	insert_instrumentation_env env;
-	env.lf_map = lf_map;
+	env.lf_map        = lf_map;
 	env.sizes_address = sizes_address;
-	env.nonlf_meta = nonlf_meta;
+	env.nonlf_meta    = nonlf_meta;
 	irg_walk_graph(irg, NULL, insert_instrumentation, &env);
 
 	DB((dbg, LEVEL_5, "-metadata-map-----------------------------------------\n"));
@@ -520,4 +556,5 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+	printf("Compiled a file with lfasan\n");
 }
