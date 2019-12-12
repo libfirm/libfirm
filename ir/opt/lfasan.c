@@ -428,9 +428,9 @@ static void insert_instrumentation(ir_node *irn, void * env) {
 				assert(pmap_contains(lf_map, left));
 				p_pred = left;
 			} else if (get_irn_mode(right) == get_modeP()) {
-				panic("Pointer on the right!");
-				//assert(pmap_contains(lf_map, right));
-				//p_pred = right;
+				//panic("Pointer on the right!"); //Pointer apparently isn't always on the left
+				assert(pmap_contains(lf_map, right));
+				p_pred = right;
 			}
 			assert(p_pred != NULL);
 			lfptr_meta *add_meta = pmap_find(lf_map, left)->value;
