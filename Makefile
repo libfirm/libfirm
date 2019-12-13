@@ -53,6 +53,7 @@ PICFLAG   ?= -fPIC
 CFLAGS    += $(CFLAGS_$(variant)) -std=c99 $(PICFLAG) -DHAVE_FIRM_REVISION_H
 CFLAGS    += -Wall -W -Wextra -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings
 LINKFLAGS += $(LINKFLAGS_$(variant)) -lm
+LINKFLAGS += $(if $(filter %cygwin %mingw32, $(shell $(CC) $(CFLAGS) -dumpmachine)), -lregex -lwinmm,)
 VPATH = $(srcdir) $(gendir)
 
 all: firm
