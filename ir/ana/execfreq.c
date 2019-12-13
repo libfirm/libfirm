@@ -458,7 +458,7 @@ void ir_estimate_execfreq(ir_graph *irg)
 		if (!fallback_loop_weight(dfs, loop_weight)) {
 			fallback_all_ones(dfs);
 		}
-		free_properties_and_dfs(irg, dfs);
+		dfs_free(dfs);
 		return;
 	}
 
