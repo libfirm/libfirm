@@ -4,6 +4,7 @@
 #include "ident.h"
 #include "ircons.h"
 #include "irdom.h"
+#include "irdom_t.h"
 #include "irdump.h"
 #include "iredges.h"
 #include "irflag.h"
@@ -16,7 +17,6 @@
 #include "irop.h"
 #include "irprog.h"
 #include "irprog_t.h"
-#include "irgmod.h"
 #include "tv.h"
 #include "type_t.h"
 #include "typerep.h"
@@ -43,28 +43,33 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 static void func_ptr_rename(ir_node *irn, void *env) {
 	(void) env;
-	if (is_Call(irn)) {
-		ir_node *func_ptr = get_Call_ptr(irn);
-		assert(streq("Address", get_op_name(get_irn_op(func_ptr))));
-
-		ir_entity *entity = get_irn_entity_attr(func_ptr);
-		const char* ld_name = get_entity_ld_name(entity);
-		DB((dbg, LEVEL_5, "Node %+F with %+F.\n",
-			irn,
-			func_ptr));
-
-		REPLACE(entity, ld_name, "malloc");
-		REPLACE(entity, ld_name, "free");
-		REPLACE(entity, ld_name, "calloc");
-		REPLACE(entity, ld_name, "realloc");
-
-		REPLACE(entity, ld_name, "posix_memalign");
-		REPLACE(entity, ld_name, "aligned_alloc");
-		REPLACE(entity, ld_name, "valloc");
-		REPLACE(entity, ld_name, "memalign");
-		REPLACE(entity, ld_name, "pvalloc");
-		REPLACE(entity, ld_name, "malloc_usable_size");
+	if (!is_Call(irn)) {
+		return;
 	}
+	ir_node *func_ptr = get_Call_ptr(irn);
+	DBG((dbg, LEVEL_5, "Function address is %+F\n", func_ptr));
+	if (!is_Address(func_ptr)) {
+		return;
+	}
+	// assert(is_Address(func_ptr)); //TODO: Apparently func_ptr can be phi node... Find out when.
+
+	ir_entity *entity = get_irn_entity_attr(func_ptr);
+	const char* ld_name = get_entity_ld_name(entity);
+	DB((dbg, LEVEL_5, "Node %+F with %+F.\n",
+		irn,
+		func_ptr));
+
+	REPLACE(entity, ld_name, "malloc");
+	REPLACE(entity, ld_name, "free");
+	REPLACE(entity, ld_name, "calloc");
+	REPLACE(entity, ld_name, "realloc");
+
+	REPLACE(entity, ld_name, "posix_memalign");
+	REPLACE(entity, ld_name, "aligned_alloc");
+	REPLACE(entity, ld_name, "valloc");
+	REPLACE(entity, ld_name, "memalign");
+	REPLACE(entity, ld_name, "pvalloc");
+	REPLACE(entity, ld_name, "malloc_usable_size");
 }
 
 #define SIZES_LD_NAME "LF_ASAN_SIZES"
@@ -160,9 +165,10 @@ static lfptr_meta *calc_metadata(ir_node *irn, ir_node *sizes_lookup) {
 	dbg_info *dbgi = get_irn_dbg_info_(irn);
 
 	assert(get_irn_mode(irn) == get_modeP());
-	ir_node *block = get_nodes_block(irn);
-	ir_graph *irg = get_irn_irg(irn);
-	ir_node *nomem = get_irg_no_mem(irg);
+	ir_node  *block = get_nodes_block(irn);
+	DB((dbg, LEVEL_5, "Calc metadata in block %+F\n", block));
+	ir_graph *irg   = get_irn_irg(irn);
+	ir_node  *nomem = get_irg_no_mem(irg);
 	mark_irn_visited(sizes_lookup);
 
 	ir_node *const_region_bits = new_r_Const_long(irg, get_modeLu(), REGION_BITS);
@@ -205,6 +211,32 @@ static void pp_metadata_map(pmap* map) {
 	}
 }
 
+static void lf_move(pmap *lf_map, ir_node *node, ir_node *from_bl, ir_node *to_bl);
+
+static void lf_move_node(pmap *lf_map, ir_node *node, ir_node *from_bl, ir_node *to_bl)
+{
+	set_nodes_block(node, to_bl);
+	/* if no mode_T node, do not move Projs. Note that BadT shouldn't have
+	 * any Projs as well and is part of the start_block list and therefore
+	 * doesn't have a valid Proj list */
+	if (get_irn_mode(node) != mode_T || is_Bad(node))
+		return;
+
+	for (ir_node *proj = (ir_node*)get_irn_link(node);
+	     proj != NULL; proj = (ir_node*)get_irn_link(proj)) {
+
+         set_nodes_block(proj, to_bl);
+		if (pmap_contains(lf_map, proj)) {
+			DB((dbg, LEVEL_5, "Moving (move_node) Metadata nodes of %+F\n", proj));
+			lfptr_meta* meta = pmap_find(lf_map, proj)->value;
+			if (get_nodes_block(meta->base) == from_bl)
+				lf_move(lf_map, meta->base, from_bl, to_bl);
+			if (get_nodes_block(meta->size) == from_bl)
+				lf_move(lf_map, meta->size, from_bl, to_bl);
+		}
+	}
+}
+
 static void move_node(ir_node *node, ir_node *to_bl)
 {
 	set_nodes_block(node, to_bl);
@@ -225,13 +257,13 @@ static void move_node(ir_node *node, ir_node *to_bl)
  * Moves node and all predecessors of node from from_bl to to_bl.
  * Does not move predecessors of Phi nodes (or block nodes).
  */
-static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
+static void lf_move(pmap *lf_map, ir_node *node, ir_node *from_bl, ir_node *to_bl)
 {
 	if (get_nodes_block(node) != from_bl) {
 		return;
 	}
 
-	move_node(node, to_bl);
+	lf_move_node(lf_map, node, from_bl, to_bl);
 
 	if (is_Phi(node))
 		return;
@@ -239,8 +271,66 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 	/* recursion ... */
 	foreach_irn_in(node, i, pred) {
 		if (get_nodes_block(pred) == from_bl)
-			move(pred, from_bl, to_bl);
+			lf_move(lf_map, pred, from_bl, to_bl);
 	}
+
+	//Don't leave metadata nodes behind
+	if (pmap_contains(lf_map, node)) {
+		DB((dbg, LEVEL_5, "Moving Metadata nodes of %+F\n", node));
+		lfptr_meta* meta = pmap_find(lf_map, node)->value;
+		if (get_nodes_block(meta->base) == from_bl)
+			lf_move(lf_map, meta->base, from_bl, to_bl);
+		if (get_nodes_block(meta->size) == from_bl)
+			lf_move(lf_map, meta->size, from_bl, to_bl);
+	}
+}
+
+static void update_startblock(ir_node *old_block, ir_node *new_block)
+{
+	ir_graph *irg = get_irn_irg(old_block);
+	set_irg_start_block(irg, new_block);
+	/* move constants around */
+	ir_node *end = get_irg_end(irg);
+	for (ir_node *cnst = get_irn_link(end); cnst != end;
+	     cnst = (ir_node*)get_irn_link(cnst)) {
+		move_node(cnst, new_block);
+	}
+	ir_node *start = get_irg_start(irg);
+	move_node(start, new_block);
+}
+
+static void lf_part_block(pmap *lf_map, ir_node *node)
+{
+	/* Turn off optimizations so that blocks are not merged again. */
+	int rem_opt = get_optimize();
+	set_optimize(0);
+
+	/* Transform the control flow */
+	ir_node  *old_block = get_nodes_block(node);
+	ir_graph *irg       = get_irn_irg(node);
+	ir_node  *new_block = new_r_Block(irg, get_Block_n_cfgpreds(old_block),
+	                                  get_Block_cfgpred_arr(old_block));
+
+	/* create a jump from new_block to old_block, which is now the lower one */
+	ir_node *jmp = new_r_Jmp(new_block);
+	set_irn_in(old_block, 1, &jmp);
+
+	/* move node and its predecessors to new_block */
+	lf_move(lf_map, node, old_block, new_block);
+
+	/* move Phi nodes to new_block */
+	ir_node *phi = get_Block_phis(old_block);
+	set_Block_phis(new_block, phi);
+	set_Block_phis(old_block, NULL);
+	while (phi) {
+		set_nodes_block(phi, new_block);
+		phi = get_Phi_next(phi);
+	}
+
+	if (old_block == get_irg_start_block(irg))
+		update_startblock(old_block, new_block);
+
+	set_optimize(rem_opt);
 }
 
 static ir_entity* string_literal(char const* string) {
@@ -341,7 +431,7 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr, pmap *lf_map,
 
 	ir_node *old_block = get_nodes_block(ptr);
 	DB((dbg, LEVEL_5, "old block: %+F\n", old_block));
-	part_block(ptr);
+	lf_part_block(lf_map, ptr);
 	ir_node *new_block = get_nodes_block(ptr);
 	DB((dbg, LEVEL_5, "new block: %+F\n", new_block));
 
@@ -350,8 +440,8 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr, pmap *lf_map,
 	ir_node *base = meta->base;
 	ir_node *size = meta->size;
 
-	move(base, old_block, new_block);
-	move(size, old_block, new_block);
+	//move(lf_map, base, old_block, new_block);
+	//move(lf_map, size, old_block, new_block);
 
 	ir_node *start = base;
 	assert(get_irn_mode(base) == get_modeP());
@@ -360,7 +450,7 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr, pmap *lf_map,
 	mark_irn_visited(end);
 
 	ir_node *cmp_lower = new_rd_Cmp(dbgi, new_block, start, ptr, ir_relation_less_equal);
-	ir_node *cmp_upper = new_rd_Cmp(dbgi, new_block, end, ptr, ir_relation_greater);
+	ir_node *cmp_upper = new_rd_Cmp(dbgi, new_block, end,   ptr, ir_relation_greater);
 
 	ir_node *in_bounds = new_rd_And(dbgi, new_block, cmp_lower, cmp_upper);
 
@@ -381,6 +471,8 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr, pmap *lf_map,
 
 	ir_node* bb_true_in[1] = { proj_true };
 	set_irn_in(old_block, ARRAY_SIZE(bb_true_in), bb_true_in);
+
+	dump_ir_graph(irg, "lf-asan-boundcheck");
 }
 
 typedef struct {
@@ -389,7 +481,8 @@ typedef struct {
 	lfptr_meta *nonlf_meta;
 } insert_instrumentation_env;
 
-static void insert_instrumentation(ir_node *irn, void * env) {
+static void insert_instrumentation(ir_node *irn, void *env) {
+	DB((dbg, LEVEL_5, "Visiting %+F\n", irn));
 	pmap       *lf_map        = ((insert_instrumentation_env*) env)->lf_map;
 	ir_node    *sizes_address = ((insert_instrumentation_env*) env)->sizes_address;
 	lfptr_meta *nonlf_meta    = ((insert_instrumentation_env*) env)->nonlf_meta;
@@ -398,10 +491,11 @@ static void insert_instrumentation(ir_node *irn, void * env) {
 
 	dbg_info *dbgi = get_irn_dbg_info(irn);
 
-	ir_mode *mode = get_irn_mode(irn);
 	if (is_Block(irn)) {
 		return;
 	}
+
+	ir_mode *mode = get_irn_mode(irn);
 	ir_node *block = get_nodes_block(irn);
 
 	if (mode == get_modeP()) {
@@ -424,6 +518,8 @@ static void insert_instrumentation(ir_node *irn, void * env) {
 			}
 			ir_node* p_pred = NULL;
 			/*TODO: is this necessary? Maybe Add always has ptr on one side.*/
+			assert((get_irn_mode(left) == get_modeP())
+					^ (get_irn_mode(right) == get_modeP()));
 			if (get_irn_mode(left) == get_modeP()) {
 				assert(pmap_contains(lf_map, left));
 				p_pred = left;
@@ -510,11 +606,13 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 	collect_phiprojs_and_start_block_nodes(irg);
 
-	int opt_level = get_optimize();
+	int opt_level = get_optimize(); //Don't optimize anything, while manipulating the graph
 	set_optimize(0);
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.lfasan");
 	DB((dbg, LEVEL_1, "\n===> instrumenting %+F for lowfat adresssanitizer.\n", irg));
+
+	dump_ir_graph(irg, "lf-asan-before");
 
 	DB((dbg, LEVEL_2, "=> Replacing memory functions with lowfat alternatives.\n"));
 	irg_walk_graph(irg, NULL, func_ptr_rename, NULL);
@@ -552,9 +650,9 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 	DB((dbg, LEVEL_2, "Done instrumenting %+F\n", irg));
 
 	set_optimize(opt_level);
-	dump_ir_graph(irg, "lf-asan");
+	dump_ir_graph(irg, "lf-asan-after");
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
-	printf("Compiled a file with lfasan\n");
+	//printf("Compiled a file with lfasan\n");
 }
