@@ -449,6 +449,7 @@ FIRM_API void unroll_loops(ir_graph *irg, unsigned factor, unsigned maxsize);
  */
 FIRM_API void do_loop_peeling(ir_graph *irg);
 
+FIRM_API void do_loop_pagecache(ir_graph *irg);
 /**
  * Removes all entities which are unused.
  *

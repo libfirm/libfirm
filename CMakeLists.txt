@@ -48,6 +48,7 @@ set(SOURCES
 	ir/ana/irmemory.c
 	ir/ana/irouts.c
 	ir/ana/vrp.c
+	ir/ana/dijkstra.c
 	ir/be/be2addr.c
 	ir/be/bearch.c
 	ir/be/beasm.c
@@ -209,6 +210,7 @@ set(SOURCES
 	ir/opt/scalar_replace.c
 	ir/opt/tailrec.c
 	ir/opt/unreachable.c
+	ir/opt/loop_pagecache.c
 	ir/stat/stat_timing.c
 	ir/stat/statev.c
 	ir/tr/entity.c

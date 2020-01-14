@@ -188,7 +188,8 @@ static struct obstack obst;
 typedef enum loop_op_t {
 	loop_op_inversion,
 	loop_op_unrolling,
-	loop_op_peeling
+	loop_op_peeling,
+	loop_op_pagecache
 } loop_op_t;
 
 /* Returns the maximum nodes for the given nest depth */
@@ -2223,6 +2224,32 @@ static void unroll_loop(ir_graph *const irg)
 	}
 }
 
+static void loop_pagecache_visit(ir_node* irn, void* env) {
+	if (irn->loop != (ir_loop*)env) return;
+	printf("Node: %s %ld\n", irn->op->name, irn->node_nr);
+}
+
+static void loop_pagecache(ir_graph const* irg) {
+	ir_node* cmp = is_simple_loop();
+	if(cmp != NULL) {
+		printf("Simple Loop\n");
+		ir_node *start = loop_info.start_val;
+		ir_node *end = loop_info.end_val;
+		long s = -1;
+		long e = -1;
+		if(is_Const(start)) s = get_Const_long(start);
+		if(is_Const(end)) s = get_Const_long(end);
+
+		printf("Loop: from %ld to %ld\n", s, e);
+	} else {
+		printf("Not a simple Loop\n");
+	}
+	printf("Loop head: %ld\n", loop_head->node_nr);
+	irg_walk_edges(loop_head, NULL, loop_pagecache_visit, loop_head->loop);
+}
+
+
+
 /* Analyzes the loop, and checks if size is within allowed range.
  * Decides if loop will be processed. */
 static void init_analyze(ir_graph *const irg, ir_loop *const loop, loop_op_t const loop_op)
@@ -2256,6 +2283,7 @@ static void init_analyze(ir_graph *const irg, ir_loop *const loop, loop_op_t con
 	switch (loop_op) {
 		case loop_op_inversion: loop_inversion(irg); break;
 		case loop_op_unrolling: unroll_loop(irg);    break;
+		case loop_op_pagecache: loop_pagecache(irg); break;
 		default: panic("loop optimization not implemented");
 	}
 	DB((dbg, LEVEL_1, "       <<<< end of loop with node %ld >>>>\n", get_loop_loop_nr(loop)));
