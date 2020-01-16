@@ -1,7 +1,8 @@
 #include "lfasan.h"
-
+#include "array.h"
 #include "firm_types.h"
 #include "ident.h"
+#include "irgmod.h"
 #include "ircons.h"
 #include "irdom.h"
 #include "irdom_t.h"
@@ -47,11 +48,9 @@ static void func_ptr_rename(ir_node *irn, void *env) {
 		return;
 	}
 	ir_node *func_ptr = get_Call_ptr(irn);
-	DBG((dbg, LEVEL_5, "Function address is %+F\n", func_ptr));
 	if (!is_Address(func_ptr)) {
 		return;
 	}
-	// assert(is_Address(func_ptr)); //TODO: Apparently func_ptr can be phi node... Find out when.
 
 	ir_entity *entity = get_irn_entity_attr(func_ptr);
 	const char* ld_name = get_entity_ld_name(entity);
@@ -96,11 +95,58 @@ static ir_entity *create_global_lookup_table(void) {
 		}
 		table_entity = new_entity(get_glob_type(), SIZES_LD_NAME,
 			new_type_array(get_type_for_mode(get_modeLu()), ARRAY_SIZE(SIZES)));
+		ir_linkage linkage = IR_LINKAGE_CONSTANT;
+		linkage |= IR_LINKAGE_WEAK;
+		set_entity_linkage(table_entity, linkage);
 		set_entity_initializer(table_entity, init);
 	}
 
 	DB((dbg, LEVEL_4, "Global Lookup entity: %+F\n", table_entity));
 	return table_entity;
+}
+
+typedef struct {
+	ir_node *ptr;   //The node which needs to be checked.
+	ir_node *node;  //The node which uses the pointer.
+	unsigned int type;
+} bounds_check_pair;
+
+static void add_pair(bounds_check_pair **pairs, ir_node *irn, ir_node *ptr,
+                     unsigned int type) {
+	bounds_check_pair new_pair = {ptr, irn, type};
+	ARR_APP1(bounds_check_pair, *pairs, new_pair);
+}
+
+static void collect_bounds_check_node_pairs(ir_node *irn, void *env) {
+	bounds_check_pair **collected_pairs = (bounds_check_pair**) env;
+
+	if (is_Block(irn)) {
+		return;
+	}
+
+	if (is_Store(irn)) {
+		ir_node* ptr = get_Store_ptr(irn);
+		DB((dbg, LEVEL_5, "Collected ptr %+F for %+F (MEMORY_WRITE)\n", ptr, irn));
+		add_pair(collected_pairs, irn, ptr, MEMORY_WRITE);
+		ir_node* val = get_Store_value(irn);
+		if (get_irn_mode(val) == get_modeP() && !is_Const(irn) && !is_Address(irn)) {
+			DB((dbg, LEVEL_5, "Collected ptr %+F for %+F (MEMORY_ESCAPE)\n", val, irn));
+			add_pair(collected_pairs, irn, val, MEMORY_ESCAPE);
+		}
+	} else if (is_Load(irn)) {
+		ir_node* ptr = get_Load_ptr(irn);
+		DB((dbg, LEVEL_5, "Collected ptr %+F for %+F (MEMORY_READ)\n", ptr, irn));
+		add_pair(collected_pairs, irn, ptr, MEMORY_READ);
+	} else if (is_Call(irn) && is_Address(get_Call_ptr(irn))) {
+		int call_params = get_Call_n_params(irn);
+		for (int i = 0; i < call_params; i++) {
+			ir_node *param = get_Call_param(irn, i);
+			if (get_irn_mode(param) == get_modeP()) {
+				DB((dbg, LEVEL_5, "Collected ptr %+F for %+F (FUNCTION_ESCAPE)\n", param, irn));
+				add_pair(collected_pairs, irn, param, FUNCTION_ESCAPE);
+			}
+		}
+	}
 }
 
 typedef struct _lfptr_meta {
@@ -133,27 +179,29 @@ static lfptr_meta *is_alloc_res(ir_node *irn) {
 			ir_node* call = get_Proj_pred(call_proj);
 			if (is_Call(call)) {
 				ir_node* ptr = get_Call_ptr(call);
-				const char* ld_name = get_entity_ld_name(get_irn_entity_attr(ptr));
-				ir_node *size = NULL;
-				// Check every allocation (except lf_posix_memalign) to infer the correc
-				// metadata by their parameters.
-				// lf_posix_memalign metadata is calculated when it is used.
-				if (streq(ld_name, "lf_malloc")
-						|| streq(ld_name, "lf_pvalloc")
-						|| streq(ld_name, "lf_valloc")) {
-					size = get_Call_param(call, 0);
-				} else if (streq(ld_name, "lf_realloc")
-						|| streq(ld_name, "lf_aligned_alloc")
-						|| streq(ld_name, "lf_memalign")) {
-					size = get_Call_param(call, 1);
-				} else if (streq(ld_name, "lf_calloc")) {
-					size = new_rd_Mul(dbgi, block, get_Call_param(call, 0),
-					                  get_Call_param(call, 1));
-				}
-				if (size != NULL) {
-					return new_lfptr_meta(irn, size);
-				} else {
-					return NULL;
+					if (is_Address(ptr)) {
+					const char* ld_name = get_entity_ld_name(get_irn_entity_attr(ptr));
+					ir_node *size = NULL;
+					// Check every allocation (except lf_posix_memalign) to infer the correct
+					// metadata by their parameters.
+					// lf_posix_memalign metadata is calculated when it is used.
+					if (streq(ld_name, "lf_malloc")
+							|| streq(ld_name, "lf_pvalloc")
+							|| streq(ld_name, "lf_valloc")) {
+						size = get_Call_param(call, 0);
+					} else if (streq(ld_name, "lf_realloc")
+							|| streq(ld_name, "lf_aligned_alloc")
+							|| streq(ld_name, "lf_memalign")) {
+						size = get_Call_param(call, 1);
+					} else if (streq(ld_name, "lf_calloc")) {
+						size = new_rd_Mul(dbgi, block, get_Call_param(call, 0),
+										  get_Call_param(call, 1));
+					}
+					if (size != NULL) {
+						return new_lfptr_meta(irn, size);
+					} else {
+						return NULL;
+					}
 				}
 			}
 		}
@@ -345,7 +393,9 @@ static ir_entity* string_literal(char const* string) {
 		set_initializer_compound_value(init, i, init_const);
 	}
 	ir_type   *type   = new_type_array(get_type_for_mode(get_modeBu()), len);
-	ir_entity *entity = new_entity(get_glob_type(), id_unique("filename"), type);
+	ir_entity *entity = new_global_entity(get_glob_type(), id_unique("filename"), type,
+	                                      ir_visibility_private,
+	                                      IR_LINKAGE_CONSTANT | IR_LINKAGE_NO_IDENTITY);
 	set_entity_initializer(entity, init);
 	return entity;
 }
@@ -413,19 +463,134 @@ static ir_node* error_call(ir_node *irn, ir_node *block, pmap* lf_map,
 	return abort_call;
 }
 
-static void insert_bound_check_between(ir_node *irn, ir_node *ptr, pmap *lf_map,
+typedef struct {
+	pmap *lf_map;
+	ir_node *sizes_address;
+	lfptr_meta *nonlf_meta;
+} insert_instrumentation_env;
+
+static lfptr_meta *get_node_meta(insert_instrumentation_env *env, ir_node *irn) {
+	DB((dbg, LEVEL_3, "Need meta for %+F", irn));
+	assert(get_irn_mode(irn) == get_modeP());
+
+	pmap       *lf_map        = env->lf_map;
+	ir_node    *sizes_address = env->sizes_address;
+	lfptr_meta *nonlf_meta    = env->nonlf_meta;
+
+	if (pmap_contains(lf_map, irn)) {
+		DB((dbg, LEVEL_3, " which already exists\n"));
+		return pmap_find(lf_map, irn)->value;
+	}
+	DB((dbg, LEVEL_3, " which needs to be calculated\n"));
+
+	dbg_info *dbgi = get_irn_dbg_info(irn);
+
+	ir_node  *block = get_nodes_block(irn);
+	ir_graph *irg   = get_irn_irg(irn);
+
+	lfptr_meta* meta = is_alloc_res(irn);
+	if (meta != NULL) {
+		DB((dbg, LEVEL_5, "%+F is newly allocated pointer, with base: %+F, size: %+F\n", irn, meta->base, meta->size));
+		assert(get_irn_mode(meta->base) == get_modeP());
+		assert(get_irn_mode(meta->size) == get_modeLu());
+		assert(meta->base == irn);
+		pmap_insert(lf_map, irn, meta);
+
+	} else if (is_Add(irn) || is_Sub(irn)) {
+		ir_node* left;
+		ir_node* right;
+		if (is_Add(irn)) {
+			left  = get_Add_left(irn);
+			right = get_Add_right(irn);
+		} else {
+			left  = get_Sub_left(irn);
+			right = get_Sub_right(irn);
+		}
+		ir_node* p_pred = NULL;
+		/*TODO: is this necessary? Maybe Add always has ptr on one side.*/
+		assert((get_irn_mode(left) == get_modeP())
+				^ (get_irn_mode(right) == get_modeP()));
+		if (get_irn_mode(left) == get_modeP()) {
+			p_pred = left;
+		} else if (get_irn_mode(right) == get_modeP()) {
+			//panic("Pointer on the right!"); //Pointer apparently isn't always on the left
+			p_pred = right;
+		}
+		assert(p_pred != NULL);
+		lfptr_meta *add_meta = get_node_meta(env, p_pred);
+		meta = add_meta;
+		pmap_insert(lf_map, irn, meta);
+		DB((dbg, LEVEL_5, "%+F has transitive base: %+F, size: %+F inherited from %+F\n", irn, add_meta->base, add_meta->size, p_pred));
+
+	} else if (is_Const(irn) || is_Address(irn)) {
+		meta = nonlf_meta;
+		pmap_insert(lf_map, irn, meta);
+		DB((dbg, LEVEL_5, "%+F has default meta\n", irn));
+
+	} else if (is_Phi(irn)) {
+		int phi_arity = get_Phi_n_preds(irn);
+		ir_node **base_phi_preds = (ir_node**)malloc(sizeof(ir_node*) * phi_arity);
+		ir_node **size_phi_preds = (ir_node**)malloc(sizeof(ir_node*) * phi_arity);
+
+		for (int i = 0; i < phi_arity; i++) {
+			base_phi_preds[i] = new_r_Bad(irg, get_modeP());
+			size_phi_preds[i] = new_r_Bad(irg, get_modeLu());
+		}
+
+		ir_node *base_phi = new_rd_Phi(dbgi, block, phi_arity, base_phi_preds, get_modeP());
+		ir_node *size_phi = new_rd_Phi(dbgi, block, phi_arity, size_phi_preds, get_modeLu());
+
+		free(base_phi_preds);
+		free(size_phi_preds);
+
+		meta = new_lfptr_meta(base_phi, size_phi);
+		pmap_insert(lf_map, irn, meta);
+
+		for (int i = 0; i < phi_arity; i++) {
+			lfptr_meta *pred_meta = get_node_meta(env, get_Phi_pred(irn, i));
+			set_Phi_pred(base_phi, i, pred_meta->base);
+			set_Phi_pred(size_phi, i, pred_meta->size);
+		}
+
+		add_Block_phi(block, base_phi);
+		add_Block_phi(block, size_phi);
+		mark_irn_visited(base_phi);
+		mark_irn_visited(size_phi);
+		assert(get_irn_mode(base_phi) == get_modeP());
+		assert(get_irn_mode(size_phi) == get_modeLu());
+		DB((dbg, LEVEL_5, "%+F with base: %+F, size: %+F\n", irn, base_phi, size_phi));
+
+	} else {
+		meta = calc_metadata(irn, sizes_address);
+		pmap_insert(lf_map, irn, meta);
+		assert(get_irn_mode(meta->base) == get_modeP());
+		assert(get_irn_mode(meta->size) == get_modeLu());
+		DB((dbg, LEVEL_5,
+			"%+F is of unknown type with calculated metadata: base: %+F, size: %+F\n",
+			irn, meta->base, meta->size));
+	}
+	return meta;
+}
+
+static void insert_bound_check_between(ir_node *irn, ir_node *ptr,
+	                                   insert_instrumentation_env *env,
                                        unsigned int reason) {
+	DB((dbg, LEVEL_5, "inserting check between %+F and %+F (reason: %i)\n", irn, ptr, reason));
+
 	dbg_info *dbgi = get_irn_dbg_info(irn);
 
 	assert(get_irn_mode(ptr) == get_modeP());
-	assert(pmap_contains(lf_map, ptr));
+
+	lfptr_meta *meta   = get_node_meta(env, ptr);
+	ir_node    *base   = meta->base;
+	ir_node    *size   = meta->size;
+
+	pmap *lf_map = env->lf_map;
 
 	// No bounds checking when ptr is constant.
 	if (is_Address(ptr) || is_Const(ptr)) {
 		return;
 	}
-
-	DB((dbg, LEVEL_5, "inserting check between %+F and %+F (reason: %i)\n", irn, ptr, reason));
 
 	ir_graph *irg = get_irn_irg(irn);
 
@@ -434,14 +599,6 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr, pmap *lf_map,
 	lf_part_block(lf_map, ptr);
 	ir_node *new_block = get_nodes_block(ptr);
 	DB((dbg, LEVEL_5, "new block: %+F\n", new_block));
-
-	assert(pmap_contains(lf_map, ptr));
-	lfptr_meta *meta = (lfptr_meta*)pmap_find(lf_map, ptr)->value;
-	ir_node *base = meta->base;
-	ir_node *size = meta->size;
-
-	//move(lf_map, base, old_block, new_block);
-	//move(lf_map, size, old_block, new_block);
 
 	ir_node *start = base;
 	assert(get_irn_mode(base) == get_modeP());
@@ -472,118 +629,7 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr, pmap *lf_map,
 	ir_node* bb_true_in[1] = { proj_true };
 	set_irn_in(old_block, ARRAY_SIZE(bb_true_in), bb_true_in);
 
-	dump_ir_graph(irg, "lf-asan-boundcheck");
-}
-
-typedef struct {
-	pmap *lf_map;
-	ir_node *sizes_address;
-	lfptr_meta *nonlf_meta;
-} insert_instrumentation_env;
-
-static void insert_instrumentation(ir_node *irn, void *env) {
-	DB((dbg, LEVEL_5, "Visiting %+F\n", irn));
-	pmap       *lf_map        = ((insert_instrumentation_env*) env)->lf_map;
-	ir_node    *sizes_address = ((insert_instrumentation_env*) env)->sizes_address;
-	lfptr_meta *nonlf_meta    = ((insert_instrumentation_env*) env)->nonlf_meta;
-	mark_irn_visited(nonlf_meta->base);
-	mark_irn_visited(nonlf_meta->size);
-
-	dbg_info *dbgi = get_irn_dbg_info(irn);
-
-	if (is_Block(irn)) {
-		return;
-	}
-
-	ir_mode *mode = get_irn_mode(irn);
-	ir_node *block = get_nodes_block(irn);
-
-	if (mode == get_modeP()) {
-		lfptr_meta* meta = is_alloc_res(irn);
-		if (meta != NULL) {
-			DB((dbg, LEVEL_5, "Newly allocated pointer %+F with base: %+F, size: %+F\n", irn, meta->base, meta->size));
-			assert(get_irn_mode(meta->base) == get_modeP());
-			assert(get_irn_mode(meta->size) == get_modeLu());
-			pmap_insert(lf_map, meta->base, meta);
-		} else if (is_Add(irn) || is_Sub(irn)) {
-			DB((dbg, LEVEL_5, "%+F", irn));
-			ir_node* left;
-			ir_node* right;
-			if (is_Add(irn)) {
-				left  = get_Add_left(irn);
-				right = get_Add_right(irn);
-			} else {
-				left  = get_Sub_left(irn);
-				right = get_Sub_right(irn);
-			}
-			ir_node* p_pred = NULL;
-			/*TODO: is this necessary? Maybe Add always has ptr on one side.*/
-			assert((get_irn_mode(left) == get_modeP())
-					^ (get_irn_mode(right) == get_modeP()));
-			if (get_irn_mode(left) == get_modeP()) {
-				assert(pmap_contains(lf_map, left));
-				p_pred = left;
-			} else if (get_irn_mode(right) == get_modeP()) {
-				//panic("Pointer on the right!"); //Pointer apparently isn't always on the left
-				assert(pmap_contains(lf_map, right));
-				p_pred = right;
-			}
-			assert(p_pred != NULL);
-			lfptr_meta *add_meta = pmap_find(lf_map, left)->value;
-			pmap_insert(lf_map, irn, add_meta);
-			DB((dbg, LEVEL_5, " with transitive base: %+F, size: %+F inherited from %+F\n", add_meta->base, add_meta->size, p_pred));
-		} else if (is_Const(irn) || is_Address(irn)) {
-			pmap_insert(lf_map, irn, nonlf_meta);
-			DB((dbg, LEVEL_5, "%+F with default meta\n", irn));
-		} else if (is_Phi(irn)) {
-			DB((dbg, LEVEL_5, "Phi %+F", irn));
-			int phi_arity = get_Phi_n_preds(irn);
-			ir_node **base_phi_preds = (ir_node**)malloc(sizeof(ir_node*) * phi_arity);
-			ir_node **size_phi_preds = (ir_node**)malloc(sizeof(ir_node*) * phi_arity);
-			for (int i = 0; i < phi_arity; i++) {
-				lfptr_meta* meta  = pmap_find(lf_map, get_Phi_pred(irn, i))->value;
-				base_phi_preds[i] = meta->base;
-				size_phi_preds[i] = meta->size;
-			}
-			ir_node *base_phi = new_rd_Phi(dbgi, block, phi_arity, base_phi_preds, get_modeP());
-			ir_node *size_phi = new_rd_Phi(dbgi, block, phi_arity, size_phi_preds, get_modeLu());
-			add_Block_phi(block, base_phi);
-			add_Block_phi(block, size_phi);
-			mark_irn_visited(base_phi);
-			mark_irn_visited(size_phi);
-			assert(get_irn_mode(base_phi) == get_modeP());
-			assert(get_irn_mode(size_phi) == get_modeLu());
-			pmap_insert(lf_map, irn, new_lfptr_meta(base_phi, size_phi));
-			DB((dbg, LEVEL_5, " with base: %+F, size: %+F\n", base_phi, size_phi));
-		} else {
-			DB((dbg, LEVEL_5, "Unknown Pointer %+F", irn));
-			lfptr_meta* meta = calc_metadata(irn, sizes_address);
-			assert(get_irn_mode(meta->base) == get_modeP());
-			assert(get_irn_mode(meta->size) == get_modeLu());
-			pmap_insert(lf_map, irn, meta);
-			DB((dbg, LEVEL_5, " with calculated metadata: base: %+F, size: %+F\n",
-			    meta->base, meta->size));
-		}
-	} else if (is_Store(irn)) {
-		ir_node* ptr = get_Store_ptr(irn);
-		insert_bound_check_between(irn, ptr, lf_map, MEMORY_WRITE);
-		ir_node* val = get_Store_value(irn);
-		if (get_irn_mode(val) == get_modeP() && !is_Const(irn) && !is_Address(irn)) {
-			insert_bound_check_between(irn, val, lf_map, MEMORY_ESCAPE);
-		}
-	} else if (is_Load(irn)) {
-		ir_node* ptr = get_Load_ptr(irn);
-		insert_bound_check_between(irn, ptr, lf_map, MEMORY_READ);
-	} else if (is_Call(irn)) {
-		int call_params = get_Call_n_params(irn);
-		for (int i = 0; i < call_params; i++) {
-			ir_node *param = get_Call_param(irn, i);
-			DB((dbg, LEVEL_5, "%+F and %+F\n", irn, param));
-			if (get_irn_mode(param) == get_modeP()) {
-				insert_bound_check_between(irn, param, lf_map, FUNCTION_ESCAPE);
-			}
-		}
-	}
+	//dump_ir_graph(irg, "lf-asan-boundcheck");
 }
 
 /*
@@ -602,6 +648,7 @@ static void fix_const_nodes(ir_node *irn, void *env) {
 }
 
 FIRM_API void lowfat_asan(ir_graph *irg) {
+	//printf("lf asan running\n");
 	//assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 	collect_phiprojs_and_start_block_nodes(irg);
@@ -612,7 +659,7 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.lfasan");
 	DB((dbg, LEVEL_1, "\n===> instrumenting %+F for lowfat adresssanitizer.\n", irg));
 
-	dump_ir_graph(irg, "lf-asan-before");
+	//dump_ir_graph(irg, "lf-asan-before");
 
 	DB((dbg, LEVEL_2, "=> Replacing memory functions with lowfat alternatives.\n"));
 	irg_walk_graph(irg, NULL, func_ptr_rename, NULL);
@@ -622,15 +669,24 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 	ir_node   *sizes_address = new_r_Address(irg, sizes_entity);
 	DB((dbg, LEVEL_4, "Global Lookup node: %+F\n", sizes_address));
 
+	DB((dbg, LEVEL_2, "=> Collect bound check node pairs.\n"));
+	bounds_check_pair* f_array = NEW_ARR_F(bounds_check_pair, 0);
+	bounds_check_pair** collected_pairs = &f_array;
+	irg_walk_graph(irg, NULL, collect_bounds_check_node_pairs, collected_pairs);
+
 	DB((dbg, LEVEL_2, "=> Inserting instrumentation nodes.\n"));
 	pmap* lf_map = pmap_create(); /*ir_node -> lfptr_meta*/
 	lfptr_meta *nonlf_meta = new_lfptr_meta(new_r_Const_long(irg, get_modeP(), 0),
 	                                        new_r_Const_long(irg, get_modeLu(), -1));
-	insert_instrumentation_env env;
+	insert_instrumentation_env env; //TODO: change name of insert_instrumentation_env
 	env.lf_map        = lf_map;
 	env.sizes_address = sizes_address;
 	env.nonlf_meta    = nonlf_meta;
-	irg_walk_graph(irg, NULL, insert_instrumentation, &env);
+	for (unsigned int i = 0; i < ARR_LEN(*collected_pairs); i++) {
+		bounds_check_pair pair = (*collected_pairs)[i];
+		insert_bound_check_between(pair.node, pair.ptr, &env, pair.type);
+	}
+	DEL_ARR_F(*collected_pairs);
 
 	DB((dbg, LEVEL_5, "-metadata-map-----------------------------------------\n"));
 	pp_metadata_map(lf_map);
@@ -647,12 +703,12 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 	}
 	lfptr_meta_first = NULL;
 	pmap_destroy(lf_map);
-	DB((dbg, LEVEL_2, "Done instrumenting %+F\n", irg));
 
 	set_optimize(opt_level);
-	dump_ir_graph(irg, "lf-asan-after");
+	//dump_ir_graph(irg, "lf-asan-after");
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
+
 	//printf("Compiled a file with lfasan\n");
 }

@@ -2,6 +2,9 @@ ifneq ($(V),1)
 Q ?= @
 endif
 
+CC ?= gcc
+AR ?= ar
+
 name ?= liblfmalloc
 
 sizes_include ?=
@@ -19,16 +22,16 @@ CFLAGS ?= -ggdb -pthread -Wall -fPIC
 
 $(builddir)/$(name).a: $(objects)
 	@echo 'AR $@'
-	$(Q)ar rcs $(builddir)/$(name).a $(objects)
+	$(Q)$(AR) rcs $(builddir)/$(name).a $(objects)
 
 $(builddir)/$(name).so: CFLAGS += -DLF_DYNAMIC_LIB
 $(builddir)/$(name).so: $(objects)
 	@echo 'LINK $@'
-	$(Q)gcc -shared -o $(builddir)/$(name).so $(objects)
+	$(Q)$(CC) -shared -o $(builddir)/$(name).so $(objects)
 
 $(builddir)/%.o: $(srcdir)/%.c $(headers)
 	@echo 'CC $@'
-	$(Q)gcc -c $< $(CFLAGS) -I $(includedir) -I $(sizes_include) -o $@
+	$(Q)$(CC) -c $< $(CFLAGS) -I $(includedir) -I $(sizes_include) -o $@
 
 .PHONY: clean
 
