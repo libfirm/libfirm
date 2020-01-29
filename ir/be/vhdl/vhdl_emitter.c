@@ -264,6 +264,11 @@ static void emit_Jmp(ir_node const *const node)
 
 static void emit_Minus(ir_node const *const node)
 {
+	ir_mode *mode = get_irn_mode(node);
+	if (!mode_is_signed(mode)) {
+		int bits = get_mode_size_bits(mode);
+		be_emit_irprintf("to_unsigned(0, %d) ", bits);
+	}
 	be_emit_irprintf("- (");
 	emit_vhdl_node(get_irn_n(node, n_vhdl_Minus_val));
 	be_emit_irprintf(")");
