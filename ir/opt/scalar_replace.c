@@ -305,6 +305,8 @@ static bool find_possible_replacements(ir_graph *irg)
 		if (get_entity_link(ent) == ADDRESS_TAKEN)
 			continue;
 
+		DBG((dbg, LEVEL_3, "Checking if %+F is suitable... ", ent));
+
 		/* we can handle arrays, structs and atomic types yet */
 		ir_type *ent_type = get_entity_type(ent);
 		if (is_aggregate_type(ent_type) || is_atomic_type(ent_type)) {
@@ -313,15 +315,20 @@ static bool find_possible_replacements(ir_graph *irg)
 				if (get_entity_link(ent))
 					--res;
 				set_entity_link(ent, ADDRESS_TAKEN);
+				DB((dbg, LEVEL_3, "No, address taken at %+F\n", succ));
 			} else {
 				/* possible found one */
 				if (get_entity_link(ent) == NULL)
 					++res;
 				link_all_leaf_members(ent, succ);
+				DB((dbg, LEVEL_3, "Mabye\n"));
 			}
+		} else {
+			DB((dbg, LEVEL_3, "No, unsupported type\n"));
 		}
 	}
 
+	DB((dbg, LEVEL_3, "Found %i replacement candidates\n", res));
 	return res != 0;
 }
 
