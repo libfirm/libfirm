@@ -331,7 +331,6 @@ void assure_lcssa(ir_graph *const irg)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.lcssa");
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_DOMINANCE | IR_GRAPH_PROPERTY_NO_CRITICAL_EDGES);
-	dump_ir_graph(irg, "before-lcssa");
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 	DB((dbg, LEVEL_1, "Begin LCSSA construction on %+F\n", irg));
@@ -340,7 +339,6 @@ void assure_lcssa(ir_graph *const irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	DEBUG_ONLY(verify_lcssa(irg);)
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
-	dump_ir_graph(irg, "after-lcssa");
 }
 
 void assure_loop_lcssa(ir_graph *const irg, ir_loop *const loop)
