@@ -31,6 +31,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "../../ir/be/be_t.h"
+
 static unsigned get_vnum(const ir_node *node)
 {
 	return (unsigned)PTR_TO_INT(get_irn_link(node));
@@ -142,6 +144,108 @@ static ir_type *get_addr_type(const ir_node *addr)
 		assert(is_Sel(addr));
 		return get_Sel_type(addr);
 	}
+}
+
+typedef struct {
+	unsigned max_members;
+	ir_node **copybs;
+} copyb_walk_env_t;
+
+static void lower_copyb_node(ir_node *copyb)
+{
+	ir_node       *block       = get_nodes_block(copyb);
+	ir_node       *src         = get_CopyB_src(copyb);
+	ir_node       *dst         = get_CopyB_dst(copyb);
+	ir_node       *mem         = get_CopyB_mem(copyb);
+	dbg_info      *dbgi        = get_irn_dbg_info(copyb);
+	ir_type       *ty          = get_CopyB_type(copyb);
+	bool           is_volatile = get_CopyB_volatility(copyb) == volatility_is_volatile;
+	ir_cons_flags  flags       = is_volatile ? cons_volatile : cons_none;
+
+	size_t n_members = get_compound_n_members(ty);
+
+	for (size_t m = 0; m < n_members; m++) {
+		ir_entity *member      = get_compound_member(ty, m);
+		ir_type   *member_type = get_entity_type(member);
+		ir_mode   *member_mode = get_type_mode(member_type);
+		if (member_mode == NULL) {
+			member_mode = mode_P;
+		}
+
+		ir_node *src_member = new_rd_Member(dbgi, block, src,  member);
+		ir_node *dst_member = new_rd_Member(dbgi, block, dst, member);
+		ir_node *load       = new_rd_Load(dbgi, block, mem, src_member, member_mode, member_type, flags);
+		mem                 = new_rd_Proj(dbgi, load, mode_M, pn_Load_M);
+		ir_node *res        = new_rd_Proj(dbgi, load, member_mode, pn_Load_res);
+		ir_node *store      = new_rd_Store(dbgi, block, mem, dst_member, res, member_type, flags);
+		mem                 = new_rd_Proj(dbgi, store, mode_M, pn_Store_M);
+	}
+
+	exchange(copyb, mem);
+}
+
+/**
+ * Post-Walker: find CopyB nodes.
+ */
+static void find_copyb_nodes(ir_node *irn, void *ctx)
+{
+	copyb_walk_env_t *env = (copyb_walk_env_t*) ctx;
+
+	if (!is_CopyB(irn))
+		return;
+
+	ir_node *irg_frame = get_irg_frame(get_irn_irg(irn));
+	ir_node *src = get_CopyB_src(irn);
+	ir_node *dst = get_CopyB_dst(irn);
+
+	if (!is_Member(src) || get_Member_ptr(src) != irg_frame ||
+	    !is_Member(dst) || get_Member_ptr(dst) != irg_frame)
+		return;
+
+	ir_type *tp = get_CopyB_type(irn);
+
+	if (!is_compound_type(tp))
+		return;
+
+	size_t members = get_compound_n_members(tp);
+
+	if (members > env->max_members)
+		return;
+
+	for (size_t m = 0; m < members; m++) {
+		ir_entity *member = get_compound_member(tp, m);
+		ir_type *mtp = get_entity_type(member);
+
+		if (!is_atomic_type(mtp))
+			return;
+	}
+
+	ARR_APP1(ir_node*, env->copybs, irn);
+}
+
+/**
+ * Lowers CopyB nodes to sequences of load and stores.  Unlike the
+ * function in lower/lower_copyb.c, this one here uses Member nodes
+ * instead of directly computing addresses. It also does not coalesce
+ * the loads and stores into larger operations.
+ */
+static void lower_CopyB_to_Member(ir_graph *irg, unsigned max_members)
+{
+	copyb_walk_env_t env = {
+		.max_members = max_members,
+		.copybs = NEW_ARR_F(ir_node*, 0)
+	};
+	irg_walk_graph(irg, NULL, find_copyb_nodes, &env);
+
+	bool changed = false;
+	for (size_t i = 0, n = ARR_LEN(env.copybs); i != n; ++i) {
+		lower_copyb_node(env.copybs[i]);
+		changed = true;
+	}
+	confirm_irg_properties(irg, changed ? IR_GRAPH_PROPERTIES_CONTROL_FLOW
+	                       : IR_GRAPH_PROPERTIES_ALL);
+
+	DEL_ARR_F(env.copybs);
 }
 
 /*
@@ -569,6 +673,10 @@ static void do_scalar_replacements(ir_graph *irg, pset *members, unsigned nvals,
  */
 void scalar_replacement_opt(ir_graph *irg)
 {
+	/* TODO: Ask the backend for the maximum size */
+	lower_CopyB_to_Member(irg, 8);
+	be_after_transform(irg, "hl-lower-copyb");
+
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_OUTS
 	                         | IR_GRAPH_PROPERTY_NO_TUPLES);
