@@ -130,6 +130,17 @@ static void be_peephole_before_exchange(const ir_node *old_node,
 	be_liveness_remove(lv, old_node);
 }
 
+void be_peephole_exchange_using_proj(ir_node *old_proj, ir_node *nw)
+{
+	assert(is_Proj(old_proj));
+	ir_node *old = skip_Proj(old_proj);
+	assert(be_has_only_one_user(old));
+	be_peephole_before_exchange(old, nw);
+	sched_remove(old);
+	exchange(old_proj, nw);
+	be_liveness_introduce(lv, nw);
+}
+
 void be_peephole_exchange(ir_node *old, ir_node *nw)
 {
 	be_peephole_before_exchange(old, nw);

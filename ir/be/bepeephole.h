@@ -39,6 +39,13 @@ typedef void (*peephole_opt_func) (ir_node *node);
 void be_peephole_exchange(ir_node *old, ir_node *nw);
 
 /**
+ * Same as be_peephole_exchange(), but this function should be used for exchanging a Proj node with a new node, as it
+ * updates the internal state correctly for this case.
+ * This function removes the proj operand of old_proj from the schedule.
+ */
+void be_peephole_exchange_using_proj(ir_node *old_proj, ir_node *nw);
+
+/**
  * Same as be_peephole_exchange(), but also replace @p old in the schedule
  * by @p nw.
  */
