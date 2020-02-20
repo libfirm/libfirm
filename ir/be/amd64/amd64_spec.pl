@@ -644,6 +644,16 @@ movd_gp_xmm => {
 	emit      => "movd %S0, %D0"
 },
 
+pxor_0 => {
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
+	out_reqs  => [ "xmm" ],
+	outs      => [ "res" ],
+	fixed     => "amd64_op_mode_t op_mode = AMD64_OP_NONE;",
+	attr      => "x86_insn_size_t size",
+	emit      => "pxor %^D0, %^D0",
+},
+
 # Conversion operations
 
 cvtss2sd => { template => $cvtop2x },

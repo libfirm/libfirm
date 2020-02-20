@@ -167,6 +167,24 @@ static void peephole_amd64_mov_gp(ir_node *const node)
 	}
 }
 
+static void peephole_amd64_cvtsi2sX(ir_node *const node)
+{
+	/**
+	 * cvtsi2sd / cvtsi2ss instructions have a dependency on the destination register, as the upper part of the xmm
+	 * register remains unmodified, but this dependency is not present in the amd64 backend.
+	 * XORing the register to zero before the convert instruction breaks the
+	 * dependency chain seen by the processor -> faster out-of-order execution
+	 */
+	arch_register_t const *const reg = arch_get_irn_register_out(node, pn_amd64_cvtsi2sd_res);
+	dbg_info              *const dbgi  = get_irn_dbg_info(node);
+	ir_node               *const block = get_nodes_block(node);
+	ir_node *pxor = new_bd_amd64_pxor_0(dbgi, block, X86_SIZE_64);
+	arch_set_irn_register_out(pxor, pn_amd64_pxor_0_res, reg);
+	ir_node *keep = be_new_Keep_one(pxor);
+	sched_add_before(node, pxor);
+	sched_add_after(pxor, keep);
+}
+
 static void peephole_be_IncSP(ir_node *const node)
 {
 	be_peephole_IncSP_IncSP(node);
@@ -179,6 +197,8 @@ void amd64_peephole_optimization(ir_graph *const irg)
 	register_peephole_optimization(op_amd64_lea,     peephole_amd64_lea);
 	register_peephole_optimization(op_amd64_mov_imm, peephole_amd64_mov_imm);
 	register_peephole_optimization(op_amd64_mov_gp,  peephole_amd64_mov_gp);
+	register_peephole_optimization(op_amd64_cvtsi2sd, peephole_amd64_cvtsi2sX);
+	register_peephole_optimization(op_amd64_cvtsi2ss, peephole_amd64_cvtsi2sX);
 	register_peephole_optimization(op_be_IncSP,      peephole_be_IncSP);
 	be_peephole_opt(irg);
 }
