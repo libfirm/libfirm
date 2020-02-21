@@ -559,7 +559,14 @@ static lfptr_meta *get_node_meta(insert_instrumentation_env *env, ir_node *irn) 
 		assert(get_irn_mode(base_phi) == get_modeP());
 		assert(get_irn_mode(size_phi) == get_modeLu());
 		DB((dbg, LEVEL_5, "%+F with base: %+F, size: %+F\n", irn, base_phi, size_phi));
-
+	} else if (is_Member(irn)) {
+		ir_node *pred = get_Member_ptr(irn);
+		assert(get_irn_mode(pred) == get_modeP());
+		meta = get_node_meta(env, pred);
+		pmap_insert(lf_map, irn, meta);
+		DB((dbg, LEVEL_5,
+			"%+F is Member and inherits meta from predecessor %+F: base: %+F, size: %+F\n",
+			irn, pred, meta->base, meta->size));
 	} else {
 		meta = calc_metadata(irn, sizes_address);
 		pmap_insert(lf_map, irn, meta);
@@ -659,7 +666,7 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.lfasan");
 	DB((dbg, LEVEL_1, "\n===> instrumenting %+F for lowfat adresssanitizer.\n", irg));
 
-	//dump_ir_graph(irg, "lf-asan-before");
+	dump_ir_graph(irg, "lf-asan-before");
 
 	DB((dbg, LEVEL_2, "=> Replacing memory functions with lowfat alternatives.\n"));
 	irg_walk_graph(irg, NULL, func_ptr_rename, NULL);
@@ -705,7 +712,7 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 	pmap_destroy(lf_map);
 
 	set_optimize(opt_level);
-	//dump_ir_graph(irg, "lf-asan-after");
+	dump_ir_graph(irg, "lf-asan-after");
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
