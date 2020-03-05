@@ -42,7 +42,9 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 	} \
 }
 
-// Rename allocation functions to refer to lfmallocs allocation functions specifically.
+/**
+ * Rename allocation functions to refer to lfmallocs allocation functions specifically.
+ */
 static void func_ptr_rename(ir_node *irn, void *env) {
 	(void) env;
 	if (!is_Call(irn)) {
@@ -106,21 +108,27 @@ static ir_entity *create_global_lookup_table(void) {
 	return table_entity;
 }
 
-// Represents a bound check which might need to be inserted.
+/**
+ * Represents a bound check which might need to be inserted.
+ */
 typedef struct {
-	ir_node *ptr;      // The node which needs to be checked.
-	ir_node *node;     // The node which uses the pointer.
+	ir_node *ptr;      /* The node which needs to be checked. */
+	ir_node *node;     /* The node which uses the pointer. */
 	unsigned int type;
 } bounds_check_pair;
 
-// creates a new bound check pair and adds it to the list.
+/**
+ * Creates a new bound check pair and adds it to the list.
+ */
 static void add_pair(bounds_check_pair **pairs, ir_node *irn, ir_node *ptr,
                      unsigned int type) {
 	bounds_check_pair new_pair = {ptr, irn, type};
 	ARR_APP1(bounds_check_pair, *pairs, new_pair);
 }
 
-// Analyzes a node to check if a bound check might be required.
+/**
+ * Analyzes a node to check if a bound check might be required.
+ */
 static void collect_bounds_check_node_pairs(ir_node *irn, void *env) {
 	bounds_check_pair **collected_pairs = (bounds_check_pair**) env;
 
@@ -162,19 +170,23 @@ static void collect_bounds_check_node_pairs(ir_node *irn, void *env) {
 	}
 }
 
-// Represents the metadata of a pointer node
+/*
+ * Represents the metadata of a pointer node
+ */
 typedef struct _lfptr_meta {
 	struct _lfptr_meta *next;
 	ir_node *base;
 	ir_node *size;
-	bool arithmetic; // If in the current function context,
-	                 // this meta was changed by pointer arithmetic.
+	bool arithmetic; /* If in the current function context,
+	                    this meta was changed by pointer arithmetic. */
 } lfptr_meta;
 
-// List which owns all metadata objects.
+/* List which owns all metadata objects. */
 lfptr_meta *lfptr_meta_first = NULL;
 
-// constructor for lfptr_meta uninitialized lfptr_meta.
+/**
+ * constructor for lfptr_meta uninitialized lfptr_meta.
+ */
 static lfptr_meta *new_lfptr_meta(ir_node* base, ir_node *size, bool arithmetic) {
 	lfptr_meta *new = (lfptr_meta*)malloc(sizeof(lfptr_meta));
 	new->next = lfptr_meta_first;
@@ -185,8 +197,10 @@ static lfptr_meta *new_lfptr_meta(ir_node* base, ir_node *size, bool arithmetic)
 	return new;
 }
 
-// Analyzses irn to check if it is an allocation call.
-// In this case it infers the metadata and returns it.
+/**
+ * Analyzses irn to check if it is an allocation call.
+ * In this case it infers the metadata and returns it.
+ */
 static lfptr_meta *is_alloc_res(ir_node *irn) {
 	dbg_info *dbgi = get_irn_dbg_info(irn);
 
@@ -202,9 +216,9 @@ static lfptr_meta *is_alloc_res(ir_node *irn) {
 					if (is_Address(ptr)) {
 					const char* ld_name = get_entity_ld_name(get_irn_entity_attr(ptr));
 					ir_node *size = NULL;
-					// Check every allocation (except lf_posix_memalign) to infer the
-					// correct metadata by their parameters.
-					// lf_posix_memalign metadata is calculated when it is used.
+					/* Check every allocation (except lf_posix_memalign) to infer the
+					   correct metadata by their parameters.
+					   lf_posix_memalign metadata is calculated when it is used. */
 					if (streq(ld_name, "lf_malloc")
 							|| streq(ld_name, "lf_pvalloc")
 							|| streq(ld_name, "lf_valloc")) {
@@ -229,7 +243,9 @@ static lfptr_meta *is_alloc_res(ir_node *irn) {
 	return NULL;
 }
 
-// Inserts metadata reconstruction logic of a pointer node into the firm graph.
+/**
+ * Inserts metadata reconstruction logic of a pointer node into the firm graph.
+ */
 static lfptr_meta *calc_metadata(ir_node *irn, ir_node *sizes_lookup) {
 	dbg_info *dbgi = get_irn_dbg_info_(irn);
 
@@ -242,9 +258,9 @@ static lfptr_meta *calc_metadata(ir_node *irn, ir_node *sizes_lookup) {
 
 	ir_node *const_region_bits = new_r_Const_long(irg, get_modeLu(), REGION_BITS);
 	ir_node *conv_p_lu         = new_rd_Conv(dbgi, block, irn, get_modeLu());
-	ir_node *index             = new_rd_Shr(dbgi, block, conv_p_lu, const_region_bits); //shift by bits of size of region
+	ir_node *index             = new_rd_Shr(dbgi, block, conv_p_lu, const_region_bits); /* shift by bits of size of region */
 	ir_node *byte_offset       = new_rd_Mul(dbgi, block, index,
-	                                    new_rd_Const_long(dbgi, irg, get_modeLu(), 8)); //size of element in lookup table
+	                                    new_rd_Const_long(dbgi, irg, get_modeLu(), 8)); /* size of element in lookup table */
 	ir_node *conv_lu_ls   = new_rd_Conv(dbgi, block, byte_offset, get_modeLs());
 	ir_node *size_address = new_rd_Add(dbgi, block, sizes_lookup, conv_lu_ls);
 	mark_irn_visited(size_address);
@@ -260,14 +276,16 @@ static lfptr_meta *calc_metadata(ir_node *irn, ir_node *sizes_lookup) {
 	ir_node *mod_res      = new_rd_Proj(dbgi, mod, get_modeLu(), pn_Mod_res);
 	ir_node *conv_mod_res = new_rd_Conv(dbgi, block, mod_res, get_modeLs());
 	ir_node *sub          = new_rd_Sub(dbgi, block, irn, conv_mod_res);
-	ir_node *base         = sub; //new_rd_Conv(dbgi, block, sub, get_modeP());
+	ir_node *base         = sub;
 	mark_irn_visited(base);
 
 	lfptr_meta *res = new_lfptr_meta(base, size, false);
 	return res;
 }
 
-// Debug function for pretty printing the metadata map
+/**
+ * Debug function for pretty printing the metadata map
+ */
 static void pp_metadata_map(pmap* map) {
 	if (pmap_count(map) == 0) {
 		DB((dbg, LEVEL_5, "metadata map is empty\n"));
@@ -281,9 +299,11 @@ static void pp_metadata_map(pmap* map) {
 	}
 }
 
-// The following functions:
-// lf_move, lf_move_node, move_node, update_startblock, lf_part_block
-// were taken from irgmod.c and tweaked to consider the metadata nodes.
+/*
+ * The following functions:
+ * lf_move, lf_move_node, move_node, update_startblock, lf_part_block
+ * were taken from irgmod.c and tweaked to consider the metadata nodes.
+ */
 static void lf_move(pmap *lf_map, ir_node *node, ir_node *from_bl, ir_node *to_bl);
 
 static void lf_move_node(pmap *lf_map, ir_node *node, ir_node *from_bl, ir_node *to_bl)
@@ -347,7 +367,7 @@ static void lf_move(pmap *lf_map, ir_node *node, ir_node *from_bl, ir_node *to_b
 			lf_move(lf_map, pred, from_bl, to_bl);
 	}
 
-	//Don't leave metadata nodes behind
+	/* Don't leave metadata nodes behind */
 	if (pmap_contains(lf_map, node)) {
 		DB((dbg, LEVEL_5, "Moving Metadata nodes of %+F\n", node));
 		lfptr_meta* meta = pmap_find(lf_map, node)->value;
@@ -406,11 +426,13 @@ static void lf_part_block(pmap *lf_map, ir_node *node)
 	set_optimize(rem_opt);
 }
 
-// Creates an entity for a string_literal.
+/**
+ * Creates an entity for a string_literal.
+ */
 static ir_entity* string_literal(char const* string) {
 	ir_graph *const_irg = get_const_code_irg();
 
-	long len = strlen(string) + 1; //including 0-terminator
+	long len = strlen(string) + 1; /* including 0-terminator */
 
 	ir_initializer_t* init = create_initializer_compound(len);
 	for (uint32_t i = 0; i < len; i++) {
@@ -426,7 +448,9 @@ static ir_entity* string_literal(char const* string) {
 	return entity;
 }
 
-// Manages the singleton entity for the current filename that is compiled.
+/*
+ * Manages the singleton entity for the current filename that is compiled.
+ */
 static ir_entity *current_filename_entity(const char* filename) {
 	/* For filename in error output, an entity with the current filename bytes is remembered here. */
 	static ir_entity *current_file_entity = NULL;
@@ -442,13 +466,16 @@ static ir_entity *current_filename_entity(const char* filename) {
 	return current_file_entity;
 }
 
-/* Returns the Call node to lf_error for the node irn (which is the OOB pointer) */
+/**
+ * Returns the Call node to lf_error for the node irn (which is the OOB pointer)
+ */
 static ir_node* error_call(ir_node *irn, ir_node *block, pmap* lf_map,
 	                   unsigned int reason, dbg_info *dbgi) {
 	ir_graph *irg = get_irn_irg(irn);
 
 	src_loc_t src_loc = ir_retrieve_dbg_info(dbgi);
-	ir_node *line_const = new_rd_Const_long(dbgi, irg, get_modeIu(), src_loc.line); /*if dbg info doesn't exist src_loc.line is 0, which is considered by lf_error*/
+	/* if dbg info doesn't exist src_loc.line is 0, which is considered by lf_error */
+	ir_node *line_const = new_rd_Const_long(dbgi, irg, get_modeIu(), src_loc.line);
 
 	ir_node *file_name;
 	if (src_loc.file != NULL) {
@@ -490,14 +517,18 @@ static ir_node* error_call(ir_node *irn, ir_node *block, pmap* lf_map,
 	return abort_call;
 }
 
-// Environment for during instrumentation insertion phase.
+/*
+ * Environment for during instrumentation insertion phase.
+ */
 typedef struct {
 	pmap *lf_map;
 	ir_node *sizes_address;
 	lfptr_meta *nonlf_meta;
 } insert_instrumentation_env;
 
-// Lazily determines the metadata of a node recursively.
+/**
+ * Lazily determines the metadata of a node recursively.
+ */
 static lfptr_meta *get_node_meta(insert_instrumentation_env *env, ir_node *irn) {
 	DB((dbg, LEVEL_3, "Need meta for %+F", irn));
 	assert(get_irn_mode(irn) == get_modeP());
@@ -536,17 +567,16 @@ static lfptr_meta *get_node_meta(insert_instrumentation_env *env, ir_node *irn) 
 			right = get_Sub_right(irn);
 		}
 		ir_node* p_pred = NULL;
-		/*TODO: is this necessary? Maybe Add always has ptr on one side.*/
 		assert((get_irn_mode(left) == get_modeP())
-				^ (get_irn_mode(right) == get_modeP()));
+			^ (get_irn_mode(right) == get_modeP()));
 		if (get_irn_mode(left) == get_modeP()) {
 			p_pred = left;
 		} else if (get_irn_mode(right) == get_modeP()) {
-			//panic("Pointer on the right!"); //Pointer apparently isn't always on the left
 			p_pred = right;
 		}
 		assert(p_pred != NULL);
-		lfptr_meta *add_meta = get_node_meta(env, p_pred);
+		lfptr_meta *pred_meta = get_node_meta(env, p_pred);
+		lfptr_meta *add_meta = new_lfptr_meta(pred_meta->base, pred_meta->size, true);
 		meta = add_meta;
 		pmap_insert(lf_map, irn, meta);
 		DB((dbg, LEVEL_5, "%+F has transitive base: %+F, size: %+F inherited from %+F\n", irn, add_meta->base, add_meta->size, p_pred));
@@ -572,7 +602,7 @@ static lfptr_meta *get_node_meta(insert_instrumentation_env *env, ir_node *irn) 
 		free(base_phi_preds);
 		free(size_phi_preds);
 
-		meta = new_lfptr_meta(base_phi, size_phi, false); //set tmp values for new meta
+		meta = new_lfptr_meta(base_phi, size_phi, false); /* set tmp values for new meta */
 		pmap_insert(lf_map, irn, meta);
 
 		bool arithmetic = false;
@@ -611,7 +641,9 @@ static lfptr_meta *get_node_meta(insert_instrumentation_env *env, ir_node *irn) 
 	return meta;
 }
 
-// Insert bound check between irn and ptr. Doesn't if the metadata of ptr isn't arithmetic.
+/**
+ * Insert bound check between irn and ptr. Doesn't if the metadata of ptr isn't arithmetic.
+ */
 static void insert_bound_check_between(ir_node *irn, ir_node *ptr,
 	                                   insert_instrumentation_env *env,
                                        unsigned int reason) {
@@ -632,7 +664,7 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr,
 
 	pmap *lf_map = env->lf_map;
 
-	// No bounds checking when ptr is constant.
+	/* No bounds checking when ptr is constant. */
 	if (is_Address(ptr) || is_Const(ptr)) {
 		return;
 	}
@@ -693,12 +725,11 @@ static void fix_const_nodes(ir_node *irn, void *env) {
 }
 
 FIRM_API void lowfat_asan(ir_graph *irg) {
-	//printf("lf asan running\n");
-	//assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 	collect_phiprojs_and_start_block_nodes(irg);
 
-	int opt_level = get_optimize(); //Don't optimize anything, while manipulating the graph
+	/* Don't optimize anything, while manipulating the graph */
+	int opt_level = get_optimize();
 	set_optimize(0);
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.lfasan");
@@ -724,7 +755,7 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 	lfptr_meta *nonlf_meta = new_lfptr_meta(new_r_Const_long(irg, get_modeP(), 0),
 	                                        new_r_Const_long(irg, get_modeLu(), -1),
 	                                        false);
-	insert_instrumentation_env env; //TODO: change name of insert_instrumentation_env
+	insert_instrumentation_env env;
 	env.lf_map        = lf_map;
 	env.sizes_address = sizes_address;
 	env.nonlf_meta    = nonlf_meta;
@@ -740,7 +771,7 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 	DB((dbg, LEVEL_2, "=> Fixing blocks of const/address nodes.\n"));
 	irg_walk_graph(irg, NULL, fix_const_nodes, NULL);
 
-	/*Freeing allocated memory*/
+	/* Freeing allocated memory */
 	lfptr_meta* cur = lfptr_meta_first;
 	while (cur != NULL) {
 		lfptr_meta* f = cur;
