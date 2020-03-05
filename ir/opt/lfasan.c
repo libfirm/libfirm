@@ -146,6 +146,15 @@ static void collect_bounds_check_node_pairs(ir_node *irn, void *env) {
 				add_pair(collected_pairs, irn, param, FUNCTION_ESCAPE);
 			}
 		}
+	} else if (is_Return(irn)) {
+		int return_res = get_Return_n_ress(irn);
+		for (int i = 0; i < return_res; i++) {
+			ir_node *res = get_Return_res(irn, i);
+			if (get_irn_mode(res) == get_modeP()) {
+				DB((dbg, LEVEL_5, "Collected ptr %+F for %+F (RETURN_ESCAPE)\n", res, irn));
+				add_pair(collected_pairs, irn, res, RETURN_ESCAPE);
+			}
+		}
 	}
 }
 
@@ -209,6 +218,7 @@ static lfptr_meta *is_alloc_res(ir_node *irn) {
 	return NULL;
 }
 
+// Inserts metadata reconstruction logic of a pointer node into the firm graph.
 static lfptr_meta *calc_metadata(ir_node *irn, ir_node *sizes_lookup) {
 	dbg_info *dbgi = get_irn_dbg_info_(irn);
 
@@ -221,9 +231,9 @@ static lfptr_meta *calc_metadata(ir_node *irn, ir_node *sizes_lookup) {
 
 	ir_node *const_region_bits = new_r_Const_long(irg, get_modeLu(), REGION_BITS);
 	ir_node *conv_p_lu         = new_rd_Conv(dbgi, block, irn, get_modeLu());
-	ir_node *index             = new_rd_Shr(dbgi, block, conv_p_lu, const_region_bits);
+	ir_node *index             = new_rd_Shr(dbgi, block, conv_p_lu, const_region_bits); //shift by bits of size of region
 	ir_node *byte_offset       = new_rd_Mul(dbgi, block, index,
-	                                    new_rd_Const_long(dbgi, irg, get_modeLu(), 8));
+	                                    new_rd_Const_long(dbgi, irg, get_modeLu(), 8)); //size of element in lookup table
 	ir_node *conv_lu_ls   = new_rd_Conv(dbgi, block, byte_offset, get_modeLs());
 	ir_node *size_address = new_rd_Add(dbgi, block, sizes_lookup, conv_lu_ls);
 	mark_irn_visited(size_address);
@@ -239,7 +249,7 @@ static lfptr_meta *calc_metadata(ir_node *irn, ir_node *sizes_lookup) {
 	ir_node *mod_res      = new_rd_Proj(dbgi, mod, get_modeLu(), pn_Mod_res);
 	ir_node *conv_mod_res = new_rd_Conv(dbgi, block, mod_res, get_modeLs());
 	ir_node *sub          = new_rd_Sub(dbgi, block, irn, conv_mod_res);
-	ir_node *base         = new_rd_Conv(dbgi, block, sub, get_modeP());
+	ir_node *base         = sub; //new_rd_Conv(dbgi, block, sub, get_modeP());
 	mark_irn_visited(base);
 
 	lfptr_meta *res = new_lfptr_meta(base, size);
@@ -582,7 +592,7 @@ static lfptr_meta *get_node_meta(insert_instrumentation_env *env, ir_node *irn) 
 static void insert_bound_check_between(ir_node *irn, ir_node *ptr,
 	                                   insert_instrumentation_env *env,
                                        unsigned int reason) {
-	DB((dbg, LEVEL_5, "inserting check between %+F and %+F (reason: %i)\n", irn, ptr, reason));
+	DB((dbg, LEVEL_5, "try inserting check between %+F and %+F (reason: %i)\n", irn, ptr, reason));
 
 	dbg_info *dbgi = get_irn_dbg_info(irn);
 

@@ -241,6 +241,9 @@ void __lf_free(void* ptr) {
 	if (!__lf_alloc_enabled()) {
 		return __libc_free(ptr);
 	}
+
+	__init();
+
 	if (ptr == NULL) {
 		PRINTF_DBG("freeing NULL\n");
 		return;
@@ -338,6 +341,7 @@ void *__lf_memalign(size_t alignment, size_t size) {
 }
 
 size_t __lf_usable_size(void* ptr) {
+	__init();
 	size_t region_idx = __lf_index(ptr);
 
 	if (region_idx == 0 || region_idx > REGION_COUNT) {
@@ -360,10 +364,13 @@ void __lf_error(void *ptr, void* base, unsigned long size, unsigned int reason,
 			s_reason = "MEMORY READ";
 			break;
 		case MEMORY_ESCAPE:
-			s_reason = "MEMORY ESCAPE"; /*TODO: implement*/
+			s_reason = "MEMORY ESCAPE";
 			break;
 		case FUNCTION_ESCAPE:
 			s_reason = "FUNCTION ESCAPE";
+			break;
+		case RETURN_ESCAPE:
+			s_reason = "RETURN ESCAPE";
 			break;
 		default:
 			s_reason = "UNKNOWN";
