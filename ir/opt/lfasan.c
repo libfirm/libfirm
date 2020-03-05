@@ -42,6 +42,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 	} \
 }
 
+// Rename allocation functions to refer to lfmallocs allocation functions specifically.
 static void func_ptr_rename(ir_node *irn, void *env) {
 	(void) env;
 	if (!is_Call(irn)) {
@@ -105,18 +106,21 @@ static ir_entity *create_global_lookup_table(void) {
 	return table_entity;
 }
 
+// Represents a bound check which might need to be inserted.
 typedef struct {
-	ir_node *ptr;   //The node which needs to be checked.
-	ir_node *node;  //The node which uses the pointer.
+	ir_node *ptr;      // The node which needs to be checked.
+	ir_node *node;     // The node which uses the pointer.
 	unsigned int type;
 } bounds_check_pair;
 
+// creates a new bound check pair and adds it to the list.
 static void add_pair(bounds_check_pair **pairs, ir_node *irn, ir_node *ptr,
                      unsigned int type) {
 	bounds_check_pair new_pair = {ptr, irn, type};
 	ARR_APP1(bounds_check_pair, *pairs, new_pair);
 }
 
+// Analyzes a node to check if a bound check might be required.
 static void collect_bounds_check_node_pairs(ir_node *irn, void *env) {
 	bounds_check_pair **collected_pairs = (bounds_check_pair**) env;
 
@@ -158,24 +162,31 @@ static void collect_bounds_check_node_pairs(ir_node *irn, void *env) {
 	}
 }
 
+// Represents the metadata of a pointer node
 typedef struct _lfptr_meta {
 	struct _lfptr_meta *next;
 	ir_node *base;
 	ir_node *size;
+	bool arithmetic; // If in the current function context,
+	                 // this meta was changed by pointer arithmetic.
 } lfptr_meta;
 
+// List which owns all metadata objects.
 lfptr_meta *lfptr_meta_first = NULL;
 
-/*returns uninitialized lfptr_meta*/
-static lfptr_meta *new_lfptr_meta(ir_node* base, ir_node *size) {
+// constructor for lfptr_meta uninitialized lfptr_meta.
+static lfptr_meta *new_lfptr_meta(ir_node* base, ir_node *size, bool arithmetic) {
 	lfptr_meta *new = (lfptr_meta*)malloc(sizeof(lfptr_meta));
 	new->next = lfptr_meta_first;
 	new->base = base;
 	new->size = size;
+	new->arithmetic = arithmetic;
 	lfptr_meta_first = new;
 	return new;
 }
 
+// Analyzses irn to check if it is an allocation call.
+// In this case it infers the metadata and returns it.
 static lfptr_meta *is_alloc_res(ir_node *irn) {
 	dbg_info *dbgi = get_irn_dbg_info(irn);
 
@@ -191,8 +202,8 @@ static lfptr_meta *is_alloc_res(ir_node *irn) {
 					if (is_Address(ptr)) {
 					const char* ld_name = get_entity_ld_name(get_irn_entity_attr(ptr));
 					ir_node *size = NULL;
-					// Check every allocation (except lf_posix_memalign) to infer the correct
-					// metadata by their parameters.
+					// Check every allocation (except lf_posix_memalign) to infer the
+					// correct metadata by their parameters.
 					// lf_posix_memalign metadata is calculated when it is used.
 					if (streq(ld_name, "lf_malloc")
 							|| streq(ld_name, "lf_pvalloc")
@@ -207,7 +218,7 @@ static lfptr_meta *is_alloc_res(ir_node *irn) {
 										  get_Call_param(call, 1));
 					}
 					if (size != NULL) {
-						return new_lfptr_meta(irn, size);
+						return new_lfptr_meta(irn, size, false);
 					} else {
 						return NULL;
 					}
@@ -252,10 +263,11 @@ static lfptr_meta *calc_metadata(ir_node *irn, ir_node *sizes_lookup) {
 	ir_node *base         = sub; //new_rd_Conv(dbgi, block, sub, get_modeP());
 	mark_irn_visited(base);
 
-	lfptr_meta *res = new_lfptr_meta(base, size);
+	lfptr_meta *res = new_lfptr_meta(base, size, false);
 	return res;
 }
 
+// Debug function for pretty printing the metadata map
 static void pp_metadata_map(pmap* map) {
 	if (pmap_count(map) == 0) {
 		DB((dbg, LEVEL_5, "metadata map is empty\n"));
@@ -269,6 +281,9 @@ static void pp_metadata_map(pmap* map) {
 	}
 }
 
+// The following functions:
+// lf_move, lf_move_node, move_node, update_startblock, lf_part_block
+// were taken from irgmod.c and tweaked to consider the metadata nodes.
 static void lf_move(pmap *lf_map, ir_node *node, ir_node *from_bl, ir_node *to_bl);
 
 static void lf_move_node(pmap *lf_map, ir_node *node, ir_node *from_bl, ir_node *to_bl)
@@ -391,6 +406,7 @@ static void lf_part_block(pmap *lf_map, ir_node *node)
 	set_optimize(rem_opt);
 }
 
+// Creates an entity for a string_literal.
 static ir_entity* string_literal(char const* string) {
 	ir_graph *const_irg = get_const_code_irg();
 
@@ -410,6 +426,7 @@ static ir_entity* string_literal(char const* string) {
 	return entity;
 }
 
+// Manages the singleton entity for the current filename that is compiled.
 static ir_entity *current_filename_entity(const char* filename) {
 	/* For filename in error output, an entity with the current filename bytes is remembered here. */
 	static ir_entity *current_file_entity = NULL;
@@ -473,12 +490,14 @@ static ir_node* error_call(ir_node *irn, ir_node *block, pmap* lf_map,
 	return abort_call;
 }
 
+// Environment for during instrumentation insertion phase.
 typedef struct {
 	pmap *lf_map;
 	ir_node *sizes_address;
 	lfptr_meta *nonlf_meta;
 } insert_instrumentation_env;
 
+// Lazily determines the metadata of a node recursively.
 static lfptr_meta *get_node_meta(insert_instrumentation_env *env, ir_node *irn) {
 	DB((dbg, LEVEL_3, "Need meta for %+F", irn));
 	assert(get_irn_mode(irn) == get_modeP());
@@ -553,14 +572,17 @@ static lfptr_meta *get_node_meta(insert_instrumentation_env *env, ir_node *irn) 
 		free(base_phi_preds);
 		free(size_phi_preds);
 
-		meta = new_lfptr_meta(base_phi, size_phi);
+		meta = new_lfptr_meta(base_phi, size_phi, false); //set tmp values for new meta
 		pmap_insert(lf_map, irn, meta);
 
+		bool arithmetic = false;
 		for (int i = 0; i < phi_arity; i++) {
 			lfptr_meta *pred_meta = get_node_meta(env, get_Phi_pred(irn, i));
+			arithmetic |= pred_meta->arithmetic;
 			set_Phi_pred(base_phi, i, pred_meta->base);
 			set_Phi_pred(size_phi, i, pred_meta->size);
 		}
+		meta->arithmetic = arithmetic;
 
 		add_Block_phi(block, base_phi);
 		add_Block_phi(block, size_phi);
@@ -589,6 +611,7 @@ static lfptr_meta *get_node_meta(insert_instrumentation_env *env, ir_node *irn) 
 	return meta;
 }
 
+// Insert bound check between irn and ptr. Doesn't if the metadata of ptr isn't arithmetic.
 static void insert_bound_check_between(ir_node *irn, ir_node *ptr,
 	                                   insert_instrumentation_env *env,
                                        unsigned int reason) {
@@ -599,6 +622,11 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr,
 	assert(get_irn_mode(ptr) == get_modeP());
 
 	lfptr_meta *meta   = get_node_meta(env, ptr);
+	if (!meta->arithmetic) {
+		DB((dbg, LEVEL_5, "Skipping check, pointer hasn't been changed by pointer arithmetic\n"));
+		return;
+	}
+	DB((dbg, LEVEL_5, "Check needed\n"));
 	ir_node    *base   = meta->base;
 	ir_node    *size   = meta->size;
 
@@ -694,7 +722,8 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 	DB((dbg, LEVEL_2, "=> Inserting instrumentation nodes.\n"));
 	pmap* lf_map = pmap_create(); /*ir_node -> lfptr_meta*/
 	lfptr_meta *nonlf_meta = new_lfptr_meta(new_r_Const_long(irg, get_modeP(), 0),
-	                                        new_r_Const_long(irg, get_modeLu(), -1));
+	                                        new_r_Const_long(irg, get_modeLu(), -1),
+	                                        false);
 	insert_instrumentation_env env; //TODO: change name of insert_instrumentation_env
 	env.lf_map        = lf_map;
 	env.sizes_address = sizes_address;
@@ -726,6 +755,4 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);
-
-	//printf("Compiled a file with lfasan\n");
 }
