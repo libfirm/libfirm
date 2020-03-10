@@ -377,11 +377,14 @@ void __lf_error(void *ptr, void* base, unsigned long size, unsigned int reason,
 	}
 
 	if (filename != NULL && line != 0) {
-		fprintf(stderr, "%s at %p out of bounds (base: %p, size: 0x%lx) in %s:%i.\n",
+		fprintf(stderr, "LFASAN: %s at %p out of bounds (base: %p, size: 0x%lx) in %s:%i.\n",
 		        s_reason, ptr, base, size, filename, line);
 	} else {
-		fprintf(stderr, "%s at %p out of bounds (base: %p, size: 0x%lx).\n",
+		fprintf(stderr, "LFASAN: %s at %p out of bounds (base: %p, size: 0x%lx).\n",
 		        s_reason, ptr, base, size);
 	}
+
+#ifdef ABORT_ON_ERROR
 	abort();
+#endif
 }

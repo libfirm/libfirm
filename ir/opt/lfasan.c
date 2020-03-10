@@ -699,11 +699,16 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr,
 
 	ir_node* abort_call = error_call(ptr, bb_err, lf_map, reason, dbgi);
 	mark_irn_visited(abort_call);
-
 	keep_alive(abort_call);
-	keep_alive(bb_err);
 
+#ifdef ABORT_ON_ERROR
+	keep_alive(bb_err);
 	ir_node* bb_true_in[1] = { proj_true };
+#else
+	ir_node *continue_jmp = new_rd_Jmp(dbgi, bb_err);
+	ir_node* bb_true_in[2] = { proj_true, continue_jmp };
+#endif
+
 	set_irn_in(old_block, ARRAY_SIZE(bb_true_in), bb_true_in);
 
 	//dump_ir_graph(irg, "lf-asan-boundcheck");

@@ -165,7 +165,7 @@ $(lf_gen_include_header): scripts/gen_lf_sizes.py
 	$(Q)$< > $@
 
 .PHONY: $(builddir)/$(lfname).a
-$(builddir)/$(lfname).a: $(lf_gen_include_header)
+$(builddir)/$(lfname).a:
 	$(Q)mkdir -p $(builddir)/lfmalloc
 	$(Q)$(MAKE) sizes_include=../../$(lf_gen_include) builddir=../../$(lf_builddir) -C $(lfpath)
 	$(Q)cp $(builddir)/lfmalloc/$(lfname).a $(builddir) #Always copy, not sure how to fix
