@@ -5,6 +5,8 @@
 #include <sys/mman.h>
 #include <stdbool.h>
 
+#include <signal.h>
+
 #include <pthread.h>
 
 #include "lfinternal.h"
@@ -388,6 +390,8 @@ void __lf_error(void *ptr, void* base, unsigned long size, unsigned int reason,
 		fprintf(stderr, "LFASAN: %s at %p out of bounds (base: %p, size: 0x%lx).\n",
 		        s_reason, ptr, base, size);
 	}
+
+	raise(SIGINT);
 
 #ifdef ABORT_ON_ERROR
 	abort();
