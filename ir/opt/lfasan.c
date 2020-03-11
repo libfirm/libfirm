@@ -47,13 +47,14 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  */
 static void func_ptr_rename(ir_node *irn, void *env) {
 	(void) env;
-	if (!is_Call(irn)) {
+	if (!is_Address(irn)) {
 		return;
 	}
-	ir_node *func_ptr = get_Call_ptr(irn);
-	if (!is_Address(func_ptr)) {
-		return;
-	}
+	ir_node *func_ptr = irn;
+	// ir_node *func_ptr = get_Call_ptr(irn);
+	// if (!is_Address(func_ptr)) {
+		// return;
+	// }
 
 	ir_entity *entity = get_irn_entity_attr(func_ptr);
 	const char* ld_name = get_entity_ld_name(entity);
@@ -198,7 +199,7 @@ static lfptr_meta *new_lfptr_meta(ir_node* base, ir_node *size, bool arithmetic)
 }
 
 /**
- * Analyzses irn to check if it is an allocation call.
+ * Analyzes irn to check if it is an allocation call.
  * In this case it infers the metadata and returns it.
  */
 static lfptr_meta *is_alloc_res(ir_node *irn) {
@@ -740,7 +741,7 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.lfasan");
 	DB((dbg, LEVEL_1, "\n===> instrumenting %+F for lowfat adresssanitizer.\n", irg));
 
-	dump_ir_graph(irg, "lf-asan-before");
+	//dump_ir_graph(irg, "lf-asan-before");
 
 	DB((dbg, LEVEL_2, "=> Replacing memory functions with lowfat alternatives.\n"));
 	irg_walk_graph(irg, NULL, func_ptr_rename, NULL);
@@ -787,7 +788,7 @@ FIRM_API void lowfat_asan(ir_graph *irg) {
 	pmap_destroy(lf_map);
 
 	set_optimize(opt_level);
-	dump_ir_graph(irg, "lf-asan-after");
+	//dump_ir_graph(irg, "lf-asan-after");
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 	confirm_irg_properties(irg, IR_GRAPH_PROPERTIES_NONE);

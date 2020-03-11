@@ -98,6 +98,11 @@ uint64_t __lf_search_region_index(uint64_t size) {
 	return -1;
 }
 
+// Only used to circumvent lfasan if the runtime is compiled with it.
+uint64_t __next_tail(uint64_t base, uint64_t offset) {
+	return base + offset;
+}
+
 void* __allocate_in_region(size_t region_idx, size_t size) {
 	region* r = &region_freelists[region_idx];
 	if (r->head == NULL) {
@@ -115,7 +120,7 @@ void* __allocate_in_region(size_t region_idx, size_t size) {
 
 	void* p = r->head;
 	if (r->head == r->tail) { //Freelist filled: use remainder
-		uint64_t new_tail = (uint64_t)r->tail + SIZES[region_idx];
+		uint64_t new_tail = __next_tail((uint64_t)r->tail, SIZES[region_idx]);
 
 		if (new_tail >= REGION_SIZE * region_idx + REGION_SIZE) {
 			r->tail = NULL;
@@ -269,7 +274,7 @@ void __lf_free(void* ptr) {
 
 bool is_pow_two(size_t x) {
 	size_t s = 2;
-	for (int i = 0; i < sizeof(size_t) * 8; i++) {
+	for (size_t i = 0; i < sizeof(size_t) * 8; i++) {
 		if (s == x)
 			return true;
 		else

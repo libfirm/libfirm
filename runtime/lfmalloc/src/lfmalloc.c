@@ -79,7 +79,7 @@ int lf_posix_memalign(void **memptr, size_t alignment, size_t size) {
 	}
 	PRINTF_DBG("failed: posix_memalign ENOMEM\n");
 	return ENOMEM;
-};
+}
 
 void *lf_aligned_alloc(size_t alignment, size_t size) {
 	PRINTF_DBG("called aligned_alloc, alignment = 0x%lx, size = 0x%lx\n", alignment, size);
