@@ -203,6 +203,11 @@ static lfptr_meta *new_lfptr_meta(ir_node* base, ir_node *size, bool arithmetic)
  * In this case it infers the metadata and returns it.
  */
 static lfptr_meta *is_alloc_res(ir_node *irn) {
+
+#ifndef INFER_ALLOC_METADATA
+	return NULL;
+#endif
+
 	dbg_info *dbgi = get_irn_dbg_info(irn);
 
 	ir_node *block = get_nodes_block(irn);
