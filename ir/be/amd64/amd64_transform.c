@@ -115,6 +115,12 @@ static const arch_register_req_t amd64_requirement_x87killed = {
 	.kills_value = true,
 };
 
+static const arch_register_req_t amd64_requirement_xmm_killed = {
+	.cls         = &amd64_reg_classes[CLASS_amd64_xmm],
+	.width       = 1,
+	.kills_value = true,
+};
+
 static const arch_register_req_t *mem_reqs[] = {
 	&arch_memory_requirement,
 };
@@ -177,6 +183,27 @@ static const arch_register_req_t *reg_reg_reg_mem_reqs[] = {
 };
 
 static const arch_register_req_t *xmm_reg_reg_mem_reqs[] = {
+	&amd64_class_reg_req_xmm,
+	&amd64_class_reg_req_gp,
+	&amd64_class_reg_req_gp,
+	&arch_memory_requirement,
+};
+
+static const arch_register_req_t *xmm_xmm_mem_reqs[] = {
+	&amd64_requirement_xmm_killed,
+	&amd64_class_reg_req_xmm,
+	&arch_memory_requirement,
+};
+
+static const arch_register_req_t *xmm_xmm_reg_mem_reqs[] = {
+	&amd64_requirement_xmm_killed,
+	&amd64_class_reg_req_xmm,
+	&amd64_class_reg_req_gp,
+	&arch_memory_requirement,
+};
+
+static const arch_register_req_t *xmm_xmm_reg_reg_mem_reqs[] = {
+	&amd64_requirement_xmm_killed,
 	&amd64_class_reg_req_xmm,
 	&amd64_class_reg_req_gp,
 	&amd64_class_reg_req_gp,
@@ -251,6 +278,12 @@ arch_register_req_t const *amd64_xmm_xmm_reqs[] = {
 	&amd64_class_reg_req_xmm,
 };
 
+arch_register_req_t const *amd64_xmm_xmm_xmm_reqs[] = {
+	&amd64_requirement_xmm_killed,
+	&amd64_class_reg_req_xmm,
+	&amd64_class_reg_req_xmm,
+};
+
 arch_register_req_t const **const gp_am_reqs[] = {
 	mem_reqs,
 	reg_mem_reqs,
@@ -263,6 +296,14 @@ static arch_register_req_t const **const xmm_am_reqs[] = {
 	xmm_mem_reqs,
 	xmm_reg_mem_reqs,
 	xmm_reg_reg_mem_reqs,
+};
+
+static arch_register_req_t const **const xmm_fma_am_reqs[] = {
+		mem_reqs,
+		xmm_mem_reqs,
+		xmm_xmm_mem_reqs,
+		xmm_xmm_reg_mem_reqs,
+		xmm_xmm_reg_reg_mem_reqs,
 };
 
 static arch_register_req_t const **const x87K_am_reqs[] = {
@@ -985,6 +1026,105 @@ static x86_insn_size_t get_size_32_64_from_mode(ir_mode *const mode)
 	return get_mode_size_bits(mode) <= 32 ? X86_SIZE_32 : X86_SIZE_64;
 }
 
+static ir_node *gen_fma(ir_node *const add, ir_node *const op1, ir_node *const op2)
+{
+	if (get_mode_size_bits(get_irn_mode(add)) != 64 && get_mode_size_bits(get_irn_mode(add)) != 32)
+		return NULL;
+	ir_node *mul;
+	bool mul_left = false;
+	if (is_Mul(op1)) {
+		mul = op1;
+		mul_left = true;
+	} else if (is_Mul(op2)) {
+		mul = op2;
+	} else {
+		return NULL;
+	}
+	if (get_irn_mode(mul) != get_irn_mode(add))
+		return NULL;
+	if (get_irn_n_edges(mul) != 1)
+		return NULL;
+
+	ir_node *const block     = get_nodes_block(add);
+	ir_node *const mul_op1   = get_Mul_left(mul);
+	ir_node *const mul_op2   = get_Mul_right(mul);
+	ir_node *load, *reg_op, *source1, *source2;
+	bool use_am;
+	ir_node *(*fma_variant)(dbg_info *, ir_node *, const int, ir_node *const *, const arch_register_req_t **,
+	                        const amd64_binop_addr_attr_t *);
+	//try if Add operand, left Mul operand or right Mul operand can be used as AM input
+	if ((use_am = use_address_matching(get_irn_mode(add), match_am,
+	                                   block, mul_op1, mul_left ? op2 : op1, &load, &reg_op)
+	              && (!input_depends_on_load(load, mul_op2)))) {
+		source1 = reg_op;
+		source2 = mul_op2;
+		fma_variant = &new_bd_amd64_vfmadd213s;
+	} else if ((use_am = use_address_matching(get_irn_mode(add), match_am,
+	                                          block, mul_left ? op2 : op1, mul_op1, &load, &reg_op)
+	                     && (!input_depends_on_load(load, mul_op2)))) {
+		source1 = mul_op2;
+		source2 = reg_op;
+		fma_variant = &new_bd_amd64_vfmadd132s;
+	} else if ((use_am = use_address_matching(get_irn_mode(add), match_am,
+	                                          block, mul_left ? op2 : op1, mul_op2, &load, &reg_op)
+	                     && (!input_depends_on_load(load, mul_op1)))) {
+		source1 = reg_op;
+		source2 = mul_op1;
+		fma_variant = &new_bd_amd64_vfmadd231s;
+	}
+	int arity = 0;
+	amd64_binop_addr_attr_t attr;
+	memset(&attr, 0, sizeof(attr));
+
+	ir_node  *mem_proj = NULL;
+	ir_node  *in[5];
+	const arch_register_req_t **reqs;
+	x86_addr_t *addr = &attr.base.addr;
+
+	if (use_am) {
+		int reg_input = arity++;
+		in[reg_input] = be_transform_node(source1);
+		reg_input = arity++;
+		attr.u.reg_input  = reg_input;
+		in[reg_input] = be_transform_node(source2);
+
+		ir_node      *ptr  = get_Load_ptr(load);
+		perform_address_matching(ptr, &arity, in, addr);
+
+		reqs = xmm_fma_am_reqs[arity];
+
+		ir_node *new_mem   = be_transform_node(get_Load_mem(load));
+		int mem_input      = arity++;
+		in[mem_input] = new_mem;
+		addr->mem_input    = mem_input;
+
+		mem_proj      = get_Proj_for_pn(load, pn_Load_M);
+		attr.base.base.op_mode = AMD64_OP_REG_ADDR;
+	} else {
+		int const input0 = arity++;
+		int const input1 = arity++;
+		int const input2 = arity++;
+		in[input0]         = be_transform_node(mul_left ? op2 : op1);
+		in[input1]         = be_transform_node(mul_op1);
+		in[input2]         = be_transform_node(mul_op2);
+		addr->base_input   = input2;
+		addr->variant      = X86_ADDR_REG;
+		attr.u.reg_input   = input1;
+		attr.base.base.op_mode = AMD64_OP_REG_REG;
+		reqs               = amd64_xmm_xmm_xmm_reqs;
+		fma_variant        = &new_bd_amd64_vfmadd231s;
+	}
+	attr.base.base.size = x86_size_from_mode(get_irn_mode(add));
+	dbg_info *const dbgi      = get_irn_dbg_info(add);
+	ir_node  *const new_block = be_transform_node(block);
+	ir_node  *const new_node  = fma_variant(dbgi, new_block, arity, in, reqs, &attr);
+
+	fix_node_mem_proj(new_node, mem_proj);
+
+	arch_set_irn_register_req_out(new_node, 0, &amd64_requirement_xmm_same_0);
+	return be_new_Proj(new_node, pn_amd64_subs_res);
+}
+
 static ir_node *gen_Add(ir_node *const node)
 {
 	ir_node *const op1   = get_Add_left(node);
@@ -995,6 +1135,9 @@ static ir_node *gen_Add(ir_node *const node)
 	if (mode_is_float(mode)) {
 		if (mode == x86_mode_E)
 			return gen_binop_x87(node, op1, op2, new_bd_amd64_fadd);
+		ir_node *const fma = use_scalar_fma3 ? gen_fma(node, op1, op2) : NULL;
+		if (fma)
+			return fma;
 		return gen_binop_am(node, op1, op2, new_bd_amd64_adds,
 		                    pn_amd64_adds_res, match_commutative | match_am);
 	}

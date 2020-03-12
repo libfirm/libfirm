@@ -301,6 +301,16 @@ my $x87store = {
 	attr      => "const amd64_binop_addr_attr_t *attr_init",
 };
 
+my $fmaop = {
+	irn_flags => [ "rematerializable" ],
+	in_reqs   => "...",
+	out_reqs  => [ "xmm", "none", "mem" ],
+	outs      => [ "res", "none", "M" ],
+	attr_type => "amd64_binop_addr_attr_t",
+	attr      => "const amd64_binop_addr_attr_t *attr_init",
+	emit      => "{name}%MX %AM, %^D0",
+};
+
 %nodes = (
 push_am => {
 	op_flags  => [ "uses_memory" ],
@@ -853,5 +863,11 @@ fpop => {
 	init        => "attr->x87.reg = reg;",
 	emit        => "fstp %F0",
 },
+
+# FMA instructions
+
+vfmadd132s => { template => $fmaop },
+vfmadd213s => { template => $fmaop },
+vfmadd231s => { template => $fmaop },
 
 );

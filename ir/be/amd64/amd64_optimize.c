@@ -15,8 +15,12 @@
 #include "bepeephole.h"
 #include "besched.h"
 #include "gen_amd64_regalloc_if.h"
+#include "ircons.h"
 #include "iredges_t.h"
+#include "irprintf.h"
 #include "util.h"
+#include "amd64_bearch_t.h"
+#include "amd64_nodes_attr.h"
 
 static void peephole_amd64_cmp(ir_node *const node)
 {
@@ -185,6 +189,96 @@ static void peephole_amd64_cvtsi2sX(ir_node *const node)
 	sched_add_after(pxor, keep);
 }
 
+static void peephole_amd64_fma(ir_node *const node)
+{
+	ir_node *const op_left = get_irn_n(node, 0);
+	ir_node *const op_right = get_irn_n(node, 1);
+	ir_node *mul;
+	bool mul_is_left_op = true;
+	if (is_amd64_muls(skip_Proj(op_left))) {
+		mul = skip_Proj(op_left);
+		if (get_irn_mode(op_left) != amd64_mode_xmm || !be_has_only_one_user(op_left)) {
+			return;
+		}
+	} else if (is_amd64_muls(skip_Proj(op_right))) {
+		mul = skip_Proj(op_right);
+		mul_is_left_op = false;
+		if (get_irn_mode(op_right) != amd64_mode_xmm || !be_has_only_one_user(op_right)) {
+			return;
+		}
+	} else {
+		return;
+	}
+	if (sched_prev(node) != mul) {
+		return;
+	}
+
+	// limit to reg,reg mul for now
+	amd64_addr_attr_t const *const mul_addr_attr = get_amd64_addr_attr_const(mul);
+	amd64_attr_t const *const mul_attr = &mul_addr_attr->base;
+	if (mul_attr->op_mode != AMD64_OP_REG_REG) {
+		return;
+	}
+
+	amd64_binop_addr_attr_t *const binop_addr_attr = get_amd64_binop_addr_attr(node);
+	amd64_addr_attr_t *const add_addr_attr = &binop_addr_attr->base;
+	amd64_attr_t *const add_attr = &add_addr_attr->base;
+	if (add_attr->op_mode != AMD64_OP_REG_REG && (add_attr->op_mode != AMD64_OP_REG_ADDR || add_attr->size != X86_SIZE_64 || add_addr_attr->addr.variant != X86_ADDR_BASE)) {
+		return;
+	}
+	bool reg_addr_mode = add_attr->op_mode == AMD64_OP_REG_ADDR;
+	ir_printf("(%+F) found FMA candidate: %+F, %+F\n", get_irn_irg(node), node, mul);
+
+	dbg_info *const dbgi = get_irn_dbg_info(node);
+	ir_node *const block = get_nodes_block(node);
+
+	int add_arity = get_irn_arity(node);
+	int new_arity = add_arity + 1;
+	struct obstack *const obst = get_irg_obstack(get_irn_irg(node));
+	ir_node *ins[new_arity];
+	const arch_register_req_t **in_reqs = NEW_ARR_D(const arch_register_req_t*, obst, new_arity);
+
+	for (int i = 0; i < 2; i++) {
+		ins[i] = get_irn_n(mul, i);
+		in_reqs[i] = arch_get_irn_register_req_in(mul, i);
+	}
+
+	int input = 2;
+	for (int i = 0; i < add_arity; i++) {
+		if (mul_is_left_op && i == 0) {
+			continue;
+		} else if (!mul_is_left_op && i == 1) {
+			continue;
+		}
+		ins[input] = get_irn_n(node, i);
+		in_reqs[input] = arch_get_irn_register_req_in(node, i);
+		input++;
+	}
+	ir_node *(*vfma_cons)(dbg_info *, ir_node *, const int, ir_node *const *, const arch_register_req_t **,
+	                      const amd64_binop_addr_attr_t *) = &new_bd_amd64_vfmadd213s;
+	if (reg_addr_mode) {
+		add_addr_attr->addr.base_input++;
+		binop_addr_attr->u.reg_input++;
+	} else if (mul_is_left_op) {
+		ir_node *tmp = ins[2];
+		ins[2] = ins[0];
+		ins[0] = tmp;
+		const arch_register_req_t *req_tmp = in_reqs[2];
+		in_reqs[2] = in_reqs[0];
+		in_reqs[0] = req_tmp;
+		vfma_cons = &new_bd_amd64_vfmadd132s;
+	} else {
+		vfma_cons = &new_bd_amd64_vfmadd231s;
+	}
+
+	ir_node *const fma = vfma_cons(dbgi, block, new_arity, ins, in_reqs, binop_addr_attr);
+	arch_set_irn_register_out(fma, 0, arch_get_irn_register_out(node, pn_amd64_adds_res));
+
+	sched_remove(mul);
+	sched_add_before(node, fma);
+	be_peephole_exchange(node, fma);
+}
+
 static void peephole_be_IncSP(ir_node *const node)
 {
 	be_peephole_IncSP_IncSP(node);
@@ -199,6 +293,7 @@ void amd64_peephole_optimization(ir_graph *const irg)
 	register_peephole_optimization(op_amd64_mov_gp,  peephole_amd64_mov_gp);
 	register_peephole_optimization(op_amd64_cvtsi2sd, peephole_amd64_cvtsi2sX);
 	register_peephole_optimization(op_amd64_cvtsi2ss, peephole_amd64_cvtsi2sX);
+	//register_peephole_optimization(op_amd64_adds,    peephole_amd64_fma);
 	register_peephole_optimization(op_be_IncSP,      peephole_be_IncSP);
 	be_peephole_opt(irg);
 }

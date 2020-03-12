@@ -47,6 +47,8 @@ pmap *amd64_constants;
 
 ir_mode *amd64_mode_xmm;
 
+bool use_scalar_fma3 = false;
+
 static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp,
                             ir_node *mem, ir_entity *ent, x86_insn_size_t size)
 {
@@ -834,6 +836,7 @@ void be_init_arch_amd64(void)
 {
 	static const lc_opt_table_entry_t options[] = {
 		LC_OPT_ENT_BOOL("no-red-zone", "gcc compatibility",                &amd64_use_red_zone),
+		LC_OPT_ENT_BOOL("fma",         "support FMA3 code generation",     &use_scalar_fma3),
 		LC_OPT_LAST
 	};
 	lc_opt_entry_t *be_grp    = lc_opt_get_grp(firm_opt_get_root(), "be");
