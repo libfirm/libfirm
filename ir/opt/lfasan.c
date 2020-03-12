@@ -204,7 +204,7 @@ static lfptr_meta *new_lfptr_meta(ir_node* base, ir_node *size, bool arithmetic)
  */
 static lfptr_meta *is_alloc_res(ir_node *irn) {
 
-#ifndef INFER_ALLOC_METADATA
+#ifdef NO_INFER_ALLOC_METADATA
 	return NULL;
 #endif
 
