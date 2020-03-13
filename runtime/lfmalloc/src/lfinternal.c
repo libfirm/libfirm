@@ -43,7 +43,7 @@ typedef struct region {
 	pthread_mutex_t mutex;
 } region;
 
-region region_freelists[REGION_COUNT] = { NULL };
+region region_freelists[REGION_COUNT] = {{ NULL }};
 
 //If malloc is called with size zero, the address of this global is returned.
 //Some functions (regcomp) expect malloc to return a unique address if size == 0,
@@ -225,6 +225,8 @@ void *__lf_malloc(size_t size) {
 	 //Allow stdlib to use stdlib malloc
 	__init();
 
+	size++;
+
 	// refer to libc_malloc if size is too large
 	if (size > MAX_SIZE) {
 		PRINTF_DBG("size (0x%lx) too large, deferring to __libc_malloc.\n", size);
@@ -302,6 +304,8 @@ void *__lf_memalign(size_t alignment, size_t size) {
 		PRINTF_DBG("failed: alignment too large\n");
 		return NULL;
 	}
+
+	size++;
 
 	size_t region_idx = __lf_search_region_index(size);
 	__lock_region(region_idx);
