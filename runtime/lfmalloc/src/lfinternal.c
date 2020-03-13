@@ -395,8 +395,9 @@ void __lf_error(void *ptr, void* base, unsigned long size, unsigned int reason,
 		        s_reason, ptr, base, size);
 	}
 
+#ifdef INT_ON_ERROR
 	raise(SIGINT);
-
+#endif
 #ifdef ABORT_ON_ERROR
 	abort();
 #endif
