@@ -683,18 +683,12 @@ static void insert_bound_check_between(ir_node *irn, ir_node *ptr,
 	ir_node *new_block = get_nodes_block(ptr);
 	DB((dbg, LEVEL_5, "new block: %+F\n", new_block));
 
-	ir_node *start = base;
 	assert(get_irn_mode(base) == get_modeP());
-	ir_node *end = new_rd_Add(dbgi, new_block, base,
-	                          new_rd_Conv(dbgi, new_block, size, get_modeLs()));
-	mark_irn_visited(end);
 
-	ir_node *cmp_lower = new_rd_Cmp(dbgi, new_block, start, ptr, ir_relation_less_equal);
-	ir_node *cmp_upper = new_rd_Cmp(dbgi, new_block, end,   ptr, ir_relation_greater);
-
-	ir_node *in_bounds = new_rd_And(dbgi, new_block, cmp_lower, cmp_upper);
-
-	ir_node *cond = new_rd_Cond(dbgi, new_block, in_bounds);
+	ir_node *diff      = new_rd_Sub(dbgi, new_block, ptr, base);
+	ir_node *diff_lu   = new_rd_Conv(dbgi, new_block, diff, get_modeLu());
+	ir_node *in_bounds = new_rd_Cmp(dbgi, new_block, diff_lu, size, ir_relation_less);
+	ir_node *cond      = new_rd_Cond(dbgi, new_block, in_bounds);
 	mark_irn_visited(cond);
 
 	ir_node *proj_true  = new_rd_Proj(dbgi, cond, get_modeX(), pn_Cond_true);
