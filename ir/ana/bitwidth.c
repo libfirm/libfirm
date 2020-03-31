@@ -18,6 +18,7 @@
 #include "iropt.h"
 #include "irhooks.h"
 #include "ircons.h"
+#include "callgraph.h"
 #include "nodes.h"
 #include "pqueue.h"
 #include "util.h"
@@ -95,6 +96,7 @@ is_meaningfull(ir_node *n)
 static void
 create_node(ir_node *node, void *data)
 {
+	(void)data;
 	ir_graph *g = get_irn_irg(node);
 	ir_mode *mode = get_irn_mode(node);
 	bitwidth *info;
@@ -198,8 +200,6 @@ generate_min_abs_value(ir_node *n)
 static unsigned
 compute_bitwidth_relation(bitwidth *value, bitwidth *bound, ir_relation relation)
 {
-	unsigned result;
-
 	switch(relation) {
 		case ir_relation_less_equal:
 		case ir_relation_less:
@@ -312,7 +312,7 @@ handle_true_blocks(ir_node *cmp, ir_node *op, pqueue_t *queue)
 			ir_node *const blk = get_block(succ);
 
 			if (blk != original_block && ir_nodemap_get(ir_node, &map, blk)) { //FIXME check that get_block(succ) is in block
-				bitwidth *op_b = bitwidth_fetch_bitwidth(op);
+				//bitwidth *op_b = bitwidth_fetch_bitwidth(op);
 				ir_node *konst, *confirm;
 
 				konst = new_r_Const_long(get_irn_irg(cmp), get_irn_mode(op), bitwidth_upper_bound(op));
@@ -479,10 +479,10 @@ evalulate_node(ir_node *node, pqueue_t *queue)
 				new.is_positive = false;
 			break;
 		}
-		case iro_Mod: {
+		case iro_Mod: {//TODO: Code seems wrong, test it
 			obj_a = get_Mod_right(node);
 			obj_b = get_Mod_right(node);
-			bitwidth *a = bitwidth_fetch_bitwidth(obj_a), *b = bitwidth_fetch_bitwidth(obj_b);
+			bitwidth *a = bitwidth_fetch_bitwidth(obj_a);//, *b = bitwidth_fetch_bitwidth(obj_b);
 			unsigned max_val = bitwidth_upper_bound(obj_b);
 
 			new.stable_digits = log2_floor(max_val) + 1;
@@ -502,8 +502,10 @@ evalulate_node(ir_node *node, pqueue_t *queue)
 				new.stable_digits = 0;
 			}
 
-			if (new.stable_digits < 0)
+			if (new.stable_digits > 0)
 				new.is_positive = a->is_positive;
+			else
+				new.is_positive = false;
 			break;
 		}
 		case iro_Not: {
@@ -709,12 +711,13 @@ void
 free_bitwidth_info(ir_graph *irg)
 {
 	size_t len = ARR_LEN(irg->bitwidth.infos.data);
-	for (int i = 0; i < len; ++i) {
+	for (size_t i = 0; i < len; ++i) {
 		bitwidth *info = irg->bitwidth.infos.data[i];
 
 		free(info);
 	}
 	ir_nodemap_destroy(&irg->bitwidth.infos);
+	free(&irg->bitwidth.infos);
 
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_BITWIDTH_INFO);
 }
@@ -725,4 +728,88 @@ assure_bitwidth_info(ir_graph *irg)
 	if (!irg_has_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_BITWIDTH_INFO)) {
 		compute_bitwidth_info(irg);
 	}
+}
+
+struct max_param_bw_helper {
+	ir_entity *entity;
+	bitwidth **max_bitwidth;
+};
+
+static void compute_max_param_bitwidth(ir_node *node, void *env) {
+	struct max_param_bw_helper *bw_helper = env;
+	if(get_irn_opcode(node) != iro_Call)
+		return;
+	ir_node *callee = get_irn_n(node, 1);
+	if(is_Address(callee) && get_Address_entity(callee) == bw_helper->entity) {
+		bitwidth **max_bws = bw_helper->max_bitwidth;
+		for(int i = 2; i < get_irn_arity(node); i++) {
+			bitwidth *param_bw = bitwidth_fetch_bitwidth(get_irn_n(node, i));
+			if(max_bws[i-2] == NULL || param_bw->stable_digits < max_bws[i-2]->stable_digits)
+				max_bws[i-2] = param_bw;
+		}
+	}
+}
+
+/* Bitwidth analysis which also looks at caller graphs to narrow down bitwidths of parameters */
+void compute_bitwidth_info_incl_callers(ir_graph *irg) {
+	ir_type *entity_type = get_entity_type(get_irg_entity(irg));
+	size_t param_n = get_method_n_params(entity_type);
+	if (param_n == 0) {
+		compute_bitwidth_info(irg);
+		return;
+	}
+
+	bitwidth *max_param_bitwidth[param_n];
+	struct max_param_bw_helper helper;
+	helper.entity = get_irg_entity(irg);
+	helper.max_bitwidth = max_param_bitwidth;
+	for (size_t i = 0; i < get_irg_n_callers(irg); i++) {
+		ir_graph *caller = get_irg_caller(irg, i);
+		compute_bitwidth_info(caller);
+		irg_walk_graph(caller, compute_max_param_bitwidth, NULL, &helper);
+	}
+
+	/*Quite the copy of compute_bitwidth_info*/
+	pqueue_t *queue;
+
+	if (bitwidth_dump_hook.hook._hook_node_info == NULL) {
+		bitwidth_dump_hook.hook._hook_node_info = dump_bitwidth_info;
+		register_hook(hook_node_info, &bitwidth_dump_hook);
+	}
+
+	//init inital state
+	remove_confirms(irg);
+	construct_confirms_only(irg);
+	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
+	ir_nodemap_init(&irg->bitwidth.infos, irg);
+	queue = new_pqueue();
+
+	//phase 1 init all nodes that are meaningfull
+	irg_walk_graph(irg, create_node, add_node, queue);
+	//Set parameter bitwidth here
+	ir_node *start_node = get_irg_start(irg);
+	//TODO: Check wether that is actually true
+	ir_node *args_proj = get_irn_out(start_node, 1); //0 is probably mem, 1 args_proj
+	assert(is_Proj(args_proj));
+	for (size_t i=0; i < get_irn_n_outs(args_proj); i++) {
+		ir_node *arg_proj = get_irn_out(args_proj, i);
+		assert(is_Proj(args_proj));
+		bitwidth *old_info = ir_nodemap_get(bitwidth, &irg->bitwidth.infos, arg_proj);
+		bitwidth *new_info = max_param_bitwidth[get_Proj_num(arg_proj)];
+		memcpy(old_info, new_info, sizeof(*new_info));
+	}
+
+
+	//phase 2 walk down the queue reevalulating each child if things are changing
+	while (!pqueue_empty(queue)) {
+		ir_node *node = pqueue_pop_front(queue);
+		evalulate_node(node, queue);
+	}
+	optimize_cf(irg);
+	remove_confirms(irg);
+	del_pqueue(queue);
+	for (size_t i=0; i < get_irg_n_callers(irg); i++) {
+		free_bitwidth_info(get_irg_caller(irg, i));
+	}
+	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_BITWIDTH_INFO);
 }
