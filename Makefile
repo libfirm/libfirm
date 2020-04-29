@@ -197,8 +197,9 @@ REVISION ?= $(shell git --git-dir $(top_srcdir)/.git describe --abbrev=40 --alwa
 # Update revision.h if necessary
 REVISIONH = $(gendir)/firm_revision.h
 libfirm_INCLUDEDIRS += $(gendir)
+HASH := \#
 UNUSED2 := $(shell \
-	REV="\#define libfirm_VERSION_REVISION \"$(REVISION)\""; \
+	REV="$(HASH)define libfirm_VERSION_REVISION \"$(REVISION)\""; \
 	echo "$$REV" | cmp -s - "$(REVISIONH)" 2> /dev/null || echo "$$REV" > "$(REVISIONH)" \
 )
 
