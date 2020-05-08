@@ -81,10 +81,10 @@ static void be_handle_2addr_node(ir_node *const node, be_handle_2addr_callback_t
 			ir_node *const res = get_result_node(node, i);
 			if (res) {
 				ir_node *const block = get_nodes_block(node);
-				ir_node *const copy  = be_new_Copy(block, node);
+				ir_node *const copy  = be_new_Copy(block, res);
 				arch_set_irn_register_out(copy, 0, out_reg);
 				sched_add_after(node, copy);
-				edges_reroute_except(node, copy, copy);
+				edges_reroute_except(res, copy, copy);
 				DBG((dbg, LEVEL_1, "created %+F for should_be_same constraint at output %u of %+F\n", copy, i, node));
 			}
 		} else {
