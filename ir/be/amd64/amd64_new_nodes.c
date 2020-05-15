@@ -65,6 +65,8 @@ static const char *get_op_mode_string(amd64_op_mode_t const op_mode)
 	case AMD64_OP_SHIFT_REG:    return "shift_reg";
 	case AMD64_OP_X87:          return "x87";
 	case AMD64_OP_X87_ADDR_REG: return "x87+addr+reg";
+	case AMD64_OP_REG_REG_REG:  return "reg+reg+reg";
+	case AMD64_OP_REG_REG_ADDR: return "reg+reg+addr";
 	case AMD64_OP_CC:           return "cc";
 	}
 	return "invalid op_mode";
