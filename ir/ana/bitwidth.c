@@ -19,6 +19,7 @@
 #include "irhooks.h"
 #include "ircons.h"
 #include "callgraph.h"
+#include "cgana.h"
 #include "nodes.h"
 #include "pqueue.h"
 #include "util.h"
@@ -717,7 +718,6 @@ free_bitwidth_info(ir_graph *irg)
 		free(info);
 	}
 	ir_nodemap_destroy(&irg->bitwidth.infos);
-	free(&irg->bitwidth.infos);
 
 	clear_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_BITWIDTH_INFO);
 }
@@ -739,32 +739,52 @@ static void compute_max_param_bitwidth(ir_node *node, void *env) {
 	struct max_param_bw_helper *bw_helper = env;
 	if(get_irn_opcode(node) != iro_Call)
 		return;
-	ir_node *callee = get_irn_n(node, 1);
-	if(is_Address(callee) && get_Address_entity(callee) == bw_helper->entity) {
+	ir_entity *callee = get_Call_callee(node);
+	if(callee == bw_helper->entity) {
 		bitwidth **max_bws = bw_helper->max_bitwidth;
-		for(int i = 2; i < get_irn_arity(node); i++) {
-			bitwidth *param_bw = bitwidth_fetch_bitwidth(get_irn_n(node, i));
-			if(max_bws[i-2] == NULL || param_bw->stable_digits < max_bws[i-2]->stable_digits)
-				max_bws[i-2] = param_bw;
+		for(int i = 0; i < get_Call_n_params(node); i++) {
+			bitwidth *param_bw = bitwidth_fetch_bitwidth(get_Call_param(node, i));
+			if(max_bws[i] == NULL || param_bw->stable_digits < max_bws[i]->stable_digits) {
+				printf("Stable bits param %d: %d\n", i, param_bw->stable_digits);
+				max_bws[i] = param_bw;
+			}
 		}
 	}
 }
 
 /* Bitwidth analysis which also looks at caller graphs to narrow down bitwidths of parameters */
-void compute_bitwidth_info_incl_callers(ir_graph *irg) {
-	ir_type *entity_type = get_entity_type(get_irg_entity(irg));
+void compute_bitwidth_for_si(ir_graph *irg) {
+	ir_entity *ent = get_irg_entity(irg);
+	if (!(mtp_special_instruction & get_entity_additional_properties(ent)))
+		return;
+	ir_type *entity_type = get_entity_type(ent);
 	size_t param_n = get_method_n_params(entity_type);
 	if (param_n == 0) {
 		compute_bitwidth_info(irg);
 		return;
 	}
+	/* Callgraph is needed */
+	if (get_irp_callee_info_state() != irg_callee_info_consistent) {
+		ir_entity **free_methods = NULL;
 
+		cgana(&free_methods);
+		free(free_methods);
+	}
+	if (irp_callgraph_consistent != get_irp_callgraph_state()) {
+		compute_callgraph();
+	}
+	ir_entity *orig_entity = get_entity_link(ent);
+	ir_graph *orig_irg = get_entity_irg(orig_entity);
 	bitwidth *max_param_bitwidth[param_n];
+	for (size_t i = 0; i < param_n; i++) {
+		max_param_bitwidth[i] = NULL;
+	}
 	struct max_param_bw_helper helper;
-	helper.entity = get_irg_entity(irg);
+	helper.entity = orig_entity;
 	helper.max_bitwidth = max_param_bitwidth;
-	for (size_t i = 0; i < get_irg_n_callers(irg); i++) {
-		ir_graph *caller = get_irg_caller(irg, i);
+	//orig_irg is graph of original entity, as we copy the entity before passing it to the vhdl backend
+	for (size_t i = 0; i < get_irg_n_callers(orig_irg); i++) {
+		ir_graph *caller = get_irg_caller(orig_irg, i);
 		compute_bitwidth_info(caller);
 		irg_walk_graph(caller, compute_max_param_bitwidth, NULL, &helper);
 	}
@@ -787,16 +807,14 @@ void compute_bitwidth_info_incl_callers(ir_graph *irg) {
 	//phase 1 init all nodes that are meaningfull
 	irg_walk_graph(irg, create_node, add_node, queue);
 	//Set parameter bitwidth here
-	ir_node *start_node = get_irg_start(irg);
-	//TODO: Check wether that is actually true
-	ir_node *args_proj = get_irn_out(start_node, 1); //0 is probably mem, 1 args_proj
+	ir_node *args_proj = get_irg_args(irg);
 	assert(is_Proj(args_proj));
 	for (size_t i=0; i < get_irn_n_outs(args_proj); i++) {
 		ir_node *arg_proj = get_irn_out(args_proj, i);
 		assert(is_Proj(args_proj));
 		bitwidth *old_info = ir_nodemap_get(bitwidth, &irg->bitwidth.infos, arg_proj);
 		bitwidth *new_info = max_param_bitwidth[get_Proj_num(arg_proj)];
-		memcpy(old_info, new_info, sizeof(*new_info));
+		memcpy(old_info, new_info, sizeof(bitwidth));
 	}
 
 
@@ -812,4 +830,7 @@ void compute_bitwidth_info_incl_callers(ir_graph *irg) {
 		free_bitwidth_info(get_irg_caller(irg, i));
 	}
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_BITWIDTH_INFO);
+
+	free_callgraph();
+	free_irp_callee_info();
 }

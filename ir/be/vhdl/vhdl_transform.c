@@ -7,12 +7,14 @@
 #include <be_t.h>
 #include "vhdl_transform.h"
 
+#include "bitwidth.h"
 #include "betranshlp.h"
 #include "gen_vhdl_new_nodes.h"
 #include "gen_vhdl_regalloc_if.h"
 #include "ircons.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
+#include "irnodemap.h"
 #include "irouts_t.h"
 #include "panic.h"
 #include "vhdl_modes.h"
@@ -20,6 +22,7 @@
 typedef ir_node *cons_unop(dbg_info *, ir_node *, ir_node *);
 
 typedef ir_node *cons_binop(dbg_info *, ir_node *, ir_node *, ir_node *);
+static bitwidth **parameter_bitwidths;
 
 static ir_mode *get_correct_mode(ir_mode *old_mode)
 {
@@ -28,6 +31,18 @@ static ir_mode *get_correct_mode(ir_mode *old_mode)
 	}
 	return mode_is_signed(old_mode) ? get_mode_signed_vector(get_mode_size_bits(old_mode))
 	                                : get_mode_unsigned_vector(get_mode_size_bits(old_mode));
+}
+
+static ir_mode *get_correct_sized_mode(ir_node *const node)
+{
+	ir_mode *old_mode = get_irn_mode(node);
+	if (old_mode == mode_b) {
+		return mode_b;
+	}
+	int size = get_mode_size_bits(old_mode) - parameter_bitwidths[get_Proj_num(node)]->stable_digits;
+	printf("Size proj %d: %d\n", get_Proj_num(node), size);
+	return mode_is_signed(old_mode) ? get_mode_signed_vector(size)
+	                                : get_mode_unsigned_vector(size);
 }
 
 static void set_correct_mode(ir_node *node, ir_mode *old_mode)
@@ -218,7 +233,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *const node)
 	set_irn_mode(new_proj, get_mode_std_logic_vector(get_mode_size_bits(mode)));
 	// convert input from standard logic vector
 	ir_node *conv = new_bd_vhdl_Conv(dbgi, block, new_proj);
-	set_correct_mode(conv, get_irn_mode(node));
+	set_correct_mode(conv, get_correct_sized_mode(node));
 	return conv;
 }
 
@@ -419,6 +434,20 @@ static void vhdl_register_transformers(void)
 	be_set_transform_proj_function(op_Start,  gen_Proj_Start);
 }
 
+static void insert_assignSig_conv(ir_node *const pred, ir_node *const succ, int idx, ir_mode *sig_mode) {
+	dbg_info *const dbgi = get_irn_dbg_info(succ);
+	ir_node *const block = get_nodes_block(succ);
+	char sig_name[16];
+	sprintf(sig_name, "PHI%ld", get_irn_node_nr(pred));
+	ir_node *conv = new_bd_vhdl_Conv(dbgi, block, pred);
+	//ir_mode *mode = get_mode_std_logic_vector(get_mode_size_bits(get_irn_mode(val)));
+	set_irn_mode(conv, sig_mode);
+	ir_node *assign = new_bd_vhdl_AssignSig(dbgi, get_nodes_block(pred), conv, sig_name, sig_mode);
+	set_irn_mode(assign, sig_mode);
+	set_irn_n(succ, idx, assign);
+	//set_irn_n(conv, 0, assign); //TODO: Correct?
+}
+
 /**
  * Walk the graph and place AssignSig and AssignVar nodes where needed.
  * @param node visited node
@@ -434,10 +463,12 @@ static void assign_walker(ir_node *const node, void *env)
 	ir_node *const block = get_nodes_block(node);
 	// assign phi operands in signals
 	if (is_Phi(node) && mode_is_int(get_irn_mode(node))) {
+		//ir_mode *mode = get_correct_sized_mode(node);
 		for (int i = 0; i < get_irn_arity(node); i++) {
 			ir_node *pred = get_irn_n(node, i);
 
 			if (!is_vhdl_AssignSig(pred) && pred != node) {
+				//insert_assignSig_conv(pred, node, i, mode);
 				char sig_name[16];
 				sprintf(sig_name, "PHI%ld", get_irn_node_nr(node));
 				ir_node *assign = new_bd_vhdl_AssignSig(dbgi, get_nodes_block(pred), pred, sig_name, get_irn_mode(pred));
@@ -479,8 +510,38 @@ static void assign_walker(ir_node *const node, void *env)
 	}
 }
 
+static void save_parameter_bitwidth(ir_graph *irg) {
+	ir_node *args_proj = get_irg_args(irg);
+	for (size_t i=0; i < get_irn_n_outs(args_proj); i++) {
+		ir_node *arg_proj = get_irn_out(args_proj, i);
+		bitwidth *old_info = ir_nodemap_get(bitwidth, &irg->bitwidth.infos, arg_proj);
+		parameter_bitwidths[get_Proj_num(arg_proj)] = old_info;
+	}
+}
+
+static void regenerate_bitwidth_nodemap(ir_graph *const irg) {
+	struct ir_nodemap *bitwidth_info = &irg->bitwidth.infos;
+	size_t len = ARR_LEN(bitwidth_info->data);
+	//Iterate over already existing info (old nodes)
+	for (size_t i = 0; i < len; ++i) {
+		bitwidth *info = bitwidth_info->data[i];
+		ir_node *old_node = get_idx_irn(irg, i);
+		if(info && old_node) {
+			ir_node *new_node = get_irn_link(old_node); //transformed node of old_node
+			if(new_node)
+				ir_nodemap_insert(bitwidth_info, new_node, info);
+		}
+	}
+}
+
 void vhdl_transform_graph(ir_graph *const irg)
 {
+	ir_type *entity_type = get_entity_type(get_irg_entity(irg));
+	size_t param_n = get_method_n_params(entity_type);
+	bitwidth *bitwidths[param_n];
+	parameter_bitwidths = bitwidths;
+	save_parameter_bitwidth(irg);
+
 	vhdl_register_transformers();
 	int before = get_opt_cse();
 	set_opt_cse(0);
@@ -488,5 +549,8 @@ void vhdl_transform_graph(ir_graph *const irg)
 	set_opt_cse(before);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	be_dump(DUMP_BE, irg, "before-assigns");
+	//ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	//regenerate_bitwidth_nodemap(irg);
+	//ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, NULL, assign_walker, NULL);
 }

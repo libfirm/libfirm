@@ -5,6 +5,7 @@
 
 #include "vhdl_bearch_t.h"
 
+#include "bitwidth.h"
 #include "be_t.h"
 #include "beemitter.h"
 #include "bemodule.h"
@@ -70,6 +71,7 @@ void vhdl_generate_code(char const *const cup_name)
 		}
 		opt_if_conv_cb(irg, vhdl_ifconv);
 		be_dump(DUMP_BE, irg, "if-conv");
+		compute_bitwidth_for_si(irg);
 
 		const char *entity_name = get_entity_ld_name(get_irg_entity(irg));
 		char filename[1024];
@@ -84,6 +86,7 @@ void vhdl_generate_code(char const *const cup_name)
 		vhdl_select_instructions(irg);
 
 		vhdl_emit_function(irg);
+		free_bitwidth_info(irg);
 		vhdl_be_step_last(irg);
 		be_emit_exit();
 	}

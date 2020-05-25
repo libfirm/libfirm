@@ -207,17 +207,28 @@ static void emit_Conv(ir_node const *const node)
 {
 	ir_mode *src_mode = get_irn_mode(get_irn_n(node, n_vhdl_Conv_val));
 	ir_mode *dest_mode = get_irn_mode(node);
+	bool resize = get_mode_size_bits(dest_mode) != get_mode_size_bits(src_mode);
 	if (get_mode_arithmetic(src_mode) == irma_none) {
 		// convert from std logic vector to signed/unsigned (entity inputs)
+		// resizes result if necessary
+		if (resize)
+			be_emit_irprintf("resize(", get_sign_string(dest_mode));
 		be_emit_irprintf("%s(", get_sign_string(dest_mode));
 		emit_vhdl_node(get_irn_n(node, n_vhdl_Conv_val));
 		be_emit_irprintf(")");
+		if (resize)
+			be_emit_irprintf(", %d)", get_mode_size_bits(dest_mode));
 		return;
 	}
 	if (get_mode_arithmetic(dest_mode) == irma_none) {
 		// convert to std logic vector from signed/unsigned (entity outputs)
+		resize = true; //TODO: this is only for debugging. during transformation modes should be changed to correct bitwitdh
 		be_emit_irprintf("std_logic_vector(");
+		if (resize)
+			be_emit_irprintf("resize(", get_sign_string(dest_mode));
 		emit_vhdl_node(get_irn_n(node, n_vhdl_Conv_val));
+		if (resize)
+			be_emit_irprintf(", %d)", get_mode_size_bits(dest_mode));
 		be_emit_irprintf(")");
 		return;
 	}
@@ -227,8 +238,8 @@ static void emit_Conv(ir_node const *const node)
 		be_emit_irprintf("%s(", get_sign_string(dest_mode));
 		change_sign = true;
 	}
-	if (get_mode_size_bits(dest_mode) != get_mode_size_bits(src_mode)) {
-		be_emit_irprintf("resize(", get_sign_string(dest_mode));
+	if (resize) {
+		be_emit_irprintf("resize(");
 		/* IEEE.numeric_std transplants the sign bit on downconv from a
 		 * signed type.  Avoid this case to maintain C semantics. */
 		if (vhdl_hack) {
