@@ -209,6 +209,9 @@ EOF
 			my $reqstruct = generate_requirements($req, $n, "${arch}_$op", $idx++, 1);
 			$temp .= "\t\t&$reqstruct,\n";
 		}
+		if ($idx <= 0) {
+			$temp .= "0";
+		}
 		$temp .= "\t};\n";
 	} elsif ($arity == 0) {
 		$temp .= "\tarch_register_req_t const **const in_reqs = NULL;\n";

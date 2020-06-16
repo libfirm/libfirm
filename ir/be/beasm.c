@@ -262,7 +262,11 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	size_t const n_clobbers = get_ASM_n_clobbers(node);
 	if (n_clobbers != 0) {
 		/* Collect clobbers and add them as outputs. */
+#if defined(_WIN32)
+		unsigned* clobber_bits = ALLOCAN(unsigned, ir_target.isa->n_register_classes);
+#else
 		unsigned clobber_bits[ir_target.isa->n_register_classes];
+#endif
 		memset(&clobber_bits, 0, sizeof(clobber_bits));
 
 		be_irg_t       *const birg             = be_birg_from_irg(irg);
@@ -316,7 +320,12 @@ ir_node *be_make_asm(ir_node const *const node, be_asm_info_t const *const info,
 	 *        before...
 	 * FIXME: need to do this per register class...
 	 */
+#if defined(_WIN32)
+	be_add_pressure_t* add_pressure = ALLOCAN(be_add_pressure_t, ir_target.isa->n_register_classes);
+#else
 	be_add_pressure_t add_pressure[ir_target.isa->n_register_classes];
+#endif
+
 	memset(add_pressure, 0, sizeof(add_pressure));
 	if (n_outs - n_labels - pn_be_Asm_first_out < n_ins - n_be_Asm_first_in) {
 		bitset_t *const used_ins = bitset_alloca(n_ins);

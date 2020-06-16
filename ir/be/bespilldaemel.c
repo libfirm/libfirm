@@ -221,7 +221,9 @@ static void add_uses(ir_node *node, ir_nodeset_t *nodeset)
 	}
 }
 
+#if !defined(_WIN32)
 static __attribute__((unused))
+#endif
 void print_nodeset(ir_nodeset_t *nodeset)
 {
 	foreach_ir_nodeset(nodeset, node, iter) {

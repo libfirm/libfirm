@@ -29,8 +29,8 @@ static const unsigned ignore_regs[] = {
 	REG_FP_NOREG,
 };
 
-static const arch_register_t* const default_param_regs[] = {};
-static const arch_register_t* const float_param_regs[]   = {};
+static const arch_register_t* const default_param_regs[] = {0};
+static const arch_register_t* const float_param_regs[]   = {0};
 
 static const arch_register_t* const result_regs[] = {
 	&ia32_registers[REG_EAX],

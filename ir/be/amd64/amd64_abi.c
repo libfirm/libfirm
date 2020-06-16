@@ -163,10 +163,15 @@ static aggregate_spec_t classify_for_amd64(amd64_abi_state *s, ir_type const *co
 {
 	amd64_abi_state reset = *s;
 
+#if defined(_WIN32)
+	aggregate_spec_t result;
+	memset(&result, 0, sizeof(aggregate_spec_t));
+#else
 	aggregate_spec_t result = {
 		.length = 0,
 		.modes = { },
 	};
+#endif
 #ifndef NDEBUG
 	bool type_ended = false;
 #endif

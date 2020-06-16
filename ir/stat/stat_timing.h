@@ -12,7 +12,29 @@
 #define FIRM_STAT_TIMING_H
 
 #include <stddef.h>
-#include <sys/time.h>
+
+#if defined(__linux__) || defined(__APPLE__)
+#   include <sys/time.h>
+#elif defined(_WIN32)
+#   include <windows.h>
+#   include <time.h>
+
+static int gettimeofday(struct timeval *tv, struct timezone *tz)
+{
+    LARGE_INTEGER tick;
+    LARGE_INTEGER tick_per_second;
+
+    time_t t = 0;
+    time(&t);
+    tv->tv_sec = (long) t;
+
+    QueryPerformanceFrequency(&tick_per_second);
+    QueryPerformanceCounter(&tick);
+
+    tv->tv_usec = (tick.QuadPart % tick_per_second.QuadPart);
+    return 0;
+}
+#endif
 
 typedef unsigned long long timing_ticks_t;
 
@@ -23,7 +45,7 @@ typedef unsigned long long timing_ticks_t;
  */
 static inline timing_ticks_t timing_ticks(void)
 {
-#if defined(__i386__) || defined(_M_IX86) || defined(_M_X64)
+#if defined(__i386__) && (defined(__linux__) || defined(__APPLE__))
 	unsigned h;
 	unsigned l;
 	__asm__ volatile("rdtsc" : "=a" (l), "=d" (h));

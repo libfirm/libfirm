@@ -3,3 +3,5 @@
 /firm-homepage
 
 _build
+*.pdb
+*_d.lib

@@ -15,7 +15,13 @@
 #include "stat_timing.h"
 #include "util.h"
 #include <assert.h>
-#include <regex.h>
+
+#if defined(_WIN32)
+#	include "pcreposix.h"
+#else
+#	include <regex.h>
+#endif
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>

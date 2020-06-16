@@ -28,17 +28,8 @@ int ir_target_set_triple(ir_machine_triple_t const *machine)
 		arch = cpu;
 	} else if (streq(cpu, "arm")) {
 		isa = &arm_isa_if;
-	} else if (streq(cpu, "sparc")) {
-		isa = &sparc_isa_if;
-		if (strstr(manufacturer, "leon") != NULL
-		 || streq(manufacturer, "invasic"))
-			arch = "leon";
 	} else if (streq(cpu, "x86_64") || streq(cpu, "amd64")) {
 		isa = &amd64_isa_if;
-	} else if (streq(cpu, "mips")) {
-		isa = &mips_isa_if;
-	} else if (streq(cpu, "riscv32")) {
-		isa = &riscv32_isa_if;
 	} else if (streq(cpu, "TEMPLATE")) {
 		isa = &TEMPLATE_isa_if;
 	} else {

@@ -101,7 +101,12 @@ static ir_node *new_linked_Phi(ir_node *block, ir_mode *mode)
 {
 	ir_node *unknown = new_r_Unknown(get_irn_irg(block), mode);
 	unsigned arity = get_Block_n_cfgpreds(block);
+
+#if defined(_WIN32)
+	ir_node** in = ALLOCAN(ir_node*, arity);
+#else
 	ir_node *in[arity];
+#endif
 
 	for (unsigned i = 0; i < arity; i++) {
 		in[i] = unknown;
