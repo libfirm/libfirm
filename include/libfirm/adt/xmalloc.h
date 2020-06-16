@@ -21,8 +21,12 @@
 #ifndef alloca
 #	if defined(__GNUC__)
 #		define alloca(x)       __builtin_alloca(x)
-#	elif defined(__WIN32)
+#	elif defined(_WIN32)
 #		include <malloc.h>
+
+#       ifdef _alloca
+#           define alloca _alloca
+#       endif
 #	else
 #		error do not know how to get alloca
 #	endif
