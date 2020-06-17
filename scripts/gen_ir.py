@@ -8,6 +8,8 @@ sys.dont_write_bytecode = True
 import argparse
 from jinja2 import Environment
 import filters
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 import imp
 import jinjautil
 
