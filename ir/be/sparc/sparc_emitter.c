@@ -1158,6 +1158,18 @@ static void emit_sparc_SwitchJmp(const ir_node *node)
 	be_emit_jump_table(node, &attr->swtch, mode_P, emit_jumptable_target);
 }
 
+static void emit_sparc_SICall(const ir_node *node) {
+	//TODO Support for immediate values and multiple writeback/no writeback
+	//multiple SI op numbers via function attribute (si group?)
+	uint32_t si_call = 0x00C00000; //SI num is 0
+	int res_reg = arch_get_irn_register_out(node, 1)->encoding;
+	int in0_reg = arch_get_irn_register_in(node, 1)->encoding;
+	int in1_reg = arch_get_irn_register_in(node, 2)->encoding;
+	si_call |= (res_reg << 25) | (in0_reg << 5) | in1_reg;
+	printf(".word 0x%X /* SI Call */\n", si_call);
+	sparc_emitf(node,".word 0x%X /* SI Call */", si_call);
+}
+
 static void emit_fmov(const ir_node *node, const arch_register_t *src_reg,
                       const arch_register_t *dst_reg)
 {
@@ -1229,6 +1241,7 @@ static void sparc_register_emitters(void)
 	be_set_emitter(op_sparc_SwitchJmp, emit_sparc_SwitchJmp);
 	be_set_emitter(op_sparc_UDiv,      emit_sparc_UDiv);
 	be_set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
+	be_set_emitter(op_sparc_SICall,    emit_sparc_SICall);
 }
 
 /**

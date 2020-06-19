@@ -509,6 +509,14 @@ Call => {
 	},
 },
 
+SICall => {
+	#irn_flags    => [ "rematerializable" ],
+	out_reqs     => [ "mem", "gp"],
+	in_reqs    => [ "mem", "gp", "gp" ],
+	outs       => [ "M", "res"],
+	ins        => [ "mem", "left", "right" ],
+},
+
 Cmp => { # aka SubccZero
 	template => $binopcczero_operand,
 	emit     => "cmp %S0, %SI1",

@@ -1608,6 +1608,13 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 	}
 }
 
+static bool is_SI(ir_node *callee) {
+	if(!is_Address(callee))
+		return false;
+	ir_entity *callee_ent = get_Address_entity(callee);
+	return callee_ent && (mtp_special_instruction & get_entity_additional_properties(callee_ent));
+}
+
 static ir_node *gen_Call(ir_node *node)
 {
 	ir_graph        *irg          = get_irn_irg(node);
@@ -1619,6 +1626,14 @@ static ir_node *gen_Call(ir_node *node)
 	ir_type         *type         = get_Call_type(node);
 	size_t           n_params     = get_Call_n_params(node);
 	size_t           n_ress       = get_method_n_ress(type);
+
+	if(is_SI(callee)) {
+		assert(n_params == 2); //SIs have 2 arguments
+		ir_node *left = be_transform_node(get_Call_param(node, 0));
+		ir_node *right = be_transform_node(get_Call_param(node, 1));
+
+		return new_bd_sparc_SICall(dbgi, new_block, new_mem, left, right);
+	}
 	/* max inputs: memory, callee, register arguments */
 	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params);
 	calling_convention_t *cconv
@@ -2260,7 +2275,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	ir_node *const call     = get_Proj_pred(get_Proj_pred(node));
 	ir_node *const new_call = be_transform_node(call);
 	unsigned const pn       = get_Proj_num(node);
-	unsigned const new_pn   = pn_sparc_Call_first_result + pn;
+	unsigned const new_pn = pn + (is_sparc_Call(new_call) ? pn_sparc_Call_first_result : 1);
 	return be_new_Proj(new_call, new_pn);
 }
 
