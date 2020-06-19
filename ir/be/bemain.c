@@ -51,7 +51,6 @@
 #include "util.h"
 #include <stdio.h>
 #include <vhdl/vhdl_bearch_t.h>
-#include <vhdl/method_cloning.h>
 
 static struct obstack obst;
 static be_main_env_t  env;
@@ -581,29 +580,8 @@ void be_finish(void)
 
 void be_main(FILE *file_handle, const char *cup_name)
 {
-	bool use_vhdl = false;
-	foreach_irp_irg(i, irg) {
-		ir_entity *ent = get_irg_entity(irg);
-		if (mtp_special_instruction & get_entity_additional_properties(ent)) {
-			ir_entity *new_ent = clone_method(irg);
-			set_entity_additional_properties(ent, (get_entity_additional_properties(ent) & ~mtp_special_instruction));
-			set_entity_linkage(new_ent, IR_LINKAGE_NO_CODEGEN);
-			set_entity_link(new_ent, ent);
-			use_vhdl = true;
-		}
-	}
 	/* Write additional VHDL if desired */
-	if (use_vhdl) {
-		vhdl_generate_code(cup_name);
-		/* Delete previously cloned entities, as these are already loweder to vhdl */
-		foreach_irp_irg_r(i, irg) {
-			ir_entity *ent = get_irg_entity(irg);
-			if (mtp_special_instruction & get_entity_additional_properties(ent)) {
-				free_ir_graph(irg);
-				free_entity(ent);
-			}
-		}
-	}
+	vhdl_generate_code(cup_name);
 
 	/* Let the target control how the codegeneration works. */
 	ir_target.isa->generate_code(file_handle, cup_name);

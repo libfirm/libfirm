@@ -13,6 +13,8 @@
 #include "gen_vhdl_regalloc_if.h"
 #include "irarch.h"
 #include "irprog_t.h"
+#include "method_cloning.h"
+#include "plist.h"
 #include "target_t.h"
 #include "vhdl_bemain.h"
 #include "vhdl_emitter.h"
@@ -62,13 +64,20 @@ static void vhdl_lower_for_target(ir_graph *irg)
 void vhdl_generate_code(char const *const cup_name)
 {
 
-	vhdl_be_begin(cup_name);
-
-
+	plist_t *irg_origs = plist_new();
 	foreach_irp_irg(i, irg) {
 		if (!(mtp_special_instruction & get_entity_additional_properties(get_irg_entity(irg)))) {
 			continue;
 		}
+		plist_insert_back(irg_origs, irg);
+		create_clone_proc_irg(get_irg_entity(irg));
+	}
+
+	vhdl_be_begin(cup_name, irg_origs);
+
+
+	foreach_plist(irg_origs, list_irg) {
+		ir_graph *irg = get_entity_irg(get_irg_entity(plist_element_get_value(list_irg)));
 		opt_if_conv_cb(irg, vhdl_ifconv);
 		be_dump(DUMP_BE, irg, "if-conv");
 		compute_bitwidth_for_si(irg);
@@ -92,6 +101,13 @@ void vhdl_generate_code(char const *const cup_name)
 	}
 
 	vhdl_be_finish();
+	foreach_plist(irg_origs, list_irg) {
+		ir_graph *irg = plist_element_get_value(list_irg);
+		ir_entity *entity = get_irg_entity(irg);
+		free_ir_graph(get_entity_irg(entity));
+		set_entity_irg(entity, irg);
+	}
+	plist_free(irg_origs);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_vhdl)

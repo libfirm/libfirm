@@ -13,9 +13,10 @@
 #define LIBFIRM_VHDL_BEMAIN_H
 
 #include "irgraph.h"
+#include "plist.h"
 #include "stdio.h"
 
-void vhdl_be_begin(const char *);
+void vhdl_be_begin(const char *, plist_t *);
 void vhdl_be_step_last(ir_graph *);
 void vhdl_be_finish(void);
 

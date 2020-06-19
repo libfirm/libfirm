@@ -179,7 +179,7 @@ static void clone_frame(ir_graph *const src_irg, ir_graph *const dst_irg)
  *
  * @param new The entity of the method that we clone
  */
-static void create_clone_proc_irg(ir_entity *new)
+void create_clone_proc_irg(ir_entity *new)
 {
 	ir_graph *const method_irg = get_entity_linktime_irg(new);
 	ir_reserve_resources(method_irg, IR_RESOURCE_IRN_LINK);

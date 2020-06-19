@@ -773,18 +773,15 @@ void compute_bitwidth_for_si(ir_graph *irg) {
 	if (irp_callgraph_consistent != get_irp_callgraph_state()) {
 		compute_callgraph();
 	}
-	ir_entity *orig_entity = get_entity_link(ent);
-	ir_graph *orig_irg = get_entity_irg(orig_entity);
 	bitwidth *max_param_bitwidth[param_n];
 	for (size_t i = 0; i < param_n; i++) {
 		max_param_bitwidth[i] = NULL;
 	}
 	struct max_param_bw_helper helper;
-	helper.entity = orig_entity;
+	helper.entity = ent;
 	helper.max_bitwidth = max_param_bitwidth;
-	//orig_irg is graph of original entity, as we copy the entity before passing it to the vhdl backend
-	for (size_t i = 0; i < get_irg_n_callers(orig_irg); i++) {
-		ir_graph *caller = get_irg_caller(orig_irg, i);
+	for (size_t i = 0; i < get_irg_n_callers(irg); i++) {
+		ir_graph *caller = get_irg_caller(irg, i);
 		compute_bitwidth_info(caller);
 		irg_walk_graph(caller, compute_max_param_bitwidth, NULL, &helper);
 	}

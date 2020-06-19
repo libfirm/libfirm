@@ -51,7 +51,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	be_check_verify_result(fine, irg);
 }
 
-void vhdl_be_begin(const char *cup_name)
+void vhdl_be_begin(const char *cup_name, plist_t *irg_origs)
 {
 	obstack_init(&obst);
 	vhdl_init();
@@ -64,12 +64,9 @@ void vhdl_be_begin(const char *cup_name)
 	/* First: initialize all birgs */
 	size_t num_birgs = 0;
 	/* we might need 1 birg more for instrumentation constructor */
-	//TODO: Allocating too many birgs as only birgs for special instructions are needed
-	be_irg_t *const birgs = OALLOCN(&obst, be_irg_t, get_irp_n_irgs() + 1);
-	foreach_irp_irg(i, irg) {
-		ir_entity *entity = get_irg_entity(irg);
-		if (!(mtp_special_instruction & get_entity_additional_properties(entity)))
-			continue;
+	be_irg_t *const birgs = OALLOCN(&obst, be_irg_t, plist_count(irg_origs));
+	foreach_plist(irg_origs, list_irg) {
+		ir_graph *irg = get_entity_irg(get_irg_entity(plist_element_get_value(list_irg)));
 		initialize_birg(&birgs[num_birgs++], irg, &env);
 		be_dump(DUMP_INITIAL, irg, "prepared");
 	}
