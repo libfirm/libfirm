@@ -823,9 +823,6 @@ void compute_bitwidth_for_si(ir_graph *irg) {
 	optimize_cf(irg);
 	remove_confirms(irg);
 	del_pqueue(queue);
-	for (size_t i=0; i < get_irg_n_callers(irg); i++) {
-		free_bitwidth_info(get_irg_caller(irg, i));
-	}
 	add_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_BITWIDTH_INFO);
 
 	free_callgraph();

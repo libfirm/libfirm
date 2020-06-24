@@ -15,6 +15,7 @@
 #include "benode.h"
 #include "betranshlp.h"
 #include "beutil.h"
+#include "bitwidth.h"
 #include "dbginfo.h"
 #include "debug.h"
 #include "gen_sparc_new_nodes.h"
@@ -1608,17 +1609,64 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 	}
 }
 
-static bool is_SI(ir_node *callee) {
+static bool is_SI(ir_node *callee)
+{
 	if(!is_Address(callee))
 		return false;
 	ir_entity *callee_ent = get_Address_entity(callee);
 	return callee_ent && (mtp_special_instruction & get_entity_additional_properties(callee_ent));
 }
 
-static ir_node *gen_Call(ir_node *node)
+static ir_node *gen_SICall(ir_node *node)
 {
 	ir_graph        *irg          = get_irn_irg(node);
+	ir_node         *new_block    = be_transform_nodes_block(node);
+	ir_node         *mem          = get_Call_mem(node);
+	ir_node         *new_mem      = be_transform_node(mem);
+	dbg_info        *dbgi         = get_irn_dbg_info(node);
+	size_t           n_params     = get_Call_n_params(node);
+	assert(n_params <= 2); //Atoms have only 2 inputs, though instruction format supports up to four
+
+	int imm_cnt = 0;
+	int imm_vals[n_params];
+	bool imm10 = false;
+	ir_node  **in = ALLOCAN(ir_node*, n_params + 1);
+	arch_register_req_t const **const in_req = be_allocate_in_reqs(irg, n_params + 1);
+
+	in[0] = new_mem;
+	in_req[0] = arch_memory_req;
+	for (size_t p = 0; p < n_params; ++p) {
+		ir_node *value      = get_Call_param(node, p);
+		int used_bits = bitwidth_used_bits(value);
+		if(is_Const(value) && used_bits <= 10) {
+			if(n_params == 1 && used_bits >= 5) {//Assumption: only 10bit imm possibile if n_params == 1
+				imm_vals[imm_cnt] = (int) get_Const_long(value);
+				imm10 = true;
+				imm_cnt++;
+			}
+			else if(used_bits <= 5) {
+				imm_vals[imm_cnt] = (int) get_Const_long(value);
+				imm_cnt++;
+			}
+		} else {
+			int idx = p - imm_cnt + 1;
+			in[idx] = be_transform_node(value);
+			in_req[idx] = &sparc_class_reg_req_gp;
+		}
+	}
+	printf("Arity %lu\n", n_params - imm_cnt +1 );
+	return new_bd_sparc_SICall(dbgi, new_block, n_params - imm_cnt + 1 , in, in_req, imm_cnt, imm_vals[0], imm_vals[1], imm10);
+}
+
+static ir_node *gen_Call(ir_node *node)
+{
 	ir_node         *callee       = get_Call_ptr(node);
+	if(is_SI(callee)) {
+		return gen_SICall(node);
+	}
+
+
+	ir_graph        *irg          = get_irn_irg(node);
 	ir_node         *new_block    = be_transform_nodes_block(node);
 	ir_node         *mem          = get_Call_mem(node);
 	ir_node         *new_mem      = be_transform_node(mem);
@@ -1627,13 +1675,6 @@ static ir_node *gen_Call(ir_node *node)
 	size_t           n_params     = get_Call_n_params(node);
 	size_t           n_ress       = get_method_n_ress(type);
 
-	if(is_SI(callee)) {
-		assert(n_params == 2); //SIs have 2 arguments
-		ir_node *left = be_transform_node(get_Call_param(node, 0));
-		ir_node *right = be_transform_node(get_Call_param(node, 1));
-
-		return new_bd_sparc_SICall(dbgi, new_block, new_mem, left, right);
-	}
 	/* max inputs: memory, callee, register arguments */
 	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params);
 	calling_convention_t *cconv

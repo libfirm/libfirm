@@ -70,6 +70,7 @@ void vhdl_generate_code(char const *const cup_name)
 			continue;
 		}
 		plist_insert_back(irg_origs, irg);
+		compute_bitwidth_for_si(irg);
 		create_clone_proc_irg(get_irg_entity(irg));
 	}
 
@@ -80,7 +81,6 @@ void vhdl_generate_code(char const *const cup_name)
 		ir_graph *irg = get_entity_irg(get_irg_entity(plist_element_get_value(list_irg)));
 		opt_if_conv_cb(irg, vhdl_ifconv);
 		be_dump(DUMP_BE, irg, "if-conv");
-		compute_bitwidth_for_si(irg);
 
 		const char *entity_name = get_entity_ld_name(get_irg_entity(irg));
 		char filename[1024];
@@ -95,7 +95,7 @@ void vhdl_generate_code(char const *const cup_name)
 		vhdl_select_instructions(irg);
 
 		vhdl_emit_function(irg);
-		free_bitwidth_info(irg);
+		//free_bitwidth_info(irg); //Info needed in SPARC be as well
 		vhdl_be_step_last(irg);
 		be_emit_exit();
 	}

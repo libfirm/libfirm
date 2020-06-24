@@ -54,6 +54,10 @@ static bool has_fp_conv_attr(const ir_node *node)
 	return is_sparc_fftof(node);
 }
 
+static bool has_si_imm_attr(const ir_node *node)
+{
+	return is_sparc_SICall(node);
+}
 /**
  * Dumper interface for dumping sparc nodes in vcg.
  * @param F        the output file
@@ -115,6 +119,15 @@ void sparc_set_attr_imm(ir_node *res, ir_entity *entity,
 	attr->immediate_value_entity = entity;
 	attr->immediate_value        = immediate_value;
 	arch_add_irn_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_immediate_form);
+}
+
+void init_sparc_si_imm_attr(ir_node *node, int imm_cnt, int imm0, int imm1, bool imm10)
+{
+	sparc_si_imm_attr_t *attr = get_sparc_si_imm_attr(node);
+	attr->imm_cnt = imm_cnt;
+	attr->imm0 = imm0;
+	attr->imm1 = imm1;
+	attr->imm10 = imm10;
 }
 
 void init_sparc_jmp_cond_attr(ir_node *node, ir_relation relation,
@@ -197,6 +210,18 @@ const sparc_fp_conv_attr_t *get_sparc_fp_conv_attr_const(const ir_node *node)
 	return (const sparc_fp_conv_attr_t*) get_irn_generic_attr_const(node);
 }
 
+sparc_si_imm_attr_t *get_sparc_si_imm_attr(ir_node *node)
+{
+	assert(has_si_imm_attr(node));
+	return (sparc_si_imm_attr_t*) get_irn_generic_attr(node);
+}
+
+const sparc_si_imm_attr_t *get_sparc_si_imm_attr_const(const ir_node *node)
+{
+	assert(has_si_imm_attr(node));
+	return (const sparc_si_imm_attr_t*) get_irn_generic_attr_const(node);
+}
+
 void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
                                       ir_entity *entity, int32_t offset,
                                       bool is_frame_entity, bool is_reg_reg)
@@ -271,4 +296,15 @@ int sparc_switch_jmp_attrs_equal(const ir_node *a, const ir_node *b)
 	const sparc_switch_jmp_attr_t *attr_b = get_sparc_switch_jmp_attr_const(b);
 	return sparc_attrs_equal(a, b)
 	    && be_switch_attrs_equal(&attr_a->swtch, &attr_b->swtch);
+}
+
+int sparc_si_imm_attrs_equal(const ir_node *a, const ir_node *b)
+{
+	const sparc_si_imm_attr_t *attr_a = get_sparc_si_imm_attr_const(a);
+	const sparc_si_imm_attr_t *attr_b = get_sparc_si_imm_attr_const(b);
+	return sparc_attrs_equal(a, b)
+	    && attr_a->imm_cnt == attr_b->imm_cnt
+	    && attr_a->imm0 == attr_b->imm0
+	    && attr_a->imm1 == attr_b->imm1
+	    && attr_a->imm10 == attr_b->imm10;
 }

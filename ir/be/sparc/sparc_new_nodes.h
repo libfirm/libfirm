@@ -36,6 +36,8 @@ const sparc_fp_attr_t *get_sparc_fp_attr_const(const ir_node *node);
 sparc_fp_conv_attr_t *get_sparc_fp_conv_attr(ir_node *node);
 const sparc_fp_conv_attr_t *get_sparc_fp_conv_attr_const(const ir_node *node);
 
+sparc_si_imm_attr_t *get_sparc_si_imm_attr(ir_node *node);
+const sparc_si_imm_attr_t *get_sparc_si_imm_attr_const(const ir_node *node);
 /* Include the generated headers */
 #include "gen_sparc_new_nodes.h"
 
