@@ -693,6 +693,16 @@ void (set_entity_link)(ir_entity *ent, void *l)
 	_set_entity_link(ent, l);
 }
 
+unsigned (get_entity_si_opcode)(const ir_entity *ent)
+{
+	return _get_entity_si_opcode(ent);
+}
+
+void (set_entity_si_opcode)(ir_entity *ent, unsigned opcode)
+{
+	_set_entity_si_opcode(ent, opcode);
+}
+
 ir_graph *(get_entity_irg)(const ir_entity *ent)
 {
 	return _get_entity_irg(ent);

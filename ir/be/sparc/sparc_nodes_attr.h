@@ -91,12 +91,13 @@ typedef struct sparc_asm_operand_t {
 	ir_entity       *immediate_value_entity;
 } sparc_asm_operand_t;
 
-typedef struct sparc_si_imm_attr_t {
+typedef struct sparc_si_attr_t {
 	sparc_attr_t  base;    /**< generic attribute */
+	unsigned opcode;
 	int imm_cnt;
 	int imm0;
 	int imm1;
 	bool imm10;
-} sparc_si_imm_attr_t;
+} sparc_si_attr_t;
 
 #endif

@@ -47,6 +47,8 @@
 #define set_entity_bitfield_size(ent, s)     _set_entity_bitfield_size(ent, s)
 #define get_entity_link(ent)                 _get_entity_link(ent)
 #define set_entity_link(ent, l)              _set_entity_link(ent, l)
+#define get_entity_si_opcode(ent)            _get_entity_si_opcode(ent)
+#define set_entity_si_opcode(ent, o)         _set_entity_si_opcode(ent, o)
 #define get_entity_irg(ent)                  _get_entity_irg(ent)
 #define get_entity_linktime_irg(ent)         _get_entity_linktime_irg(ent)
 #define is_parameter_entity(ent)             _is_parameter_entity(ent)
@@ -117,6 +119,7 @@ typedef struct method_ent_attr {
 
 	unsigned vtable_number;        /**< For a dynamically called method, the number assigned
 	                                    in the virtual function table. */
+	unsigned si_opcode;            /**< For special instructions, an opcode gets stored here. */
 
 	ptr_access_kind *param_access; /**< the parameter access */
 	unsigned *param_weight;        /**< The weight of method's parameters. Parameters
@@ -401,6 +404,20 @@ static inline void _set_entity_link(ir_entity *ent, void *l)
 {
 	assert(ent->firm_tag == k_entity);
 	ent->link = l;
+}
+
+static inline unsigned _get_entity_si_opcode(const ir_entity *ent)
+{
+	assert(ent->firm_tag == k_entity);
+	assert(ent->kind == IR_ENTITY_METHOD);
+	return ent->attr.mtd_attr.si_opcode;
+}
+
+static inline void _set_entity_si_opcode(ir_entity *ent, unsigned opcode)
+{
+	assert(ent->firm_tag == k_entity);
+	assert(ent->kind == IR_ENTITY_METHOD);
+	ent->attr.mtd_attr.si_opcode = opcode;
 }
 
 static inline ir_graph *_get_entity_irg(const ir_entity *ent)

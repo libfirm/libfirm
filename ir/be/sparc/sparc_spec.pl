@@ -112,7 +112,7 @@ $mode_fp4     = "sparc_mode_Q";
 	sparc_switch_jmp_attr_t => "be_switch_attr_init(res, &attr->swtch, table, jump_table);",
 	sparc_fp_attr_t         => "init_sparc_fp_attributes(res, fp_mode);",
 	sparc_fp_conv_attr_t    => "init_sparc_fp_conv_attributes(res, src_mode, dest_mode);",
-	sparc_si_imm_attr_t     => "init_sparc_si_imm_attr(res, imm_cnt, imm0, imm1, imm10);",
+	sparc_si_attr_t     => "init_sparc_si_attr(res, opcode, imm_cnt, imm0, imm1, imm10);",
 
 );
 
@@ -515,8 +515,8 @@ SICall => {
 	out_reqs     => [ "mem", "gp"],
 	in_reqs    => "...",
 	outs       => [ "M", "res"],
-	attr => "unsigned imm_cnt, int imm0, int imm1, bool imm10",
-	attr_type => "sparc_si_imm_attr_t",
+	attr => "unsigned opcode, unsigned imm_cnt, int imm0, int imm1, bool imm10",
+	attr_type => "sparc_si_attr_t",
 },
 
 Cmp => { # aka SubccZero

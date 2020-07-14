@@ -16,7 +16,7 @@ void sparc_dump_node(FILE *F, const ir_node *n, dump_reason_t reason);
 
 void sparc_set_attr_imm(ir_node *res, ir_entity *entity,
                         int32_t immediate_value);
-void init_sparc_si_imm_attr(ir_node *node, int imm_cnt,
+void init_sparc_si_attr(ir_node *node, unsigned opcode, int imm_cnt,
                         int imm0, int imm1, bool imm10);
 void init_sparc_jmp_cond_attr(ir_node *node, ir_relation relation,
                               bool is_unsigned);
@@ -34,6 +34,6 @@ int sparc_jmp_cond_attrs_equal(const ir_node *a, const ir_node *b);
 int sparc_fp_attrs_equal(const ir_node *a, const ir_node *b);
 int sparc_fp_conv_attrs_equal(const ir_node *a, const ir_node *b);
 int sparc_switch_jmp_attrs_equal(const ir_node *a, const ir_node *b);
-int sparc_si_imm_attrs_equal(const ir_node *a, const ir_node *b);
+int sparc_si_attrs_equal(const ir_node *a, const ir_node *b);
 
 #endif

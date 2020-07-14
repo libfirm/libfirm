@@ -1626,6 +1626,8 @@ static ir_node *gen_SICall(ir_node *node)
 	dbg_info        *dbgi         = get_irn_dbg_info(node);
 	size_t           n_params     = get_Call_n_params(node);
 	assert(n_params <= 2); //Atoms have only 2 inputs, though instruction format supports up to four
+	ir_entity *callee_ent = get_Address_entity(get_Call_ptr(node));
+	unsigned si_opcode = get_entity_si_opcode(callee_ent);
 
 	int imm_cnt = 0;
 	int imm_vals[n_params];
@@ -1655,7 +1657,7 @@ static ir_node *gen_SICall(ir_node *node)
 		}
 	}
 	printf("Arity %lu\n", n_params - imm_cnt +1 );
-	return new_bd_sparc_SICall(dbgi, new_block, n_params - imm_cnt + 1 , in, in_req, imm_cnt, imm_vals[0], imm_vals[1], imm10);
+	return new_bd_sparc_SICall(dbgi, new_block, n_params - imm_cnt + 1 , in, in_req, si_opcode, imm_cnt, imm_vals[0], imm_vals[1], imm10);
 }
 
 static ir_node *gen_Call(ir_node *node)

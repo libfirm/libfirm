@@ -396,6 +396,12 @@ FIRM_API void *get_entity_link(const ir_entity *ent);
 /** Stores new intermediate information. */
 FIRM_API void set_entity_link(ir_entity *ent, void *l);
 
+/** Returns opcode of special instruction */
+FIRM_API unsigned get_entity_si_opcode(const ir_entity *ent);
+
+/** Sets opcode of defined special instruction (see mtp_additional_properties). */
+FIRM_API void set_entity_si_opcode(ir_entity *ent, unsigned opcode);
+
 /**
  * Return the method graph of a method entity.
  * @warning If the entity has IR_LINKAGE_WEAK, then this is not necessarily the final code

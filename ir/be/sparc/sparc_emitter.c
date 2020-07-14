@@ -1162,30 +1162,35 @@ static void emit_sparc_SICall(const ir_node *node) {
 	//TODO Support for immediate values and multiple writeback/no writeback
 	//multiple SI op numbers via function attribute (si group?)
 	uint32_t si_call = 0x00C00000; //SI num is 0
-	const sparc_si_imm_attr_t *imm_attr = get_sparc_si_imm_attr_const(node);
+
+	const sparc_si_attr_t *si_attr = get_sparc_si_attr_const(node);
+	unsigned opcode = si_attr->opcode & 0x1F;
+	printf("SI OPCODE: %d\n", opcode);
+
 	int rd = arch_get_irn_register_out(node, 1)->encoding;
 	int rs5 = 0;
 	int rs4 = 0;
 	int rs2 = 0;
 	int imm = 0;
-	if(imm_attr->imm_cnt == 1) {
-		if(imm_attr->imm10) {
+	if(si_attr->imm_cnt == 1) {
+		if(si_attr->imm10) {
 			imm = 3;
-			rs2 = imm_attr->imm0;
+			rs2 = si_attr->imm0;
 		} else {
 			imm = 1;
 			rs4 = arch_get_irn_register_in(node, 1)->encoding;
-			rs2 = imm_attr->imm0;
+			rs2 = si_attr->imm0;
 		}
-	} else if(imm_attr->imm_cnt == 2) {
+	} else if(si_attr->imm_cnt == 2) {
 		imm = 2;
-		rs4 = imm_attr->imm0;
-		rs2 = imm_attr->imm1;
+		rs4 = si_attr->imm0;
+		rs2 = si_attr->imm1;
 	} else {
 		rs4 = arch_get_irn_register_in(node, 1)->encoding;
 		rs2 = arch_get_irn_register_in(node, 2)->encoding;
 	}
-	si_call |= (rd << 25) | (imm << 20) | (rs5 << 10) | (rs4 << 5) | rs2;
+	si_call |= (rd << 25) | (imm << 20) | (opcode << 15) |
+		(rs5 << 10) | (rs4 << 5) | rs2;
 	printf(".word 0x%X /* SI Call */\n", si_call);
 	sparc_emitf(node,".word 0x%X /* SI Call */", si_call);
 }
