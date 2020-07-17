@@ -10,6 +10,7 @@
  */
 
 #include "method_cloning.h"
+#include "bitwidth.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
@@ -115,6 +116,12 @@ static void copy_nodes(ir_node *irn, void *env)
 	ir_graph *const clone_irg = (ir_graph *) env;
 
 	copy_irn_to_irg(irn, clone_irg);
+
+	/* Shallow copy bitwidth info */
+	ir_node *irn_copy = get_irn_copy(irn);
+	bitwidth *info = bitwidth_fetch_bitwidth(irn);
+	ir_nodemap_insert(&clone_irg->bitwidth.infos, irn_copy, info);
+
 }
 
 /**
@@ -187,6 +194,7 @@ void create_clone_proc_irg(ir_entity *new)
 	/* We create the skeleton of the clone irg.*/
 	ir_graph *const clone_irg = new_ir_graph(new, 0);
 	clone_frame(method_irg, clone_irg);
+	ir_nodemap_init(&clone_irg->bitwidth.infos, clone_irg);
 
 	/* We copy the blocks and nodes, that must be in
 	the clone graph and set their predecessors. */

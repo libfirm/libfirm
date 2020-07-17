@@ -745,7 +745,6 @@ static void compute_max_param_bitwidth(ir_node *node, void *env) {
 		for(int i = 0; i < get_Call_n_params(node); i++) {
 			bitwidth *param_bw = bitwidth_fetch_bitwidth(get_Call_param(node, i));
 			if(max_bws[i] == NULL || param_bw->stable_digits < max_bws[i]->stable_digits) {
-				printf("Stable bits param %d: %d\n", i, param_bw->stable_digits);
 				max_bws[i] = param_bw;
 			}
 		}

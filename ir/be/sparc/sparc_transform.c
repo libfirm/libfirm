@@ -1656,7 +1656,6 @@ static ir_node *gen_SICall(ir_node *node)
 			in_req[idx] = &sparc_class_reg_req_gp;
 		}
 	}
-	printf("Arity %lu\n", n_params - imm_cnt +1 );
 	return new_bd_sparc_SICall(dbgi, new_block, n_params - imm_cnt + 1 , in, in_req, si_opcode, imm_cnt, imm_vals[0], imm_vals[1], imm10);
 }
 

@@ -66,6 +66,7 @@ void vhdl_be_begin(const char *cup_name, plist_t *irg_origs)
 	/* we might need 1 birg more for instrumentation constructor */
 	be_irg_t *const birgs = OALLOCN(&obst, be_irg_t, plist_count(irg_origs));
 	foreach_plist(irg_origs, list_irg) {
+		/*get cloned irg from original irg of entity */
 		ir_graph *irg = get_entity_irg(get_irg_entity(plist_element_get_value(list_irg)));
 		initialize_birg(&birgs[num_birgs++], irg, &env);
 		be_dump(DUMP_INITIAL, irg, "prepared");

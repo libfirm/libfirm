@@ -78,6 +78,7 @@ void vhdl_generate_code(char const *const cup_name)
 
 
 	foreach_plist(irg_origs, list_irg) {
+		/*get cloned irg from original irg of entity */
 		ir_graph *irg = get_entity_irg(get_irg_entity(plist_element_get_value(list_irg)));
 		opt_if_conv_cb(irg, vhdl_ifconv);
 		be_dump(DUMP_BE, irg, "if-conv");
@@ -95,7 +96,6 @@ void vhdl_generate_code(char const *const cup_name)
 		vhdl_select_instructions(irg);
 
 		vhdl_emit_function(irg);
-		//free_bitwidth_info(irg); //Info needed in SPARC be as well
 		vhdl_be_step_last(irg);
 		be_emit_exit();
 	}

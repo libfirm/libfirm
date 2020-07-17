@@ -1159,13 +1159,10 @@ static void emit_sparc_SwitchJmp(const ir_node *node)
 }
 
 static void emit_sparc_SICall(const ir_node *node) {
-	//TODO Support for immediate values and multiple writeback/no writeback
-	//multiple SI op numbers via function attribute (si group?)
-	uint32_t si_call = 0x00C00000; //SI num is 0
+	uint32_t si_call = 0x00C00000;
 
 	const sparc_si_attr_t *si_attr = get_sparc_si_attr_const(node);
 	unsigned opcode = si_attr->opcode & 0x1F;
-	printf("SI OPCODE: %d\n", opcode);
 
 	int rd = arch_get_irn_register_out(node, 1)->encoding;
 	int rs5 = 0;
@@ -1191,7 +1188,6 @@ static void emit_sparc_SICall(const ir_node *node) {
 	}
 	si_call |= (rd << 25) | (imm << 20) | (opcode << 15) |
 		(rs5 << 10) | (rs4 << 5) | rs2;
-	printf(".word 0x%X /* SI Call */\n", si_call);
 	sparc_emitf(node,".word 0x%X /* SI Call */", si_call);
 }
 
