@@ -791,7 +791,7 @@ static void get_head_outs(ir_node *const node, void *const env)
 
 	/* Find df loops inside the cc */
 	if (is_Phi(node) && get_nodes_block(node) == loop_head) {
-		foreach_irn_in(loop_head, i, pred) {
+		foreach_irn_in(node, i, pred) {
 			if (is_own_backedge(loop_head, i) && is_nodes_block_marked(pred)) {
 				entry_edge const entry = { .node = node, .pos = i, .pred = pred };
 				ARR_APP1(entry_edge, head_df_loop, entry);
