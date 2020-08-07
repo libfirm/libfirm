@@ -32,8 +32,9 @@ static ir_mode *get_correct_mode(ir_mode *old_mode)
 	                                : get_mode_unsigned_vector(get_mode_size_bits(old_mode));
 }
 
-static ir_mode *get_correct_sized_mode(ir_node *const node, int size)
+static ir_mode *get_correct_sized_mode(ir_node *const node)
 {
+	int size = bitwidth_used_bits(node);
 	ir_mode *old_mode = get_irn_mode(node);
 	if (old_mode == mode_b) {
 		return mode_b;
@@ -230,8 +231,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *const node)
 	set_irn_mode(new_proj, get_mode_std_logic_vector(get_mode_size_bits(mode)));
 	// convert input from standard logic vector
 	ir_node *conv = new_bd_vhdl_Conv(dbgi, block, new_proj);
-	int size = bitwidth_used_bits(node);
-	set_correct_mode(conv, get_correct_sized_mode(node, size));
+	set_correct_mode(conv, get_correct_sized_mode(node));
 	return conv;
 }
 
@@ -447,17 +447,24 @@ static void assign_walker(ir_node *const node, void *env)
 	ir_node *const block = get_nodes_block(node);
 	// assign phi operands in signals
 	if (is_Phi(node) && mode_is_int(get_irn_mode(node))) {
+		ir_mode *phi_mode = NULL;
 		for (int i = 0; i < get_irn_arity(node); i++) {
 			ir_node *pred = get_irn_n(node, i);
-
+			ir_mode *pred_mode = get_irn_mode(pred);
 			if (!is_vhdl_AssignSig(pred) && pred != node) {
 				char sig_name[16];
 				sprintf(sig_name, "PHI%ld", get_irn_node_nr(node));
 				ir_node *assign = new_bd_vhdl_AssignSig(dbgi, get_nodes_block(pred), pred, sig_name, get_irn_mode(pred));
-				set_irn_mode(assign, get_irn_mode(pred));
+				set_irn_mode(assign, pred_mode);
 				set_irn_n(node, i, assign);
 			}
+
+			//assign new phi mode due to bitwidth adjustments
+			if(phi_mode == NULL || get_mode_size_bits(phi_mode) < get_mode_size_bits(pred_mode)) {
+				phi_mode = pred_mode;
+			}
 		}
+		set_irn_mode(node, phi_mode);
 	}
 	// store results with multiple users in a temporary variable
 	if (!be_has_only_one_user(node)) {
@@ -492,6 +499,43 @@ static void assign_walker(ir_node *const node, void *env)
 	}
 }
 
+/**
+ * Walk the graph and place additional convs for parameters of bit operations
+ * if they are not of the same size
+ * @param node visited node
+ * @param env walker env
+ */
+static void add_bitop_convs(ir_node *const node, void *env) {
+	(void) env;
+	if(!is_vhdl_And(node) && !is_vhdl_Or(node) && !is_vhdl_Eor(node))
+		return;
+
+	ir_node *const l = get_irn_n(node, 0);
+	ir_node *const r = get_irn_n(node, 1);
+	ir_mode *const mode = get_irn_mode(node);
+	if (!be_mode_needs_gp_reg(mode) && mode != mode_b) {
+		panic("only integer mode or mode_b supported");
+	}
+	dbg_info *const dbgi = get_irn_dbg_info(node);
+	ir_node *const block = get_nodes_block(node);
+	ir_mode *const l_mode = get_irn_mode(l);
+	ir_mode *const r_mode = get_irn_mode(r);
+	int l_size = get_mode_size_bits(l_mode);
+	int r_size = get_mode_size_bits(r_mode);
+	if(l_size != r_size) {
+		ir_node *conv;
+		if(l_size > r_size) {
+			conv = new_bd_vhdl_Conv(dbgi, block, r);
+			set_irn_mode(conv, l_mode);
+			set_irn_n(node, 1, conv);
+		} else {
+			conv = new_bd_vhdl_Conv(dbgi, block, l);
+			set_irn_mode(conv, r_mode);
+			set_irn_n(node, 0, conv);
+		}
+	}
+}
+
 void vhdl_transform_graph(ir_graph *const irg)
 {
 	vhdl_register_transformers();
@@ -501,5 +545,5 @@ void vhdl_transform_graph(ir_graph *const irg)
 	set_opt_cse(before);
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_OUTS);
 	be_dump(DUMP_BE, irg, "before-assigns");
-	irg_walk_graph(irg, NULL, assign_walker, NULL);
+	irg_walk_graph(irg, assign_walker, add_bitop_convs, NULL);
 }
