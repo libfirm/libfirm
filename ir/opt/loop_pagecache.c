@@ -42,27 +42,80 @@ static ir_node * make_call(ir_node *block, ir_node *mem, ir_node **in, int in_nr
 	return proj;
 }
 
+/**
+ * Creates a new entity representing the equivalent of
+ * static <element_mode> <name>[<length>];
+ */
+static ir_entity *new_array_entity(ident *const name, ir_mode *const element_mode, unsigned const length, ir_linkage const linkage)
+{
+	ir_type *const element_type = get_type_for_mode(element_mode);
+	ir_type *const array_type   = new_type_array(element_type, length);
+	ident   *const id           = new_id_from_str(name);
+	ir_type *const owner        = get_glob_type();
+	return new_global_entity(owner, id, array_type, ir_visibility_private, linkage);
+}
+
+/**
+ * Creates a new entity representing the equivalent of
+ * static const char name[strlen(string)+1] = string
+ */
+static ir_entity *new_static_string_entity(char const *const string)
+{
+	static int str_counter = 0;
+
+	char name[100];
+	snprintf(name, 100, "__funcname_%d", str_counter++);
+	name[99] = '\0';
+
+	/* Create the type for a fixed-length string */
+	ir_mode   *const mode   = mode_Bs;
+	size_t     const length = strlen(string) + 1;
+	ir_entity *const result = new_array_entity(name, mode, length, IR_LINKAGE_CONSTANT);
+
+	/* There seems to be no simpler way to do this. Or at least, cparser
+	 * does exactly the same thing... */
+	ir_initializer_t *const contents = create_initializer_compound(length);
+	for (size_t i = 0; i < length; i++) {
+		ir_tarval        *const c    = new_tarval_from_long(string[i], mode);
+		ir_initializer_t *const init = create_initializer_tarval(c);
+		set_initializer_compound_value(contents, i, init);
+	}
+	set_entity_initializer(result, contents);
+
+	return result;
+}
+
 static ir_node *make_prefetch(ir_node *block, ir_node *mem, ir_node *init, ir_node *limit, ir_node *size, ir_node *iter) {
+	DB((dbg, LEVEL_2, "Inserting prefetch in %+F\n", get_irn_irg(mem)));
+
 	static ir_type *prefetch_type;
 	if (prefetch_type == NULL) {
-		prefetch_type = new_type_method(4, 1, 0, 0, mtp_no_property);
+		prefetch_type = new_type_method(5, 1, 0, 0, mtp_no_property);
 		set_type_dbg_info(prefetch_type, NULL);
 		set_method_param_type(prefetch_type, 0, get_type_for_mode(mode_P));
 		set_method_param_type(prefetch_type, 1, get_type_for_mode(mode_P));
 		set_method_param_type(prefetch_type, 2, get_type_for_mode(get_modeIu()));
 		set_method_param_type(prefetch_type, 3, get_type_for_mode(get_modeLs()));
+		set_method_param_type(prefetch_type, 4, get_type_for_mode(mode_P));
 		set_method_res_type(prefetch_type, 0, get_type_for_mode(get_modeIs()));
 	}
 	static ir_entity *prefetch;
 	if (prefetch == NULL) {
 		prefetch = new_global_entity(get_segment_type(IR_SEGMENT_GLOBAL), get_id_str("vsm_prefetch"), prefetch_type, ir_visibility_external, IR_LINKAGE_DEFAULT);
 	}
-	ir_node **in = XMALLOCN(ir_node*, 4);
+
+	ir_entity *enclosing_function = get_irg_entity(get_irn_irg(mem));
+
+	ir_entity *func_name = new_static_string_entity(get_entity_name(enclosing_function));
+
+	ir_node **in = XMALLOCN(ir_node*, 5);
 	in[0] = init;
 	in[1] = limit;
 	in[2] = size;
 	in[3] = iter;
-	return make_call(block, mem, in, 4, prefetch, prefetch_type);
+	in[4] = new_r_Address(get_irn_irg(mem), func_name);
+
+	return make_call(block, mem, in, 5, prefetch, prefetch_type);
 }
 
 static ir_node *make_free(ir_node *block, ir_node *mem, ir_node *req) {
