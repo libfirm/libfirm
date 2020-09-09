@@ -1,5 +1,6 @@
 #include "loop_pagecache.h"
 #include "irloop_t.h"
+#include "debug.h"
 #include "dbginfo.h"
 #include "nodes.h"
 #include "entity_t.h"
@@ -9,6 +10,8 @@
 #include "irgopt.h"
 #include "iredges_t.h"
 #include "irdump.h"
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static bool is_in_loop(ir_loop *loop, ir_node *node);
 static ir_node *find_phi(ir_node *node, ir_loop *outer);
@@ -248,7 +251,7 @@ static bool find_variable(ir_node *phi, ir_node *header, ir_node *phi_loop, ir_l
     inc_irg_visited(get_irn_irg(header));
     loop_var->confirm = find_confirm(loop_var->phi);
     if (loop_var->confirm == NULL) {
-        printf("No confirm\n");
+	    DB((dbg, LEVEL_2, "No confirm\n"));
         return false;
     }
     loop_var->limit = get_Confirm_bound(loop_var->confirm);
@@ -274,20 +277,20 @@ static int loop_pagecache_variables(ir_loop *loop, ir_loop *outer, loop_var_t **
 			num_variables++;
 			ARR_APP1(loop_var_t, *vars, loop_var);
 
-			printf("Found loop variable from ");
+			DB((dbg, LEVEL_2, "Found loop variable from "));
 			if (is_Const(loop_var.init)) {
-				printf("%ld", get_Const_long(loop_var.init));
+				DB((dbg, LEVEL_2, "%ld", get_Const_long(loop_var.init)));
 			} else {
-				printf("(%s %ld)", get_irn_opname(loop_var.init), get_irn_node_nr(loop_var.init));
+				DB((dbg, LEVEL_2, "(%s %ld)", get_irn_opname(loop_var.init), get_irn_node_nr(loop_var.init)));
 			}
-			printf(" to ");
+			DB((dbg, LEVEL_2, " to "));
 			if (is_Const(loop_var.limit)) {
-				printf("%ld", get_Const_long(loop_var.limit));
+				DB((dbg, LEVEL_2, "%ld", get_Const_long(loop_var.limit)));
 			} else {
-				printf("(%s %ld)", get_irn_opname(loop_var.limit), get_irn_node_nr(loop_var.limit));
+				DB((dbg, LEVEL_2, "(%s %ld)", get_irn_opname(loop_var.limit), get_irn_node_nr(loop_var.limit)));
 			}
-			printf(" step %ld", get_Const_long(loop_var.step));
-			printf("\n");
+			DB((dbg, LEVEL_2, " step %ld", get_Const_long(loop_var.step)));
+			DB((dbg, LEVEL_2, "\n"));
 		}
 	}
 	loop_element element;
@@ -353,7 +356,7 @@ static void loop_pagecache_memops(ir_loop *loop, loop_var_t *vars) {
 		ir_node *node = op->irn;
 		ir_node *address = op->address;
 		src_loc_t loc = ir_retrieve_dbg_info(get_irn_dbg_info(node));
-		printf("%s:%d:%d %s %ld ", loc.file, loc.line, loc.column, get_irn_opname(node), get_irn_node_nr(node));
+		DB((dbg, LEVEL_2, "%s:%d:%d %s %ld ", loc.file ? loc.file : "<no debug>", loc.line, loc.column, get_irn_opname(node), get_irn_node_nr(node)));
 
 		int num_outs = 0;
 		foreach_out_edge_safe(phi_loop, edge) {
@@ -363,7 +366,7 @@ static void loop_pagecache_memops(ir_loop *loop, loop_var_t *vars) {
 			num_outs++;
 		}
 		if (num_outs == 0) {
-			printf("No out edge\n");
+			DB((dbg, LEVEL_2, "No out edge\n"));
 			continue;
 		}
 		inc_irg_visited(get_irn_irg(node));
@@ -371,21 +374,21 @@ static void loop_pagecache_memops(ir_loop *loop, loop_var_t *vars) {
 		ir_node *size = new_r_Const(get_irn_irg(dummy), new_tarval_from_long(get_mode_size_bytes(op->mode), get_modeIu()));
 		ir_node *boundInit = NULL, *boundLimit = NULL;
 		if (has_phi) {
-			printf("- HAS PHI\n");
+			DB((dbg, LEVEL_2, "- HAS PHI\n"));
 			inc_irg_visited(get_irn_irg(node));
 			boundInit = clone_to_block_with_replace(address, dummy, vars, false, loop);
 			if (boundInit == NULL) {
-				printf("Could not create init bound \n");
+				DB((dbg, LEVEL_2, "Could not create init bound \n"));
 				continue;
 			}
 			inc_irg_visited(get_irn_irg(node));
 			boundLimit = clone_to_block_with_replace(address, dummy, vars, true, loop);
 			if (boundLimit == NULL) {
-				printf("Could not create limit bound \n");
+				DB((dbg, LEVEL_2, "Could not create limit bound \n"));
 				continue;
 			}
 		} else {
-			printf("- NO PHI\n");
+			DB((dbg, LEVEL_2, "- NO PHI\n"));
 			boundInit = address;
 			boundLimit = address;
 		}
@@ -394,6 +397,7 @@ static void loop_pagecache_memops(ir_loop *loop, loop_var_t *vars) {
 		for (size_t j = 0; j < ARR_LEN(vars); j++) {
 			if (mem_op_loop == (vars + j)->loop && (vars + j)->iterations != NULL) {
 				iteration = (vars+j)->iterations;
+				DB((dbg, LEVEL_2, "Found iteration count of %p: %+F\n", (vars+j), iteration));
 				break;
 			}
 		}
@@ -483,7 +487,7 @@ static ir_node *clone_to_block_with_replace(ir_node *node, ir_node *target, loop
 			return clone_to_block_with_replace(get_Confirm_value(node), target, vars, init_limit, loop);
 		}
 		if (irn_visited_else_mark(node)) {
-			printf("Recursion in address, Node Nr %ld already visited\n", get_irn_node_nr(node));
+			DB((dbg, LEVEL_2, "Recursion in address, Node Nr %ld already visited\n", get_irn_node_nr(node)));
 			return NULL;
 		}
 		foreach_irn_in(node, i, pred) {
@@ -546,6 +550,9 @@ static void loop_pagecache_dfs(list_head *list, ir_node *node, ir_loop *loop) {
 }
 
 void do_loop_pagecache(ir_graph *const irg) {
+	FIRM_DBG_REGISTER(dbg, "firm.opt.pagecache");
+
+	DB((dbg, LEVEL_1, "do_loop_pagecache on %+F\n", irg));
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_CONSISTENT_LOOPINFO | IR_GRAPH_PROPERTY_CONSISTENT_OUT_EDGES);
 	ir_reserve_resources_(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 	collect_phiprojs_and_start_block_nodes(irg);
