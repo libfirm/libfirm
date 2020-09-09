@@ -140,6 +140,9 @@ static ir_node *make_iterations(ir_node *block, loop_var_t *var, ir_node *mem, i
 	ir_node *limit = clone_to_block_with_replace(var->limit, block, vars, true, outer);
 	inc_irg_visited(get_irn_irg(block));
 	ir_node *init = clone_to_block_with_replace(var->init, block, vars, false, outer);
+	if (limit == NULL || init == NULL) {
+		return NULL;
+	}
 	ir_node *sub = new_r_Sub(block, limit, init);
 	ir_node *step = new_r_Conv(block, var->step, mode_Ls);
 	if (get_Const_long(step) == 0) step = one;
@@ -271,8 +274,8 @@ static void build_dijkstra(ir_node *start, dijkstra_node_t *last, ir_node *targe
 static void find_step(loop_var_t *loop_var) {
 	dijkstra_graph_t *graph = new_dijkstra(get_irn_mode(loop_var->phi));
 	inc_irg_visited(get_irn_irg(loop_var->phi));
-	build_dijkstra(loop_var->phi, NULL, loop_var->phi, graph, true, new_tarval_from_long(0, graph->mode));
-	loop_var->step = new_r_Const(get_irn_irg(loop_var->phi), dijkstra_get_max(graph));
+	// build_dijkstra(loop_var->phi, NULL, loop_var->phi, graph, true, new_tarval_from_long(0, graph->mode));
+	loop_var->step = new_r_Const(get_irn_irg(loop_var->phi), new_tarval_from_long(1, mode_Ls));
 	free_dijkstra(graph);
 }
 
@@ -372,15 +375,19 @@ static void variable_tree(ir_loop *loop, ir_node *block, ir_node *factor, ir_nod
 
 	if (var != NULL) {
 		ir_node *div = make_iterations(block, var, *mem, outer, vars);
-		*mem = new_r_Proj(div, mode_M, pn_Div_M);
-		ir_node *one = new_r_Const(get_irn_irg(block), new_tarval_from_long(1, mode_Ls));
-		ir_node *result = new_r_Add(block, one, new_r_Proj(div, mode_Ls, pn_Div_res));
-		if (factor == NULL) {
-			factor = result;
-		} else {
-			factor = new_r_Mul(block, factor, result);
+
+		if (div != NULL) {
+			*mem = new_r_Proj(div, mode_M, pn_Div_M);
+			ir_node *one = new_r_Const(get_irn_irg(block), new_tarval_from_long(1, mode_Ls));
+			ir_node *result = new_r_Add(block, one, new_r_Proj(div, mode_Ls, pn_Div_res));
+			if (factor == NULL) {
+				factor = result;
+			} else {
+				factor = new_r_Mul(block, factor, result);
+			}
+			DB((dbg, LEVEL_2, "Setting iteration count of %p to %+F\n", var, factor));
+			var->iterations = factor;
 		}
-		var->iterations = factor;
 	}
 
 	for (size_t i = 0; i < get_loop_n_elements(loop); i++) {
@@ -453,6 +460,10 @@ static void loop_pagecache_memops(ir_loop *loop, loop_var_t *vars) {
 				DB((dbg, LEVEL_2, "Found iteration count of %p: %+F\n", (vars+j), iteration));
 				break;
 			}
+		}
+		if (iteration == NULL) {
+			iteration = new_r_Const(get_irn_irg(node), new_tarval_from_long(0, mode_Ls));
+			DB((dbg, LEVEL_2, "No iteration count found, using %+F\n", iteration));
 		}
 
 		ir_node *prefetch = make_prefetch(dummy, get_irn_n(phi_loop, 0), boundInit, boundLimit, size, iteration);
@@ -614,7 +625,7 @@ void do_loop_pagecache(ir_graph *const irg) {
 	add_irg_constraints(irg, IR_GRAPH_CONSTRAINT_CONSTRUCTION);
 	inc_irg_visited(irg);
 
-    ir_loop *loop = get_irg_loop(irg);
+	ir_loop *loop = get_irg_loop(irg);
 	if (loop == NULL) {
 		return;
 	}
