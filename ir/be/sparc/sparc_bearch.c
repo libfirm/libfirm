@@ -10,6 +10,7 @@
  */
 #include "sparc_bearch_t.h"
 
+#include "array.h"
 #include "be_t.h"
 #include "beflags.h"
 #include "begnuas.h"
@@ -422,6 +423,69 @@ static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
 	assert((long)pn_sparc_Ld_res == (long)pn_sparc_Ldf_res);
 	return be_new_Proj(load, pn_sparc_Ld_res);
 }
+//Copy from cparser frontend
+static void add_function_pointer(ir_type *segment, ir_entity *method,
+                                 const char *tag)
+{
+	ir_type   *method_type  = get_entity_type(method);
+	ir_type   *ptr_type     = new_type_pointer(method_type);
+
+	/* these entities don't really have a name but firm only allows
+	 * "" in ld_ident.
+	 * Note that we mustn't give these entities a name since for example
+	 * Mach-O doesn't allow them. */
+	ident     *ide = new_id_from_chars("", 0);
+	ir_entity *ptr
+		= new_global_entity(segment, ide, ptr_type, ir_visibility_private,
+		                    IR_LINKAGE_CONSTANT|IR_LINKAGE_HIDDEN_USER);
+	ir_graph  *irg = get_const_code_irg();
+	ir_node   *val = new_r_Address(irg, method);
+
+	ident     *debug_name = id_unique(tag);
+	set_entity_ident(ptr, debug_name);
+
+	ir_initializer_t *const init = create_initializer_const(val);
+	set_entity_initializer(ptr, init);
+}
+
+static void sparc_prepare_special_instructions(void) {
+	int *opcodes = NEW_ARR_F(int, 0);
+	//Collect the SI opcodes
+	//Create function which calls si_init for all collected opcodes.
+	//function als global elf constructor (otherwise call in main)
+	foreach_irp_irg(i, irg) {
+		ir_entity *ent = get_irg_entity(irg);
+		if (ent && mtp_special_instruction & get_entity_additional_properties(ent)) {
+			ARR_APP1(int, opcodes, get_entity_si_opcode(ent));
+		}
+	}
+	unsigned si_count = ARR_LEN(opcodes);
+	if(si_count > 0) {
+		ir_type *init_sis_type = new_type_method(0, 0, 0, cc_cdecl_set, mtp_no_property);
+		ir_entity *init_sis_ent = new_global_entity(get_glob_type(), new_id_from_str("init_sis"), init_sis_type,
+	                           ir_visibility_local,
+	                           IR_LINKAGE_DEFAULT);
+		add_function_pointer(get_segment_type(IR_SEGMENT_CONSTRUCTORS), init_sis_ent, "constructor_ptr");
+		ir_type *init_si_type = new_type_method(1, 0, 0, cc_cdecl_set, mtp_no_property);
+		set_method_param_type(init_si_type, 0, new_type_primitive(get_modeIu()));
+		ir_entity *init_si_ent = new_global_entity(get_glob_type(), new_id_from_str("init_si"), init_si_type, ir_visibility_external, IR_LINKAGE_DEFAULT);
+		ir_graph *graph = new_ir_graph(init_sis_ent, 0);
+		set_current_ir_graph(graph);
+		ir_node *init_si_addr_node = new_Address(init_si_ent);
+		for(unsigned i = 0; i < si_count; i++) {
+			ir_node *opcode_const_node = new_Const_long(get_modeIu(), opcodes[i]);
+			ir_node *init_si_call_node = new_Call(get_store(), init_si_addr_node, 1, &opcode_const_node, init_si_type);
+			ir_node *res_mem_proj_node = new_Proj(init_si_call_node, get_modeM(), pn_Call_M);
+			set_store(res_mem_proj_node);
+		}
+		ir_node *ret_node = new_Return(get_store(), 0, NULL);
+		add_immBlock_pred(get_irg_end_block(graph), ret_node);
+		mature_immBlock(get_irg_end_block(graph));
+		irg_finalize_cons(graph);
+		//create graph with calls for each si. one init_si entity bas to be created possibly.
+	}
+	DEL_ARR_F(opcodes);
+}
 
 static const regalloc_if_t sparc_regalloc_if = {
 	.spill_cost  = 7,
@@ -436,6 +500,7 @@ static void sparc_generate_code(FILE *output, const char *cup_name)
 	be_gas_elf_variant   = ELF_VARIANT_SPARC;
 	sparc_constants = pmap_create();
 
+	sparc_prepare_special_instructions();
 	be_begin(output, cup_name);
 	unsigned *const sp_is_non_ssa = rbitset_alloca(N_SPARC_REGISTERS);
 	rbitset_set(sp_is_non_ssa, REG_SP);
