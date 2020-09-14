@@ -524,6 +524,240 @@ static void insert_Confirm(ir_node *node, void *data)
 	}
 }
 
+/**
+ * Look for Phis with Confirms/Consts on all their inputs. If
+ * possible, add a Confirm for their output.
+ *
+ * Only handles int modes.
+ */
+static void push_through_Phi(ir_node *phi, void *data)
+{
+	if (!is_Phi(phi) || !mode_is_int(get_irn_mode(phi))) {
+		return;
+	}
+
+	DB((dbg, LEVEL_3, "Trying to push confirms through %+F\n", phi));
+
+	ir_relation relation;
+	ir_node *bound;
+
+	ir_node *pred0 = get_Phi_pred(phi, 0);
+	if (is_Const(pred0)) {
+		relation = ir_relation_equal;
+		bound = pred0;
+	} else if (is_Confirm(pred0)) {
+		relation = get_Confirm_relation(pred0);
+		bound = get_Confirm_bound(pred0);
+
+		if ((relation & ir_relation_less_greater) == ir_relation_less_greater) {
+			DB((dbg, LEVEL_3, "Relation !=, giving up\n"));
+			return;
+		}
+	} else {
+		DB((dbg, LEVEL_3, "Pred 0 is unsuitable: %+F\n", pred0));
+		return;
+	}
+
+	DB((dbg, LEVEL_3, "Bound after pred 0: %s %+F\n", get_relation_string(relation), bound));
+
+	size_t n_preds = get_Phi_n_preds(phi);
+	for (size_t i = 1; i < n_preds; i++) {
+		ir_node *pred = get_Phi_pred(phi, i);
+
+		ir_node *new_bound;
+		ir_tarval *new_tv;
+		ir_relation new_relation;
+
+		if (is_Const(pred)) {
+			new_bound = pred;
+			new_tv = get_Const_tarval(pred);
+			new_relation = ir_relation_equal;
+			DB((dbg, LEVEL_3, "New bound %d: %s %+F\n", i, get_relation_string(new_relation), new_bound));
+
+		} else if (is_Confirm(pred)) {
+			new_relation = get_Confirm_relation(pred);
+			new_bound = get_Confirm_bound(pred);
+			DB((dbg, LEVEL_3, "New bound %d: %s %+F\n", i, get_relation_string(new_relation), new_bound));
+
+			if ((new_relation & ir_relation_less_greater) == ir_relation_less_greater) {
+				DB((dbg, LEVEL_3, "Relation !=, giving up\n"));
+				return;
+			}
+
+			if (!is_Const(new_bound)) {
+				if (new_bound != bound) {
+					DB((dbg, LEVEL_3, "New bound not constant and different\n", i, get_relation_string(new_relation), new_bound));
+					return;
+				}
+
+				// We have two confirms with the same bound.
+				// Even though it is not constant, we can merge the relations.
+				DB((dbg, LEVEL_3, "New bound not constant but same\n", i, get_relation_string(new_relation), new_bound));
+				relation |= new_relation;
+				DB((dbg, LEVEL_3, "Bound after pred %d: %s %+F\n", i, get_relation_string(relation), bound));
+				continue;
+			}
+
+			new_tv = get_Const_tarval(new_bound);
+		} else {
+			DB((dbg, LEVEL_3, "Pred %d is unsuitable: %+F\n", i, pred));
+			return;
+		}
+
+		if (!is_Const(bound)) {
+			DB((dbg, LEVEL_3, "Old bound %+F is not Const\n", bound));
+			return;
+		}
+		ir_tarval *bound_tv = get_Const_tarval(bound);
+
+		ir_relation new_cmp_bound = tarval_cmp(new_tv, bound_tv);
+		bool update;
+
+		switch (relation) {
+		case ir_relation_less:
+			update = new_cmp_bound & ir_relation_greater_equal;
+			goto update_less_or_less_equal;
+
+		case ir_relation_less_equal:
+			update = new_cmp_bound & ir_relation_greater;
+
+		update_less_or_less_equal:
+			if (update) {
+				bound = new_bound;
+
+				switch (new_relation) {
+				case ir_relation_less:
+				case ir_relation_less_equal:
+					relation = new_relation;
+					break;
+
+				case ir_relation_equal:
+					relation = ir_relation_less_equal;
+					break;
+
+				case ir_relation_greater_equal:
+				case ir_relation_greater:
+					DB((dbg, LEVEL_3, "%s u %s = T\n", get_relation_string(relation), get_relation_string(new_relation)));
+					return;
+
+				default:
+					panic("Unhandled new_relation %s\n", get_relation_string(new_relation));
+				}
+			}
+			break;
+
+		case ir_relation_greater:
+			update = new_cmp_bound & ir_relation_less_equal;
+			goto update_greater_or_greater_equal;
+
+		case ir_relation_greater_equal:
+			update = new_cmp_bound & ir_relation_less;
+
+		update_greater_or_greater_equal:
+			if (update) {
+				bound = new_bound;
+
+				switch (new_relation) {
+				case ir_relation_less:
+				case ir_relation_less_equal:
+					DB((dbg, LEVEL_3, "%s u %s = T\n", get_relation_string(relation), get_relation_string(new_relation)));
+					return;
+
+				case ir_relation_equal:
+					relation = ir_relation_greater_equal;
+					break;
+
+				case ir_relation_greater_equal:
+				case ir_relation_greater:
+					relation = new_relation;
+					break;
+
+				default:
+					panic("Unhandled new_relation %s\n", get_relation_string(new_relation));
+				}
+			}
+			break;
+
+
+		case ir_relation_equal:
+			switch (new_relation) {
+			case ir_relation_less:
+				if (new_cmp_bound & ir_relation_greater) {
+					relation = ir_relation_less;
+					bound = new_bound;
+				} else {
+					relation = ir_relation_less_equal;
+					// bound stays
+				}
+				break;
+
+			case ir_relation_less_equal:
+				if (new_cmp_bound & ir_relation_greater_equal) {
+					relation = ir_relation_less_equal;
+					bound = new_bound;
+				} else {
+					relation = ir_relation_less_equal;
+					// bound stays
+				}
+				break;
+
+			case ir_relation_equal:
+				// Special case: Don't lose information if the bounds are equal
+				if (new_cmp_bound & ir_relation_equal) {
+					// Nothing to do
+				} else if (new_cmp_bound & ir_relation_greater) {
+					relation = ir_relation_less_equal;
+					bound = new_bound;
+				} else {
+					relation = ir_relation_less_equal;
+					// bound stays
+				}
+				break;
+
+			case ir_relation_greater_equal:
+				if (new_cmp_bound & ir_relation_less_equal) {
+					relation = ir_relation_greater_equal;
+					bound = new_bound;
+				} else {
+					relation = ir_relation_greater_equal;
+					// bound stays
+				}
+				break;
+
+			case ir_relation_greater:
+				if (new_cmp_bound & ir_relation_less) {
+					relation = ir_relation_greater;
+					bound = new_bound;
+				} else {
+					relation = ir_relation_greater_equal;
+					// bound stays
+				}
+				break;
+
+			default:
+				panic("Unhandled new_relation %s\n", get_relation_string(new_relation));
+			}
+			break;
+
+		default:
+			panic("Unhandled relation %s\n", get_relation_string(relation));
+		}
+
+		DB((dbg, LEVEL_3, "Bound after pred %d: %s %+F\n", i, get_relation_string(relation), bound));
+	}
+
+	// If we get here, we have a valid bound that covers all of the Phi's preds.
+	// Confirm that bound for the Phi's users.
+	ir_node *phi_block = get_nodes_block(phi);
+	ir_node *confirm = new_r_Confirm(phi_block, phi, bound, relation);
+	edges_reroute_except(phi, confirm, confirm);
+
+	env_t *env = (env_t*) data;
+	env->num_confirms += 1;
+
+	DB((dbg, LEVEL_2, "Pushed confirms through %+F: new %+F\n", phi, confirm));
+}
+
 static void do_construct_confirms(ir_graph *irg, bool optimize)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.ana.confirm");
@@ -550,6 +784,7 @@ static void do_construct_confirms(ir_graph *irg, bool optimize)
 		/* now, visit all blocks and add Confirms where possible */
 		irg_block_walk_graph(irg, insert_Confirm_in_block, NULL, &env);
 	}
+	irg_walk_graph(irg, push_through_Phi, NULL, &env);
 
 	DB((dbg, LEVEL_1, "# Confirms inserted : %u\n", env.num_confirms));
 	DB((dbg, LEVEL_1, "# Const replacements: %u\n", env.num_consts));
