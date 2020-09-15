@@ -333,20 +333,15 @@ static int loop_pagecache_variables(ir_loop *loop, ir_loop *outer, loop_var_t **
 			num_variables++;
 			ARR_APP1(loop_var_t, *vars, loop_var);
 
-			DB((dbg, LEVEL_2, "Found loop variable from "));
+			DB((dbg, LEVEL_2, "Found loop variable (phi = %+F, confirm = %+F) from %+F", loop_var.phi, loop_var.confirm, loop_var.init));
 			if (is_Const(loop_var.init)) {
-				DB((dbg, LEVEL_2, "%ld", get_Const_long(loop_var.init)));
-			} else {
-				DB((dbg, LEVEL_2, "(%s %ld)", get_irn_opname(loop_var.init), get_irn_node_nr(loop_var.init)));
+				DB((dbg, LEVEL_2, " (value %ld)", get_Const_long(loop_var.init)));
 			}
-			DB((dbg, LEVEL_2, " to "));
+			DB((dbg, LEVEL_2, " to %+F", loop_var.limit));
 			if (is_Const(loop_var.limit)) {
-				DB((dbg, LEVEL_2, "%ld", get_Const_long(loop_var.limit)));
-			} else {
-				DB((dbg, LEVEL_2, "(%s %ld)", get_irn_opname(loop_var.limit), get_irn_node_nr(loop_var.limit)));
+				DB((dbg, LEVEL_2, " (value %ld)", get_Const_long(loop_var.limit)));
 			}
-			DB((dbg, LEVEL_2, " step %ld", get_Const_long(loop_var.step)));
-			DB((dbg, LEVEL_2, "\n"));
+			DB((dbg, LEVEL_2, " step %+F (value %ld)\n", loop_var.step, get_Const_long(loop_var.step)));
 		}
 	}
 	loop_element element;
@@ -419,7 +414,7 @@ static void loop_pagecache_memops(ir_loop *loop, loop_var_t *vars) {
 		ir_node *node = op->irn;
 		ir_node *address = op->address;
 		src_loc_t loc = ir_retrieve_dbg_info(get_irn_dbg_info(node));
-		DB((dbg, LEVEL_2, "%s:%d:%d %s %ld ", loc.file ? loc.file : "<no debug>", loc.line, loc.column, get_irn_opname(node), get_irn_node_nr(node)));
+		DB((dbg, LEVEL_2, "Memop: %+F from/to %+F at %s:%d:%d\n", node, address, loc.file ? loc.file : "<no debug>", loc.line, loc.column));
 
 		/*DB((dbg, LEVEL_2, "Phi[loop] is %+F\n", phi_loop));
 		int num_outs = 0;
@@ -501,6 +496,7 @@ static void loop_pagecache_outer(ir_loop *loop) {
 		loop_find_header(loop, &phi_loop, &header);
 		dummy = get_block(get_irn_n(header, 0));
 		ir_node *mem = get_irn_n(phi_loop, 0);
+		DB((dbg, LEVEL_2, "Outer loop: header = %+F, phi_loop = %+F, dummy = %+F, mem = %+F\n", header, phi_loop, dummy, mem));
 		variable_tree(loop, dummy, NULL, &mem, loop, vars);
 		set_Phi_pred(phi_loop, 0, mem);
 		loop_pagecache_memops(loop, vars);
