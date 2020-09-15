@@ -387,6 +387,9 @@ static void variable_tree(ir_loop *loop, ir_node *block, ir_node *factor, ir_nod
 			}
 			DB((dbg, LEVEL_2, "Setting iteration count of %p to %+F\n", var, factor));
 			var->iterations = factor;
+		} else {
+			DB((dbg, LEVEL_2, "Could not find iteration count for %p\n", var));
+			var->iterations = NULL; // new_r_Const(get_irn_irg(block), new_tarval_from_long(0, mode_Ls));
 		}
 	}
 
