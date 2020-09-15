@@ -421,9 +421,11 @@ static void loop_pagecache_memops(ir_loop *loop, loop_var_t *vars) {
 		src_loc_t loc = ir_retrieve_dbg_info(get_irn_dbg_info(node));
 		DB((dbg, LEVEL_2, "%s:%d:%d %s %ld ", loc.file ? loc.file : "<no debug>", loc.line, loc.column, get_irn_opname(node), get_irn_node_nr(node)));
 
+		/*DB((dbg, LEVEL_2, "Phi[loop] is %+F\n", phi_loop));
 		int num_outs = 0;
 		foreach_out_edge_safe(phi_loop, edge) {
 			ir_node *src = get_edge_src_irn(edge);
+			DB((dbg, LEVEL_2, "src is %+F\n", src));
 			if (is_in_loop(loop, src)) continue;
 			if (is_End(src)) continue;
 			num_outs++;
@@ -431,7 +433,7 @@ static void loop_pagecache_memops(ir_loop *loop, loop_var_t *vars) {
 		if (num_outs == 0) {
 			DB((dbg, LEVEL_2, "No out edge\n"));
 			continue;
-		}
+		}*/
 		inc_irg_visited(get_irn_irg(node));
 		bool has_phi = find_phi(address, loop);
 		ir_node *size = new_r_Const(get_irn_irg(dummy), new_tarval_from_long(get_mode_size_bytes(op->mode), get_modeIu()));
@@ -475,6 +477,7 @@ static void loop_pagecache_memops(ir_loop *loop, loop_var_t *vars) {
 		ir_node *req = new_r_Proj(res, mode_Is, 0);
 		set_Phi_pred(phi_loop, 0, prefetch);
 
+		/*
 		foreach_out_edge_safe(phi_loop, edge) {
 			ir_node *src = get_edge_src_irn(edge);
 			if (is_in_loop(loop, src)) continue;
@@ -487,6 +490,7 @@ static void loop_pagecache_memops(ir_loop *loop, loop_var_t *vars) {
 			ir_node *free = make_free(block, phi_loop, req);
 			set_irn_n(src, get_edge_src_pos(edge), free);
 		}
+		*/
 	}
 }
 
