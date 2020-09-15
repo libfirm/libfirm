@@ -15,7 +15,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static bool is_in_loop(ir_loop *loop, ir_node *node);
 static ir_node *find_phi(ir_node *node, ir_loop *outer);
-static ir_node *find_confirm(ir_node *node);
+static ir_node *find_confirm(ir_node *node, ir_loop *loop);
 static bool move_to_block_recursive(ir_node *node, ir_node *target, ir_loop *loop);
 static void loop_pagecache_dfs(list_head *list, ir_node *node, ir_loop *loop);
 static ir_node *clone_to_block_with_replace(ir_node *node, ir_node *target, loop_var_t *vars, bool init_limit, ir_loop *loop);
@@ -305,7 +305,7 @@ static bool find_variable(ir_node *phi, ir_node *header, ir_node *phi_loop, ir_l
     //    return false;
     //}
     inc_irg_visited(get_irn_irg(header));
-    loop_var->confirm = find_confirm(loop_var->phi);
+    loop_var->confirm = find_confirm(loop_var->phi, loop);
     if (loop_var->confirm == NULL) {
 	    DB((dbg, LEVEL_2, "No confirm\n"));
         return false;
@@ -512,12 +512,27 @@ static ir_node *find_phi(ir_node *node, ir_loop *outer) {
 	return NULL;
 }
 
-static ir_node *find_confirm(ir_node *node) {
-	foreach_out_edge(node, edge) {
+static ir_node *find_confirm(ir_node *phi, ir_loop *loop) {
+	foreach_out_edge(phi, edge) {
 	    ir_node *src = get_edge_src_irn(edge);
 	    if (!is_Confirm(src)) continue;
-		if (get_Confirm_relation(src) != ir_relation_less && get_Confirm_relation(src) != ir_relation_less_equal) continue;
-	    if (get_Confirm_value(src) != node) continue;
+	    if (get_Confirm_relation(src) != ir_relation_less && get_Confirm_relation(src) != ir_relation_less_equal) continue;
+	    if (get_Confirm_value(src) != phi) continue;
+
+	    DB((dbg, LEVEL_2, "%+F ...", src));
+
+	    ir_node *confirm_block = get_nodes_block(src);
+	    if (!is_in_loop(loop, confirm_block)) {
+		    DB((dbg, LEVEL_2, " not in the loop\n"));
+		    continue;
+	    }
+	    ir_node *phi_block = get_nodes_block(phi);
+	    if (confirm_block != phi_block && get_nodes_block(get_Block_cfgpred(confirm_block, 0)) != phi_block) {
+		    DB((dbg, LEVEL_2, " wrong block %+F (phi block %+F)\n", confirm_block, phi_block));
+		    continue;
+	    }
+
+	    DB((dbg, LEVEL_2, " OK!\n"));
 	    return src;
 	}
 	return NULL;
