@@ -1649,8 +1649,11 @@ static ir_node *gen_SICall(ir_node *node)
 			else if(used_bits <= 5) {
 				imm_vals[imm_cnt] = (int) get_Const_long(value);
 				imm_cnt++;
+			} else {
+				goto no_immediate;
 			}
 		} else {
+		no_immediate:;
 			int idx = p - imm_cnt + 1;
 			in[idx] = be_transform_node(value);
 			in_req[idx] = &sparc_class_reg_req_gp;
