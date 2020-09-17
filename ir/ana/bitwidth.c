@@ -144,6 +144,7 @@ create_node(ir_node *node, void *data)
 			case iro_Builtin: {
 				info->stable_digits = 0;
 				info->is_positive = false;
+				break;
 				//FIXME this can be made better depending on the buildin type.
 				//however, for now this is not implemented
 			}
