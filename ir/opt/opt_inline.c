@@ -158,7 +158,7 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 {
 	ir_entity                 *called = get_irg_entity(called_graph);
 	mtp_additional_properties  props  = get_entity_additional_properties(called);
-	if (props & mtp_property_noinline)
+	if (props & (mtp_property_noinline | mtp_special_instruction))
 		return false;
 
 	ir_type *called_type = get_entity_type(called);
