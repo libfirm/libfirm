@@ -28,6 +28,9 @@
 #define get_entity_owner(ent)                _get_entity_owner(ent)
 #define get_entity_ld_ident(ent)             _get_entity_ld_ident(ent)
 #define get_entity_ld_name(ent)              _get_entity_ld_name(ent)
+#define get_entity_custom_section_ident(ent) _get_entity_custom_section_ident(ent)
+#define get_entity_custom_section_name(ent)  _get_entity_custom_section_name(ent)
+#define set_entity_custom_section_ident(ent) _set_entity_custom_section_ident(ent)
 #define get_entity_type(ent)                 _get_entity_type(ent)
 #define get_entity_linkage(ent)              _get_entity_linkage(ent)
 #define get_entity_volatility(ent)           _get_entity_volatility(ent)
@@ -179,6 +182,8 @@ struct ir_entity {
 	ident *ld_name;          /**< Unique name of this entity, i.e., the mangled
 	                              name. May be NULL to indicate that a default
 	                              mangling based on the name should happen */
+	ident *custom_section;   /**< If non-NULL, this entity should be placed into
+	                              the binary section given here. */
 	ir_type *type;           /**< The type of this entity */
 	ir_type *owner;          /**< The compound type (e.g. class type) this
 	                              entity belongs to. */
@@ -279,6 +284,27 @@ static inline const char *_get_entity_ld_name(const ir_entity *ent)
 {
 	assert(ent->firm_tag == k_entity);
 	return get_id_str(get_entity_ld_ident(ent));
+}
+
+static inline ident *_get_entity_custom_section_ident(const ir_entity *ent)
+{
+	assert(ent->firm_tag == k_entity);
+	return ent->custom_section;
+}
+
+static inline const char *_get_entity_custom_section_name(const ir_entity *ent)
+{
+	assert(ent->firm_tag == k_entity);
+	if (ent->custom_section)
+		return get_id_str(ent->custom_section);
+	else
+		return NULL;
+}
+
+static inline void _set_entity_custom_section_ident(ir_entity *ent, ident *id)
+{
+	assert(ent->firm_tag == k_entity);
+	ent->custom_section = id;
 }
 
 static inline ir_type *_get_entity_type(const ir_entity *ent)

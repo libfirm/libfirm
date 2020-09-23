@@ -300,6 +300,19 @@ FIRM_API void set_entity_ld_ident(ir_entity *ent, ident *ld_ident);
 /** Returns the mangled name of the entity as a string. */
 FIRM_API const char *get_entity_ld_name(const ir_entity *ent);
 
+/**
+ * If this entity should be placed in a custom binary section, returns
+ * the section's name. If this entity should be placed in the default
+ * section, returns NULL.
+ */
+ident *get_entity_custom_section_ident(const ir_entity *ent);
+
+/** Returns the custom section name as a string. */
+const char *get_entity_custom_section_name(const ir_entity *ent);
+
+/** Sets the custom section name. Set to NULL to use the default section. */
+void set_entity_custom_section_ident(ir_entity *ent, ident *id);
+
 /** returns 1 if the entity has an ld_ident set explicitely */
 FIRM_API int entity_has_ld_ident(const ir_entity *entity);
 

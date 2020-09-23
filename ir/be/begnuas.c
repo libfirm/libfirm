@@ -142,6 +142,19 @@ static const elf_sectioninfo_t elf_sectioninfos[] = {
 static void emit_section_sparc(be_gas_section_t section,
                                const ir_entity *entity)
 {
+	if (entity) {
+		char *custom_section = get_entity_custom_section_name(entity);
+		if (custom_section) {
+			current_section = (be_gas_section_t) -1;
+
+			be_emit_cstring("\t.section\t\"");
+			be_emit_string(custom_section);
+			be_emit_cstring("\"\n");
+			be_emit_write_line();
+			return;
+		}
+	}
+
 	if (current_section == section && !(section & GAS_SECTION_FLAG_COMDAT))
 		return;
 	current_section = section;
@@ -185,6 +198,19 @@ static void emit_section_sparc(be_gas_section_t section,
 
 static void emit_section_elf_coff(be_gas_section_t const section, ir_entity const *const entity)
 {
+	if (entity) {
+		char *custom_section = get_entity_custom_section_name(entity);
+		if (custom_section) {
+			current_section = (be_gas_section_t) -1;
+
+			be_emit_cstring("\t.section\t");
+			be_emit_string(custom_section);
+			be_emit_char('\n');
+			be_emit_write_line();
+			return;
+		}
+	}
+
 	if (current_section == section && !(section & GAS_SECTION_FLAG_COMDAT))
 		return;
 	current_section = section;
@@ -252,6 +278,7 @@ static void emit_section_elf_coff(be_gas_section_t const section, ir_entity cons
 static void emit_section(be_gas_section_t const section, ir_entity const *const entity)
 {
 	if (is_macho()) {
+		assert(get_entity_custom_section_ident(entity) == NULL);
 		emit_section_macho(section);
 	} else if (be_gas_elf_variant == ELF_VARIANT_SPARC) {
 		emit_section_sparc(section, entity);

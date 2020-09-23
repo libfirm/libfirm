@@ -39,6 +39,7 @@ static ir_entity *intern_new_entity(ir_type *owner, ir_entity_kind kind,
 	res->firm_tag    = k_entity;
 	res->name        = name;
 	res->ld_name     = name;
+	res->custom_section = NULL;
 	res->type        = type;
 	res->owner       = owner;
 	res->kind        = kind;
@@ -278,6 +279,27 @@ void set_entity_ld_ident(ir_entity *const ent, ident *const ld_ident)
 const char *(get_entity_ld_name)(const ir_entity *ent)
 {
 	return _get_entity_ld_name(ent);
+}
+
+ident *(get_entity_custom_section_ident)(const ir_entity *ent)
+{
+	assert(ent->firm_tag == k_entity);
+	return ent->custom_section;
+}
+
+const char *(get_entity_custom_section_name)(const ir_entity *ent)
+{
+	assert(ent->firm_tag == k_entity);
+	if (ent->custom_section)
+		return get_id_str(ent->custom_section);
+	else
+		return NULL;
+}
+
+void (set_entity_custom_section_ident)(ir_entity *ent, ident *id)
+{
+	assert(ent->firm_tag == k_entity);
+	ent->custom_section = id;
 }
 
 int entity_has_ld_ident(const ir_entity *entity)
