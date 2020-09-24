@@ -268,7 +268,7 @@ static ir_node *gen_Return(ir_node *const node)
 	ir_node *val = be_transform_node(get_irn_n(node, 1));
 
 	char name[16];
-	sprintf(name, "OUTPUT0");
+	sprintf(name, "output0");
 	// convert output to standard logic vector
 	ir_node *conv = new_bd_vhdl_Conv(dbgi, block, val);
 	ir_mode *mode = get_mode_std_logic_vector(get_mode_size_bits(get_irn_mode(val)));
@@ -389,7 +389,7 @@ static ir_node *gen_Start(ir_node *const node)
 	for (int i = 0; i < n_params; i++) {
 		arch_set_irn_register_req_out(start, i + 1, &vhdl_class_reg_req_gp);
 		char param[16];
-		sprintf(param, "PARAM%d", i);
+		sprintf(param, "input%d", i);
 		strncpy(signals[i].name, param, 16);
 		signals[i].mode = get_mode_std_logic_vector(
 				get_mode_size_bits(get_type_mode(get_method_param_type(method_type, i))));

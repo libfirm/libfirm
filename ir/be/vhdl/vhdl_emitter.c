@@ -330,7 +330,7 @@ static void emit_Proj(ir_node const *const node)
 static void emit_Return(ir_node const *const node)
 {
 	(void) node;
-	be_emit_irprintf("\t\t\tREADY <= '1';\n");
+	be_emit_irprintf("\t\t\tcond_out <= '1';\n");
 	be_emit_write_line();
 }
 
@@ -537,9 +537,9 @@ static void fix_arch_name(char *name)
 
 static void emit_process_start(ir_graph *irg)
 {
-	be_emit_irprintf("\t\tif START = '1' then\n");
+	be_emit_irprintf("\t\tif cond_in = '1' then\n");
 	be_emit_irprintf("\t\t\tEXEC%N <= '1';\n", get_irg_start_block(irg));
-	be_emit_irprintf("\t\t\tREADY <= '0';\n");
+	be_emit_irprintf("\t\t\tcond_out <= '0';\n");
 	be_emit_write_line();
 }
 
@@ -660,7 +660,7 @@ static void print_mode_init_string(ir_mode *mode)
 
 static void emit_architecture(ir_graph *irg, char *arch_name)
 {
-	be_emit_irprintf("architecture %s of %s_ent is\n", arch_name, arch_name);
+	be_emit_irprintf("architecture %s of Atom is\n", arch_name);
 	foreach_plist(signals, el) {
 		vhdl_varsig_attr_t *varsig = plist_element_get_value(el);
 		be_emit_irprintf("\tsignal %s : ", varsig->name);
@@ -669,13 +669,13 @@ static void emit_architecture(ir_graph *irg, char *arch_name)
 
 	emit_barrel_functions();
 
-	be_emit_irprintf("begin\n\nprocess (CLK)\n");
+	be_emit_irprintf("begin\n\nprocess (clk)\n");
 	foreach_plist(variables, el) {
 		vhdl_varsig_attr_t *varsig = plist_element_get_value(el);
 		be_emit_irprintf("\tvariable %s : ", varsig->name);
 		print_mode_init_string(varsig->mode);
 	}
-	be_emit_irprintf("begin\n\tif rising_edge(CLK) then\n");
+	be_emit_irprintf("begin\n\tif rising_edge(clk) then\n");
 	emit_process_start(irg);
 
 	be_emit_write_line();
@@ -687,25 +687,9 @@ static void emit_architecture_end(char *arch_name)
 	be_emit_write_line();
 }
 
-static void emit_entity(ir_graph *irg, char *arch_name)
-{
+static void emit_library_uses(void) {
 	be_emit_irprintf(
-			"library IEEE;\nuse IEEE.NUMERIC_STD.ALL;\nuse IEEE.STD_LOGIC_1164.ALL;\n\nentity %s_ent is\n\tport(\n",
-			arch_name);
-	be_emit_irprintf("\t\tCLK     : in  std_logic;\n");
-
-	vhdl_start_attr_t const *start_attr = get_vhdl_start_attr_const(get_irg_start(irg));
-	for (int i = 0; i < start_attr->n_signals; i++) {
-		be_emit_irprintf("\t\t%s  : in  std_logic_vector(%d downto 0);\n", start_attr->signals[i].name,
-		                 get_mode_size_bits(start_attr->signals[i].mode) - 1);
-	}
-
-	be_emit_irprintf("\t\tOUTPUT0 : out std_logic_vector(31 downto 0);\n");
-	be_emit_irprintf("\t\tSTART   : in  std_logic;\n");
-	be_emit_irprintf("\t\tREADY   : out std_logic\n\t);\n");
-
-	be_emit_irprintf("end %s_ent;\n\n", arch_name);
-	be_emit_write_line();
+			"library IEEE;\nuse IEEE.NUMERIC_STD.ALL;\nuse IEEE.STD_LOGIC_1164.ALL;\nlibrary ces;\nuse ces.atomfw.all\n\n");
 }
 
 void vhdl_emit_function(ir_graph *const irg)
@@ -721,7 +705,7 @@ void vhdl_emit_function(ir_graph *const irg)
 	char name[strlen(get_entity_name(get_irg_entity(irg)))];
 	strcpy(name, get_entity_name(get_irg_entity(irg)));
 	fix_arch_name(name);
-	emit_entity(irg, name);
+	emit_library_uses();
 
 	irg_walk_blkwise_graph(irg, NULL, collect_walk, NULL);
 
