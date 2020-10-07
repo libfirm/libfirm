@@ -449,8 +449,9 @@ static void loop_pagecache_memops(ir_loop *loop, loop_var_t *vars) {
 			}
 		} else {
 			DB((dbg, LEVEL_2, "- NO PHI\n"));
-			boundInit = address;
-			boundLimit = address;
+			continue;
+			// boundInit = address;
+			// boundLimit = address;
 		}
 		ir_loop *mem_op_loop = get_irn_loop(get_block(node));
 		ir_node *iteration = NULL;
