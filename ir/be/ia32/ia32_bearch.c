@@ -16,6 +16,7 @@
 #include "bera.h"
 #include "besched.h"
 #include "bespillslots.h"
+#include "bespm.h"
 #include "bestack.h"
 #include "betranshlp.h"
 #include "beutil.h"
@@ -1412,8 +1413,36 @@ static bool lower_for_emit(ir_graph *const irg, const unsigned *const sp_is_non_
 	return true;
 }
 
+static node_data *ia32_retrieve_spm_node_data(ir_node *node) {
+	if(is_ia32_Call(node)) {
+		ir_node *callee = get_irn_n(node, n_ia32_Call_callee);
+		ir_entity *callee_ent = get_ia32_immediate_attr_const(callee)->imm.entity;
+		return spm_get_callee_node_data(callee_ent);
+	} else if(is_ia32_Store(node)) {
+		ir_node *imm_node = get_irn_n(node, n_ia32_Store_val);
+		ir_entity *store_ent = get_ia32_immediate_attr_const(imm_node)->imm.entity;
+		return spm_get_glb_write_node_data(store_ent);
+	} else if(get_ia32_op_type(node) != ia32_Normal) {
+		const ia32_attr_t *attr = get_ia32_attr_const(node);
+		ir_entity *entity = attr->addr.immediate.entity;
+		if(get_entity_owner(entity) == get_glob_type()) {
+			node_data *data;
+			if (get_ia32_op_type(node) == ia32_AddrModeS)
+				data = spm_get_glb_read_node_data(entity);
+			else
+				data = spm_get_glb_write_node_data(entity);
+
+			//TODO: do we really need info, if spill or not?
+			return data;
+		}
+	}
+	return NULL;
+}
+
 static void ia32_generate_code(FILE *output, const char *cup_name)
 {
+	spm_calculate_dprg_info();
+	spm_test_call();
 	ia32_tv_ent = pmap_create();
 
 	be_begin(output, cup_name);
@@ -1423,7 +1452,9 @@ static void ia32_generate_code(FILE *output, const char *cup_name)
 	foreach_irp_irg(i, irg) {
 		if (!lower_for_emit(irg, sp_is_non_ssa))
 			continue;
-
+	}
+	spm_find_memory_allocation(&ia32_retrieve_spm_node_data);
+	foreach_irp_irg(i, irg) {
 		be_timer_push(T_EMIT);
 		ia32_emit_function(irg);
 		be_timer_pop(T_EMIT);

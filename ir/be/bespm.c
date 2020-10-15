@@ -30,23 +30,58 @@ struct dprg_branch { //TODO: resembles more a timestamp than dprg_branch! (renam
 
 typedef struct alloc_result {
 	int join_cnt;//procedure join cnt
+	int free_space;
 	pset_new_t *spm_set; //List sorted by freq/byte?
 	pset_new_t *copy_in;
 	pset_new_t *copy_out;
 } alloc_result;
 
+typedef enum node_data_type {
+	CALLEE, GLB_READ, GLB_WRITE, SPILLSLOT_READ, SPILLSLOT_WRITE,
+} node_data_type;
+
+struct node_data {
+	node_data_type data_type;
+	list_head list;
+	void *data; //TODO: change?
+};
+
+typedef struct block_data {
+	list_head node_list;
+	int callee_cnt;
+	pset_new_t dead_set; //Vars last accessed in this block //TODO: Array?
+} block_data;
+
 typedef struct drpg_walk_env {
 	deq_t workqueue;
-	pmap *call_node_map;
+	pmap *block_data_map;
 	pmap *res_alloc_map;
 	dprg_branch *cur_branch;
 } dprg_walk_env;
 
 
-int (*spm_is_be_Call)(ir_node *node);
+node_data *(*retrieve_spm_node_data)(ir_node *);
 /*void calc_irg_execfreq(ir_graph *irg, void *env) {
 	ir_estimate_execfreq
 }*/
+
+static node_data *spm_get_node_data_by_type(ir_entity *ent, node_data_type type) {
+	node_data *data = XMALLOC(node_data);
+	data->data_type = type;
+	data->data = ent;
+	return data;
+}
+
+
+node_data *spm_get_glb_write_node_data(ir_entity *ent) {
+	return spm_get_node_data_by_type(ent, GLB_WRITE);
+}
+node_data *spm_get_glb_read_node_data(ir_entity *ent) {
+	return spm_get_node_data_by_type(ent, GLB_READ);
+}
+node_data *spm_get_callee_node_data(ir_entity *ent) {
+	return spm_get_node_data_by_type(ent, CALLEE);
+}
 
 void spm_calculate_dprg_info()
 {
@@ -63,30 +98,46 @@ void spm_calculate_dprg_info()
 	//free_callgraph();
 
 }
-//TODO: if we do it before main algo, we can do it with middle end graph -> easier (but blocks will change...)
-static void spm_collect_calls(ir_node *node, void *env)
+
+static void spm_collect_block_data(ir_node *node, void *env)
 {
-	pmap *call_node_map = env;
-	if (spm_is_be_Call(node)) {
+	pmap *block_data_map = env;
+	node_data *n_data = retrieve_spm_node_data(node);
+	if(n_data) {
 		ir_node *block = get_nodes_block(node);
-		pset_new_t *call_node_set = pmap_get(pset_new_t, call_node_map, block);
-		if (!call_node_set) {
-			call_node_set = XMALLOC(pset_new_t); //TODO: Save calls in exec order
-			pset_new_init(call_node_set);
-			pmap_insert(call_node_map, block, call_node_set);
+		block_data *b_data = pmap_get(block_data, block_data_map, block);
+		if (!b_data) {
+			b_data = XMALLOC(block_data);
+			b_data->callee_cnt = 0;
+			INIT_LIST_HEAD(&b_data->node_list);
 		}
-		//TODO: insert irg
-		pset_new_insert(call_node_set, node);
+		if(n_data->data_type == CALLEE)
+			b_data->callee_cnt++;
+		//list_add because irg walk is bottom to top. alloc calc top to bottom
+		list_add(&n_data->list, &b_data->node_list);
 	}
 
 }
 
-static void init_next_branch_node(dprg_branch *prev, dprg_branch *next)
-{
-	next->last = prev;
-	next->timestamp_entry = prev->timestamp_entry + 1;
-	next->timestamp_exit = -1;
-	//TODO
+static void spm_calc_alloc_block(dprg_walk_env *env) {
+	dprg_branch *branch = env->cur_branch;
+	ir_node *block = branch->block;
+	alloc_result *existing_block_res = pmap_get(alloc_result, env->res_alloc_map, block);
+
+	alloc_result *result = XMALLOC(alloc_result);
+	result->spm_set = XMALLOC(pset_new_t);
+	result->copy_in = XMALLOC(pset_new_t);
+	result->copy_out = XMALLOC(pset_new_t);
+	pset_new_init(result->spm_set);
+	pset_new_init(result->copy_in);
+	pset_new_init(result->copy_out);
+
+	alloc_result *pred_result = pmap_get(alloc_result, env->res_alloc_map, branch->last->block);
+
+	//for vars in decreasing order in block (splitted by calls?)
+	{
+	}
+
 }
 
 static void spm_mem_alloc_block(dprg_walk_env *env)
@@ -112,7 +163,7 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	if (get_irg_end_block(get_irn_irg(block)) == block) {
 		dprg_branch *caller = branch->caller_block;
 		caller->finished_callees++;
-		int callee_cnt = pset_new_size(pmap_get(pset_new_t, env->call_node_map, caller->block));
+		int callee_cnt = pmap_get(block_data, env->block_data_map, caller->block)->callee_cnt;
 		if (caller->finished_callees == callee_cnt) {
 			//TODO: block_exit calc for caller block here
 			int caller_n_outs = get_Block_n_cfg_outs(caller->block);
@@ -126,16 +177,17 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 
 	float block_exec_freq = branch->irg_exec_freq * get_block_execfreq(block);
 	//calc allocation
+	spm_calc_alloc_block(env);
 
 	//handle calls and successor blocks
-	pset_new_t *call_node_set = pmap_get(pset_new_t, env->call_node_map, block);
+	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
 	int n_outs = get_Block_n_cfg_outs(block);
-	if (call_node_set) {
-		pset_new_iterator_t iter;
-		ir_graph *irg;
-		foreach_pset_new(call_node_set, ir_graph *, irg, iter) {
+	if (blk_data->callee_cnt) {
+		list_for_each_entry(node_data, n_data, &blk_data->node_list, list) {
+			if(n_data->data_type != CALLEE)
+				continue;
+			ir_graph *irg = get_entity_irg((ir_entity *) n_data->data);
 			dprg_branch *new_branch = XMALLOC(dprg_branch);
-			init_next_branch_node(branch, new_branch);
 			new_branch->caller_block = branch;
 			new_branch->block = get_irg_start_block(irg);
 			new_branch->irg_exec_freq = block_exec_freq;
@@ -165,16 +217,17 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	}
 }
 
-void spm_find_memory_allocation()
+void spm_find_memory_allocation(node_data *(*retrieve_spm_node_data)(ir_node *))
 {
-	pmap *call_node_map  = pmap_create();
+	retrieve_spm_node_data = retrieve_spm_node_data;
+	pmap *block_data_map  = pmap_create();
 
 	foreach_irp_irg(i, irg) {
 		ir_estimate_execfreq(irg);
 		assure_irg_outs(irg);
 		//Maybe do this at irg processing time, so map contains only info for one irg
 		//or find way of walking over nodes in one block only
-		irg_walk_graph(irg, NULL, spm_collect_calls, call_node_map);
+		irg_walk_graph(irg, NULL, spm_collect_block_data, block_data_map);
 	}
 	//find main method (only one entry point possible?)
 	ir_graph *main_irg = get_irp_main_irg();
@@ -192,7 +245,7 @@ void spm_find_memory_allocation()
 	dprg_walk_env walk_env;
 	deq_init(&walk_env.workqueue);
 	walk_env.cur_branch = &main_info;
-	walk_env.call_node_map = call_node_map;
+	walk_env.block_data_map = block_data_map;
 	walk_env.res_alloc_map = res_alloc_map;
 	spm_mem_alloc_block(&walk_env);
 
