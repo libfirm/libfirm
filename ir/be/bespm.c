@@ -15,17 +15,16 @@
 #include "pset_new.h"
 #include "xmalloc.h"
 
-typedef struct dprg_branch dprg_branch;
+typedef struct timestamp timestamp;
 
-struct dprg_branch { //TODO: resembles more a timestamp than dprg_branch! (rename?)
-	dprg_branch *last;
-	dprg_branch *caller_block;
+struct timestamp {
+	timestamp *last;
+	timestamp *caller_block;
 	ir_node *block;
 	int finished_callees;
-	int timestamp_entry; //We probably will never need these timestamps
-	int timestamp_exit;
+	short finished_preds; //-1: UNKOWN, 0 = FALSE, 1 = TRUE, 2 = LOOP?
 	float irg_exec_freq;
-	dprg_branch **outs; //branches to be processed before calc exit alloc
+	timestamp **outs; //branches to be processed before calc exit alloc
 };
 
 typedef struct alloc_result {
@@ -56,7 +55,7 @@ typedef struct drpg_walk_env {
 	deq_t workqueue;
 	pmap *block_data_map;
 	pmap *res_alloc_map;
-	dprg_branch *cur_branch;
+	timestamp *cur_branch;
 } dprg_walk_env;
 
 
@@ -111,16 +110,17 @@ static void spm_collect_block_data(ir_node *node, void *env)
 			b_data->callee_cnt = 0;
 			INIT_LIST_HEAD(&b_data->node_list);
 		}
-		if(n_data->data_type == CALLEE)
+		if(n_data->data_type == CALLEE) {
 			b_data->callee_cnt++;
+			list_add(&n_data->list, &b_data->node_list);
+		}
 		//list_add because irg walk is bottom to top. alloc calc top to bottom
-		list_add(&n_data->list, &b_data->node_list);
 	}
 
 }
 
 static void spm_calc_alloc_block(dprg_walk_env *env) {
-	dprg_branch *branch = env->cur_branch;
+	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
 	alloc_result *existing_block_res = pmap_get(alloc_result, env->res_alloc_map, block);
 
@@ -140,9 +140,27 @@ static void spm_calc_alloc_block(dprg_walk_env *env) {
 
 }
 
-static void spm_mem_alloc_block(dprg_walk_env *env)
-{
-	dprg_branch *branch = env->cur_branch;
+static ir_entity *get_next_call_from_block(dprg_walk_env *env) {
+	timestamp *branch = env->cur_branch;
+	ir_node *block = branch->block;
+	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
+	int callee_cnt = blk_data->callee_cnt;
+	if (!callee_cnt || callee_cnt == branch->finished_callees)
+		return NULL;
+
+	int i = -1;
+	list_for_each_entry(node_data, n_data, &blk_data->node_list, list) {
+		if(n_data->data_type != CALLEE)
+			continue;
+		i++;
+		if(i == branch->finished_callees)
+			return (ir_entity *) n_data->data;
+	}
+	return NULL;
+}
+
+static void ensure_pred_blocks_visited(dprg_walk_env *env) {
+	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
 	//Skip block if not all predecessors have been visited
 	alloc_result *block_res = pmap_get(alloc_result, env->res_alloc_map, block);
@@ -151,69 +169,65 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 		ir_node *pred_block = get_Block_cfgpred_block(block, i);
 		alloc_result *pred_block_res = pmap_get(alloc_result, env->res_alloc_map, pred_block);
 		int pred_block_join_cnt = pred_block_res ? pred_block_res->join_cnt : -1;
-		if (pred_block_join_cnt <= cur_block_join_cnt)
+		if (pred_block_join_cnt <= cur_block_join_cnt) {
+			branch->finished_preds = 0;
 			return;
+		}
 
 		//Loop detection here:
 		if (is_backedge(block, i)) {
+			branch->finished_preds = 2;
+			return;
 			//TODO: Loop handling
 		}
 	}
-	//At end of irg next blocks are from the caller
+	branch->finished_preds = 1;
+}
+
+static void spm_mem_alloc_block(dprg_walk_env *env)
+{
+	timestamp *branch = env->cur_branch;
+	ir_node *block = branch->block;
+	//Skip block if not all predecessors have been visited
+	if(branch->finished_preds == -1)
+		ensure_pred_blocks_visited(env);
+	if(branch->finished_preds == 0)
+		return;
+	//TODO: Loop handling
+	//At end of irg next block is caller block again
 	if (get_irg_end_block(get_irn_irg(block)) == block) {
-		dprg_branch *caller = branch->caller_block;
+		timestamp *caller = branch->caller_block;
 		caller->finished_callees++;
-		int callee_cnt = pmap_get(block_data, env->block_data_map, caller->block)->callee_cnt;
-		if (caller->finished_callees == callee_cnt) {
-			//TODO: block_exit calc for caller block here
-			int caller_n_outs = get_Block_n_cfg_outs(caller->block);
-			for (int i = 0; i < caller_n_outs; i++) {
-				//TODO: dprg->last adjustments for outs
-				deq_push_pointer_right(&env->workqueue, caller->outs[i]);
-			}
-		}
+		deq_push_pointer_right(&env->workqueue, caller);
 		return;
 	}
 
 	float block_exec_freq = branch->irg_exec_freq * get_block_execfreq(block);
 	//calc allocation
+	//TODO: block_exit calc for block here as well
 	spm_calc_alloc_block(env);
 
-	//handle calls and successor blocks
-	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
+	//handle next call or successor blocks when end of block is reached
+	ir_entity *callee = get_next_call_from_block(env);
+	if(callee) {
+		ir_graph *irg = get_entity_irg(callee);
+		timestamp *new_branch = XMALLOC(timestamp);
+		new_branch->caller_block = branch;
+		new_branch->block = get_irg_start_block(irg);
+		new_branch->irg_exec_freq = block_exec_freq;
+		deq_push_pointer_right(&env->workqueue, new_branch);
+		return;
+	}
+
 	int n_outs = get_Block_n_cfg_outs(block);
-	if (blk_data->callee_cnt) {
-		list_for_each_entry(node_data, n_data, &blk_data->node_list, list) {
-			if(n_data->data_type != CALLEE)
-				continue;
-			ir_graph *irg = get_entity_irg((ir_entity *) n_data->data);
-			dprg_branch *new_branch = XMALLOC(dprg_branch);
-			new_branch->caller_block = branch;
-			new_branch->block = get_irg_start_block(irg);
-			new_branch->irg_exec_freq = block_exec_freq;
-			deq_push_pointer_right(&env->workqueue, new_branch);
-		}
-		//Successor blocks are handled later on
-		branch->outs = XMALLOCN(dprg_branch *, n_outs);
-		for (int i = 0; i < n_outs; i++) {
-			dprg_branch *out_branch = XMALLOC(dprg_branch);
-			branch->outs[i] = out_branch;
-			ir_node *succ_block = get_Block_cfg_out(block, i);
-			out_branch->block = succ_block;
-			out_branch->last = branch;
-			out_branch->caller_block = branch->caller_block;
-			out_branch->irg_exec_freq = branch->irg_exec_freq;
-		}
-	} else {
-		//TODO: block_exit calc
-		for (int i = 0; i < n_outs; i++) {
-			ir_node *succ_block = get_Block_cfg_out(block, i);
-			dprg_branch *out_branch = XMALLOC(dprg_branch);
-			out_branch->block = succ_block;
-			out_branch->last = branch;
-			out_branch->caller_block = branch->caller_block;
-			out_branch->irg_exec_freq = branch->irg_exec_freq;
-		}
+	for (int i = 0; i < n_outs; i++) {
+		ir_node *succ_block = get_Block_cfg_out(block, i);
+		timestamp *out_branch = XMALLOC(timestamp);
+		out_branch->block = succ_block;
+		out_branch->last = branch;
+		out_branch->caller_block = branch->caller_block;
+		out_branch->irg_exec_freq = branch->irg_exec_freq;
+		deq_push_pointer_right(&env->workqueue, out_branch);
 	}
 }
 
@@ -232,11 +246,9 @@ void spm_find_memory_allocation(node_data *(*retrieve_spm_node_data)(ir_node *))
 	//find main method (only one entry point possible?)
 	ir_graph *main_irg = get_irp_main_irg();
 	//init metadata list here (actual allocation probably as a map)
-	dprg_branch main_info = {
+	timestamp main_info = {
 		.last = NULL,
 		.block = get_irg_start_block(main_irg),
-		.timestamp_entry = 0,
-		.timestamp_exit = -1, //negative value, as it is just a tmp value
 		.irg_exec_freq = 1.0f,
 	};
 
@@ -249,8 +261,8 @@ void spm_find_memory_allocation(node_data *(*retrieve_spm_node_data)(ir_node *))
 	walk_env.res_alloc_map = res_alloc_map;
 	spm_mem_alloc_block(&walk_env);
 
-	dprg_branch *cur_branch;
-	while ((cur_branch = deq_pop_pointer_left(dprg_branch, &walk_env.workqueue)) != NULL) {
+	timestamp *cur_branch;
+	while ((cur_branch = deq_pop_pointer_left(timestamp, &walk_env.workqueue)) != NULL) {
 		walk_env.cur_branch = cur_branch;
 		spm_mem_alloc_block(&walk_env);
 	}
