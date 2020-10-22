@@ -1421,14 +1421,14 @@ static node_data *ia32_retrieve_spm_node_data(ir_node *node) {
 	} else if(is_ia32_Store(node)) {
 		ir_node *imm_node = get_irn_n(node, n_ia32_Store_val);
 		ir_entity *store_ent = get_ia32_immediate_attr_const(imm_node)->imm.entity;
-		return spm_get_mem_access_node_data(store_ent, get_type_size(get_entity_type(store_ent)));
+		return spm_get_mem_write_node_data(store_ent, get_type_size(get_entity_type(store_ent)));
 	} else if(get_ia32_op_type(node) != ia32_Normal) {
 		const ia32_attr_t *attr = get_ia32_attr_const(node);
 		ir_entity *entity = attr->addr.immediate.entity;
 		int size = get_type_size(get_entity_type(entity));
 		if(get_entity_owner(entity) == get_glob_type()) {
 			node_data *data;
-			data = spm_get_mem_access_node_data(entity, size);
+			data = spm_get_mem_read_node_data(entity, size);
 
 			//TODO: do we really need info, if spill or not?
 			return data;
