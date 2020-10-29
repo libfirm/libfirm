@@ -13,6 +13,7 @@
 #include "pdeq.h"
 #include "pmap.h"
 #include "pset_new.h"
+#include "util.h"
 #include "xmalloc.h"
 
 typedef struct timestamp timestamp;
@@ -30,13 +31,18 @@ typedef struct alloc_result {
 	int join_cnt;//procedure join cnt
 	int free_space;
 	pset_new_t *spm_set; //List sorted by freq/byte?
+	pset_new_t *spm_set_reg_size;
 	//list not feasible due to many duplications
 	pset_new_t *copy_in;
 	pset_new_t *copy_out;
+	//Sets only temporarily needed:
+	pset_new_t *swapout_set;
+	pset_new_t *retain_set;
+	pset_new_t *bring_in_set;
 } alloc_result;
 
 typedef enum node_data_type {
-	CALLEE, MEM_READ, MEM_WRITE,
+	CALLEE, MEM_ACCESS,
 } node_data_type;
 
 struct node_data {
@@ -44,6 +50,7 @@ struct node_data {
 	list_head list;
 	void *identifier; //TODO: change?
 	int size; //in bytes
+	bool modified;
 	int access_cnt;
 	float freq_per_byte;
 };
@@ -64,7 +71,11 @@ typedef struct drpg_walk_env {
 struct {
 	int size;
 	int latency_diff; //ram_lat - spm_lat
+	float throughput_ram;
+	float throughput_spm;
 } spm_properties;
+
+static int gp_reg_size;
 
 
 node_data *(*retrieve_spm_node_data)(ir_node *);
@@ -72,28 +83,29 @@ node_data *(*retrieve_spm_node_data)(ir_node *);
 	ir_estimate_execfreq
 }*/
 
-static node_data *spm_get_node_data_by_type(node_data_type type, void *id, int size)
+static node_data *spm_get_node_data_by_type(node_data_type type, void *id, int size, bool modified)
 {
 	node_data *data = XMALLOC(node_data);
 	data->data_type = type;
 	data->identifier = id;
 	data->size = size;
+	data->modified = modified;
 	return data;
 }
 
 node_data *spm_get_mem_read_node_data(void *id, int size)
 {
-	return spm_get_node_data_by_type(MEM_READ, id, size);
+	return spm_get_node_data_by_type(MEM_ACCESS, id, size, false);
 }
 
 node_data *spm_get_mem_write_node_data(void *id, int size)
 {
-	return spm_get_node_data_by_type(MEM_WRITE, id, size);
+	return spm_get_node_data_by_type(MEM_ACCESS, id, size, true);
 }
 
 node_data *spm_get_callee_node_data(ir_entity *ent)
 {
-	return spm_get_node_data_by_type(CALLEE, ent, 0);
+	return spm_get_node_data_by_type(CALLEE, ent, 0, false);
 }
 
 void spm_calculate_dprg_info()
@@ -142,6 +154,7 @@ static void spm_collect_block_data(ir_node *node, void *env)
 			}
 			if (n_data_iter->identifier == n_data->identifier) {
 				n_data_iter->access_cnt++;
+				n_data_iter->modified |= n_data->modified;
 				free(n_data);
 				return;
 			}
@@ -213,10 +226,6 @@ static int get_set_size_in_bytes(pset_new_t *node_data_set)
 	return size;
 }
 
-static void find_swapout_set(dprg_walk_env *env, alloc_result *alloc_res, pset_new_t *swapout_res)
-{
-}
-
 static float get_spm_benefit(dprg_walk_env *env, node_data *n_data, node_data *swapout_candidate)
 {
 	timestamp *branch = env->cur_branch;
@@ -235,8 +244,82 @@ static float get_spm_benefit(dprg_walk_env *env, node_data *n_data, node_data *s
 		}
 	}
 	float latency_loss = swapout_acc_cnt * block_exec_freq * spm_properties.latency_diff;
-	float migration_overhead = 0; //TODO: find approximation
+	float migration_overhead = spm_properties.throughput_spm * n_data->size; //TODO: find approximation
+	if (swapout_candidate->modified)
+		migration_overhead += spm_properties.throughput_ram * swapout_candidate->size;
 	return latency_gain - latency_loss - migration_overhead;
+}
+
+static int node_data_cmp(const void *p1, const void *p2)
+{
+	return QSORT_CMP((*(node_data * const *) p1)->size, (*(node_data * const *) p2)->size);
+}
+
+#define no_candidate(alloc_res, candidate) (pset_new_contains(alloc_res->swapout_set, candidate) \
+		|| pset_new_contains(alloc_res->retain_set, candidate) \
+		|| pset_new_contains(alloc_res->bring_in_set, candidate))
+/* Returns size in bytes of swapout_res*/
+static int find_swapout_set(dprg_walk_env *env, alloc_result *alloc_res, node_data *swapin, pset_new_t *swapout_res)
+{
+	int required_size = swapin->size - alloc_res->free_space;
+	int swapout_size = 0;
+
+	pset_new_iterator_t iter;
+	node_data *candidate;
+	foreach_pset_new(alloc_res->spm_set_reg_size, node_data *, candidate, iter) {
+		//Build prio queue?
+		if (no_candidate(alloc_res, candidate))
+			continue;
+		if (get_spm_benefit(env, swapin, candidate) > 0) {
+			pset_new_insert(swapout_res, candidate);
+			required_size -= candidate->size;
+			swapout_size += candidate->size;
+		}
+		if (required_size <= 0)
+			break;
+	}
+	if (required_size > 0) {
+		//Sort elements smaller than required size.
+		//if no such elements exist, just choose smallest one
+		node_data **spm_sorted = NEW_ARR_F(node_data *, 0);
+		//cache sorted array (if so, them all spm_set els) ?
+		node_data *bigger_than_req = NULL; //also make array for prio list? or accept suboptimal?
+		foreach_pset_new(alloc_res->spm_set, node_data *, candidate, iter) {
+			if (required_size <= candidate->size) {
+				ARR_APP1(node_data *, spm_sorted, candidate);
+			} else {
+				if (!bigger_than_req)
+					bigger_than_req = candidate;
+				else
+					bigger_than_req = bigger_than_req->size > candidate->size ? candidate : bigger_than_req;
+			}
+		}
+		int spm_sorted_len = ARR_LEN(spm_sorted);
+		if (spm_sorted_len > 0) {
+			QSORT_ARR(spm_sorted, node_data_cmp);
+			for (int i = 0; i < spm_sorted_len; i++) {
+				candidate = spm_sorted[i];
+				if (no_candidate(alloc_res, candidate))
+					continue;
+				if (get_spm_benefit(env, swapin, candidate) > 0) {
+					pset_new_insert(swapout_res, candidate);
+					required_size -= candidate->size;
+					swapout_size += candidate->size;
+				}
+				if (required_size <= 0)
+					break;
+			}
+		} else {
+			candidate = bigger_than_req;
+			//TODO: avoid code duplication?
+			if (!no_candidate(alloc_res, candidate) && get_spm_benefit(env, swapin, candidate) > 0) {
+				pset_new_insert(swapout_res, candidate);
+				required_size -= candidate->size;
+				swapout_size += candidate->size;
+			}
+		}
+	}
+	return swapout_size;
 }
 
 static void spm_calc_alloc_block(dprg_walk_env *env)
@@ -246,20 +329,19 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
 	alloc_result *existing_block_res = pmap_get(alloc_result, env->res_alloc_map, block);
 
-	pset_new_t *swapout_set = XMALLOC(pset_new_t);
-	pset_new_init(swapout_set);
-	pset_new_t *retain_set = XMALLOC(pset_new_t);
-	pset_new_init(retain_set);
-	pset_new_t *bring_in_set = XMALLOC(pset_new_t);
-	pset_new_init(bring_in_set);
-
 	alloc_result *result = XMALLOC(alloc_result);
 	result->spm_set = XMALLOC(pset_new_t);
 	result->copy_in = XMALLOC(pset_new_t);
 	result->copy_out = XMALLOC(pset_new_t);
+	result->swapout_set = XMALLOC(pset_new_t);
+	result->retain_set = XMALLOC(pset_new_t);
+	result->bring_in_set = XMALLOC(pset_new_t);
 	pset_new_init(result->spm_set);
 	pset_new_init(result->copy_in);
 	pset_new_init(result->copy_out);
+	pset_new_init(result->swapout_set);
+	pset_new_init(result->retain_set);
+	pset_new_init(result->bring_in_set);
 
 	alloc_result *pred_result = pmap_get(alloc_result, env->res_alloc_map, branch->last->block);
 
@@ -272,21 +354,21 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 
 	list_for_each_entry(node_data, n_data, node_list, list) {
 		if (pset_new_contains(result->spm_set, n_data)) {
-			if (!pset_new_contains(swapout_set, n_data))
-				pset_new_insert(retain_set, n_data);
+			if (!pset_new_contains(result->swapout_set, n_data))
+				pset_new_insert(result->retain_set, n_data);
 		} else {
 			if (n_data->size <= result->free_space) {
 				if (get_spm_benefit(env, n_data, NULL) > 0.0f) {
-					pset_new_insert(bring_in_set, n_data);
+					pset_new_insert(result->bring_in_set, n_data);
 				}
 			} else {
 				pset_new_t swapout_for_var;
 				pset_new_init(&swapout_for_var);
-				find_swapout_set(env, result, &swapout_for_var);
-				if (pset_new_size(&swapout_for_var)) {
-					pset_insert_set(swapout_set, &swapout_for_var);
-					pset_new_insert(bring_in_set, n_data);
-					result->free_space += get_set_size_in_bytes(&swapout_for_var) - n_data->size;
+				int swapout_size = find_swapout_set(env, result, n_data, &swapout_for_var);
+				if (swapout_size) {
+					pset_insert_set(result->swapout_set, &swapout_for_var);
+					pset_new_insert(result->bring_in_set, n_data);
+					result->free_space += swapout_size - n_data->size;
 				}
 			}
 		}
