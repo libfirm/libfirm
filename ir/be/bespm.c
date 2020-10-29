@@ -58,7 +58,7 @@ struct node_data {
 typedef struct block_data {
 	list_head *node_lists;
 	int callee_cnt;
-	pset_new_t dead_set; //Vars last accessed in this block //TODO: Array?
+	pset_new_t *dead_set; //Vars last accessed in this block //TODO: Array?
 } block_data;
 
 typedef struct drpg_walk_env {
@@ -90,6 +90,7 @@ static node_data *spm_get_node_data_by_type(node_data_type type, void *id, int s
 	data->identifier = id;
 	data->size = size;
 	data->modified = modified;
+	data->access_cnt = 0;
 	return data;
 }
 
@@ -240,6 +241,7 @@ static float get_spm_benefit(dprg_walk_env *env, node_data *n_data, node_data *s
 		list_for_each_entry(node_data, n_data_iter, node_list, list) {
 			if (n_data_iter->identifier == swapout_candidate->identifier) {
 				swapout_acc_cnt = n_data_iter->access_cnt;
+				break;
 			}
 		}
 	}
@@ -326,6 +328,7 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 {
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
+	ir_node *prev_block = branch->last->block;
 	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
 	alloc_result *existing_block_res = pmap_get(alloc_result, env->res_alloc_map, block);
 
@@ -343,12 +346,31 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 	pset_new_init(result->retain_set);
 	pset_new_init(result->bring_in_set);
 
-	alloc_result *pred_result = pmap_get(alloc_result, env->res_alloc_map, branch->last->block);
+	alloc_result *pred_result = pmap_get(alloc_result, env->res_alloc_map, prev_block);
+
 
 	//TODO: fill result with pred_result values
 	pset_insert_set(result->spm_set, pred_result->spm_set);
+	pset_insert_set(result->spm_set_reg_size, pred_result->spm_set_reg_size);
 
 	//Handle deadset
+	pset_new_iterator_t iter;
+	node_data *el;
+	block_data *prev_blk_data = pmap_get(block_data, env->block_data_map, prev_block);
+	foreach_pset_new(prev_blk_data->dead_set, node_data *, el, iter) {
+		int el_size = el->size;
+		if (el_size > gp_reg_size) {
+			if (pset_new_contains(result->spm_set, el)) {
+				pset_new_remove(result->spm_set, el);
+				result->free_space += el_size;
+			}
+		} else {
+			if (pset_new_contains(result->spm_set_reg_size, el)) {
+				pset_new_remove(result->spm_set_reg_size, el);
+				result->free_space += el_size;
+			}
+		}
+	}
 
 	list_head *node_list = &blk_data->node_lists[branch->finished_callees + 1];
 
@@ -374,7 +396,19 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 		}
 	}
 
-
+	//use swapout + bringin set to build enw spm_sets
+	foreach_pset_new(result->bring_in_set, node_data *, el, iter) {
+		if (el->size > gp_reg_size)
+			pset_new_insert(result->spm_set, el);
+		else
+			pset_new_insert(result->spm_set_reg_size, el);
+	}
+	foreach_pset_new(result->swapout_set, node_data *, el, iter) {
+		if (el->size > gp_reg_size)
+			pset_new_remove(result->spm_set, el);
+		else
+			pset_new_remove(result->spm_set_reg_size, el);
+	}
 }
 
 static ir_entity *get_next_call_from_block(dprg_walk_env *env)
