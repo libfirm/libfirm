@@ -30,9 +30,8 @@ struct timestamp {
 typedef struct alloc_result {
 	int join_cnt;//procedure join cnt
 	int free_space;
-	pset_new_t *spm_set; //List sorted by freq/byte?
+	pset_new_t *spm_set;
 	pset_new_t *spm_set_reg_size;
-	//list not feasible due to many duplications
 	pset_new_t *copy_in;
 	pset_new_t *copy_out;
 	//Sets only temporarily needed:
@@ -58,13 +57,13 @@ struct node_data {
 typedef struct block_data {
 	list_head *node_lists;
 	int callee_cnt;
+	alloc_result **allocation_results;
 	pset_new_t *dead_set; //Vars last accessed in this block //TODO: Array?
 } block_data;
 
 typedef struct drpg_walk_env {
 	deq_t workqueue;
 	pmap *block_data_map;
-	pmap *res_alloc_map;
 	timestamp *cur_branch;
 } dprg_walk_env;
 
@@ -136,6 +135,7 @@ static void spm_collect_block_data(ir_node *node, void *env)
 			b_data = XMALLOC(block_data);
 			b_data->callee_cnt = 0;
 			b_data->node_lists = NEW_ARR_F(list_head, 1);
+			b_data->allocation_results = NULL;
 			INIT_LIST_HEAD(b_data->node_lists);
 		}
 		if (n_data->data_type == CALLEE) {
@@ -172,6 +172,8 @@ static void spm_calc_blocks_access_freq(pmap *block_data_map)
 {
 	foreach_pmap(block_data_map, cur_entry) {
 		block_data *blk_data = cur_entry->value;
+		//TODO: alloc_results init doesn't fit in here?
+		blk_data->allocation_results = NEW_ARR_FZ(alloc_result *, blk_data->callee_cnt + 1);
 		//idx 0: call nodes, idx 1 to x are mem_access in between
 		ARR_RESIZE(list_head, blk_data->node_lists, blk_data->callee_cnt + 2);
 		//As arr_resize can change addr of node_lists, pointers have to be adjusted accordingly
@@ -330,7 +332,7 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 	ir_node *block = branch->block;
 	ir_node *prev_block = branch->last->block;
 	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
-	alloc_result *existing_block_res = pmap_get(alloc_result, env->res_alloc_map, block);
+	alloc_result *existing_res = blk_data->allocation_results[branch->finished_callees];
 
 	alloc_result *result = XMALLOC(alloc_result);
 	result->spm_set = XMALLOC(pset_new_t);
@@ -346,28 +348,31 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 	pset_new_init(result->retain_set);
 	pset_new_init(result->bring_in_set);
 
-	alloc_result *pred_result = pmap_get(alloc_result, env->res_alloc_map, prev_block);
+	block_data *prev_blk_data = pmap_get(block_data, env->block_data_map, prev_block);
+	alloc_result *pred_result = prev_blk_data->allocation_results[branch->last->finished_callees];
 
 
-	//TODO: fill result with pred_result values
+	//fill result with pred_result values
 	pset_insert_set(result->spm_set, pred_result->spm_set);
 	pset_insert_set(result->spm_set_reg_size, pred_result->spm_set_reg_size);
 
-	//Handle deadset
-	pset_new_iterator_t iter;
-	node_data *el;
-	block_data *prev_blk_data = pmap_get(block_data, env->block_data_map, prev_block);
-	foreach_pset_new(prev_blk_data->dead_set, node_data *, el, iter) {
-		int el_size = el->size;
-		if (el_size > gp_reg_size) {
-			if (pset_new_contains(result->spm_set, el)) {
-				pset_new_remove(result->spm_set, el);
-				result->free_space += el_size;
-			}
-		} else {
-			if (pset_new_contains(result->spm_set_reg_size, el)) {
-				pset_new_remove(result->spm_set_reg_size, el);
-				result->free_space += el_size;
+	//Handle deadset at beginning of block
+	//TODO: how to handle end of call? (do deadset handling also at end of function)
+	if (branch->finished_callees == 0) {
+		pset_new_iterator_t iter;
+		node_data *el;
+		foreach_pset_new(prev_blk_data->dead_set, node_data *, el, iter) {
+			int el_size = el->size;
+			if (el_size > gp_reg_size) {
+				if (pset_new_contains(result->spm_set, el)) {
+					pset_new_remove(result->spm_set, el);
+					result->free_space += el_size;
+				}
+			} else {
+				if (pset_new_contains(result->spm_set_reg_size, el)) {
+					pset_new_remove(result->spm_set_reg_size, el);
+					result->free_space += el_size;
+				}
 			}
 		}
 	}
@@ -409,6 +414,7 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 		else
 			pset_new_remove(result->spm_set_reg_size, el);
 	}
+	blk_data->allocation_results[branch->finished_callees] = result;
 }
 
 static ir_entity *get_next_call_from_block(dprg_walk_env *env)
@@ -434,11 +440,14 @@ static void ensure_pred_blocks_visited(dprg_walk_env *env)
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
 	//Skip block if not all predecessors have been visited
-	alloc_result *block_res = pmap_get(alloc_result, env->res_alloc_map, block);
+	block_data *block_data = pmap_get(alloc_result, env->block_data_map, block);
+	//Check last alloc result of block
+	alloc_result *block_res = block_data->allocation_results[block_data->callee_cnt];
 	int cur_block_join_cnt = block_res ? block_res->join_cnt : -1;
 	for (int i = 0; i < get_Block_n_cfgpreds(block); i++) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, i);
-		alloc_result *pred_block_res = pmap_get(alloc_result, env->res_alloc_map, pred_block);
+		block_data *pred_block_data = pmap_get(alloc_result, env->block_data_map, pred_block);
+		alloc_result *pred_block_res = pred_block_data->allocation_results[pred_block_data->callee_cnt];
 		int pred_block_join_cnt = pred_block_res ? pred_block_res->join_cnt : -1;
 		if (pred_block_join_cnt <= cur_block_join_cnt) {
 			branch->finished_preds = 0;
@@ -524,13 +533,10 @@ void spm_find_memory_allocation(node_data * (*retrieve_spm_node_data)(ir_node *)
 		.irg_exec_freq = 1.0f,
 	};
 
-	pmap *res_alloc_map = pmap_create();
-
 	dprg_walk_env walk_env;
 	deq_init(&walk_env.workqueue);
 	walk_env.cur_branch = &main_info;
 	walk_env.block_data_map = block_data_map;
-	walk_env.res_alloc_map = res_alloc_map;
 	spm_mem_alloc_block(&walk_env);
 
 	timestamp *cur_branch;
