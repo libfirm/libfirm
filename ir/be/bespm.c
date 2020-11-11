@@ -28,17 +28,20 @@ struct timestamp {
 	double irg_exec_freq;
 };
 
-typedef struct alloc_result {
+typedef struct alloc_result alloc_result;
+
+struct alloc_result {
 	int free_space;
 	pset_new_t *spm_set;
 	pset_new_t *spm_set_reg_size;
 	pset_new_t *copy_in;
-	pset_new_t *copy_out;
-	//Sets only temporarily needed:
 	pset_new_t *swapout_set;
+	//At end of block compensation code may be added
+	alloc_result *compensation_alloc;
+	//Sets only temporarily needed:
 	pset_new_t *retain_set;
 	pset_new_t *bring_in_set;
-} alloc_result;
+};
 
 typedef enum node_data_type {
 	CALLEE, MEM_ACCESS,
@@ -458,14 +461,14 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 
 	alloc_result *result = XMALLOC(alloc_result);
 	result->spm_set = XMALLOC(pset_new_t);
+	result->spm_set_reg_size = XMALLOC(pset_new_t);
 	result->copy_in = XMALLOC(pset_new_t);
-	result->copy_out = XMALLOC(pset_new_t);
 	result->swapout_set = XMALLOC(pset_new_t);
 	result->retain_set = XMALLOC(pset_new_t);
 	result->bring_in_set = XMALLOC(pset_new_t);
 	pset_new_init(result->spm_set);
+	pset_new_init(result->spm_set_reg_size);
 	pset_new_init(result->copy_in);
-	pset_new_init(result->copy_out);
 	pset_new_init(result->swapout_set);
 	pset_new_init(result->retain_set);
 	pset_new_init(result->bring_in_set);
@@ -564,51 +567,85 @@ static ir_entity *get_next_call_from_block(dprg_walk_env *env)
 
 static void join_allocations(alloc_result *base_alloc, alloc_result *adj_alloc)
 {
+	//TODO: Create new alloc_result and add it to adj_alloc as comp_allco
+	alloc_result *result = XMALLOC(alloc_result);
+	result->spm_set = XMALLOC(pset_new_t);
+	result->copy_in = XMALLOC(pset_new_t);
+	result->swapout_set = XMALLOC(pset_new_t);
+	pset_new_init(result->spm_set);
+	pset_new_init(result->copy_in);
+	pset_new_init(result->swapout_set);
 	pset_new_iterator_t iter;
 	node_data *el;
-	foreach_pset_new(base_alloc->spm_set, node_data *, el, iter) {
+	foreach_pset_new(base_alloc->spm_set, spm_var_info *, el, iter) {
+		pset_new_insert(result->spm_set, el);
 		if (!pset_new_contains(adj_alloc->spm_set, el)) {
-			pset_new_insert(adj_alloc->spm_set, el);
-			pset_new_insert(adj_alloc->copy_in, el);
+			pset_new_insert(result->copy_in, el);
 		}
 	}
-	foreach_pset_new(base_alloc->spm_set_reg_size, node_data *, el, iter) {
+	foreach_pset_new(base_alloc->spm_set_reg_size, spm_var_info *, el, iter) {
+		pset_new_insert(result->spm_set_reg_size, el);
 		if (!pset_new_contains(adj_alloc->spm_set_reg_size, el)) {
-			pset_new_insert(adj_alloc->spm_set_reg_size, el);
-			pset_new_insert(adj_alloc->copy_in, el);
+			pset_new_insert(result->copy_in, el);
 		}
 	}
-	foreach_pset_new(adj_alloc->spm_set, node_data *, el, iter) {
+	foreach_pset_new(adj_alloc->spm_set, spm_var_info *, el, iter) {
 		if (!pset_new_contains(base_alloc->spm_set, el)) {
-			pset_new_remove(adj_alloc->spm_set, el);
-			pset_new_insert(adj_alloc->copy_out, el);
+			pset_new_insert(result->swapout_set, el);
 		}
 	}
-	foreach_pset_new(adj_alloc->spm_set_reg_size, node_data *, el, iter) {
+	foreach_pset_new(adj_alloc->spm_set_reg_size, spm_var_info *, el, iter) {
 		if (!pset_new_contains(base_alloc->spm_set_reg_size, el)) {
-			pset_new_remove(adj_alloc->spm_set_reg_size, el);
-			pset_new_insert(adj_alloc->copy_out, el);
+			pset_new_insert(result->swapout_set, el);
 		}
+	}
+	adj_alloc->compensation_alloc = result;
+}
+
+static void join_pred_allocations(dprg_walk_env *env, ir_node *base_block)
+{
+	timestamp *branch = env->cur_branch;
+	ir_node *block = branch->block;
+	block_data *base_block_data = pmap_get(block_data, env->block_data_map, base_block);
+	alloc_result *base_block_res = last_block_data->allocation_results[base_block_data->callee_cnt];
+	//Create comp alloc for all blocks except base_block
+	for (int i = 1; i < get_Block_n_cfgpreds(block); i++) {
+		ir_node *pred_block = get_Block_cfgpred_block(block, i);
+		if (pred_block == base_block)
+			continue;
+
+		block_data *pred_block_data = pmap_get(block_data, env->block_data_map, pred_block);
+		alloc_result *pred_block_res = pred_block_data->allocation_results[pred_block_data->callee_cnt];
+		join_allocations(base_block, pred_block_res);
 	}
 }
 
-static void spm_cond_join_blocks(dprg_walk_env *env)
+static timestamp *spm_join_return_blocks(dprg_walk_env *env)
+{
+	timestamp *branch = env->cur_branch;
+	ir_node *block = branch->block;
+	//We select block with highest exec freq
+	ir_node base_block = get_Block_cfgpred_block(block, 0);
+	for (int i = 1; i < get_Block_n_cfgpreds(block); i++) {
+		ir_node *pred_block = get_Block_cfgpred_block(block, i);
+		if (get_block_execfreq(pred_block) > get_block_execfreq(base_block))
+			base_block = pred_block;
+	}
+	join_pred_allocations(env, base_block);
+	timestamp *new_branch = XMALLOC(timestamp);
+	new_branch->caller_block = branch->caller_block;
+	new_branch->block = base_block;
+	new_branch->irg_exec_freq = branch->irg_exec_freq * get_block_execfreq(base_block);
+	return new_branch;
+}
+
+static void spm_join_cond_blocks(dprg_walk_env *env)
 {
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
 	//We select block of last timestamp as base block TODO: Better choice?
 	//Idea: select allocation which enhances perf of block the most (iterate var_accesses of block)
-	block_data *last_block_data = pmap_get(block_data, env->block_data_map, branch->last->block);
-	alloc_result *last_block_res = last_block_data->allocation_results[last_block_data->callee_cnt];
-	for (int i = 0; i < get_Block_n_cfgpreds(block); i++) {
-		ir_node *pred_block = get_Block_cfgpred_block(block, i);
-		if (branch->last->block == pred_block)
-			continue;
-
-		block_data *pred_block_data = pmap_get(block_data, env->block_data_map, pred_block);
-		alloc_result *pred_block_res = pred_block_data->allocation_results[pred_block_data->callee_cnt];
-		join_allocations(last_block_res, pred_block_res);
-	}
+	join_pred_allocations(env, branch->last->block);
 }
 
 static void ensure_pred_blocks_visited(dprg_walk_env *env)
@@ -653,20 +690,20 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	if (branch->finished_preds == 3) {
 		//do merging here. what to do with callees of loopheader?
 	} else if (branch->finished_preds == 4) {
-		spm_cond_join_blocks(env);
+		spm_join_cond_blocks(env);
 	}
 
 	//At end of irg next block is caller block again
-	//TODO: how to handle multiple returns? compensation code possibly needed for least freq ret blocks
-	//has to be inserted before ret instructiion!
 	if (get_irg_end_block(get_irn_irg(block)) == block) {
+		timestamp *return_block = spm_join_return_blocks(env);
 		timestamp *caller = branch->caller_block;
-		caller->last = branch;
+		caller->last = return_block;
 		caller->finished_callees++;
 		deq_push_pointer_right(&env->workqueue, caller);
+		free(branch); //TODO: In general: where to free timestamps?
 		return;
 	}
-	float block_exec_freq = branch->irg_exec_freq * get_block_execfreq(block);
+	double block_exec_freq = branch->irg_exec_freq * get_block_execfreq(block);
 	//calc allocation
 	spm_calc_alloc_block(env);
 
