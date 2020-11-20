@@ -18,15 +18,32 @@
 
 typedef struct timestamp timestamp;
 
+typedef enum pred_states {
+	UNKNOWN_STATUS, PRED_NOT_DONE, PREDS_DONE, UNFINISHED_LOOP, FINISHED_LOOP, COND_JOIN,
+} pred_states;
+
 struct timestamp {
 	timestamp *last;
 	timestamp *caller_block;
 	ir_node *block;
 	int finished_callees;
-	//TODO: Convert to enum for better readability
-	short finished_preds; //-1: UNKOWN, 0 = FALSE, 1 = TRUE, 2 = non-finished LOOP, 3 = finished loop, 4 = cond-join
+	pred_states finished_preds;
 	double irg_exec_freq;
 };
+
+typedef struct spm_var_info {
+	void *identifier;
+	int size;
+	bool modified; //Modified info here not suitable. better set of modified vars in alloc_res
+} spm_var_info;
+
+typedef struct spm_content {
+	list_head list;
+	int addr;
+	int next_use; //How many blocks away basically
+	int gap_size;
+	spm_var_info *content;
+} spm_content;
 
 typedef struct alloc_result alloc_result;
 
@@ -41,17 +58,14 @@ struct alloc_result {
 	//Sets only temporarily needed:
 	pset_new_t *retain_set;
 	pset_new_t *bring_in_set;
+	list_head spm_content_head;
+	spm_content *spm_content; //Array for list els. Max spm_set size length
+	//TODO: swapout_set gets turned into writeback_needed_set when spm_content gets created?
 };
 
 typedef enum node_data_type {
 	CALLEE, MEM_ACCESS,
 } node_data_type;
-
-typedef struct spm_var_info {
-	void *identifier;
-	int size;
-	bool modified;
-} spm_var_info;
 
 struct node_data {
 	node_data_type data_type;
@@ -102,7 +116,7 @@ static node_data *spm_get_node_data_by_type(node_data_type type, void *id, int s
 	data->identifier = id;
 	data->size = size;
 	data->modified = modified;
-	data->access_cnt = 0;
+	data->access_cnt = 1;
 	return data;
 }
 
@@ -120,12 +134,12 @@ static node_data *spm_get_var_node_data(node_data_type type, void *id, int size,
 
 node_data *spm_get_mem_read_node_data(void *id, int size)
 {
-	return spm_get_node_data_by_type(MEM_ACCESS, id, size, false);
+	return spm_get_var_node_data(MEM_ACCESS, id, size, false);
 }
 
 node_data *spm_get_mem_write_node_data(void *id, int size)
 {
-	return spm_get_node_data_by_type(MEM_ACCESS, id, size, true);
+	return spm_get_var_node_data(MEM_ACCESS, id, size, true);
 }
 
 node_data *spm_get_callee_node_data(ir_entity *ent)
@@ -382,10 +396,79 @@ static int spm_var_cmp(const void *p1, const void *p2)
 	return QSORT_CMP((*(spm_var_info * const *) p1)->size, (*(spm_var_info * const *) p2)->size);
 }
 
-#define no_candidate(alloc_res, candidate) (pset_new_contains(alloc_res->swapout_set, candidate) \
-		|| pset_new_contains(alloc_res->retain_set, candidate) \
+static void spm_content_insert_tail(spm_var_info *var_info, int gap, spm_content *head)
+{
+	spm_content *new_spm_content = XMALLOC(spm_content);
+	list_add_tail(&new_spm_content->list, &head->list);
+	new_spm_content->addr = head->addr + head->content->size;
+	new_spm_content->content = var_info;
+	new_spm_content->gap_size = gap;
+	head->gap_size = 0;
+}
+
+#define no_candidate(alloc_res, candidate) (pset_new_contains(alloc_res->retain_set, candidate) \
 		|| pset_new_contains(alloc_res->bring_in_set, candidate))
 /* Returns size in bytes of swapout_res*/
+
+//How to use spm_content allocation:
+//next use is stored for every var
+//window of spwapin size is dragged over spm_list to get the element(s) furthest away from use
+//
+//or: (this alternative is implemented)
+//get possible sites where gap later will be minimal and then calculate next use values on the fly x call sites deep (or 10 blocks or so)
+//This will lead to eviction of possible more vars then necessary, if write to (var + gap) leaves small gap, whereas (var + var) leaves smaller/no gap
+static void spm_force_insert(dprg_walk_env *env, alloc_result *result, node_data *swapin)
+{
+	spm_content **best_fit_gap_el = NEW_ARR_F(spm_content *, 1);
+	int cur_min_gap_size = INT_MAX;
+	//start at first real element (after sentinel)
+	spm_content *prev = list_entry(&result->spm_content_head.next, spm_content, list);
+	list_for_each_entry(spm_content, var, result->spm_content_head.next, list) {
+		if (no_candidate(result, var))
+			continue;
+		int swapout_size = prev->gap_size + var->content->size + var->gap_size;
+		spm_content *next = var;
+		while (swapout_size < swapin->size) {
+			next = list_entry(next->list.next, spm_content, list);
+			if (no_candidate(result, next))
+				break;
+			swapout_size += next->content->size + next->gap_size;
+		}
+		int new_gap = swapout_size - swapin->size;
+		if (new_gap < 0)
+			continue;
+		if (new_gap < cur_min_gap_size) {
+			free(best_fit_gap_el);
+			best_fit_gap_el = NEW_ARR_F(spm_content *, 1);
+			best_fit_gap_el[0] = var;
+			cur_min_gap_size = new_gap;
+		} else if (new_gap == cur_min_gap_size) {
+			ARR_APP1(spm_content *, best_fit_gap_el, var);
+		}
+		prev = var;
+	}
+
+	//TODO: if best_fit_gap_el size > 1 calculate next uses
+	//TODO: find benefit has to be integrated as well here
+	spm_content *best_swapout_candidate = best_fit_gap_el[0];
+	prev = list_entry(&best_swapout_candidate->list.prev, spm_content, list);
+	int swapout_size = prev->gap_size + best_swapout_candidate->content->size + best_swapout_candidate->gap_size;
+	spm_content *next = list_entry(&best_swapout_candidate->list.next, spm_content, list);
+	list_del(&best_swapout_candidate->list);
+	free(best_swapout_candidate);
+	while (swapout_size < swapin->size) {
+		swapout_size += next->content->size + next->gap_size;
+		spm_content *tmp = next;
+		next = list_entry(&next->list.next, spm_content, list);
+		list_del(&tmp->list);
+		free(tmp);
+	}
+	int new_gap = swapout_size - swapin->size;
+	spm_var_info *swapin_info = pmap_get(spm_var_info, spm_var_infos, swapin);
+	spm_content_insert_tail(swapin_info, new_gap, prev);
+	result->free_space += new_gap;
+}
+/*
 static int find_swapout_set(dprg_walk_env *env, alloc_result *alloc_res, node_data *swapin, pset_new_t *swapout_res)
 {
 	int required_size = swapin->size - alloc_res->free_space;
@@ -451,6 +534,30 @@ static int find_swapout_set(dprg_walk_env *env, alloc_result *alloc_res, node_da
 	}
 	return swapout_size;
 }
+*/
+static bool spm_try_best_fit_insert(alloc_result *result, node_data *var)
+{
+	spm_var_info *el_info = pmap_get(spm_var_info, spm_var_infos, var);
+	spm_content *best_fit_gap_el = NULL;
+	int best_fit_gap = INT_MAX;
+	list_for_each_entry(spm_content, var, &result->spm_content_head, list) {
+		int new_gap = var->gap_size - el_info->size;
+		if (new_gap >= 0 && new_gap < best_fit_gap) {
+			best_fit_gap = new_gap;
+			best_fit_gap_el = var;
+			if (new_gap == 0)
+				break;
+		}
+	}
+	//If space found insert el
+	if (best_fit_gap != INT_MAX) {
+		spm_content_insert_tail(el_info, best_fit_gap, best_fit_gap_el);
+		pset_new_insert(result->bring_in_set, el_info);
+		result->free_space -= el_info->size;
+		return true;
+	}
+	return false;
+}
 
 static void spm_calc_alloc_block(dprg_walk_env *env)
 {
@@ -458,6 +565,7 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 	ir_node *block = branch->block;
 	ir_node *prev_block = branch->last->block;
 	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
+	//TODO: Handle case of block without predecessor
 
 	alloc_result *result = XMALLOC(alloc_result);
 	result->spm_set = XMALLOC(pset_new_t);
@@ -479,9 +587,20 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 	//fill result with pred_result values
 	pset_insert_set(result->spm_set, pred_result->spm_set);
 	pset_insert_set(result->spm_set_reg_size, pred_result->spm_set_reg_size);
+	//build spm_content
+	INIT_LIST_HEAD(&result->spm_content_head);
+	//TODO: List needs a sentinel el at the beginning
+	list_for_each_entry(spm_content, var, &pred_result->spm_content_head, list) {
+		//TODO: Remove deadset content here as well
+		spm_content *spm_content_el = XMALLOC(spm_content);
+		spm_content_el->addr = var->addr;
+		spm_content_el->gap_size = var->gap_size;
+		spm_content_el->content = var->content;
+		list_add_tail(&spm_content_el->list, &result->spm_content_head);
+	}
 
 
-	//Handle deadset at beginning of block
+	//Handle deadset at beginning of block (TODO: deadset also per region?!)
 	//TODO: how to handle end of call? (do deadset handling also at end of function)
 	//
 	//TODO: spm_var_info pointer in node_data to avoid hashmap
@@ -514,10 +633,12 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 				pset_new_insert(result->retain_set, el_info);
 		} else {
 			if (n_data->size <= result->free_space) {
-				if (get_spm_benefit(env, n_data, NULL) > 0.0f) {
-					pset_new_insert(result->bring_in_set, el_info);
-				}
+				if (get_spm_benefit(env, n_data, NULL) > 0.0f)
+					if (!spm_try_best_fit_insert(result, n_data))
+						spm_force_insert(env, result, n_data);
 			} else {
+				spm_force_insert(env, result, n_data);
+				/*
 				pset_new_t swapout_for_var;
 				pset_new_init(&swapout_for_var);
 				int swapout_size = find_swapout_set(env, result, n_data, &swapout_for_var);
@@ -526,9 +647,12 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 					pset_new_insert(result->bring_in_set, el_info);
 					result->free_space += swapout_size - n_data->size;
 				}
+				*/
 			}
 		}
 	}
+
+	//TODO: swapout/bringin set on spm_content basis, so we don't have to walk list for mov instr
 
 	//use swapout + bringin set to build enw spm_sets
 	spm_var_info *var_info;
@@ -544,6 +668,7 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 		else
 			pset_new_remove(result->spm_set_reg_size, var_info);
 	}
+
 	blk_data->allocation_results[branch->finished_callees] = result;
 }
 
@@ -567,7 +692,7 @@ static ir_entity *get_next_call_from_block(dprg_walk_env *env)
 
 static void join_allocations(alloc_result *base_alloc, alloc_result *adj_alloc)
 {
-	//TODO: Create new alloc_result and add it to adj_alloc as comp_allco
+	//TODO: spm_content needs adjustment
 	alloc_result *result = XMALLOC(alloc_result);
 	result->spm_set = XMALLOC(pset_new_t);
 	result->copy_in = XMALLOC(pset_new_t);
@@ -576,7 +701,7 @@ static void join_allocations(alloc_result *base_alloc, alloc_result *adj_alloc)
 	pset_new_init(result->copy_in);
 	pset_new_init(result->swapout_set);
 	pset_new_iterator_t iter;
-	node_data *el;
+	spm_var_info *el;
 	foreach_pset_new(base_alloc->spm_set, spm_var_info *, el, iter) {
 		pset_new_insert(result->spm_set, el);
 		if (!pset_new_contains(adj_alloc->spm_set, el)) {
@@ -607,7 +732,7 @@ static void join_pred_allocations(dprg_walk_env *env, ir_node *base_block)
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
 	block_data *base_block_data = pmap_get(block_data, env->block_data_map, base_block);
-	alloc_result *base_block_res = last_block_data->allocation_results[base_block_data->callee_cnt];
+	alloc_result *base_block_res = base_block_data->allocation_results[base_block_data->callee_cnt];
 	//Create comp alloc for all blocks except base_block
 	for (int i = 1; i < get_Block_n_cfgpreds(block); i++) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, i);
@@ -616,7 +741,7 @@ static void join_pred_allocations(dprg_walk_env *env, ir_node *base_block)
 
 		block_data *pred_block_data = pmap_get(block_data, env->block_data_map, pred_block);
 		alloc_result *pred_block_res = pred_block_data->allocation_results[pred_block_data->callee_cnt];
-		join_allocations(base_block, pred_block_res);
+		join_allocations(base_block_res, pred_block_res);
 	}
 }
 
@@ -625,7 +750,7 @@ static timestamp *spm_join_return_blocks(dprg_walk_env *env)
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
 	//We select block with highest exec freq
-	ir_node base_block = get_Block_cfgpred_block(block, 0);
+	ir_node *base_block = get_Block_cfgpred_block(block, 0);
 	for (int i = 1; i < get_Block_n_cfgpreds(block); i++) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, i);
 		if (get_block_execfreq(pred_block) > get_block_execfreq(base_block))
@@ -663,18 +788,18 @@ static void ensure_pred_blocks_visited(dprg_walk_env *env)
 		alloc_result *pred_block_res = pred_block_data->allocation_results[pred_block_data->callee_cnt];
 		if (pred_block_res) {
 			if (loop_detected)
-				branch->finished_preds = 3;
+				branch->finished_preds = FINISHED_LOOP;
 		} else {
 			if (loop_detected) {
-				branch->finished_preds = 2;
+				branch->finished_preds = UNFINISHED_LOOP;
 			} else {
-				branch->finished_preds = 0;
+				branch->finished_preds = PRED_NOT_DONE;
 				return;
 			}
 		}
 	}
-	if (branch->finished_preds == -1)
-		branch->finished_preds = get_Block_n_cfgpreds(block) > 1 ? 4 : 1;
+	if (branch->finished_preds == UNKNOWN_STATUS)
+		branch->finished_preds = get_Block_n_cfgpreds(block) > 1 ? COND_JOIN : PREDS_DONE;
 }
 
 static void spm_mem_alloc_block(dprg_walk_env *env)
@@ -683,13 +808,13 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	ir_node *block = branch->block;
 
 	//Skip block if not all predecessors have been visited (exception: backedge loop)
-	if (branch->finished_preds == -1)
+	if (branch->finished_preds == UNKNOWN_STATUS)
 		ensure_pred_blocks_visited(env);
-	if (branch->finished_preds == 0)
+	if (branch->finished_preds == PRED_NOT_DONE)
 		return;
-	if (branch->finished_preds == 3) {
+	if (branch->finished_preds == FINISHED_LOOP) {
 		//do merging here. what to do with callees of loopheader?
-	} else if (branch->finished_preds == 4) {
+	} else if (branch->finished_preds == COND_JOIN) {
 		spm_join_cond_blocks(env);
 	}
 
@@ -735,9 +860,9 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 		return;
 	}
 
-	if (branch->finished_preds == 2) {
+	if (branch->finished_preds == UNFINISHED_LOOP) {
 		//TODO: only push loop block onto queue
-	} else if (branch->finished_preds == 3) {
+	} else if (branch->finished_preds == FINISHED_LOOP) {
 		//TODO: only push non-loop block onto queue
 	} else {
 		int n_outs = get_Block_n_cfg_outs(block);
