@@ -1417,21 +1417,27 @@ static node_data *ia32_retrieve_spm_node_data(ir_node *node) {
 	if(is_ia32_Call(node)) {
 		ir_node *callee = get_irn_n(node, n_ia32_Call_callee);
 		ir_entity *callee_ent = get_ia32_immediate_attr_const(callee)->imm.entity;
-		return spm_get_callee_node_data(callee_ent);
+		if(get_entity_irg(callee_ent))
+			return spm_get_callee_node_data(callee_ent);
 	} else if(is_ia32_Store(node)) {
-		ir_node *imm_node = get_irn_n(node, n_ia32_Store_val);
-		ir_entity *store_ent = get_ia32_immediate_attr_const(imm_node)->imm.entity;
-		return spm_get_mem_write_node_data(store_ent, get_type_size(get_entity_type(store_ent)));
-	} else if(get_ia32_op_type(node) != ia32_Normal) {
+		/*ir_node *imm_node = get_irn_n(node, n_ia32_Store_val);
+		if(is_ia32_Immediate(imm_node)) {
+			ir_entity *store_ent = get_ia32_immediate_attr_const(imm_node)->imm.entity;
+			return spm_get_mem_write_node_data(store_ent, get_type_size(get_entity_type(store_ent)));
+		}*/
+	}
+	if(is_ia32_irn(node) && get_ia32_op_type(node) != ia32_Normal) {
 		const ia32_attr_t *attr = get_ia32_attr_const(node);
 		ir_entity *entity = attr->addr.immediate.entity;
-		int size = get_type_size(get_entity_type(entity));
-		if(get_entity_owner(entity) == get_glob_type()) {
-			node_data *data;
-			data = spm_get_mem_read_node_data(entity, size);
+		if(entity) {
+			int size = get_type_size(get_entity_type(entity));
+			if(get_entity_owner(entity) == get_glob_type()) {
+				node_data *data;
+				data = spm_get_mem_read_node_data(entity, size);
 
-			//TODO: do we really need info, if spill or not?
-			return data;
+				//TODO: do we really need info, if spill or not?
+				return data;
+			}
 		}
 	}
 	return NULL;
@@ -1440,7 +1446,6 @@ static node_data *ia32_retrieve_spm_node_data(ir_node *node) {
 static void ia32_generate_code(FILE *output, const char *cup_name)
 {
 	spm_calculate_dprg_info();
-	spm_test_call();
 	ia32_tv_ent = pmap_create();
 
 	be_begin(output, cup_name);

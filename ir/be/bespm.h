@@ -22,6 +22,4 @@ void spm_calculate_dprg_info(void);
 
 void spm_find_memory_allocation(node_data * (*retrieve_spm_node_data)(ir_node *));
 
-void spm_test_call(void);
-
 #endif
