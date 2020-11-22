@@ -18,13 +18,16 @@
 
 typedef struct timestamp timestamp;
 
+typedef struct alloc_result alloc_result;
+
 typedef enum pred_states {
 	UNKNOWN_STATUS, PRED_NOT_DONE, PREDS_DONE, UNFINISHED_LOOP, FINISHED_LOOP, COND_JOIN,
 } pred_states;
 
 struct timestamp {
-	timestamp *last;
-	timestamp *caller_block;
+	ir_node *last_block;
+	alloc_result *last_alloc;
+	timestamp *caller_timestamp;
 	ir_node *block;
 	int finished_callees;
 	pred_states finished_preds;
@@ -45,8 +48,6 @@ typedef struct spm_content {
 	spm_var_info *content;
 } spm_content;
 
-typedef struct alloc_result alloc_result;
-
 struct alloc_result {
 	int free_space;
 	pset_new_t *spm_set;
@@ -59,7 +60,6 @@ struct alloc_result {
 	pset_new_t *retain_set;
 	pset_new_t *bring_in_set;
 	list_head spm_content_head;
-	spm_content *spm_content; //Array for list els. Max spm_set size length
 	//TODO: swapout_set gets turned into writeback_needed_set when spm_content gets created?
 };
 
@@ -583,13 +583,10 @@ static bool spm_try_best_fit_insert(alloc_result *result, node_data *var)
 	return false;
 }
 
-static void spm_calc_alloc_block(dprg_walk_env *env)
+static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 {
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
-	ir_node *prev_block = NULL;
-	if (branch->last)
-		prev_block = branch->last->block;
 	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
 	//TODO: Handle case of block without predecessor
 
@@ -606,12 +603,12 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 	pset_new_init(result->swapout_set);
 	pset_new_init(result->retain_set);
 	pset_new_init(result->bring_in_set);
+	result->compensation_alloc = NULL;
 
 	block_data *prev_blk_data = NULL;
-	alloc_result *pred_result = NULL;
-	if (prev_block) {
-		prev_blk_data = pmap_get(block_data, env->block_data_map, prev_block);
-		pred_result = prev_blk_data->allocation_results[branch->last->finished_callees];
+	alloc_result *pred_result = branch->last_alloc;
+	if (branch->last_block) {
+		prev_blk_data = pmap_get(block_data, env->block_data_map, branch->last_block);
 	}
 
 	//fill result with pred_result values
@@ -628,12 +625,14 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 			spm_content_el->content = var->content;
 			list_add_tail(&spm_content_el->list, &result->spm_content_head);
 		}
+		result->free_space = pred_result->free_space;
 	} else {
 		INIT_LIST_HEAD(&result->spm_content_head);
 		spm_content *sentinel = XMALLOC(spm_content);
 		sentinel->addr = 0;
 		sentinel->gap_size = spm_properties.size;
 		sentinel->content = NULL;
+		result->free_space = spm_properties.size;
 	}
 
 
@@ -660,9 +659,6 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 			}
 		}
 	}
-
-	if (!blk_data) //TODO: Every block should have block data to save alloc (end of this function)
-		return;
 
 	list_head *node_list = &blk_data->node_lists[branch->finished_callees + 1];
 
@@ -709,7 +705,7 @@ static void spm_calc_alloc_block(dprg_walk_env *env)
 			pset_new_remove(result->spm_set_reg_size, var_info);
 	}
 
-	blk_data->allocation_results[branch->finished_callees] = result;
+	return result;
 }
 
 static ir_entity *get_next_call_from_block(dprg_walk_env *env)
@@ -732,14 +728,18 @@ static ir_entity *get_next_call_from_block(dprg_walk_env *env)
 
 static void join_allocations(alloc_result *base_alloc, alloc_result *adj_alloc)
 {
-	//TODO: spm_content needs adjustment
+	//TODO: spm_content needs adjustment and free_space needs adjustment
+	//TODO: make sure after join correct allocation is used as pred_alloc
 	alloc_result *result = XMALLOC(alloc_result);
 	result->spm_set = XMALLOC(pset_new_t);
+	result->spm_set_reg_size = XMALLOC(pset_new_t);
 	result->copy_in = XMALLOC(pset_new_t);
 	result->swapout_set = XMALLOC(pset_new_t);
 	pset_new_init(result->spm_set);
+	pset_new_init(result->spm_set_reg_size);
 	pset_new_init(result->copy_in);
 	pset_new_init(result->swapout_set);
+	INIT_LIST_HEAD(&result->spm_content_head);
 	pset_new_iterator_t iter;
 	spm_var_info *el;
 	foreach_pset_new(base_alloc->spm_set, spm_var_info *, el, iter) {
@@ -785,7 +785,7 @@ static void join_pred_allocations(dprg_walk_env *env, ir_node *base_block)
 	}
 }
 
-static timestamp *spm_join_return_blocks(dprg_walk_env *env)
+static ir_node *spm_join_return_blocks(dprg_walk_env *env)
 {
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
@@ -797,14 +797,7 @@ static timestamp *spm_join_return_blocks(dprg_walk_env *env)
 			base_block = pred_block;
 	}
 	join_pred_allocations(env, base_block);
-	block_data *base_blk_data = pmap_get(block_data, env->block_data_map, base_block);
-	timestamp *new_branch = XMALLOC(timestamp);
-	new_branch->last = NULL;//Shouldn't be accessed
-	new_branch->finished_callees = 0; //no access to it either
-	new_branch->caller_block = branch->caller_block;
-	new_branch->block = base_block;
-	new_branch->irg_exec_freq = base_blk_data->max_exec_freq;
-	return new_branch;
+	return base_block;
 }
 
 static void spm_join_cond_blocks(dprg_walk_env *env)
@@ -813,7 +806,7 @@ static void spm_join_cond_blocks(dprg_walk_env *env)
 	ir_node *block = branch->block;
 	//We select block of last timestamp as base block TODO: Better choice?
 	//Idea: select allocation which enhances perf of block the most (iterate var_accesses of block)
-	join_pred_allocations(env, branch->last->block);
+	join_pred_allocations(env, branch->last_block);
 }
 
 static void ensure_pred_blocks_visited(dprg_walk_env *env)
@@ -863,21 +856,23 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 
 	//At end of irg next block is caller block again
 	if (get_irg_end_block(get_irn_irg(block)) == block) {
-		timestamp *return_block = spm_join_return_blocks(env);
-		timestamp *caller = branch->caller_block;
-		//TODO: think about freeing timestamps
+		timestamp *caller = branch->caller_timestamp;
 		if (!caller)
 			return;
-		caller->last = return_block;
+		ir_node *return_block = spm_join_return_blocks(env);
+		block_data *return_block_data = pmap_get(block_data, env->block_data_map, return_block);
+		alloc_result *return_block_res = return_block_data->allocation_results[return_block_data->callee_cnt];
+		caller->last_block = return_block;
+		caller->last_alloc = return_block_res;
 		caller->finished_callees++;
 		deq_push_pointer_right(&env->workqueue, caller);
-		free(branch); //TODO: In general: where to free timestamps?
 		return;
 	}
 	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
 	double block_exec_freq = blk_data->max_exec_freq;
 	//calc allocation
-	spm_calc_alloc_block(env);
+	alloc_result *cur_alloc = spm_calc_alloc_block(env);
+	blk_data->allocation_results[branch->finished_callees] = cur_alloc;
 
 	//handle next call or successor blocks when end of block is reached
 	ir_entity *callee = get_next_call_from_block(env);
@@ -888,9 +883,12 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 		block_data *start_block_data = pmap_get(block_data, env->block_data_map, start_block);
 		if (start_block_data->max_exec_freq == block_exec_freq) { //TODO: float compare okay? (does freq has to be float?)
 			timestamp *new_branch = XMALLOC(timestamp);
-			new_branch->caller_block = branch;
+			timestamp *branch_copy = XMALLOC(timestamp);
+			*branch_copy = *branch;
+			new_branch->caller_timestamp = branch_copy;
 			new_branch->finished_callees = 0;
-			new_branch->last = branch;
+			new_branch->last_block = block;
+			new_branch->last_alloc = cur_alloc;
 			new_branch->block = start_block;
 			new_branch->irg_exec_freq = block_exec_freq;
 			deq_push_pointer_right(&env->workqueue, new_branch);
@@ -903,7 +901,9 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 			pset_new_insert(blk_data->compensation_callees, callee);
 			//Add current block again, just as we would after handling the callee
 			branch->finished_callees++;
-			deq_push_pointer_right(&env->workqueue, branch);
+			timestamp *branch_copy = XMALLOC(timestamp);
+			*branch_copy = *branch;
+			deq_push_pointer_right(&env->workqueue, branch_copy);
 		}
 		return;
 	}
@@ -918,8 +918,9 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 			ir_node *succ_block = get_Block_cfg_out(block, i);
 			timestamp *out_branch = XMALLOC(timestamp);
 			out_branch->block = succ_block;
-			out_branch->last = branch;
-			out_branch->caller_block = branch->caller_block;
+			out_branch->last_block = block;
+			out_branch->last_alloc = cur_alloc;
+			out_branch->caller_timestamp = branch->caller_timestamp;
 			out_branch->irg_exec_freq = branch->irg_exec_freq;
 			out_branch->finished_callees = 0;
 			deq_push_pointer_right(&env->workqueue, out_branch);
@@ -958,6 +959,68 @@ static void debug_print_block_data(pmap *block_data_map, bool call_list_only)
 	}
 }
 
+static void free_alloc_result(alloc_result *alloc_res)
+{
+	pset_new_destroy(alloc_res->spm_set);
+	free(alloc_res->spm_set);
+	pset_new_destroy(alloc_res->spm_set_reg_size);
+	free(alloc_res->spm_set_reg_size);
+	pset_new_destroy(alloc_res->copy_in);
+	free(alloc_res->copy_in);
+	pset_new_destroy(alloc_res->swapout_set);
+	free(alloc_res->swapout_set);
+
+	if (alloc_res->compensation_alloc)
+		free_alloc_result(alloc_res->compensation_alloc);
+
+	list_for_each_entry_safe(spm_content, spm_var, tmp, &alloc_res->spm_content_head, list) {
+		free(spm_var);
+	}
+}
+
+static void free_block_data(block_data *b_data)
+{
+	for (int i = 0; i < b_data->callee_cnt + 2; i++) {
+		list_for_each_entry_safe(node_data, n_data, tmp, &b_data->node_lists[i], list) {
+			free(n_data);
+		}
+	}
+	DEL_ARR_F(b_data->node_lists);
+
+	//Check necessary as end block don't have allocation
+	if (b_data->allocation_results[0]) {
+		for (int i = 0; i < b_data->callee_cnt + 1; i++) {
+			free_alloc_result(b_data->allocation_results[i]);
+		}
+	}
+	DEL_ARR_F(b_data->allocation_results);
+
+	if (b_data->compensation_callees) {
+		pset_new_destroy(b_data->compensation_callees);
+		free(b_data->compensation_callees);
+	}
+	if (b_data->dead_set) {
+		pset_new_destroy(b_data->dead_set);
+		free(b_data->dead_set);
+	}
+	free(b_data);
+}
+
+static void free_block_data_map(pmap *block_data_map)
+{
+	foreach_pmap(block_data_map, entry) {
+		free_block_data(entry->value);
+	}
+}
+
+static void free_spm_var_infos(void)
+{
+	foreach_pmap(spm_var_infos, entry) {
+		free(entry->value);
+	}
+	pmap_destroy(spm_var_infos);
+}
+
 void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 {
 	//TODO: Proper init
@@ -984,8 +1047,9 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 	ir_graph *main_irg = get_irp_main_irg();
 	//init metadata list here (actual allocation probably as a map)
 	timestamp main_info = {
-		.last = NULL,
-		.caller_block = NULL,
+		.last_block = NULL,
+		.last_alloc = NULL,
+		.caller_timestamp = NULL,
 		.block = get_irg_start_block(main_irg),
 		.finished_callees = 0,
 		.finished_preds = PREDS_DONE,
@@ -1003,7 +1067,11 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 		cur_branch = deq_pop_pointer_left(timestamp, &walk_env.workqueue);
 		walk_env.cur_branch = cur_branch;
 		spm_mem_alloc_block(&walk_env);
+		free(cur_branch);
 	}
+
+	free_block_data_map(block_data_map);
+	free_spm_var_infos();
 }
 
 /*static void print_node(ir_node *node, void *env) {
