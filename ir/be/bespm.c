@@ -48,19 +48,23 @@ typedef struct spm_content {
 	spm_var_info *content;
 } spm_content;
 
+typedef struct spm_transfer {
+	//TODO:fixed addresses work only for mov within spm
+	int from;
+	int to;
+} spm_transfer;
+
 struct alloc_result {
 	int free_space;
 	pset_new_t *spm_set;
-	pset_new_t *spm_set_reg_size;
-	pset_new_t *copy_in;
-	pset_new_t *swapout_set;
+	pset_new_t *modified_set; //spm content which has to be written back on eviction
+	pmap *copy_in;
+	pmap *swapout_set;
 	//At end of block compensation code may be added
-	alloc_result *compensation_alloc;
-	//Sets only temporarily needed:
+	pset_new_t *compensation_transfers;
+	//Set only temporarily needed:
 	pset_new_t *retain_set;
-	pset_new_t *bring_in_set;
 	list_head spm_content_head;
-	//TODO: swapout_set gets turned into writeback_needed_set when spm_content gets created?
 };
 
 typedef enum node_data_type {
@@ -98,8 +102,6 @@ struct {
 	float throughput_ram;
 	float throughput_spm;
 } spm_properties;
-
-static int gp_reg_size;
 
 static pmap *spm_var_infos;
 
@@ -418,19 +420,43 @@ static int spm_var_cmp(const void *p1, const void *p2)
 	return QSORT_CMP((*(spm_var_info * const *) p1)->size, (*(spm_var_info * const *) p2)->size);
 }
 
-static void spm_content_insert_tail(spm_var_info *var_info, int gap, spm_content *head)
+static spm_transfer *create_spm_transfer_in(spm_content *content)
+{
+	spm_transfer *transfer = XMALLOC(spm_transfer);
+	transfer->from = 0; //TODO
+	transfer->to = content->addr;
+	return transfer;
+}
+
+static spm_transfer *create_spm_transfer_out(spm_content *content)
+{
+	spm_transfer *transfer = XMALLOC(spm_transfer);
+	transfer->from = content->addr;
+	transfer->to = 0; //TODO
+	return transfer;
+}
+
+static spm_transfer *create_spm_transfer_mov(spm_content *from, spm_content *to)
+{
+	spm_transfer *transfer = XMALLOC(spm_transfer);
+	transfer->from = from->addr;
+	transfer->to = to->addr;
+	return transfer;
+}
+
+static spm_content *spm_content_insert(spm_var_info *var_info, int gap, spm_content *head)
 {
 	spm_content *new_spm_content = XMALLOC(spm_content);
-	list_add_tail(&new_spm_content->list, &head->list);
+	list_add(&new_spm_content->list, &head->list);
 	new_spm_content->addr = head->addr + head->content->size;
 	new_spm_content->content = var_info;
 	new_spm_content->gap_size = gap;
 	head->gap_size = 0;
+	return new_spm_content;
 }
 
 #define no_candidate(alloc_res, candidate) (pset_new_contains(alloc_res->retain_set, candidate) \
-		|| pset_new_contains(alloc_res->bring_in_set, candidate))
-/* Returns size in bytes of swapout_res*/
+		|| pmap_contains(alloc_res->copy_in, candidate))
 
 //How to use spm_content allocation:
 //next use is stored for every var
@@ -439,8 +465,12 @@ static void spm_content_insert_tail(spm_var_info *var_info, int gap, spm_content
 //or: (this alternative is implemented)
 //get possible sites where gap later will be minimal and then calculate next use values on the fly x call sites deep (or 10 blocks or so)
 //This will lead to eviction of possible more vars then necessary, if write to (var + gap) leaves small gap, whereas (var + var) leaves smaller/no gap
+//
+//new idea: calc benefit for each window start and include compaction/other movements into evaluation
 static void spm_force_insert(dprg_walk_env *env, alloc_result *result, node_data *swapin)
 {
+	(void) env;
+
 	spm_content **best_fit_gap_el = NEW_ARR_FZ(spm_content *, 1);
 	int cur_min_gap_size = INT_MAX;
 	//start at first real element (after sentinel)
@@ -479,86 +509,25 @@ static void spm_force_insert(dprg_walk_env *env, alloc_result *result, node_data
 	int swapout_size = prev->gap_size + best_swapout_candidate->content->size + best_swapout_candidate->gap_size;
 	spm_content *next = list_entry(&best_swapout_candidate->list.next, spm_content, list);
 	list_del(&best_swapout_candidate->list);
+	pmap_insert(result->swapout_set, best_swapout_candidate->content, create_spm_transfer_out(best_swapout_candidate));
 	free(best_swapout_candidate);
 	while (swapout_size < swapin->size) {
 		swapout_size += next->content->size + next->gap_size;
 		spm_content *tmp = next;
 		next = list_entry(&next->list.next, spm_content, list);
 		list_del(&tmp->list);
+		pmap_insert(result->swapout_set, tmp->content, create_spm_transfer_out(tmp));
 		free(tmp);
 	}
 	int new_gap = swapout_size - swapin->size;
 	spm_var_info *swapin_info = pmap_get(spm_var_info, spm_var_infos, swapin);
-	spm_content_insert_tail(swapin_info, new_gap, prev);
+	spm_content *new_content = spm_content_insert(swapin_info, new_gap, prev);
+	pmap_insert(result->copy_in, swapin_info, create_spm_transfer_in(new_content));
+	if (swapin->modified)
+		pset_new_insert(result->modified_set, swapin_info);
 	result->free_space += new_gap;
 }
-/*
-static int find_swapout_set(dprg_walk_env *env, alloc_result *alloc_res, node_data *swapin, pset_new_t *swapout_res)
-{
-	int required_size = swapin->size - alloc_res->free_space;
-	int swapout_size = 0;
 
-	pset_new_iterator_t iter;
-	spm_var_info *candidate;
-	foreach_pset_new(alloc_res->spm_set_reg_size, spm_var_info *, candidate, iter) {
-		//Build prio queue?
-		if (no_candidate(alloc_res, candidate))
-			continue;
-		node_data *cand_node_data = get_node_data_by_spm_var(env, candidate);
-		if (get_spm_benefit(env, swapin, cand_node_data) > 0) {
-			pset_new_insert(swapout_res, candidate);
-			required_size -= candidate->size;
-			swapout_size += candidate->size;
-		}
-		if (required_size <= 0)
-			break;
-	}
-	if (required_size > 0) {
-		//Sort elements smaller than required size.
-		//if no such elements exist, just choose smallest one
-		spm_var_info **spm_sorted = NEW_ARR_F(spm_var_info *, 0);
-		//cache sorted array (if so, them all spm_set els) ?
-		spm_var_info *bigger_than_req = NULL; //also make array for prio list? or accept suboptimal?
-		foreach_pset_new(alloc_res->spm_set, spm_var_info *, candidate, iter) {
-			if (required_size <= candidate->size) {
-				ARR_APP1(spm_var_info *, spm_sorted, candidate);
-			} else {
-				if (!bigger_than_req)
-					bigger_than_req = candidate;
-				else
-					bigger_than_req = bigger_than_req->size > candidate->size ? candidate : bigger_than_req;
-			}
-		}
-		int spm_sorted_len = ARR_LEN(spm_sorted);
-		if (spm_sorted_len > 0) {
-			QSORT_ARR(spm_sorted, spm_var_cmp);
-			for (int i = 0; i < spm_sorted_len; i++) {
-				candidate = spm_sorted[i];
-				if (no_candidate(alloc_res, candidate))
-					continue;
-				node_data *cand_node_data = get_node_data_by_spm_var(env, candidate);
-				if (get_spm_benefit(env, swapin, cand_node_data) > 0) {
-					pset_new_insert(swapout_res, candidate);
-					required_size -= candidate->size;
-					swapout_size += candidate->size;
-				}
-				if (required_size <= 0)
-					break;
-			}
-		} else {
-			candidate = bigger_than_req;
-			//TODO: avoid code duplication?
-			node_data *cand_node_data = get_node_data_by_spm_var(env, candidate);
-			if (!no_candidate(alloc_res, candidate) && get_spm_benefit(env, swapin, cand_node_data) > 0) {
-				pset_new_insert(swapout_res, candidate);
-				required_size -= candidate->size;
-				swapout_size += candidate->size;
-			}
-		}
-	}
-	return swapout_size;
-}
-*/
 static bool spm_try_best_fit_insert(alloc_result *result, node_data *var)
 {
 	spm_var_info *el_info = pmap_get(spm_var_info, spm_var_infos, var);
@@ -575,12 +544,30 @@ static bool spm_try_best_fit_insert(alloc_result *result, node_data *var)
 	}
 	//If space found insert el
 	if (best_fit_gap != INT_MAX) {
-		spm_content_insert_tail(el_info, best_fit_gap, best_fit_gap_el);
-		pset_new_insert(result->bring_in_set, el_info);
+		spm_content *new = spm_content_insert(el_info, best_fit_gap, best_fit_gap_el);
+		pmap_insert(result->copy_in, el_info, create_spm_transfer_in(new));
 		result->free_space -= el_info->size;
+		if (var->modified)
+			pset_new_insert(result->modified_set, el_info);
 		return true;
 	}
 	return false;
+}
+
+static alloc_result *create_alloc_result(void)
+{
+	alloc_result *result = XMALLOC(alloc_result);
+	result->spm_set = XMALLOC(pset_new_t);
+	result->modified_set = XMALLOC(pset_new_t);
+	result->copy_in = pmap_create();
+	result->swapout_set = pmap_create();
+	result->free_space = spm_properties.size;
+	pset_new_init(result->spm_set);
+	pset_new_init(result->modified_set);
+	pset_new_init(result->retain_set);
+	result->compensation_transfers = NULL;
+	INIT_LIST_HEAD(&result->spm_content_head);
+	return result;
 }
 
 static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
@@ -588,22 +575,9 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
 	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
-	//TODO: Handle case of block without predecessor
 
-	alloc_result *result = XMALLOC(alloc_result);
-	result->spm_set = XMALLOC(pset_new_t);
-	result->spm_set_reg_size = XMALLOC(pset_new_t);
-	result->copy_in = XMALLOC(pset_new_t);
-	result->swapout_set = XMALLOC(pset_new_t);
+	alloc_result *result = create_alloc_result();
 	result->retain_set = XMALLOC(pset_new_t);
-	result->bring_in_set = XMALLOC(pset_new_t);
-	pset_new_init(result->spm_set);
-	pset_new_init(result->spm_set_reg_size);
-	pset_new_init(result->copy_in);
-	pset_new_init(result->swapout_set);
-	pset_new_init(result->retain_set);
-	pset_new_init(result->bring_in_set);
-	result->compensation_alloc = NULL;
 
 	block_data *prev_blk_data = NULL;
 	alloc_result *pred_result = branch->last_alloc;
@@ -614,9 +588,8 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 	//fill result with pred_result values
 	if (pred_result) {
 		pset_insert_set(result->spm_set, pred_result->spm_set);
-		pset_insert_set(result->spm_set_reg_size, pred_result->spm_set_reg_size);
+		pset_insert_set(result->modified_set, pred_result->modified_set);
 		//build spm_content
-		INIT_LIST_HEAD(&result->spm_content_head);
 		list_for_each_entry(spm_content, var, &pred_result->spm_content_head, list) {
 			//TODO: Remove deadset content here as well
 			spm_content *spm_content_el = XMALLOC(spm_content);
@@ -627,12 +600,10 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 		}
 		result->free_space = pred_result->free_space;
 	} else {
-		INIT_LIST_HEAD(&result->spm_content_head);
 		spm_content *sentinel = XMALLOC(spm_content);
 		sentinel->addr = 0;
 		sentinel->gap_size = spm_properties.size;
 		sentinel->content = NULL;
-		result->free_space = spm_properties.size;
 	}
 
 
@@ -645,17 +616,9 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 	if (prev_blk_data && branch->finished_callees == 0 && prev_blk_data->dead_set) {
 		foreach_pset_new(prev_blk_data->dead_set, node_data *, el, iter) {
 			spm_var_info *el_info = pmap_get(spm_var_info, spm_var_infos, el);
-			int el_size = el->size;
-			if (el_size > gp_reg_size) {
-				if (pset_new_contains(result->spm_set, el_info)) {
-					pset_new_remove(result->spm_set, el_info);
-					result->free_space += el_size;
-				}
-			} else {
-				if (pset_new_contains(result->spm_set_reg_size, el_info)) {
-					pset_new_remove(result->spm_set_reg_size, el_info);
-					result->free_space += el_size;
-				}
+			if (pset_new_contains(result->spm_set, el_info)) {
+				pset_new_remove(result->spm_set, el_info);
+				result->free_space += el->size;
 			}
 		}
 	}
@@ -664,9 +627,12 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 
 	list_for_each_entry(node_data, n_data, node_list, list) {
 		spm_var_info *el_info = pmap_get(spm_var_info, spm_var_infos, n_data);
-		if (pset_new_contains(result->spm_set, el_info) || pset_new_contains(result->spm_set_reg_size, el_info)) {
-			if (!pset_new_contains(result->swapout_set, el_info))
+		if (pset_new_contains(result->spm_set, el_info)) {
+			if (!pmap_contains(result->swapout_set, el_info)) {
 				pset_new_insert(result->retain_set, el_info);
+				if (n_data->modified)
+					pset_new_insert(result->modified_set, el_info);
+			}
 		} else {
 			if (n_data->size <= result->free_space) {
 				if (get_spm_benefit(env, n_data, NULL) > 0.0f)
@@ -674,36 +640,20 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 						spm_force_insert(env, result, n_data);
 			} else {
 				spm_force_insert(env, result, n_data);
-				/*
-				pset_new_t swapout_for_var;
-				pset_new_init(&swapout_for_var);
-				int swapout_size = find_swapout_set(env, result, n_data, &swapout_for_var);
-				if (swapout_size) {
-					pset_insert_set(result->swapout_set, &swapout_for_var);
-					pset_new_insert(result->bring_in_set, el_info);
-					result->free_space += swapout_size - n_data->size;
-				}
-				*/
 			}
 		}
 	}
 
-	//TODO: swapout/bringin set on spm_content basis, so we don't have to walk list for mov instr
+	foreach_pmap(result->copy_in, entry) {
+		pset_new_insert(result->spm_set, (void *) entry->key);
+	}
+	foreach_pmap(result->swapout_set, entry) {
+		pset_new_insert(result->spm_set, (void *) entry->key);
+	}
 
-	//use swapout + bringin set to build enw spm_sets
-	spm_var_info *var_info;
-	foreach_pset_new(result->bring_in_set, spm_var_info *, var_info, iter) {
-		if (var_info->size > gp_reg_size)
-			pset_new_insert(result->spm_set, var_info);
-		else
-			pset_new_insert(result->spm_set_reg_size, var_info);
-	}
-	foreach_pset_new(result->swapout_set, spm_var_info *, var_info, iter) {
-		if (var_info->size > gp_reg_size)
-			pset_new_remove(result->spm_set, var_info);
-		else
-			pset_new_remove(result->spm_set_reg_size, var_info);
-	}
+	//Retain set only temporarily needed
+	pset_new_destroy(result->retain_set);
+	free(result->retain_set);
 
 	return result;
 }
@@ -726,45 +676,69 @@ static ir_entity *get_next_call_from_block(dprg_walk_env *env)
 	return NULL;
 }
 
+static spm_content *find_var_in_spm_content(list_head *spm_list, spm_var_info *var)
+{
+	list_for_each_entry(spm_content, var_in_list, spm_list, list) {
+		if (var_in_list->content == var)
+			return var_in_list;
+	}
+	return NULL;
+}
+
 static void join_allocations(alloc_result *base_alloc, alloc_result *adj_alloc)
 {
-	//TODO: spm_content needs adjustment and free_space needs adjustment
-	//TODO: make sure after join correct allocation is used as pred_alloc
-	alloc_result *result = XMALLOC(alloc_result);
-	result->spm_set = XMALLOC(pset_new_t);
-	result->spm_set_reg_size = XMALLOC(pset_new_t);
-	result->copy_in = XMALLOC(pset_new_t);
-	result->swapout_set = XMALLOC(pset_new_t);
-	pset_new_init(result->spm_set);
-	pset_new_init(result->spm_set_reg_size);
-	pset_new_init(result->copy_in);
-	pset_new_init(result->swapout_set);
-	INIT_LIST_HEAD(&result->spm_content_head);
-	pset_new_iterator_t iter;
-	spm_var_info *el;
-	foreach_pset_new(base_alloc->spm_set, spm_var_info *, el, iter) {
-		pset_new_insert(result->spm_set, el);
-		if (!pset_new_contains(adj_alloc->spm_set, el)) {
-			pset_new_insert(result->copy_in, el);
+	//TODO: Clean-up
+	pset_new_t *transfers = XMALLOC(pset_new_t);
+	pset_new_init(transfers);
+
+	spm_transfer *transfer;
+	list_head *next_list_el_adj = adj_alloc->spm_content_head.next;
+	spm_content *next_el_adj_alloc = list_entry(next_list_el_adj, spm_content, list);
+	list_for_each_entry(spm_content, var, &base_alloc->spm_content_head, list) {
+		while (next_el_adj_alloc->addr < var->addr) {
+			if (!pset_new_contains(base_alloc->spm_set, next_el_adj_alloc)
+			        && pset_new_contains(adj_alloc->modified_set, next_el_adj_alloc)) {
+				transfer = create_spm_transfer_out(next_el_adj_alloc);
+				pset_new_insert(transfers, transfer);
+			}
+			if (next_list_el_adj->next != &adj_alloc->spm_content_head) {
+				next_list_el_adj = next_list_el_adj->next;
+				next_el_adj_alloc = list_entry(next_list_el_adj, spm_content, list);
+			} else {
+				break;
+			}
 		}
-	}
-	foreach_pset_new(base_alloc->spm_set_reg_size, spm_var_info *, el, iter) {
-		pset_new_insert(result->spm_set_reg_size, el);
-		if (!pset_new_contains(adj_alloc->spm_set_reg_size, el)) {
-			pset_new_insert(result->copy_in, el);
+
+		if (next_el_adj_alloc->content == var->content
+		        && next_el_adj_alloc->addr == var->addr) {
+			if (next_list_el_adj->next != &adj_alloc->spm_content_head) {
+				next_list_el_adj = next_list_el_adj->next;
+				next_el_adj_alloc = list_entry(next_list_el_adj, spm_content, list);
+			}
+			continue;
 		}
-	}
-	foreach_pset_new(adj_alloc->spm_set, spm_var_info *, el, iter) {
-		if (!pset_new_contains(base_alloc->spm_set, el)) {
-			pset_new_insert(result->swapout_set, el);
+
+		if (pset_new_contains(adj_alloc->spm_set, var->content)) {
+			spm_content *el_in_adj_alloc = find_var_in_spm_content(&adj_alloc->spm_content_head, var->content);
+			transfer = create_spm_transfer_mov(el_in_adj_alloc, var);
+		} else {
+			transfer = create_spm_transfer_in(var);
 		}
+		pset_new_insert(transfers, transfer);
 	}
-	foreach_pset_new(adj_alloc->spm_set_reg_size, spm_var_info *, el, iter) {
-		if (!pset_new_contains(base_alloc->spm_set_reg_size, el)) {
-			pset_new_insert(result->swapout_set, el);
+
+	//There might be more elemenst in adj_alloc spm which have to be written back
+	while (next_list_el_adj != &adj_alloc->spm_content_head) {
+		next_el_adj_alloc = list_entry(next_list_el_adj, spm_content, list);
+		if (!pset_new_contains(base_alloc->spm_set, next_el_adj_alloc)
+		        && pset_new_contains(adj_alloc->modified_set, next_el_adj_alloc)) {
+			transfer = create_spm_transfer_out(next_el_adj_alloc);
+			pset_new_insert(transfers, transfer);
 		}
+		next_list_el_adj = next_list_el_adj->next;
 	}
-	adj_alloc->compensation_alloc = result;
+
+	adj_alloc->compensation_transfers = transfers;
 }
 
 static void join_pred_allocations(dprg_walk_env *env, ir_node *base_block)
@@ -803,7 +777,7 @@ static ir_node *spm_join_return_blocks(dprg_walk_env *env)
 static void spm_join_cond_blocks(dprg_walk_env *env)
 {
 	timestamp *branch = env->cur_branch;
-	ir_node *block = branch->block;
+	//ir_node *block = branch->block;
 	//We select block of last timestamp as base block TODO: Better choice?
 	//Idea: select allocation which enhances perf of block the most (iterate var_accesses of block)
 	join_pred_allocations(env, branch->last_block);
@@ -963,15 +937,16 @@ static void free_alloc_result(alloc_result *alloc_res)
 {
 	pset_new_destroy(alloc_res->spm_set);
 	free(alloc_res->spm_set);
-	pset_new_destroy(alloc_res->spm_set_reg_size);
-	free(alloc_res->spm_set_reg_size);
-	pset_new_destroy(alloc_res->copy_in);
-	free(alloc_res->copy_in);
-	pset_new_destroy(alloc_res->swapout_set);
-	free(alloc_res->swapout_set);
+	pset_new_destroy(alloc_res->modified_set);
+	free(alloc_res->modified_set);
+	//TODO: when to free spm_transfer? when transfer nodes are built
+	pmap_destroy(alloc_res->copy_in);
+	pmap_destroy(alloc_res->swapout_set);
+	if (alloc_res->compensation_transfers) {
+		pset_new_destroy(alloc_res->compensation_transfers);
+		free(alloc_res->compensation_transfers);
+	}
 
-	if (alloc_res->compensation_alloc)
-		free_alloc_result(alloc_res->compensation_alloc);
 
 	list_for_each_entry_safe(spm_content, spm_var, tmp, &alloc_res->spm_content_head, list) {
 		free(spm_var);
@@ -1011,6 +986,7 @@ static void free_block_data_map(pmap *block_data_map)
 	foreach_pmap(block_data_map, entry) {
 		free_block_data(entry->value);
 	}
+	pmap_destroy(block_data_map);
 }
 
 static void free_spm_var_infos(void)
@@ -1070,6 +1046,7 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 		free(cur_branch);
 	}
 
+	deq_free(&walk_env.workqueue);
 	free_block_data_map(block_data_map);
 	free_spm_var_infos();
 }
