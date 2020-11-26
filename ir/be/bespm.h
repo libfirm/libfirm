@@ -14,6 +14,8 @@
 #include "list.h"
 typedef struct node_data node_data;
 
+node_data *spm_get_mem_read_node_data_stack(void *id, int size);
+node_data *spm_get_mem_write_node_data_stack(void *id, int size);
 node_data *spm_get_mem_read_node_data(void *id, int size);
 node_data *spm_get_mem_write_node_data(void *id, int size);
 node_data *spm_get_callee_node_data(ir_entity *ent);
