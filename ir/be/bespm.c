@@ -219,7 +219,7 @@ static node_data *spm_collect_node_data(ir_node *node, block_data *b_data)
 	}
 	return n_data;
 }
-
+/*
 typedef struct last_use_data {
 	ir_node *block;
 	int branch_nr;
@@ -230,28 +230,30 @@ typedef struct branch_stack_data {
 	ir_node *branch_block;
 
 } branch_stack_data;
-
+*/
 typedef struct block_walk_env {
-	int branch_nr;
-	int depth;
-	list_head *branch_stack;
+	//int branch_nr;
+	//int depth;
+	//list_head *branch_stack;
 	pmap *block_data_map;
-	pmap *last_use_map;
+	pset_new_t *stack_vars;
+	//pmap *last_use_map;
 } block_walk_env;
 
-static void spm_collect_block_data(ir_node *block, block_walk_env *env)
+static void spm_collect_block_data(ir_node *block, void *env)
 {
-	if (Block_block_visited(block))
-		return;
-	for (int i = 0; i < get_Block_n_cfgpreds(block); i++) {
-		if (is_backedge(block, i))
-			continue;
-		ir_node *pred_block = get_Block_cfgpred_block(block, i);
-		if (!Block_block_visited(pred_block))
+	block_walk_env *bw_env = env;
+	/*      if (Block_block_visited(block))
 			return;
-	}
-	mark_Block_block_visited(block);
-
+		for (int i = 0; i < get_Block_n_cfgpreds(block); i++) {
+			if (is_backedge(block, i))
+				continue;
+			ir_node *pred_block = get_Block_cfgpred_block(block, i);
+			if (!Block_block_visited(pred_block))
+				return;
+		}
+		mark_Block_block_visited(block);
+	*/
 
 	block_data *b_data = XMALLOC(block_data);
 	b_data->node_lists = NEW_ARR_F(list_head, 1);
@@ -261,17 +263,17 @@ static void spm_collect_block_data(ir_node *block, block_walk_env *env)
 	b_data->max_exec_freq = 0.0;
 	b_data->allocation_results = NULL;
 	b_data->compensation_callees = NULL;
-	pmap_insert(env->block_data_map, block, b_data);
+	pmap_insert(bw_env->block_data_map, block, b_data);
 
 	sched_foreach(block, irn) {
 		node_data *n_data = spm_collect_node_data(irn, b_data);
 
 		if (n_data && n_data->data_type == STACK_ACCESS) {
-			pset_new_t *last_uses = pmap_get(pset_new_t, env->last_use_map, n_data->identifier);
+			pset_new_insert(bw_env->stack_vars, pmap_get(spm_var_info, spm_var_infos, n_data->identifier));
+			/*pset_new_t *last_uses = pmap_get(pset_new_t, env->last_use_map, n_data->identifier);
 			if (last_uses) {
 
-			}
-			else {
+			} else {
 				last_uses = XMALLOC(pset_new_t);
 				pset_new_init(last_uses);
 				last_use_data *last_use = XMALLOC(last_use_data);
@@ -279,39 +281,63 @@ static void spm_collect_block_data(ir_node *block, block_walk_env *env)
 				last_use->branch_nr = env->branch_nr;
 				pset_new_insert(last_uses, last_use);
 				pmap_insert(env->last_use_map, n_data->identifier, last_uses);
+			}*/
+		}
+	}
+	/*
+		int n_outs = get_Block_n_cfg_outs(block);
+		//if inside loop make sure, succ block inside loop is done first
+		for (int i = 0; i < n_outs; i++) {
+			ir_node *succ_block = get_Block_cfg_out(block, i);
+			block_walk_env new_env = *env;
+			new_env.depth = new_env.depth + 1;
+			if (n_outs > 1) {
+				new_env.branch_nr = env->branch_nr + i + 1;
+				//new_env.branch_block = block;
+				//new_env.branch_idx = i;
 			}
+			spm_collect_block_data(succ_block, &new_env);
 		}
-	}
+	*/
+}
 
-	int n_outs = get_Block_n_cfg_outs(block);
-	//if inside loop make sure, succ block inside loop is done first
-	for (int i = 0; i < n_outs; i++) {
-		ir_node *succ_block = get_Block_cfg_out(block, i);
-		block_walk_env new_env = *env;
-		new_env.depth = new_env.depth + 1;
-		if (n_outs > 1) {
-			new_env.branch_nr = env->branch_nr + i + 1;
-			//new_env.branch_block = block;
-			//new_env.branch_idx = i;
-		}
-		spm_collect_block_data(succ_block, &new_env);
+static void pset_insert_set(pset_new_t *a, pset_new_t *b)
+{
+	pset_new_iterator_t iter;
+	node_data *el;
+	foreach_pset_new(b, node_data *, el, iter) {
+		pset_new_insert(a, el);
 	}
-
 }
 
 static void spm_collect_irg_data(ir_graph *irg, void *env)
 {
 	block_walk_env blk_env = {
 		.block_data_map = env,
-		.last_use_map = pmap_create(),
-		.branch_stack = XMALLOC(list_head),
+		.stack_vars = XMALLOC(pset_new_t),
+		//.last_use_map = pmap_create(),
+		//.branch_stack = XMALLOC(list_head),
 	};
-	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
-	inc_irg_block_visited(irg);
-	spm_collect_block_data(get_irg_start_block(irg), &blk_env);
+	pset_new_init(blk_env.stack_vars);
+	//ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
+	//inc_irg_block_visited(irg);
+	irg_block_walk_graph(irg, spm_collect_block_data, NULL, &blk_env);
+	//spm_collect_block_data(get_irg_start_block(irg), &blk_env);
 
-	free(blk_env.branch_stack);
-	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
+	ir_node *end_block = get_irg_end_block(irg);
+	for (int i = 0; i < get_Block_n_cfgpreds(end_block); i++) {
+		ir_node *pred_block = get_Block_cfgpred_block(end_block, i);
+		block_data *b_data = pmap_get(block_data, blk_env.block_data_map, pred_block);
+		pset_new_t *dead_set = XMALLOC(pset_new_t);
+		pset_new_init(dead_set);
+		b_data->dead_set = dead_set;
+		pset_insert_set(dead_set, blk_env.stack_vars);
+	}
+
+
+	pset_new_destroy(blk_env.stack_vars);
+	free(blk_env.stack_vars);
+	//ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 }
 
 typedef struct callgraph_walk_env {
@@ -449,15 +475,6 @@ static void spm_calc_blocks_access_freq(pmap *block_data_map)
 			}
 
 		}
-	}
-}
-
-static void pset_insert_set(pset_new_t *a, pset_new_t *b)
-{
-	pset_new_iterator_t iter;
-	node_data *el;
-	foreach_pset_new(b, node_data *, el, iter) {
-		pset_new_insert(a, el);
 	}
 }
 
@@ -891,9 +908,9 @@ static void spm_join_cond_blocks(dprg_walk_env *env)
 	join_pred_allocations(env, branch->last_block);
 }
 
-static pmap_del_and_free(pmap *map, void *key)
+static void pmap_del_and_free(pmap *map, void *key)
 {
-	void *element = pmap_get(map, key);
+	void *element = pmap_get(void, map, key);
 	if (element) {
 		pmap_insert(map, key, NULL);
 		free(element);
