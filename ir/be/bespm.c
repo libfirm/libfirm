@@ -437,11 +437,12 @@ static void spm_calc_blocks_access_freq(pmap *block_data_map)
 		//TODO: alloc_results init doesn't fit in here?
 		blk_data->allocation_results = NEW_ARR_FZ(alloc_result *, blk_data->callee_cnt + 1);
 		//idx 0: call nodes, idx 1 to x are mem_access in between
+		bool node_list_empty = list_empty(blk_data->node_lists);
 		ARR_RESIZE(list_head, blk_data->node_lists, blk_data->callee_cnt + 2);
 		//As arr_resize can change addr of node_lists, pointers have to be adjusted accordingly
 		list_head *callee_list = blk_data->node_lists;
 		//list empty of next == prev, but list_empty checks next == head
-		if (callee_list->next == callee_list->prev) {
+		if (node_list_empty) {
 			INIT_LIST_HEAD(callee_list);
 		}
 		else {
@@ -636,7 +637,7 @@ static void spm_force_insert(dprg_walk_env *env, alloc_result *result, node_data
 		free(tmp);
 	}
 	int new_gap = swapout_size - swapin->size;
-	spm_var_info *swapin_info = pmap_get(spm_var_info, spm_var_infos, swapin);
+	spm_var_info *swapin_info = pmap_get(spm_var_info, spm_var_infos, swapin->identifier);
 	spm_content *new_content = spm_content_insert(swapin_info, new_gap, prev);
 	pmap_insert(result->copy_in, swapin_info, create_spm_transfer_in(new_content));
 	if (swapin->modified)
@@ -646,7 +647,7 @@ static void spm_force_insert(dprg_walk_env *env, alloc_result *result, node_data
 
 static bool spm_try_best_fit_insert(alloc_result *result, node_data *var)
 {
-	spm_var_info *el_info = pmap_get(spm_var_info, spm_var_infos, var);
+	spm_var_info *el_info = pmap_get(spm_var_info, spm_var_infos, var->identifier);
 	spm_content *best_fit_gap_el = NULL;
 	int best_fit_gap = INT_MAX;
 	list_for_each_entry(spm_content, var, &result->spm_content_head, list) {
@@ -729,7 +730,12 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 		spm_content *sentinel = XMALLOC(spm_content);
 		sentinel->addr = 0;
 		sentinel->gap_size = spm_properties.size;
-		sentinel->content = NULL;
+		spm_var_info *null_info = XMALLOC(spm_var_info);
+		null_info->identifier = NULL;
+		null_info->size = 0;
+		null_info->data_type = NON_STACK_ACCESS;
+		sentinel->content = null_info;
+		list_add_tail(&sentinel->list, &result->spm_content_head);
 	}
 
 
@@ -739,7 +745,7 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 	node_data *el;
 	if (prev_blk_data && branch->finished_callees == 0 && prev_blk_data->dead_set) {
 		foreach_pset_new(prev_blk_data->dead_set, node_data *, el, iter) {
-			spm_var_info *el_info = pmap_get(spm_var_info, spm_var_infos, el);
+			spm_var_info *el_info = pmap_get(spm_var_info, spm_var_infos, el->identifier);
 			if (pset_new_contains(result->spm_set, el_info)) {
 				pset_new_remove(result->spm_set, el_info);
 				result->free_space += el->size;
@@ -750,7 +756,7 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 	list_head *node_list = &blk_data->node_lists[branch->finished_callees + 1];
 
 	list_for_each_entry(node_data, n_data, node_list, list) {
-		spm_var_info *el_info = pmap_get(spm_var_info, spm_var_infos, n_data);
+		spm_var_info *el_info = pmap_get(spm_var_info, spm_var_infos, n_data->identifier);
 		if (pset_new_contains(result->spm_set, el_info)) {
 			if (!pmap_contains(result->swapout_set, el_info)) {
 				pset_new_insert(result->retain_set, el_info);
@@ -974,6 +980,7 @@ static void spm_join_loop(dprg_walk_env *env)
 					if (pset_new_contains(alloc->spm_set, loop_var->content)) {
 						//Have to delete loop_var at other pos and possibly delete copy_in transfer
 						//and swapout
+						//TODO: doesn't work. has to find next occurence
 						spm_content *loop_var_in_alloc = find_var_in_spm_content(&alloc->spm_content_head, loop_var->content);
 						list_del(&loop_var_in_alloc->list);
 						free(loop_var_in_alloc);
@@ -992,7 +999,7 @@ static void spm_join_loop(dprg_walk_env *env)
 						pmap_del_and_free(alloc->copy_in, cur_eviction_el->content);
 						pmap_del_and_free(alloc->swapout_set, cur_eviction_el->content);
 						pset_new_insert(&vars_to_evict, cur_eviction_el);
-						free(cur_eviction_el);
+						//free(cur_eviction_el); free after vars_to_evict. SIGABRT here... why?
 						cur_eviction_el = next_spm_element;
 						next_spm_element = list_entry(cur_eviction_el->list.next, spm_content, list);
 					}
@@ -1024,6 +1031,7 @@ static void spm_join_loop(dprg_walk_env *env)
 		//TODO: only if modified
 		spm_transfer *transfer_out = create_spm_transfer_out(loop_var);
 		ARR_APP1(spm_transfer *, l_data->transfers, transfer_out);
+		free(loop_var);
 	}
 }
 
@@ -1271,14 +1279,31 @@ static void debug_print_block_data(pmap *block_data_map, bool call_list_only)
 			printf("Copy in: ");
 			foreach_pmap(alloc->copy_in, copy_entry) {
 				spm_transfer *transfer = copy_entry->value;
-				printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->from, transfer->to);
+				if (transfer)
+					printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->from, transfer->to);
 			}
 			printf("\nSwapout: ");
 			foreach_pmap(alloc->swapout_set, swap_entry) {
 				spm_transfer *transfer = swap_entry->value;
-				printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->from, transfer->to);
+				if (transfer)
+					printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->from, transfer->to);
 			}
+			printf("\n");
 		}
+	}
+}
+
+static void debug_print_loop_data(pmap *loop_info)
+{
+	printf("--- LOOP DATA ---\n");
+	foreach_pmap(loop_info, cur_entry) {
+		printf("%s:", gdb_node_helper((ir_loop *) cur_entry->key));
+		loop_data *l_data = cur_entry->value;
+		for (size_t i = 0; i < ARR_LEN(l_data->transfers); i++) {
+			spm_transfer *transfer = l_data->transfers[i];
+			printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->from, transfer->to);
+		}
+		printf("\n");
 	}
 }
 
@@ -1398,6 +1423,8 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 		DEL_ARR_F(cur_branch->cur_loops);
 		free(cur_branch);
 	}
+	debug_print_block_data(block_data_map, false);
+	debug_print_loop_data(walk_env.loop_info);
 
 	spm_insert_copy_instrs(block_data_map, walk_env.loop_info);
 
