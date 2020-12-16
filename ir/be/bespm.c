@@ -175,6 +175,13 @@ node_data *spm_get_callee_node_data(ir_entity *ent)
 	return spm_get_node_data_by_type(CALLEE, ent, 0, false);
 }
 
+static spm_content *list_next_spm_content(spm_content *element, list_head *head)
+{
+	list_head *next_el = element->list.next;
+	if (next_el != head)
+		return list_entry(next_el, spm_content, list);
+}
+
 void spm_calculate_dprg_info()
 {
 	ir_entity **free_methods;
@@ -930,6 +937,11 @@ static void pmap_del_and_free(pmap *map, void *key)
 	}
 }
 
+static int spm_content_cmp(const void *p1, const void *p2)
+{
+	return QSORT_CMP((*(spm_content * const *) p1)->addr, (*(spm_content * const *) p2)->addr);
+}
+
 static void spm_join_loop(dprg_walk_env *env)
 {
 	//TODO: incoming edge has to be adjusted as well (is done by loop_transfers!)
@@ -958,6 +970,10 @@ static void spm_join_loop(dprg_walk_env *env)
 	//3. For those vars space will be made in all loop allocations
 	//Var could have been evicted and then reinserted at another place
 	//probably best solution is to just change allocation to match end of loop alloc
+	size_t loop_var_cnt = ARR_LEN(loop_vars);
+	if (loop_var_cnt == 0)
+		return;
+	QSORT_ARR(loop_vars, spm_content_cmp);
 
 	pset_new_t vars_to_evict;
 	pset_new_init(&vars_to_evict);
@@ -966,6 +982,84 @@ static void spm_join_loop(dprg_walk_env *env)
 		block_data *loop_b_data = pmap_get(block_data, env->block_data_map, loop_block);
 		for (int j = 0; j <= loop_b_data->callee_cnt; j++) {
 			alloc_result *alloc = loop_b_data->allocation_results[j];
+			bool handled_all_loop_vars = false;
+			if (alloc == last_loop_alloc)
+				continue;
+
+			//Loop vars will be transferred into spm before loop header
+			for (size_t k  = 0; k < loop_var_cnt; k++) {
+				pmap_del_and_free(alloc->copy_in, loop_vars[k]->content);
+				pmap_del_and_free(alloc->swapout_set, loop_vars[k]->content);
+			}
+			//For each loop var we make sure it at the right place in alloc
+			size_t k = 0;
+			spm_content *loop_var = loop_vars[k];
+			list_for_each_entry_safe(spm_content, var, tmp, &alloc->spm_content_head, list) {
+				if (var->addr != loop_var->addr) {
+					for (size_t l  = 0; l < loop_var_cnt; l++) {
+						//Loop var is at wrong place, we delete it here from alloc
+						if (var->content == loop_vars[l]->content) {
+							list_del(&var->list);
+							free(var);
+						}
+					}
+				}
+				if (handled_all_loop_vars)
+					continue;
+				//Currently looked at loop var should be further back in list
+				if (var->addr < loop_var->addr)
+					continue;
+				if (var->addr == loop_var->addr && var->content == loop_var->content) {
+					loop_var = loop_vars[++k];
+					if (k == loop_var_cnt)
+						handled_all_loop_vars = true;
+					continue;
+				}
+				//var is now at address directly at/after loop_var should be
+				//we make space for loop_var here
+				spm_content *cur_eviction_el = var;
+				spm_content *prev_spm_element = list_entry(var->list.prev, spm_content, list);
+				//checks wether loop_var starts in gap or wether prev element as to be evicted as well
+				int prev_el_size = 0;
+				if (var->addr != 0) //special sentinel element handling
+					prev_el_size = prev_spm_element->content->size;
+				if (prev_spm_element->addr + prev_el_size > loop_var->addr) {
+					cur_eviction_el = prev_spm_element;
+					prev_spm_element = list_entry(prev_spm_element->list.prev, spm_content, list);
+				}
+				spm_content *next_spm_element = list_next_spm_content(cur_eviction_el, &alloc->spm_content_head);
+				int content_end = loop_var->addr + loop_var->content->size;
+				while (cur_eviction_el->addr < content_end) {
+					list_del(&cur_eviction_el->list);
+					pset_new_remove(alloc->spm_set, cur_eviction_el->content);
+					pmap_del_and_free(alloc->copy_in, cur_eviction_el->content);
+					pmap_del_and_free(alloc->swapout_set, cur_eviction_el->content);
+					pset_new_insert(&vars_to_evict, cur_eviction_el);
+					//free(cur_eviction_el); free after vars_to_evict. SIGABRT here... why?
+					cur_eviction_el = next_spm_element;
+					next_spm_element = list_next_spm_content(cur_eviction_el, &alloc->spm_content_head);
+					if (cur_eviction_el == NULL) {
+						break;//Even if end of list is reached, enough is space is in spm
+					}
+				}
+				//insert element in list
+				spm_content *new_spm_content = XMALLOC(spm_content);
+				list_add(&new_spm_content->list, &prev_spm_element->list);
+				new_spm_content->addr = loop_var->addr;
+				new_spm_content->content = loop_var->content;
+				new_spm_content->gap_size = cur_eviction_el->addr - content_end;
+				prev_spm_element->gap_size = loop_var->addr - (prev_spm_element->addr + prev_spm_element->content->size);
+				//Setting loop iteration variables to correct values
+				var = new_spm_content;
+				tmp = list_entry(var->list.next, spm_content, list);
+				loop_var = loop_vars[++k];
+				if (k == loop_var_cnt)
+					handled_all_loop_vars = true;
+				//handles also case where one of evicted vars is loop var
+				//if so, evict as well, as replacing var is calculated to be more beneficial
+
+			}
+			/*
 			spm_content *cur_spm_element = list_entry(alloc->spm_content_head.next->next, spm_content, list);
 			for (size_t k  = 0; k < ARR_LEN(loop_vars); k++) {
 				spm_content *loop_var = loop_vars[k];
@@ -1013,7 +1107,7 @@ static void spm_join_loop(dprg_walk_env *env)
 					//handles also case where one of evicted vars is loop var
 					//if so, evict as well, as replacing var is calculated to be more beneficial
 				}
-			}
+			}*/
 		}
 	}
 	//TODO: free_space has to be adjusted as well!
