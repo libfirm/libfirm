@@ -1420,12 +1420,12 @@ static node_data *ia32_retrieve_spm_node_data(ir_node *node) {
 		if(get_entity_irg(callee_ent))
 			return spm_get_callee_node_data(callee_ent);
 	} else if(is_ia32_Store(node)) {
-		ir_node *imm_node = get_irn_n(node, n_ia32_Store_val);
+		/*ir_node *imm_node = get_irn_n(node, n_ia32_Store_val);
 		if(is_ia32_Immediate(imm_node)) {
 			ir_entity *store_ent = get_ia32_immediate_attr_const(imm_node)->imm.entity;
 			if(store_ent)
 				return spm_get_mem_write_node_data(store_ent, get_type_size(get_entity_type(store_ent)));
-		}
+		}*/
 	}
 	if(is_ia32_irn(node) && get_ia32_op_type(node) != ia32_Normal) {
 		const ia32_attr_t *attr = get_ia32_attr_const(node);
@@ -1434,7 +1434,10 @@ static node_data *ia32_retrieve_spm_node_data(ir_node *node) {
 			int size = get_type_size(get_entity_type(entity));
 			if(get_entity_owner(entity) == get_glob_type()) {
 				node_data *data;
-				data = spm_get_mem_read_node_data(entity, size);
+				if(get_ia32_op_type(node) == ia32_AddrModeS)
+					data = spm_get_mem_read_node_data(entity, size);
+				else
+					data = spm_get_mem_write_node_data(entity, size);
 
 				//TODO: do we really need info, if spill or not?
 				return data;
