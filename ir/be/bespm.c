@@ -5,6 +5,9 @@
 #include "callgraph.h"
 #include "cgana.h"
 #include "execfreq.h"
+#include "gen_ia32_regalloc_if.h"
+#include "ia32_bearch_t.h"
+#include "ia32_new_nodes.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
 #include "irloop.h"
@@ -17,6 +20,8 @@
 #include "pset_new.h"
 #include "util.h"
 #include "xmalloc.h"
+
+#include <stdbool.h>
 
 typedef struct timestamp timestamp;
 
@@ -56,11 +61,18 @@ typedef struct spm_content {
 	spm_var_info *content;
 } spm_content;
 
+typedef enum transfer_direction {
+	IN, OUT, MOV,
+} transfer_direction;
+
 typedef struct spm_transfer {
 	//TODO:fixed addresses work only for mov within spm
-	void *identifier;
-	int from;
-	int to;
+	transfer_direction direction;
+	ir_entity *identifier;
+	node_data_type type;
+	int spm_addr_from;
+	int spm_addr_to;
+
 } spm_transfer;
 
 struct alloc_result {
@@ -486,27 +498,31 @@ static int spm_var_cmp(const void *p1, const void *p2)
 static spm_transfer *create_spm_transfer_in(spm_content *content)
 {
 	spm_transfer *transfer = XMALLOC(spm_transfer);
-	transfer->from = 0; //TODO
-	transfer->to = content->addr;
-	transfer->identifier = content->content->identifier;
+	transfer->spm_addr_to = content->addr;
+	transfer->identifier = (ir_entity *) content->content->identifier; //TODO: should always be ir_entity
+	transfer->direction = IN;
+	transfer->type = content->content->data_type;
 	return transfer;
 }
 
 static spm_transfer *create_spm_transfer_out(spm_content *content)
 {
 	spm_transfer *transfer = XMALLOC(spm_transfer);
-	transfer->from = content->addr;
-	transfer->to = 0; //TODO
-	transfer->identifier = content->content->identifier;
+	transfer->spm_addr_from = content->addr;
+	transfer->identifier = (ir_entity *) content->content->identifier;
+	transfer->direction = OUT;
+	transfer->type = content->content->data_type;
 	return transfer;
 }
 
 static spm_transfer *create_spm_transfer_mov(spm_content *from, spm_content *to)
 {
 	spm_transfer *transfer = XMALLOC(spm_transfer);
-	transfer->from = from->addr;
-	transfer->to = to->addr;
-	transfer->identifier = from->content->identifier;
+	transfer->spm_addr_from = from->addr;
+	transfer->spm_addr_to = to->addr;
+	transfer->identifier = (ir_entity *) from->content->identifier;
+	transfer->direction = MOV;
+	transfer->type = from->content->data_type;
 	return transfer;
 }
 
@@ -1226,17 +1242,216 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	}
 }
 
+static ir_node *create_push(ir_node *schedpoint, ir_node *sp,
+                            ir_node *mem, x86_addr_t addr, x86_insn_size_t const size)
+{
+	dbg_info *dbgi  = NULL;//get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(schedpoint);
+	ir_graph *irg   = get_irn_irg(schedpoint);
+	ir_node  *noreg = ia32_new_NoReg_gp(irg);
+	ir_node  *frame = get_irg_frame(irg);
+
+	ir_node *push;
+	if (addr.immediate.kind == X86_IMM_FRAMEENT)
+		push = new_bd_ia32_Push(dbgi, block, frame, noreg, mem,
+		                        noreg, sp, size);
+
+	else
+		push = new_bd_ia32_Push(dbgi, block, noreg, noreg, mem,
+		                        noreg, sp, size);
+	ia32_attr_t *const attr = get_ia32_attr(push);
+	attr->addr = addr;
+	set_ia32_op_type(push, ia32_AddrModeS);
+
+	sched_add_before(schedpoint, push);
+	return push;
+}
+
+static ir_node *create_pop(ir_node *schedpoint, ir_node *sp,
+                           x86_addr_t addr, x86_insn_size_t const size)
+{
+	dbg_info *dbgi  = NULL;//get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(schedpoint);
+	ir_graph *irg   = get_irn_irg(schedpoint);
+	ir_node  *noreg = ia32_new_NoReg_gp(irg);
+	ir_node  *frame = get_irg_frame(irg);
+
+	ir_node *pop;
+	if (addr.immediate.kind == X86_IMM_FRAMEENT)
+		pop = new_bd_ia32_PopMem(dbgi, block, frame, noreg,
+		                         get_irg_no_mem(irg), sp, size);
+	else
+		pop = new_bd_ia32_PopMem(dbgi, block, noreg, noreg,
+		                         get_irg_no_mem(irg), sp, size);
+	ia32_attr_t *const attr = get_ia32_attr(pop);
+	attr->addr = addr;
+	set_ia32_op_type(pop, ia32_AddrModeD);
+
+	sched_add_before(schedpoint, pop);
+	return pop;
+}
+
+static x86_insn_size_t entsize2insnsize(unsigned const entsize)
+{
+	return
+	    entsize % 2 == 1 ? X86_SIZE_8  :
+	    entsize % 4 == 2 ? X86_SIZE_16 :
+	    (assert(entsize % 4 == 0), X86_SIZE_32);
+}
+
+static ir_node *create_spproj(ir_node *const pred, unsigned const pos)
+{
+	return be_new_Proj_reg(pred, pos, &ia32_registers[REG_ESP]);
+}
+
+static ir_node *spm_create_push(ir_node *before, ir_node *before_mem, ir_node **sp, spm_transfer *transfer)
+{
+	/* create Pushs */
+	ir_entity *entity = transfer->identifier;
+	bool frame_use = transfer->type == STACK_ACCESS && transfer->direction != MOV;
+	ia32_frame_use_t frame_use_t = frame_use ? IA32_FRAME_USE_AUTO : IA32_FRAME_USE_NONE;
+	unsigned entsize = get_type_size(get_entity_type(entity));
+
+	int spm_addr = 0;
+	x86_addr_t addr;
+	if (transfer->direction != IN) {
+		//transfer from spm addr
+		addr = (x86_addr_t) {
+			.immediate = (x86_imm32_t) {
+				.kind   = X86_IMM_VALUE,
+				.entity = NULL,
+			},
+			.variant = X86_ADDR_JUST_IMM,
+		};
+		spm_addr = transfer->spm_addr_from;
+	}
+	else {
+		//transfer from ram entity
+		addr = (x86_addr_t) {
+			.immediate = (x86_imm32_t) {
+				.kind   = frame_use ? X86_IMM_FRAMEENT : X86_IMM_ADDR,
+				.entity = entity,
+			},
+			.variant = X86_ADDR_JUST_IMM,
+		};
+	}
+	int offset = 0;
+	ir_node *push;
+	do {
+		x86_insn_size_t const size = entsize2insnsize(entsize);
+		if (transfer->direction != IN) {
+			addr.immediate.offset = spm_addr + offset;
+		}
+		else {
+			addr.immediate.offset = offset;
+		}
+		push = create_push(before, *sp, before_mem, addr, size);
+		printf("Create %s\n", gdb_node_helper(push));
+		set_ia32_frame_use(push, frame_use_t);
+		*sp = create_spproj(push, pn_ia32_Push_stack);
+		printf("Create %s\n", gdb_node_helper(*sp));
+
+		unsigned size_bytes = x86_bytes_from_size(size);
+		offset  += size_bytes;
+		entsize -= size_bytes;
+	}
+	while (entsize > 0);
+	return push;
+	//set_irn_n(node, i, new_r_Bad(irg, mode_X));
+
+}
+
+static ir_node *spm_create_pop(ir_node *before, ir_node **sp, spm_transfer *transfer)
+{
+	/* create Pushs */
+	ir_entity *entity = transfer->identifier;
+	bool frame_use = transfer->type == STACK_ACCESS && transfer->direction != MOV;
+	ia32_frame_use_t frame_use_t = frame_use ? IA32_FRAME_USE_AUTO : IA32_FRAME_USE_NONE;
+	unsigned entsize = get_type_size(get_entity_type(entity));
+
+	int spm_addr;
+	x86_addr_t addr;
+	if (transfer->direction != OUT) {
+		//transfer to spm addr
+		addr = (x86_addr_t) {
+			.immediate = (x86_imm32_t) {
+				.kind   = X86_IMM_VALUE,
+				.entity = NULL,
+			},
+			.variant = X86_ADDR_JUST_IMM,
+		};
+		spm_addr = transfer->spm_addr_to;
+	}
+	else {
+		//transfer to ram entity
+		addr = (x86_addr_t) {
+			.immediate = (x86_imm32_t) {
+				.kind   = frame_use ? X86_IMM_FRAMEENT : X86_IMM_ADDR,
+				.entity = entity,
+			},
+			.variant = X86_ADDR_JUST_IMM,
+		};
+	}
+	int offset = 0;
+	ir_node *pop;
+	do {
+		x86_insn_size_t const size = entsize2insnsize(entsize);
+		if (transfer->direction != OUT) {
+			addr.immediate.offset = spm_addr + offset;
+		}
+		else {
+			addr.immediate.offset = offset;
+		}
+		pop = create_pop(before, *sp, addr, size);
+		printf("Create %s\n", gdb_node_helper(pop));
+		set_ia32_frame_use(pop, frame_use_t);
+		*sp  = create_spproj(pop, pn_ia32_PopMem_stack);
+		printf("Create %s\n", gdb_node_helper(*sp));
+
+		unsigned size_bytes = x86_bytes_from_size(size);
+		offset  -= size_bytes;
+		entsize -= size_bytes;
+	}
+	while (entsize > 0);
+	ir_node *const keep = be_new_Keep_one(*sp);
+	sched_add_after(pop, keep);
+
+	return pop;
+	//set_irn_n(node, i, new_r_Bad(irg, mode_X));
+}
+
 static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **transfers)
 {
 	ir_node *before = irn;
+	printf("before: %s\n", gdb_node_helper(irn));
+	ir_graph *irg = get_irn_irg(irn);
+	ir_node  *sp = be_get_Start_proj(irg, &ia32_registers[REG_ESP]);
+	ir_node *sp_user = get_irn_out(sp, 0);
+	int sp_pos = 0;
+	for (int i = 0; i < get_irn_arity(sp_user); i++) {
+		if (get_irn_n(sp_user, i) == sp)
+			sp_pos = i;
+	}
+	ir_node *mem = be_get_Start_mem(irg);
+	ir_node *mem_user = get_irn_out(mem, 0);
+	int mem_pos = 0;
+	for (int i = 0; i < get_irn_arity(mem_user); i++) {
+		if (get_irn_n(mem_user, i) == mem)
+			mem_pos = i;
+	}
 	for (size_t i = 0; i < ARR_LEN(transfers); i++) {
-		ir_node *store;
+		ir_node *push, *pop;
 		spm_transfer *transfer = transfers[i];
+		push = spm_create_push(before, mem, &sp, transfer);
+		pop = spm_create_pop(before, &sp, transfer);
 
-		sched_add_before(before, store);
-		before = store;
+		/*Create mem proj for next user (either push or at en mem_user */
+		mem = be_new_Proj(pop, pn_ia32_PopMem_M);
+
 		free(transfer);
 	}
+	set_irn_n(sp_user, sp_pos, sp);
+	set_irn_n(mem_user, mem_pos, mem);
 }
 
 static void spm_insert_allocation_copy_instrs(ir_node *irn, alloc_result *alloc_res)
@@ -1252,7 +1467,8 @@ static void spm_insert_allocation_copy_instrs(ir_node *irn, alloc_result *alloc_
 		if (transfer)
 			ARR_APP1(spm_transfer *, transfers, transfer);
 	}
-	spm_insert_copy_instrs_before_irn(irn, transfers);
+	if (ARR_LEN(transfers) > 0)
+		spm_insert_copy_instrs_before_irn(irn, transfers);
 	DEL_ARR_F(transfers);
 }
 
@@ -1260,7 +1476,11 @@ static void spm_insert_copy_instrs(pmap *block_data_map, pmap *loop_info)
 {
 	foreach_pmap(block_data_map, cur_entry) {
 		ir_node *blk = (ir_node *) cur_entry->key;
+		printf("Insert copy instr for %s\n", gdb_node_helper(blk));
 		block_data *blk_data = cur_entry->value;
+		ir_graph *irg = get_irn_irg(blk);
+		if (blk_data->allocation_results[0] == NULL)
+			continue;
 		list_head *callees = blk_data->node_lists;
 		int cur_callee_cnt = 1;
 		node_data *next_callee = NULL;
@@ -1268,13 +1488,19 @@ static void spm_insert_copy_instrs(pmap *block_data_map, pmap *loop_info)
 			next_callee = list_entry(callees->next, node_data, list);
 		//insert copies at start of block
 		alloc_result *alloc_res = blk_data->allocation_results[0];
-		spm_insert_allocation_copy_instrs(sched_next(blk), alloc_res);
+		ir_node *before = sched_next(blk);
+		before = get_irg_start_block(irg) == blk ? sched_next(before) : before;
+		spm_insert_allocation_copy_instrs(before, alloc_res);
 		//insert copies after each call node
+		if (!next_callee)
+			continue;
 		sched_foreach(blk, irn) {
 			if (irn == next_callee->identifier) {
 				next_callee = list_entry(next_callee->list.next, node_data, list); //TODO: At end of list id is garbage
 				alloc_res = blk_data->allocation_results[cur_callee_cnt];
 				cur_callee_cnt++;
+				if (cur_callee_cnt > blk_data->callee_cnt)
+					break;
 				spm_insert_allocation_copy_instrs(sched_next(irn), alloc_res); //TODO:sched_next at end is block. does add_before work here?
 			}
 		}
@@ -1321,13 +1547,13 @@ static void debug_print_block_data(pmap *block_data_map, bool call_list_only)
 			foreach_pmap(alloc->copy_in, copy_entry) {
 				spm_transfer *transfer = copy_entry->value;
 				if (transfer)
-					printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->from, transfer->to);
+					printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->spm_addr_from, transfer->spm_addr_to);
 			}
 			printf("\nSwapout: ");
 			foreach_pmap(alloc->swapout_set, swap_entry) {
 				spm_transfer *transfer = swap_entry->value;
 				if (transfer)
-					printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->from, transfer->to);
+					printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->spm_addr_from, transfer->spm_addr_to);
 			}
 			printf("\n");
 		}
@@ -1342,7 +1568,7 @@ static void debug_print_loop_data(pmap *loop_info)
 		loop_data *l_data = cur_entry->value;
 		for (size_t i = 0; i < ARR_LEN(l_data->transfers); i++) {
 			spm_transfer *transfer = l_data->transfers[i];
-			printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->from, transfer->to);
+			printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->spm_addr_from, transfer->spm_addr_to);
 		}
 		printf("\n");
 	}
