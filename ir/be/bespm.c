@@ -82,7 +82,7 @@ struct alloc_result {
 	pmap *copy_in;
 	pmap *swapout_set;
 	//At end of block compensation code may be added
-	pset_new_t *compensation_transfers;
+	spm_transfer **compensation_transfers;
 	//Set only temporarily needed:
 	pset_new_t *retain_set;
 	list_head spm_content_head;
@@ -789,11 +789,10 @@ static spm_content *find_var_in_spm_content(list_head *spm_list, spm_var_info *v
 	return NULL;
 }
 
-static void join_allocations(alloc_result *base_alloc, alloc_result *adj_alloc)
+static spm_transfer **join_allocations(alloc_result *base_alloc, alloc_result *adj_alloc)
 {
 	//TODO: Clean-up
-	pset_new_t *transfers = XMALLOC(pset_new_t);
-	pset_new_init(transfers);
+	spm_transfer **transfers = NEW_ARR_F(spm_transfer *, 0);
 
 	spm_transfer *transfer;
 	list_head *next_list_el_adj = adj_alloc->spm_content_head.next;
@@ -803,7 +802,7 @@ static void join_allocations(alloc_result *base_alloc, alloc_result *adj_alloc)
 			if (!pset_new_contains(base_alloc->spm_set, next_el_adj_alloc)
 			        && pset_new_contains(adj_alloc->modified_set, next_el_adj_alloc)) {
 				transfer = create_spm_transfer_out(next_el_adj_alloc);
-				pset_new_insert(transfers, transfer);
+				ARR_APP1(spm_transfer *, transfers, transfer);
 			}
 			if (next_list_el_adj->next != &adj_alloc->spm_content_head) {
 				next_list_el_adj = next_list_el_adj->next;
@@ -830,7 +829,7 @@ static void join_allocations(alloc_result *base_alloc, alloc_result *adj_alloc)
 		else {
 			transfer = create_spm_transfer_in(var);
 		}
-		pset_new_insert(transfers, transfer);
+		ARR_APP1(spm_transfer *, transfers, transfer);
 	}
 
 	//There might be more elemenst in adj_alloc spm which have to be written back
@@ -839,12 +838,12 @@ static void join_allocations(alloc_result *base_alloc, alloc_result *adj_alloc)
 		if (!pset_new_contains(base_alloc->spm_set, next_el_adj_alloc)
 		        && pset_new_contains(adj_alloc->modified_set, next_el_adj_alloc)) {
 			transfer = create_spm_transfer_out(next_el_adj_alloc);
-			pset_new_insert(transfers, transfer);
+			ARR_APP1(spm_transfer *, transfers, transfer);
 		}
 		next_list_el_adj = next_list_el_adj->next;
 	}
 
-	adj_alloc->compensation_transfers = transfers;
+	return transfers;
 }
 
 static void join_pred_allocations(dprg_walk_env *env, ir_node *base_block)
@@ -861,7 +860,8 @@ static void join_pred_allocations(dprg_walk_env *env, ir_node *base_block)
 
 		block_data *pred_block_data = pmap_get(block_data, env->block_data_map, pred_block);
 		alloc_result *pred_block_res = get_last_block_allocation(pred_block_data);
-		join_allocations(base_block_res, pred_block_res);
+		spm_transfer **transfers = join_allocations(base_block_res, pred_block_res);
+		pred_block_res->compensation_transfers = transfers;
 	}
 }
 
@@ -1491,18 +1491,35 @@ static void spm_insert_copy_instrs(pmap *block_data_map, pmap *loop_info)
 		ir_node *before = sched_next(blk);
 		before = get_irg_start_block(irg) == blk ? sched_next(before) : before;
 		spm_insert_allocation_copy_instrs(before, alloc_res);
-		//insert copies after each call node
-		if (!next_callee)
-			continue;
-		sched_foreach(blk, irn) {
-			if (irn == next_callee->identifier) {
-				next_callee = list_entry(next_callee->list.next, node_data, list); //TODO: At end of list id is garbage
-				alloc_res = blk_data->allocation_results[cur_callee_cnt];
-				cur_callee_cnt++;
-				if (cur_callee_cnt > blk_data->callee_cnt)
-					break;
-				spm_insert_allocation_copy_instrs(sched_next(irn), alloc_res); //TODO:sched_next at end is block. does add_before work here?
+		if (next_callee) {
+			sched_foreach(blk, irn) {
+				if (irn == next_callee->identifier) {
+					//insert compensation code before call node
+					if (blk_data->compensation_callees != NULL) {
+						if (pset_new_contains(blk_data->compensation_callees, next_callee->identifier)) {
+							ir_entity *callee = (ir_entity *) next_callee->identifier;
+							ir_node *callee_start = get_irg_start_block(get_entity_irg(callee));
+							block_data *callee_data = pmap_get(block_data, block_data_map, callee_start);
+							alloc_result *callee_alloc = callee_data->allocation_results[0];
+							spm_transfer **transfers = join_allocations(callee_alloc, alloc_res);
+							spm_insert_copy_instrs_before_irn(irn, transfers);
+							DEL_ARR_F(transfers);
+						}
+					}
+
+					//insert copies after each call node
+					next_callee = list_entry(next_callee->list.next, node_data, list); //TODO: At end of list id is garbage
+					alloc_res = blk_data->allocation_results[cur_callee_cnt];
+					cur_callee_cnt++;
+					if (cur_callee_cnt > blk_data->callee_cnt)
+						break;
+					spm_insert_allocation_copy_instrs(sched_next(irn), alloc_res); //TODO:sched_next at end is block. does add_before work here?
+				}
 			}
+		}
+		//insert compensation code for joins
+		if (alloc_res->compensation_transfers) {
+			spm_insert_copy_instrs_before_irn(sched_last(blk), alloc_res->compensation_transfers);//TODO: jump over keeps (see be_spill add reload)?
 		}
 	}
 }
@@ -1584,8 +1601,10 @@ static void free_alloc_result(alloc_result *alloc_res)
 	pmap_destroy(alloc_res->copy_in);
 	pmap_destroy(alloc_res->swapout_set);
 	if (alloc_res->compensation_transfers) {
-		pset_new_destroy(alloc_res->compensation_transfers);
-		free(alloc_res->compensation_transfers);
+		for (size_t i = 0; i < ARR_LEN(alloc_res->compensation_transfers); i++) {
+			free(alloc_res->compensation_transfers[i]);
+		}
+		DEL_ARR_F(alloc_res->compensation_transfers);
 	}
 
 
