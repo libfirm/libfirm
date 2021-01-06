@@ -109,6 +109,7 @@ typedef struct block_data {
 } block_data;
 
 typedef struct loop_data {
+	ir_node *loop_header;
 	ir_node **blocks;
 	pset_new_t *mem_accesses;
 	//Transfers needed before loop
@@ -1130,6 +1131,7 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 		assert(cur_loop);
 		ARR_APP1(ir_loop *, branch->cur_loops, cur_loop);
 		loop_data *l_data = XMALLOC(loop_data);
+		l_data->loop_header = block;
 		l_data->blocks = NEW_ARR_F(ir_node *, 0);
 		l_data->mem_accesses = XMALLOC(pset_new_t);
 		pset_new_init(l_data->mem_accesses);
@@ -1472,55 +1474,79 @@ static void spm_insert_allocation_copy_instrs(ir_node *irn, alloc_result *alloc_
 	DEL_ARR_F(transfers);
 }
 
-static void spm_insert_copy_instrs(pmap *block_data_map, pmap *loop_info)
+static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pmap *block_data_map)
+{
+	ir_graph *irg = get_irn_irg(blk);
+	list_head *callees = blk_data->node_lists;
+	int cur_callee_cnt = 1;
+	node_data *next_callee = NULL;
+	if (!list_empty(callees))
+		next_callee = list_entry(callees->next, node_data, list);
+	//insert copies at start of block
+	alloc_result *alloc_res = blk_data->allocation_results[0];
+	ir_node *before = sched_next(blk);
+	before = get_irg_start_block(irg) == blk ? sched_next(before) : before;
+	spm_insert_allocation_copy_instrs(before, alloc_res);
+	if (next_callee) {
+		sched_foreach(blk, irn) {
+			if (irn == next_callee->identifier) {
+				//insert compensation code before call node
+				if (blk_data->compensation_callees != NULL) {
+					if (pset_new_contains(blk_data->compensation_callees, next_callee->identifier)) {
+						ir_entity *callee = (ir_entity *) next_callee->identifier;
+						ir_node *callee_start = get_irg_start_block(get_entity_irg(callee));
+						block_data *callee_data = pmap_get(block_data, block_data_map, callee_start);
+						alloc_result *callee_alloc = callee_data->allocation_results[0];
+						spm_transfer **transfers = join_allocations(callee_alloc, alloc_res);
+						spm_insert_copy_instrs_before_irn(irn, transfers);
+						DEL_ARR_F(transfers);
+					}
+				}
+
+				//insert copies after each call node
+				next_callee = list_entry(next_callee->list.next, node_data, list); //TODO: At end of list id is garbage
+				alloc_res = blk_data->allocation_results[cur_callee_cnt];
+				cur_callee_cnt++;
+				if (cur_callee_cnt > blk_data->callee_cnt)
+					break;
+				spm_insert_allocation_copy_instrs(sched_next(irn), alloc_res); //TODO:sched_next at end is block. does add_before work here?
+			}
+		}
+	}
+	//insert compensation code for joins
+	if (alloc_res->compensation_transfers) {
+		spm_insert_copy_instrs_before_irn(sched_last(blk), alloc_res->compensation_transfers);//TODO: jump over keeps (see be_spill add reload)?
+	}
+}
+
+static void spm_adjust_mem_accesses(ir_node *blk, block_data *blk_data)
+{
+}
+
+static void spm_adjust_to_allocations(pmap *block_data_map, pmap *loop_info)
 {
 	foreach_pmap(block_data_map, cur_entry) {
 		ir_node *blk = (ir_node *) cur_entry->key;
 		printf("Insert copy instr for %s\n", gdb_node_helper(blk));
 		block_data *blk_data = cur_entry->value;
-		ir_graph *irg = get_irn_irg(blk);
 		if (blk_data->allocation_results[0] == NULL)
 			continue;
-		list_head *callees = blk_data->node_lists;
-		int cur_callee_cnt = 1;
-		node_data *next_callee = NULL;
-		if (!list_empty(callees))
-			next_callee = list_entry(callees->next, node_data, list);
-		//insert copies at start of block
-		alloc_result *alloc_res = blk_data->allocation_results[0];
-		ir_node *before = sched_next(blk);
-		before = get_irg_start_block(irg) == blk ? sched_next(before) : before;
-		spm_insert_allocation_copy_instrs(before, alloc_res);
-		if (next_callee) {
-			sched_foreach(blk, irn) {
-				if (irn == next_callee->identifier) {
-					//insert compensation code before call node
-					if (blk_data->compensation_callees != NULL) {
-						if (pset_new_contains(blk_data->compensation_callees, next_callee->identifier)) {
-							ir_entity *callee = (ir_entity *) next_callee->identifier;
-							ir_node *callee_start = get_irg_start_block(get_entity_irg(callee));
-							block_data *callee_data = pmap_get(block_data, block_data_map, callee_start);
-							alloc_result *callee_alloc = callee_data->allocation_results[0];
-							spm_transfer **transfers = join_allocations(callee_alloc, alloc_res);
-							spm_insert_copy_instrs_before_irn(irn, transfers);
-							DEL_ARR_F(transfers);
-						}
-					}
+		spm_insert_block_copy_instrs(blk, blk_data, block_data_map);
 
-					//insert copies after each call node
-					next_callee = list_entry(next_callee->list.next, node_data, list); //TODO: At end of list id is garbage
-					alloc_res = blk_data->allocation_results[cur_callee_cnt];
-					cur_callee_cnt++;
-					if (cur_callee_cnt > blk_data->callee_cnt)
-						break;
-					spm_insert_allocation_copy_instrs(sched_next(irn), alloc_res); //TODO:sched_next at end is block. does add_before work here?
-				}
-			}
+		spm_adjust_mem_accesses(blk, blk_data);
+	}
+
+	foreach_pmap(loop_info, cur_entry) {
+		loop_data *l_data = cur_entry->value;
+		//find predblock of loop header
+		ir_node *header = l_data->loop_header;
+		ir_node *pre_header_block = NULL;
+		for (int i = 0; i < get_Block_n_cfgpreds(header); i++) {
+			if (!is_backedge(header, i))
+				pre_header_block = get_Block_cfgpred_block(header, i);
 		}
-		//insert compensation code for joins
-		if (alloc_res->compensation_transfers) {
-			spm_insert_copy_instrs_before_irn(sched_last(blk), alloc_res->compensation_transfers);//TODO: jump over keeps (see be_spill add reload)?
-		}
+		assert(pre_header_block);
+		spm_insert_copy_instrs_before_irn(sched_last(pre_header_block), l_data->transfers);
 	}
 }
 
@@ -1721,8 +1747,7 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 	}
 	debug_print_block_data(block_data_map, false);
 	debug_print_loop_data(walk_env.loop_info);
-
-	spm_insert_copy_instrs(block_data_map, walk_env.loop_info);
+	spm_adjust_to_allocations(block_data_map, walk_env.loop_info);
 
 	deq_free(&walk_env.workqueue);
 	free_block_data_map(block_data_map);
