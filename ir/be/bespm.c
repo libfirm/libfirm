@@ -2,6 +2,7 @@
 #include "besched.h"
 #include "bespill.h"
 #include "bespm.h"
+#include "bestack.h"
 #include "callgraph.h"
 #include "cgana.h"
 #include "execfreq.h"
@@ -1350,7 +1351,6 @@ static ir_node *spm_create_push(ir_node *before, ir_node *before_mem, ir_node **
 		printf("Create %s\n", gdb_node_helper(push));
 		set_ia32_frame_use(push, frame_use_t);
 		*sp = create_spproj(push, pn_ia32_Push_stack);
-		printf("Create %s\n", gdb_node_helper(*sp));
 
 		unsigned size_bytes = x86_bytes_from_size(size);
 		offset  += size_bytes;
@@ -1407,7 +1407,6 @@ static ir_node *spm_create_pop(ir_node *before, ir_node **sp, spm_transfer *tran
 		printf("Create %s\n", gdb_node_helper(pop));
 		set_ia32_frame_use(pop, frame_use_t);
 		*sp  = create_spproj(pop, pn_ia32_PopMem_stack);
-		printf("Create %s\n", gdb_node_helper(*sp));
 
 		unsigned size_bytes = x86_bytes_from_size(size);
 		offset  -= size_bytes;
@@ -1427,19 +1426,7 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 	printf("before: %s\n", gdb_node_helper(irn));
 	ir_graph *irg = get_irn_irg(irn);
 	ir_node  *sp = be_get_Start_proj(irg, &ia32_registers[REG_ESP]);
-	ir_node *sp_user = get_irn_out(sp, 0);
-	int sp_pos = 0;
-	for (int i = 0; i < get_irn_arity(sp_user); i++) {
-		if (get_irn_n(sp_user, i) == sp)
-			sp_pos = i;
-	}
 	ir_node *mem = be_get_Start_mem(irg);
-	ir_node *mem_user = get_irn_out(mem, 0);
-	int mem_pos = 0;
-	for (int i = 0; i < get_irn_arity(mem_user); i++) {
-		if (get_irn_n(mem_user, i) == mem)
-			mem_pos = i;
-	}
 	for (size_t i = 0; i < ARR_LEN(transfers); i++) {
 		ir_node *push, *pop;
 		spm_transfer *transfer = transfers[i];
@@ -1447,12 +1434,11 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 		pop = spm_create_pop(before, &sp, transfer);
 
 		/*Create mem proj for next user (either push or at en mem_user */
-		mem = be_new_Proj(pop, pn_ia32_PopMem_M);
+		if ( i < ARR_LEN(transfers) - 1)
+			mem = be_new_Proj(pop, pn_ia32_PopMem_M);
 
 		free(transfer);
 	}
-	set_irn_n(sp_user, sp_pos, sp);
-	set_irn_n(mem_user, mem_pos, mem);
 }
 
 static void spm_insert_allocation_copy_instrs(ir_node *irn, alloc_result *alloc_res)
@@ -1566,10 +1552,12 @@ static void spm_adjust_mem_accesses(ir_node *blk, block_data *blk_data)
 
 	sched_foreach(blk, irn) { //TODO: Check if right direction
 		node_data *n_data = retrieve_spm_node_data(irn);
+
+		assert(callee_cnt <= blk_data->callee_cnt);
+		alloc_res = blk_data->allocation_results[callee_cnt];
+
 		if (!n_data)
 			continue;
-
-		alloc_res = blk_data->allocation_results[callee_cnt];
 		if (n_data->data_type == CALLEE) {
 			if (ARR_LEN(vars_in_spm) > 0)
 				spm_adjust_mem_accesses_for_alloc(vars_in_spm, alloc_res);
@@ -1696,9 +1684,6 @@ static void free_alloc_result(alloc_result *alloc_res)
 	pmap_destroy(alloc_res->copy_in);
 	pmap_destroy(alloc_res->swapout_set);
 	if (alloc_res->compensation_transfers) {
-		for (size_t i = 0; i < ARR_LEN(alloc_res->compensation_transfers); i++) {
-			free(alloc_res->compensation_transfers[i]);
-		}
 		DEL_ARR_F(alloc_res->compensation_transfers);
 	}
 
@@ -1817,6 +1802,10 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 	debug_print_block_data(block_data_map, false);
 	debug_print_loop_data(walk_env.loop_info);
 	spm_adjust_to_allocations(block_data_map, walk_env.loop_info);
+	/*Have to adjust stack as we created push/pop cascades */
+	foreach_irp_irg(i, irg) {
+		be_fix_stack_nodes(irg, &ia32_registers[REG_ESP]);
+	}
 
 	deq_free(&walk_env.workqueue);
 	free_block_data_map(block_data_map);
