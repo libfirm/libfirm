@@ -66,7 +66,6 @@ typedef enum transfer_direction {
 } transfer_direction;
 
 typedef struct spm_transfer {
-	//TODO:fixed addresses work only for mov within spm
 	transfer_direction direction;
 	ir_entity *identifier;
 	node_data_type type;
@@ -94,7 +93,7 @@ struct node_data {
 	void *identifier; //TODO: change?
 	int size; //in bytes
 	bool modified;
-	bool write_first; //write happens before every read in region
+	bool write_first; //TODO: write happens before every read in region
 	int access_cnt;
 	double freq_per_byte;
 };
@@ -1519,8 +1518,78 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 	}
 }
 
+typedef struct node_perm_info {
+	ir_node *irn;
+	spm_var_info *var_info;
+} node_perm_info;
+
+//TODO: move ia32 code to ia32 folder
+static void ia32_set_spm_addr(ir_node *irn, int addr)
+{
+	ia32_attr_t *attr = get_ia32_attr(irn);
+	attr->addr = (x86_addr_t) {
+		.immediate = (x86_imm32_t) {
+			.kind   = X86_IMM_VALUE,
+			.entity = NULL,
+			.offset = addr,
+		},
+		.variant = X86_ADDR_JUST_IMM,
+	};
+}
+
+static void spm_adjust_mem_accesses_for_alloc(node_perm_info **nodes, alloc_result *alloc_res)
+{
+	//TODO: walk over spm alloc list
+	//if el is in nodes array, change node and free node_perm_info (set NULL in array)
+	size_t nodes_cnt = ARR_LEN(nodes);
+	unsigned int addr_changed_cnt = 0;
+	list_for_each_entry(spm_content, var, &alloc_res->spm_content_head, list) {
+		for (size_t i = 0; i < nodes_cnt; i++) {
+			if (nodes[i] && var->content == nodes[i]->var_info) {
+				ia32_set_spm_addr(nodes[i]->irn, var->addr);
+				free(nodes[i]);
+				nodes[i] = NULL;
+				addr_changed_cnt++;
+			}
+		}
+		if (addr_changed_cnt == nodes_cnt)
+			break;
+	}
+}
+
+
 static void spm_adjust_mem_accesses(ir_node *blk, block_data *blk_data)
 {
+	int callee_cnt = 0;
+	node_perm_info **vars_in_spm = NEW_ARR_F(node_perm_info *, 0);
+	alloc_result *alloc_res;
+
+	sched_foreach(blk, irn) { //TODO: Check if right direction
+		node_data *n_data = retrieve_spm_node_data(irn);
+		if (!n_data)
+			continue;
+
+		alloc_res = blk_data->allocation_results[callee_cnt];
+		if (n_data->data_type == CALLEE) {
+			if (ARR_LEN(vars_in_spm) > 0)
+				spm_adjust_mem_accesses_for_alloc(vars_in_spm, alloc_res);
+
+			callee_cnt++;
+			DEL_ARR_F(vars_in_spm);
+			vars_in_spm = NEW_ARR_F(node_perm_info *, 0);
+		}
+
+		ir_entity *entity = (ir_entity *) n_data->identifier;
+		spm_var_info *var_info = pmap_get(spm_var_info, spm_var_infos, entity);
+		if (pset_new_contains(alloc_res->spm_set, var_info)) {
+			node_perm_info *perm_info = XMALLOC(node_perm_info);
+			perm_info->irn = irn;
+			perm_info->var_info = var_info;
+			ARR_APP1(node_perm_info *, vars_in_spm, perm_info);
+		}
+	}
+	spm_adjust_mem_accesses_for_alloc(vars_in_spm, alloc_res);
+	DEL_ARR_F(vars_in_spm);
 }
 
 static void spm_adjust_to_allocations(pmap *block_data_map, pmap *loop_info)
