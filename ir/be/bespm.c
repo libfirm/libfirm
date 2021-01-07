@@ -1341,14 +1341,11 @@ static ir_node *spm_create_push(ir_node *before, ir_node *before_mem, ir_node **
 	ir_node *push;
 	do {
 		x86_insn_size_t const size = entsize2insnsize(entsize);
-		if (transfer->direction != IN) {
-			addr.immediate.offset = spm_addr + offset;
-		}
-		else {
-			addr.immediate.offset = offset;
-		}
+		addr.immediate.offset = spm_addr + offset;
 		push = create_push(before, *sp, before_mem, addr, size);
-		printf("Create %s\n", gdb_node_helper(push));
+		printf("Create %s for %s %d+%d (%d)\n", gdb_node_helper(push), get_entity_name(entity), spm_addr, offset, entsize);
+		printf("Addr ent:%s offset: %d\n", addr.immediate.entity ? get_entity_name(addr.immediate.entity) : "NULL", addr.immediate.offset);
+		printf("Addr variant %d, addr kind %d\n", addr.variant, addr.immediate.kind);
 		set_ia32_frame_use(push, frame_use_t);
 		*sp = create_spproj(push, pn_ia32_Push_stack);
 
@@ -1370,7 +1367,7 @@ static ir_node *spm_create_pop(ir_node *before, ir_node **sp, spm_transfer *tran
 	ia32_frame_use_t frame_use_t = frame_use ? IA32_FRAME_USE_AUTO : IA32_FRAME_USE_NONE;
 	unsigned entsize = get_type_size(get_entity_type(entity));
 
-	int spm_addr;
+	int spm_addr = 0;
 	x86_addr_t addr;
 	if (transfer->direction != OUT) {
 		//transfer to spm addr
@@ -1393,24 +1390,19 @@ static ir_node *spm_create_pop(ir_node *before, ir_node **sp, spm_transfer *tran
 			.variant = X86_ADDR_JUST_IMM,
 		};
 	}
-	int offset = 0;
+	int offset = entsize;
 	ir_node *pop;
 	do {
 		x86_insn_size_t const size = entsize2insnsize(entsize);
-		if (transfer->direction != OUT) {
-			addr.immediate.offset = spm_addr + offset;
-		}
-		else {
-			addr.immediate.offset = offset;
-		}
-		pop = create_pop(before, *sp, addr, size);
-		printf("Create %s\n", gdb_node_helper(pop));
-		set_ia32_frame_use(pop, frame_use_t);
-		*sp  = create_spproj(pop, pn_ia32_PopMem_stack);
-
 		unsigned size_bytes = x86_bytes_from_size(size);
 		offset  -= size_bytes;
 		entsize -= size_bytes;
+		addr.immediate.offset = spm_addr + offset;
+		pop = create_pop(before, *sp, addr, size);
+		printf("Create %s for %s\n", gdb_node_helper(pop), get_entity_name(entity));
+		set_ia32_frame_use(pop, frame_use_t);
+		*sp  = create_spproj(pop, pn_ia32_PopMem_stack);
+
 	}
 	while (entsize > 0);
 	ir_node *const keep = be_new_Keep_one(*sp);
@@ -1433,7 +1425,7 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 		push = spm_create_push(before, mem, &sp, transfer);
 		pop = spm_create_pop(before, &sp, transfer);
 
-		/*Create mem proj for next user (either push or at en mem_user */
+		/*Create mem proj for next user */
 		if ( i < ARR_LEN(transfers) - 1)
 			mem = be_new_Proj(pop, pn_ia32_PopMem_M);
 
@@ -1680,7 +1672,6 @@ static void free_alloc_result(alloc_result *alloc_res)
 	free(alloc_res->spm_set);
 	pset_new_destroy(alloc_res->modified_set);
 	free(alloc_res->modified_set);
-	//TODO: when to free spm_transfer? when transfer nodes are built
 	pmap_destroy(alloc_res->copy_in);
 	pmap_destroy(alloc_res->swapout_set);
 	if (alloc_res->compensation_transfers) {
@@ -1804,16 +1795,15 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 	spm_adjust_to_allocations(block_data_map, walk_env.loop_info);
 	/*Have to adjust stack as we created push/pop cascades */
 	foreach_irp_irg(i, irg) {
+		be_dump(DUMP_BE, irg, "spm-ante-sp-fix");
 		be_fix_stack_nodes(irg, &ia32_registers[REG_ESP]);
+		be_dump(DUMP_BE, irg, "spm");
 	}
 
 	deq_free(&walk_env.workqueue);
 	free_block_data_map(block_data_map);
 	free_spm_var_infos();
 	free_loop_info(walk_env.loop_info);
-	foreach_irp_irg(i, irg) {
-		be_dump(DUMP_BE, irg, "spm");
-	}
 }
 
 /*static void print_node(ir_node *node, void *env) {
