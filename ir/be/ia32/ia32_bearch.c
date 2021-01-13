@@ -1448,6 +1448,8 @@ static node_data *ia32_retrieve_spm_node_data(ir_node *node) {
 	return NULL;
 }
 
+static bool spm;
+
 static void ia32_generate_code(FILE *output, const char *cup_name)
 {
 	spm_calculate_dprg_info();
@@ -1461,7 +1463,8 @@ static void ia32_generate_code(FILE *output, const char *cup_name)
 		if (!lower_for_emit(irg, sp_is_non_ssa))
 			continue;
 	}
-	spm_find_memory_allocation(&ia32_retrieve_spm_node_data);
+	if(spm)
+		spm_find_memory_allocation(&ia32_retrieve_spm_node_data);
 	foreach_irp_irg(i, irg) {
 		be_timer_push(T_EMIT);
 		ia32_emit_function(irg);
@@ -1678,6 +1681,7 @@ static void ia32_lower_for_target(void)
 
 static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_BOOL("gprof", "Create gprof profiling code", &gprof),
+	LC_OPT_ENT_BOOL("spm", "Run SPM allocation (see additional SPM options)", &spm),
 	LC_OPT_LAST
 };
 

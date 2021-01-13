@@ -1,4 +1,5 @@
 #include "be_t.h"
+#include "bemodule.h"
 #include "besched.h"
 #include "bespill.h"
 #include "bespm.h"
@@ -16,6 +17,7 @@
 #include "irnode_t.h"
 #include "irouts.h"
 #include "irprog_t.h"
+#include "irtools.h"
 #include "pdeq.h"
 #include "pmap.h"
 #include "pset_new.h"
@@ -124,12 +126,19 @@ typedef struct drpg_walk_env {
 	pmap *loop_info;
 } dprg_walk_env;
 
-struct {
+struct spm_properties_t {
 	int size;
 	int latency_diff; //ram_lat - spm_lat
-	float throughput_ram;
-	float throughput_spm;
-} spm_properties;
+	double throughput_ram;
+	double throughput_spm;
+};
+//TODO: better initial values
+static struct spm_properties_t spm_properties = {
+	.size = 1024,
+	.latency_diff = 20,
+	.throughput_ram = 1.0f,
+	.throughput_spm = 1.0f,
+};
 
 static pmap *spm_var_infos;
 
@@ -1433,9 +1442,9 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 	ir_node  *sp = be_get_Start_proj(irg, &ia32_registers[REG_ESP]);
 	ir_node *mem = be_get_Start_mem(irg);
 	for (size_t i = 0; i < ARR_LEN(transfers); i++) {
-		ir_node *push, *pop;
+		ir_node *pop;
 		spm_transfer *transfer = transfers[i];
-		push = spm_create_push(before, mem, &sp, transfer);
+		spm_create_push(before, mem, &sp, transfer);
 		pop = spm_create_pop(before, &sp, transfer);
 
 		/*Create mem proj for next user */
@@ -1452,7 +1461,7 @@ static void spm_insert_allocation_copy_instrs(ir_node *irn, alloc_result *alloc_
 	foreach_pmap(alloc_res->copy_in, cur_entry) {
 		spm_transfer *transfer = cur_entry->value;
 		if (transfer) {
-			spm_var_info *var_info = cur_entry->key;
+			spm_var_info *var_info = (spm_var_info *) cur_entry->key;
 			if (pset_new_contains(alloc_res->write_first_set, var_info)) {
 				free(transfer);
 			}
@@ -1764,11 +1773,6 @@ static void free_spm_var_infos(void)
 
 void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 {
-	//TODO: Proper init
-	spm_properties.size = 1028;
-	spm_properties.latency_diff = 20;
-	spm_properties.throughput_ram = 1;
-	spm_properties.throughput_spm = 1;
 	retrieve_spm_node_data = func;
 	pmap *block_data_map  = pmap_create();
 	spm_var_infos = pmap_create();
@@ -1828,4 +1832,20 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 	free_block_data_map(block_data_map);
 	free_spm_var_infos();
 	free_loop_info(walk_env.loop_info);
+}
+
+static const lc_opt_table_entry_t options[] = {
+	LC_OPT_ENT_INT("size", "SPM size",  &spm_properties.size),
+	LC_OPT_ENT_INT("latency_diff", "SPM latency difference to RAM",  &spm_properties.latency_diff),
+	LC_OPT_ENT_DBL("tp_ram",    "throughput of RAM", &spm_properties.throughput_ram),
+	LC_OPT_ENT_DBL("tp_spm",    "throughput of SPM", &spm_properties.throughput_spm),
+	LC_OPT_LAST
+};
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spm_alloc)
+void be_init_spm_alloc(void)
+{
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *spm_grp      = lc_opt_get_grp(be_grp, "spm");
+	lc_opt_add_table(spm_grp, options);
 }

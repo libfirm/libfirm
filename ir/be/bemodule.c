@@ -55,6 +55,7 @@ void be_init_spill(void);
 void be_init_spillbelady(void);
 void be_init_spilloptions(void);
 void be_init_spillslots(void);
+void be_init_spm_alloc(void);
 void be_init_ssaconstr(void);
 void be_init_state(void);
 
@@ -85,6 +86,7 @@ void be_init_modules(void)
 	be_init_spill();
 	be_init_spilloptions();
 	be_init_spillslots();
+	be_init_spm_alloc();
 	be_init_ssaconstr();
 	be_init_state();
 
