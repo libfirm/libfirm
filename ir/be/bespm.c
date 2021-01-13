@@ -78,7 +78,7 @@ typedef struct spm_transfer {
 struct alloc_result {
 	int free_space;
 	pset_new_t *spm_set;
-	pset_new_t *modified_set; //spm content which has to be written back on eviction
+	pset_new_t *modified_set; //spm content (set contains spm_var_info elmnts) which has to be written back on eviction
 	pmap *copy_in;
 	pmap *swapout_set;
 	//At end of block compensation code may be added
@@ -453,7 +453,7 @@ static int get_set_size_in_bytes(pset_new_t *node_data_set)
 	return size;
 }
 
-static double get_spm_benefit(dprg_walk_env *env, node_data *n_data, node_data *swapout_candidate)
+static double get_spm_benefit(dprg_walk_env *env, alloc_result *alloc_res, node_data *n_data, node_data *swapout_candidate)
 {
 	timestamp *branch = env->cur_branch;
 	block_data *blk_data = pmap_get(block_data, env->block_data_map, branch->block);
@@ -464,7 +464,7 @@ static double get_spm_benefit(dprg_walk_env *env, node_data *n_data, node_data *
 	//Access_cnt of swapout candidate in this block
 	int swapout_acc_cnt = 0;
 	if (swapout_candidate) {
-		if (swapout_candidate->modified) //TODO: needs modifed data of spm alloc
+		if (pset_new_contains(alloc_res->modified_set, swapout_candidate))
 			migration_overhead += spm_properties.throughput_ram * swapout_candidate->size;
 
 		list_head *node_list = &blk_data->node_lists[branch->finished_callees + 1];
@@ -735,7 +735,7 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 		}
 		else {
 			if (n_data->size <= result->free_space) {
-				if (get_spm_benefit(env, n_data, NULL) > 0.0f)
+				if (get_spm_benefit(env, result, n_data, NULL) > 0.0f)
 					if (!spm_try_best_fit_insert(result, n_data))
 						spm_force_insert(env, result, n_data);
 			}
@@ -800,8 +800,8 @@ static spm_transfer **join_allocations(alloc_result *base_alloc, alloc_result *a
 	spm_content *next_el_adj_alloc = list_entry(next_list_el_adj, spm_content, list);
 	list_for_each_entry(spm_content, var, &base_alloc->spm_content_head, list) {
 		while (next_el_adj_alloc->addr < var->addr) {
-			if (!pset_new_contains(base_alloc->spm_set, next_el_adj_alloc)
-			        && pset_new_contains(adj_alloc->modified_set, next_el_adj_alloc)) {
+			if (!pset_new_contains(base_alloc->spm_set, next_el_adj_alloc->content)
+			        && pset_new_contains(adj_alloc->modified_set, next_el_adj_alloc->content)) {
 				transfer = create_spm_transfer_out(next_el_adj_alloc);
 				ARR_APP1(spm_transfer *, transfers, transfer);
 			}
@@ -836,8 +836,8 @@ static spm_transfer **join_allocations(alloc_result *base_alloc, alloc_result *a
 	//There might be more elemenst in adj_alloc spm which have to be written back
 	while (next_list_el_adj != &adj_alloc->spm_content_head) {
 		next_el_adj_alloc = list_entry(next_list_el_adj, spm_content, list);
-		if (!pset_new_contains(base_alloc->spm_set, next_el_adj_alloc)
-		        && pset_new_contains(adj_alloc->modified_set, next_el_adj_alloc)) {
+		if (!pset_new_contains(base_alloc->spm_set, next_el_adj_alloc->content)
+		        && pset_new_contains(adj_alloc->modified_set, next_el_adj_alloc->content)) {
 			transfer = create_spm_transfer_out(next_el_adj_alloc);
 			ARR_APP1(spm_transfer *, transfers, transfer);
 		}
@@ -906,8 +906,8 @@ static int spm_content_cmp(const void *p1, const void *p2)
 
 static void spm_join_loop(dprg_walk_env *env)
 {
-	//TODO: incoming edge has to be adjusted as well (is done by loop_transfers!)
 	//TODO: handling of modified set?
+	//TODO: needs a bit of cleanup
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
 	//1. get last alloc inside loop
@@ -961,13 +961,16 @@ static void spm_join_loop(dprg_walk_env *env)
 					for (size_t l  = 0; l < loop_var_cnt; l++) {
 						//Loop var is at wrong place, we delete it here from alloc
 						if (var->content == loop_vars[l]->content) {
+							spm_content *prev_spm_element = list_entry(var->list.prev, spm_content, list);
+							prev_spm_element->gap_size += var->content->size;
+							alloc->free_space += var->content->size;
 							list_del(&var->list);
 							free(var);
 						}
 					}
 				}
 				if (handled_all_loop_vars)
-					continue;
+					continue; //TODO: why not break?
 				//Currently looked at loop var should be further back in list
 				if (var->addr < loop_var->addr)
 					continue;
@@ -996,8 +999,10 @@ static void spm_join_loop(dprg_walk_env *env)
 					pset_new_remove(alloc->spm_set, cur_eviction_el->content);
 					pmap_del_and_free(alloc->copy_in, cur_eviction_el->content);
 					pmap_del_and_free(alloc->swapout_set, cur_eviction_el->content);
-					pset_new_insert(&vars_to_evict, cur_eviction_el);
+					if (pset_new_contains(alloc->modified_set, cur_eviction_el->content))
+						pset_new_insert(&vars_to_evict, cur_eviction_el);
 					//free(cur_eviction_el); free after vars_to_evict. SIGABRT here... why?
+					alloc->free_space += cur_eviction_el->content->size;
 					cur_eviction_el = next_spm_element;
 					next_spm_element = list_next_spm_content(cur_eviction_el, &alloc->spm_content_head);
 					if (cur_eviction_el == NULL) {
@@ -1011,6 +1016,7 @@ static void spm_join_loop(dprg_walk_env *env)
 				new_spm_content->content = loop_var->content;
 				new_spm_content->gap_size = cur_eviction_el->addr - content_end;
 				prev_spm_element->gap_size = loop_var->addr - (prev_spm_element->addr + prev_spm_element->content->size);
+				alloc->free_space -= loop_var->content->size;
 				//Setting loop iteration variables to correct values
 				var = new_spm_content;
 				tmp = list_entry(var->list.next, spm_content, list);
@@ -1023,22 +1029,21 @@ static void spm_join_loop(dprg_walk_env *env)
 			}
 		}
 	}
-	//TODO: free_space has to be adjusted as well!
 	//4. Before loop header loop_vars have to be transferred to spm and vars_to_evict possibly written back
 	//use loop_data transfers
-	//TODO create loop header pre-block later on, when creating all instructions
+	//TODO: make sure eviction transfers happen before transfer in
+	//TODO: check whether vars_to_evict are really in spm at moment of eviction!?
+	pset_new_iterator_t iter;
+	spm_content *loop_var;
+	foreach_pset_new(&vars_to_evict, spm_content *, loop_var, iter) {
+		spm_transfer *transfer_out = create_spm_transfer_out(loop_var);
+		ARR_APP1(spm_transfer *, l_data->transfers, transfer_out);
+		free(loop_var);
+	}
 	for (size_t k  = 0; k < ARR_LEN(loop_vars); k++) {
 		spm_content *loop_var = loop_vars[k];
 		spm_transfer *transfer_in = create_spm_transfer_in(loop_var);
 		ARR_APP1(spm_transfer *, l_data->transfers, transfer_in);
-	}
-	pset_new_iterator_t iter;
-	spm_content *loop_var;
-	foreach_pset_new(&vars_to_evict, spm_content *, loop_var, iter) {
-		//TODO: only if modified
-		spm_transfer *transfer_out = create_spm_transfer_out(loop_var);
-		ARR_APP1(spm_transfer *, l_data->transfers, transfer_out);
-		free(loop_var);
 	}
 }
 
