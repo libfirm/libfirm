@@ -79,6 +79,7 @@ struct alloc_result {
 	int free_space;
 	pset_new_t *spm_set;
 	pset_new_t *modified_set; //spm content (set contains spm_var_info elmnts) which has to be written back on eviction
+	pset_new_t *write_first_set;
 	pmap *copy_in;
 	pmap *swapout_set;
 	//At end of block compensation code may be added
@@ -149,6 +150,7 @@ static node_data *spm_get_node_data_by_type(node_data_type type, void *id, int s
 	data->size = size;
 	data->modified = modified;
 	data->access_cnt = 1;
+	data->write_first = modified;
 	return data;
 }
 
@@ -610,6 +612,8 @@ static void spm_force_insert(dprg_walk_env *env, alloc_result *result, node_data
 	pmap_insert(result->copy_in, swapin_info, create_spm_transfer_in(new_content));
 	if (swapin->modified)
 		pset_new_insert(result->modified_set, swapin_info);
+	if (swapin->write_first)
+		pset_new_insert(result->write_first_set, swapin_info);
 	result->free_space += new_gap;
 }
 
@@ -634,6 +638,8 @@ static bool spm_try_best_fit_insert(alloc_result *result, node_data *var)
 		result->free_space -= el_info->size;
 		if (var->modified)
 			pset_new_insert(result->modified_set, el_info);
+		if (var->write_first)
+			pset_new_insert(result->write_first_set, el_info);
 		return true;
 	}
 	return false;
@@ -644,11 +650,13 @@ static alloc_result *create_alloc_result(void)
 	alloc_result *result = XMALLOC(alloc_result);
 	result->spm_set = XMALLOC(pset_new_t);
 	result->modified_set = XMALLOC(pset_new_t);
+	result->write_first_set = XMALLOC(pset_new_t);
 	result->copy_in = pmap_create();
 	result->swapout_set = pmap_create();
 	result->free_space = spm_properties.size;
 	pset_new_init(result->spm_set);
 	pset_new_init(result->modified_set);
+	pset_new_init(result->write_first_set);
 	result->compensation_transfers = NULL;
 	INIT_LIST_HEAD(&result->spm_content_head);
 	return result;
@@ -1443,8 +1451,15 @@ static void spm_insert_allocation_copy_instrs(ir_node *irn, alloc_result *alloc_
 	spm_transfer **transfers = NEW_ARR_F(spm_transfer *, 0);
 	foreach_pmap(alloc_res->copy_in, cur_entry) {
 		spm_transfer *transfer = cur_entry->value;
-		if (transfer)
-			ARR_APP1(spm_transfer *, transfers, transfer);
+		if (transfer) {
+			spm_var_info *var_info = cur_entry->key;
+			if (pset_new_contains(alloc_res->write_first_set, var_info)) {
+				free(transfer);
+			}
+			else {
+				ARR_APP1(spm_transfer *, transfers, transfer);
+			}
+		}
 	}
 	foreach_pmap(alloc_res->swapout_set, cur_entry) {
 		spm_transfer *transfer = cur_entry->value;
@@ -1629,6 +1644,8 @@ static void debug_print_block_data(pmap *block_data_map, bool call_list_only)
 					printf("Size: %d, Acc_cnt: %d", n_data->size, n_data->access_cnt);
 					if (n_data->modified)
 						printf(", Modified");
+					if (n_data->write_first)
+						printf(", WriteFirst");
 					printf("\n");
 				}
 			}
@@ -1677,6 +1694,8 @@ static void free_alloc_result(alloc_result *alloc_res)
 	free(alloc_res->spm_set);
 	pset_new_destroy(alloc_res->modified_set);
 	free(alloc_res->modified_set);
+	pset_new_destroy(alloc_res->write_first_set);
+	free(alloc_res->write_first_set);
 	pmap_destroy(alloc_res->copy_in);
 	pmap_destroy(alloc_res->swapout_set);
 	if (alloc_res->compensation_transfers) {
@@ -1810,7 +1829,3 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 	free_spm_var_infos();
 	free_loop_info(walk_env.loop_info);
 }
-
-/*static void print_node(ir_node *node, void *env) {
-	printf("\t%s\n", gdb_node_helper(node));
-}*/
