@@ -208,6 +208,14 @@ static spm_content *list_next_spm_content(spm_content *element, list_head *head)
 	return NULL;
 }
 
+static void print_spm_content_list(list_head *head)
+{
+	list_for_each_entry(spm_content, var, head, list) {
+		printf("(%d, s:%d, g:%d),", var->addr, var->content->size, var->gap_size);
+	}
+	printf("\n");
+}
+
 void spm_calculate_dprg_info()
 {
 	ir_entity **free_methods;
@@ -415,7 +423,6 @@ static void spm_calc_blocks_access_freq(pmap *block_data_map)
 		ARR_RESIZE(list_head, blk_data->node_lists, blk_data->callee_cnt + 2);
 		//As arr_resize can change addr of node_lists, pointers have to be adjusted accordingly
 		list_head *callee_list = blk_data->node_lists;
-		//list empty of next == prev, but list_empty checks next == head
 		if (node_list_empty) {
 			INIT_LIST_HEAD(callee_list);
 		}
@@ -570,14 +577,18 @@ static void spm_force_insert(dprg_walk_env *env, alloc_result *result, node_data
 	int cur_min_gap_size = INT_MAX;
 	//start at first real element (after sentinel)
 	spm_content *prev = list_entry(&result->spm_content_head.next, spm_content, list);
-	list_for_each_entry(spm_content, var, result->spm_content_head.next, list) {
-		if (no_candidate(result, var))
+	spm_content *sentinel = prev;
+	printf("swapin size: %d\n", swapin->size);
+	print_spm_content_list(&result->spm_content_head);
+	list_for_each_entry(spm_content, var, &result->spm_content_head, list) {
+		//list starts with sentinel, but we want to start at first elmnt after it
+		if (var == sentinel || no_candidate(result, var))
 			continue;
 		int swapout_size = prev->gap_size + var->content->size + var->gap_size;
 		spm_content *next = var;
 		while (swapout_size < swapin->size) {
-			next = list_entry(next->list.next, spm_content, list);
-			if (no_candidate(result, next))
+			next = list_next_spm_content(next, &result->spm_content_head);
+			if (!next || no_candidate(result, next))
 				break;
 			swapout_size += next->content->size + next->gap_size;
 		}
@@ -601,6 +612,7 @@ static void spm_force_insert(dprg_walk_env *env, alloc_result *result, node_data
 	spm_content *best_swapout_candidate = best_fit_gap_el[0];
 	if (!best_swapout_candidate) //TODO: maybe have to do more than that
 		return;
+	//TODO: dont go by sizes, instead define a swapout region in the list
 	prev = list_entry(&best_swapout_candidate->list.prev, spm_content, list);
 	int swapout_size = prev->gap_size + best_swapout_candidate->content->size + best_swapout_candidate->gap_size;
 	spm_content *next = list_entry(&best_swapout_candidate->list.next, spm_content, list);
@@ -649,6 +661,8 @@ static bool spm_try_best_fit_insert(alloc_result *result, node_data *var)
 			pset_new_insert(result->modified_set, el_info);
 		if (var->write_first)
 			pset_new_insert(result->write_first_set, el_info);
+		printf("best fit insert: ");
+		print_spm_content_list(&result->spm_content_head);
 		return true;
 	}
 	return false;
@@ -676,6 +690,7 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
 	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
+	printf("calc alloc block %s\n", gdb_node_helper(block));
 
 	alloc_result *result = create_alloc_result();
 	result->retain_set = XMALLOC(pset_new_t);
@@ -693,6 +708,8 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 	int deadset_size = 0;
 	//fill result with pred_result values
 	if (pred_result) {
+		printf("pred content: ");
+		print_spm_content_list(&pred_result->spm_content_head);
 		pset_insert_set(result->modified_set, pred_result->modified_set);
 		//build spm_content
 		list_for_each_entry(spm_content, var, &pred_result->spm_content_head, list) {
@@ -973,7 +990,11 @@ static void spm_join_loop(dprg_walk_env *env)
 			//For each loop var we make sure it at the right place in alloc
 			size_t k = 0;
 			spm_content *loop_var = loop_vars[k];
+			spm_content *sentinel = list_entry(alloc->spm_content_head.next, spm_content, list);
+			//TODO: check code again. jump over sentinel is ugly
 			list_for_each_entry_safe(spm_content, var, tmp, &alloc->spm_content_head, list) {
+				if (var == sentinel)
+					continue;
 				if (var->addr != loop_var->addr) {
 					for (size_t l  = 0; l < loop_var_cnt; l++) {
 						//Loop var is at wrong place, we delete it here from alloc
@@ -1020,11 +1041,11 @@ static void spm_join_loop(dprg_walk_env *env)
 						pset_new_insert(&vars_to_evict, cur_eviction_el);
 					//free(cur_eviction_el); free after vars_to_evict. SIGABRT here... why?
 					alloc->free_space += cur_eviction_el->content->size;
-					cur_eviction_el = next_spm_element;
-					next_spm_element = list_next_spm_content(cur_eviction_el, &alloc->spm_content_head);
-					if (cur_eviction_el == NULL) {
+					if (next_spm_element == NULL) {
 						break;//Even if end of list is reached, enough is space is in spm
 					}
+					cur_eviction_el = next_spm_element;
+					next_spm_element = list_next_spm_content(cur_eviction_el, &alloc->spm_content_head);
 				}
 				//insert element in list
 				spm_content *new_spm_content = XMALLOC(spm_content);
@@ -1044,6 +1065,8 @@ static void spm_join_loop(dprg_walk_env *env)
 				//if so, evict as well, as replacing var is calculated to be more beneficial
 
 			}
+			printf("Loopvar adjustment %s:%d\n", gdb_node_helper(loop_block), j);
+			print_spm_content_list(&alloc->spm_content_head);
 		}
 	}
 	//4. Before loop header loop_vars have to be transferred to spm and vars_to_evict possibly written back
@@ -1068,7 +1091,7 @@ static void ensure_pred_blocks_visited(dprg_walk_env *env)
 {
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
-	printf("%s\n", gdb_node_helper(block));
+	//printf("%s\n", gdb_node_helper(block));
 	for (int i = 0; i < get_Block_n_cfgpreds(block); i++) {
 		bool loop_detected = false;
 		//Loop detection here:
@@ -1182,6 +1205,8 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	//calc allocation
 	alloc_result *cur_alloc = spm_calc_alloc_block(env);
 	blk_data->allocation_results[branch->finished_callees] = cur_alloc;
+	printf("Finished block alloc for %s:%d:\n", gdb_node_helper(block), branch->finished_callees);
+	print_spm_content_list(&cur_alloc->spm_content_head);
 	//inside loop-handling
 	for (size_t i = 0; i < ARR_LEN(branch->cur_loops); i++) {
 		ir_loop *loop = branch->cur_loops[i];
