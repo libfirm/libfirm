@@ -22,9 +22,6 @@ extern pmap *amd64_constants; /**< A map of entities that store const tarvals */
 
 extern ir_mode *amd64_mode_xmm;
 
-extern bool amd64_use_red_zone;
-extern bool use_scalar_fma3;
-
 #define AMD64_REGISTER_SIZE   8
 /** power of two stack alignment on calls */
 #define AMD64_PO2_STACK_ALIGNMENT 4

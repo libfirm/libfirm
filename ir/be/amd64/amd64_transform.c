@@ -11,6 +11,7 @@
 
 #include "../ia32/x86_address_mode.h"
 #include "../ia32/x86_cconv.h"
+#include "amd64_architecture.h"
 #include "amd64_bearch_t.h"
 #include "amd64_new_nodes.h"
 #include "amd64_nodes_attr.h"
@@ -1028,7 +1029,7 @@ static x86_insn_size_t get_size_32_64_from_mode(ir_mode *const mode)
 
 static ir_node *gen_fma(ir_node *const add, ir_node *const op1, ir_node *const op2)
 {
-	if (!use_scalar_fma3)
+	if (!amd64_cg_config.use_scalar_fma3)
 		return NULL;
 	ir_mode *const add_mode = get_irn_mode(add);
 	if (get_mode_size_bits(add_mode) != 64 && get_mode_size_bits(add_mode) != 32)
