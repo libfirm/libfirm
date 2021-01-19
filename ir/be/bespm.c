@@ -127,6 +127,7 @@ typedef struct drpg_walk_env {
 } dprg_walk_env;
 
 struct spm_properties_t {
+	int start_addr;
 	int size;
 	int latency_diff; //ram_lat - spm_lat
 	double throughput_ram;
@@ -134,6 +135,7 @@ struct spm_properties_t {
 };
 //TODO: better initial values
 static struct spm_properties_t spm_properties = {
+	.start_addr = 0,
 	.size = 1024,
 	.latency_diff = 20,
 	.throughput_ram = 1.0f,
@@ -144,9 +146,6 @@ static pmap *spm_var_infos;
 
 
 node_data *(*retrieve_spm_node_data)(ir_node *);
-/*void calc_irg_execfreq(ir_graph *irg, void *env) {
-	ir_estimate_execfreq
-}*/
 
 #define get_last_block_allocation(blk_data) blk_data->allocation_results[blk_data->callee_cnt];
 
@@ -218,18 +217,7 @@ static void print_spm_content_list(list_head *head)
 
 void spm_calculate_dprg_info()
 {
-	ir_entity **free_methods;
-	cgana(&free_methods);
-
-
-	compute_callgraph();
-	find_callgraph_recursions(); //Possibly necessary as well
-
-	//callgraph_walk(calc_irg_execfreq, NULL, &env);
-	free(free_methods);
-
-	//free_callgraph();
-
+	analyse_loop_nesting_depth();
 }
 
 static node_data *spm_collect_node_data(ir_node *node, block_data *b_data)
@@ -326,6 +314,7 @@ typedef struct callgraph_walk_env {
 	double irg_freq;
 	pmap *block_data_map;
 	pmap *call_blocks;
+	bool is_in_recursion;
 } callgraph_walk_env;
 
 static void spm_calc_glb_blk_exec_freq(ir_node *block, void *env)
@@ -350,6 +339,18 @@ static void spm_calc_glb_blk_exec_freq(ir_node *block, void *env)
 		}
 	}
 
+	if (!c_env->is_in_recursion)
+		return;
+
+	//in recursion we delete all node_data in access lists.
+	//Very conservative, as code executed in recursive function won't access spm.
+	for (int i = 1; i < b_data->callee_cnt + 2; i++) {
+		node_list = &b_data->node_lists[i];
+		list_for_each_entry_safe(node_data, n_data, tmp, node_list, list) {
+			free(n_data);
+		}
+		INIT_LIST_HEAD(node_list);
+	}
 }
 
 static void spm_calc_glb_exec_freq(ir_graph *irg, void *env)
@@ -358,44 +359,38 @@ static void spm_calc_glb_exec_freq(ir_graph *irg, void *env)
 }
 
 /* Next two functions copied from callgraph.c and edited */
-static void do_walk(ir_graph *irg, callgraph_walk_func *pre,
-                    callgraph_walk_func *post, void *env)
+static void glb_exec_freq_walk(ir_graph *irg, void *env)
 {
 	callgraph_walk_env *callg_env = env;
-	if (pre != NULL)
-		pre(irg, env);
+	spm_calc_glb_exec_freq(irg, env);
 
 	for (size_t i = 0, n_callees = get_irg_n_callees(irg); i < n_callees; i++) {
-		if (is_irg_callee_backedge(irg, i)) {
-			//TODO: Mark recursion + check backedge info gets calculated
-		}
 		ir_graph *m = get_irg_callee(irg, i);
 		if (pmap_contains(callg_env->call_blocks, m)) {
 			callgraph_walk_env c_env = {
 				.irg_freq = pmap_get(block_data, callg_env->call_blocks, m)->max_exec_freq,
 				.block_data_map = callg_env->block_data_map,
 				.call_blocks = pmap_create(),
+				.is_in_recursion = is_irg_callee_backedge(irg, i),
 			};
-			do_walk(m, pre, post, &c_env);
+			glb_exec_freq_walk(m, &c_env);
 			pmap_destroy(c_env.call_blocks);
 		}
 	}
-
-	if (post != NULL)
-		post(irg, env);
 }
 
-static void spm_callgraph_walk(callgraph_walk_func *pre, callgraph_walk_func *post, void *env)
+static void spm_glb_exec_freq_walk(pmap *block_data_map)
 {
 	/* roots are methods which have no callers in the current program */
 	foreach_irp_irg(i, irg) {
 		if (get_irg_n_callers(irg) == 0) {
 			callgraph_walk_env c_env = {
 				.irg_freq = 1.0,
-				.block_data_map = env,
+				.block_data_map = block_data_map,
 				.call_blocks = pmap_create(),
+				.is_in_recursion = false,
 			};
-			do_walk(irg, pre, post, &c_env);
+			glb_exec_freq_walk(irg, &c_env);
 			pmap_destroy(c_env.call_blocks);
 		}
 	}
@@ -404,14 +399,15 @@ static void spm_callgraph_walk(callgraph_walk_func *pre, callgraph_walk_func *po
 	foreach_irp_irg(i, irg) {
 		callgraph_walk_env c_env = {
 			.irg_freq = 1.0,
-			.block_data_map = env,
+			.block_data_map = block_data_map,
 			.call_blocks = pmap_create(),
+			.is_in_recursion = false,
 		};
-		do_walk(irg, pre, post, &c_env);
+		glb_exec_freq_walk(irg, &c_env);
 		pmap_destroy(c_env.call_blocks);
 	}
 }
-
+//TODO: Rename function. does a bit more than accessfreq
 static void spm_calc_blocks_access_freq(pmap *block_data_map)
 {
 	foreach_pmap(block_data_map, cur_entry) {
@@ -1372,7 +1368,7 @@ static ir_node *spm_create_push(ir_node *before, ir_node *before_mem, ir_node **
 			},
 			.variant = X86_ADDR_JUST_IMM,
 		};
-		spm_addr = transfer->spm_addr_from;
+		spm_addr = spm_properties.start_addr + transfer->spm_addr_from;
 	}
 	else {
 		//transfer from ram entity
@@ -1425,7 +1421,7 @@ static ir_node *spm_create_pop(ir_node *before, ir_node **sp, spm_transfer *tran
 			},
 			.variant = X86_ADDR_JUST_IMM,
 		};
-		spm_addr = transfer->spm_addr_to;
+		spm_addr = spm_properties.start_addr + transfer->spm_addr_to;
 	}
 	else {
 		//transfer to ram entity
@@ -1563,7 +1559,7 @@ static void ia32_set_spm_addr(ir_node *irn, int addr)
 		.immediate = (x86_imm32_t) {
 			.kind   = X86_IMM_VALUE,
 			.entity = NULL,
-			.offset = addr,
+			.offset = spm_properties.start_addr + addr,
 		},
 		.variant = X86_ADDR_JUST_IMM,
 	};
@@ -1811,7 +1807,7 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 	debug_print_block_data(block_data_map, true);
 	spm_calc_blocks_access_freq(block_data_map);
 	debug_print_block_data(block_data_map, false);
-	spm_callgraph_walk(spm_calc_glb_exec_freq, NULL, block_data_map);
+	spm_glb_exec_freq_walk(block_data_map);
 	debug_print_block_data(block_data_map, false);
 
 	//find main method (only one entry point possible?)
@@ -1860,6 +1856,7 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 }
 
 static const lc_opt_table_entry_t options[] = {
+	LC_OPT_ENT_INT("start_addr", "start address of SPM",  &spm_properties.start_addr),
 	LC_OPT_ENT_INT("size", "SPM size",  &spm_properties.size),
 	LC_OPT_ENT_INT("latency_diff", "SPM latency difference to RAM",  &spm_properties.latency_diff),
 	LC_OPT_ENT_DBL("tp_ram",    "throughput of RAM", &spm_properties.throughput_ram),
