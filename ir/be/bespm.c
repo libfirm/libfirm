@@ -10,6 +10,7 @@
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_bearch_t.h"
 #include "ia32_new_nodes.h"
+#include "ia32_transform.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
 #include "irloop.h"
@@ -1336,6 +1337,30 @@ static ir_node *create_pop(ir_node *schedpoint, ir_node *sp,
 	return pop;
 }
 
+static ir_node *create_popb_mov(ir_node *schedpoint, ir_node *sp,
+                                ir_node *mem, x86_addr_t addr)
+{
+	dbg_info *dbgi  = NULL;//get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(schedpoint);
+	ir_graph *irg   = get_irn_irg(schedpoint);
+	ir_node  *noreg = ia32_new_NoReg_gp(irg);
+	ir_node  *frame = get_irg_frame(irg);
+
+	ir_node *store;
+	if (addr.immediate.kind == X86_IMM_FRAMEENT)
+		store = new_bd_ia32_Store_8bit(dbgi, block, frame, noreg,
+		                               mem, sp, X86_SIZE_8);
+	else
+		store = new_bd_ia32_Store_8bit(dbgi, block, noreg, noreg,
+		                               mem, sp, X86_SIZE_8);
+	ia32_attr_t *const attr = get_ia32_attr(store);
+	attr->addr = addr;
+	set_ia32_op_type(store, ia32_AddrModeD);
+
+	sched_add_before(schedpoint, store);
+	return store;
+}
+
 static x86_insn_size_t entsize2insnsize(unsigned const entsize)
 {
 	return
@@ -1385,12 +1410,24 @@ static ir_node *spm_create_push(ir_node *before, ir_node *before_mem, ir_node **
 	do {
 		x86_insn_size_t const size = entsize2insnsize(entsize);
 		addr.immediate.offset = spm_addr + offset;
-		push = create_push(before, *sp, before_mem, addr, size);
-		printf("Create %s for %s %d+%d (%d)\n", gdb_node_helper(push), get_entity_name(entity), spm_addr, offset, entsize);
-		printf("Addr ent:%s offset: %d\n", addr.immediate.entity ? get_entity_name(addr.immediate.entity) : "NULL", addr.immediate.offset);
-		printf("Addr variant %d, addr kind %d\n", addr.variant, addr.immediate.kind);
-		set_ia32_frame_use(push, frame_use_t);
-		*sp = create_spproj(push, pn_ia32_Push_stack);
+		if (size != X86_SIZE_8) {
+			push = create_push(before, *sp, before_mem, addr, size);
+			set_ia32_frame_use(push, frame_use_t);
+			printf("Create %s for %s %d+%d (%d)\n", gdb_node_helper(push), get_entity_name(entity), spm_addr, offset, entsize);
+			*sp = create_spproj(push, pn_ia32_Push_stack);
+		}
+		else {
+			ir_node  *block = get_nodes_block(before);
+			push = create_push(before, *sp, before_mem, addr, X86_SIZE_16);
+			set_ia32_frame_use(push, frame_use_t);
+			printf("Create %s for %s %d+%d (%d)\n", gdb_node_helper(push), get_entity_name(entity), spm_addr, offset, entsize);
+			*sp = create_spproj(push, pn_ia32_Push_stack);
+			ir_node *const incsp = ia32_new_IncSP(block, *sp, -1, false); //inc sp by -1 byte
+			printf("Create %s for %s\n", gdb_node_helper(incsp), get_entity_name(entity));
+			sched_add_after(push, incsp);
+			*sp = incsp;
+			push = incsp;//incsp is now predecessor of next node
+		}
 
 		unsigned size_bytes = x86_bytes_from_size(size);
 		offset  += size_bytes;
@@ -1402,7 +1439,7 @@ static ir_node *spm_create_push(ir_node *before, ir_node *before_mem, ir_node **
 
 }
 
-static ir_node *spm_create_pop(ir_node *before, ir_node **sp, spm_transfer *transfer)
+static ir_node *spm_create_pop(ir_node *before, ir_node *before_mem, ir_node **sp, spm_transfer *transfer)
 {
 	/* create Pushs */
 	ir_entity *entity = transfer->identifier;
@@ -1441,15 +1478,32 @@ static ir_node *spm_create_pop(ir_node *before, ir_node **sp, spm_transfer *tran
 		offset  -= size_bytes;
 		entsize -= size_bytes;
 		addr.immediate.offset = spm_addr + offset;
-		pop = create_pop(before, *sp, addr, size);
-		printf("Create %s for %s\n", gdb_node_helper(pop), get_entity_name(entity));
-		set_ia32_frame_use(pop, frame_use_t);
-		*sp  = create_spproj(pop, pn_ia32_PopMem_stack);
+		if (size != X86_SIZE_8) {
+			pop = create_pop(before, *sp, addr, size);
+			set_ia32_frame_use(pop, frame_use_t);
+			printf("Create %s for %s\n", gdb_node_helper(pop), get_entity_name(entity));
+			*sp  = create_spproj(pop, pn_ia32_PopMem_stack);
+			//TODO: necessary?
+			if (entsize <= 0) {
+				ir_node *const keep = be_new_Keep_one(*sp);
+				sched_add_after(pop, keep);
+			}
+		}
+		else {
+			//Store byte then incSP
+			ir_node  *block = get_nodes_block(before);
+			pop = create_popb_mov(before, *sp, before_mem, addr);
+			set_ia32_frame_use(pop, frame_use_t);
+			printf("Create %s for %s\n", gdb_node_helper(pop), get_entity_name(entity));
+			ir_node *const incsp = ia32_new_IncSP(block, *sp, 1, false); //inc sp by 1 byte
+			printf("Create %s for %s\n", gdb_node_helper(incsp), get_entity_name(entity));
+			sched_add_after(pop, incsp);
+			*sp = incsp;
+			pop = incsp;
+		}
 
 	}
 	while (entsize > 0);
-	ir_node *const keep = be_new_Keep_one(*sp);
-	sched_add_after(pop, keep);
 
 	return pop;
 	//set_irn_n(node, i, new_r_Bad(irg, mode_X));
@@ -1466,11 +1520,15 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 		ir_node *pop;
 		spm_transfer *transfer = transfers[i];
 		spm_create_push(before, mem, &sp, transfer);
-		pop = spm_create_pop(before, &sp, transfer);
+		pop = spm_create_pop(before, mem, &sp, transfer);
 
 		/*Create mem proj for next user */
-		if ( i < ARR_LEN(transfers) - 1)
-			mem = be_new_Proj(pop, pn_ia32_PopMem_M);
+		if ( i < ARR_LEN(transfers) - 1) {
+			if (is_ia32_PopMem(pop))
+				mem = be_new_Proj(pop, pn_ia32_PopMem_M);
+			else
+				mem = be_new_Proj(pop, pn_ia32_Store_M);
+		}
 
 		free(transfer);
 	}
@@ -1630,9 +1688,10 @@ static void spm_adjust_to_allocations(pmap *block_data_map, pmap *loop_info)
 		block_data *blk_data = cur_entry->value;
 		if (blk_data->allocation_results[0] == NULL)
 			continue;
-		spm_insert_block_copy_instrs(blk, blk_data, block_data_map);
-
+		//mem access adjustment has to happen before copy instr insert
+		//as otherwise those would be falsely manipulated as well
 		spm_adjust_mem_accesses(blk, blk_data);
+		spm_insert_block_copy_instrs(blk, blk_data, block_data_map);
 	}
 
 	foreach_pmap(loop_info, cur_entry) {
