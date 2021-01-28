@@ -1288,57 +1288,44 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	}
 }
 
-static ir_node *create_push(ir_node *schedpoint, ir_node *sp,
-                            ir_node *mem, x86_addr_t addr, x86_insn_size_t const size)
+static const arch_register_t *mov_register = &ia32_registers[REG_EAX];
+
+static ir_node *create_spproj(ir_node *const pred, unsigned const pos)
+{
+	return be_new_Proj_reg(pred, pos, &ia32_registers[REG_ESP]);
+}
+
+static ir_node *create_regpush(ir_node *schedpoint, ir_node **sp)
 {
 	dbg_info *dbgi  = NULL;//get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(schedpoint);
-	ir_graph *irg   = get_irn_irg(schedpoint);
-	ir_node  *noreg = ia32_new_NoReg_gp(irg);
-	ir_node  *frame = get_irg_frame(irg);
 
-	ir_node *push;
-	if (addr.immediate.kind == X86_IMM_FRAMEENT)
-		push = new_bd_ia32_Push(dbgi, block, frame, noreg, mem,
-		                        noreg, sp, size);
-
-	else
-		push = new_bd_ia32_Push(dbgi, block, noreg, noreg, mem,
-		                        noreg, sp, size);
-	ia32_attr_t *const attr = get_ia32_attr(push);
-	attr->addr = addr;
-	set_ia32_op_type(push, ia32_AddrModeS);
+	ir_node *push = new_bd_ia32_PushEax(dbgi, block, *sp);
+	arch_set_irn_register(push, &ia32_registers[REG_ESP]);
+	//*sp = create_spproj(push, pn_ia32_PushEax_stack);
 
 	sched_add_before(schedpoint, push);
 	return push;
 }
 
-static ir_node *create_pop(ir_node *schedpoint, ir_node *sp,
-                           x86_addr_t addr, x86_insn_size_t const size)
+static ir_node *create_regpop(ir_node *schedpoint, ir_node **sp, ir_node *mem)
 {
 	dbg_info *dbgi  = NULL;//get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(schedpoint);
-	ir_graph *irg   = get_irn_irg(schedpoint);
-	ir_node  *noreg = ia32_new_NoReg_gp(irg);
-	ir_node  *frame = get_irg_frame(irg);
 
-	ir_node *pop;
-	if (addr.immediate.kind == X86_IMM_FRAMEENT)
-		pop = new_bd_ia32_PopMem(dbgi, block, frame, noreg,
-		                         get_irg_no_mem(irg), sp, size);
-	else
-		pop = new_bd_ia32_PopMem(dbgi, block, noreg, noreg,
-		                         get_irg_no_mem(irg), sp, size);
-	ia32_attr_t *const attr = get_ia32_attr(pop);
-	attr->addr = addr;
-	set_ia32_op_type(pop, ia32_AddrModeD);
+	ir_node *pop = new_bd_ia32_Pop(dbgi, block,
+	                               mem, *sp, X86_SIZE_32);
+	*sp = create_spproj(pop, pn_ia32_Pop_stack);
 
 	sched_add_before(schedpoint, pop);
+	ir_node *const val  = be_new_Proj_reg(pop, pn_ia32_Pop_res, mov_register);
+	ir_node *const keep = be_new_Keep_one(val);
+	sched_add_before(schedpoint, keep);
 	return pop;
 }
 
-static ir_node *create_popb_mov(ir_node *schedpoint, ir_node *sp,
-                                ir_node *mem, x86_addr_t addr)
+static ir_node *create_store(ir_node *schedpoint, ir_node *mem,
+                             ir_node *val, x86_addr_t addr, x86_insn_size_t const size)
 {
 	dbg_info *dbgi  = NULL;//get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(schedpoint);
@@ -1348,17 +1335,43 @@ static ir_node *create_popb_mov(ir_node *schedpoint, ir_node *sp,
 
 	ir_node *store;
 	if (addr.immediate.kind == X86_IMM_FRAMEENT)
-		store = new_bd_ia32_Store_8bit(dbgi, block, frame, noreg,
-		                               mem, sp, X86_SIZE_8);
+		store = new_bd_ia32_Store(dbgi, block, frame, noreg, mem,
+		                          val, size);
+
 	else
-		store = new_bd_ia32_Store_8bit(dbgi, block, noreg, noreg,
-		                               mem, sp, X86_SIZE_8);
+		store = new_bd_ia32_Store(dbgi, block, noreg, noreg, mem,
+		                          val, size);
 	ia32_attr_t *const attr = get_ia32_attr(store);
 	attr->addr = addr;
 	set_ia32_op_type(store, ia32_AddrModeD);
 
 	sched_add_before(schedpoint, store);
 	return store;
+}
+
+static ir_node *create_load(ir_node *schedpoint, ir_node *mem,
+                            x86_addr_t addr, x86_insn_size_t const size)
+{
+	dbg_info *dbgi  = NULL;//get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(schedpoint);
+	ir_graph *irg   = get_irn_irg(schedpoint);
+	ir_node  *noreg = ia32_new_NoReg_gp(irg);
+	ir_node  *frame = get_irg_frame(irg);
+
+	ir_node *load;
+	if (addr.immediate.kind == X86_IMM_FRAMEENT)
+		load = new_bd_ia32_Load(dbgi, block, frame, noreg, mem,
+		                        size, false);
+
+	else
+		load = new_bd_ia32_Load(dbgi, block, noreg, noreg, mem,
+		                        size, false);
+	ia32_attr_t *const attr = get_ia32_attr(load);
+	attr->addr = addr;
+	set_ia32_op_type(load, ia32_AddrModeS);
+
+	sched_add_before(schedpoint, load);
+	return load;
 }
 
 static x86_insn_size_t entsize2insnsize(unsigned const entsize)
@@ -1369,144 +1382,84 @@ static x86_insn_size_t entsize2insnsize(unsigned const entsize)
 	    (assert(entsize % 4 == 0), X86_SIZE_32);
 }
 
-static ir_node *create_spproj(ir_node *const pred, unsigned const pos)
+static void spm_create_transfer_movs(ir_node *before, ir_node **before_mem, spm_transfer *transfer)
 {
-	return be_new_Proj_reg(pred, pos, &ia32_registers[REG_ESP]);
-}
-
-static ir_node *spm_create_push(ir_node *before, ir_node *before_mem, ir_node **sp, spm_transfer *transfer)
-{
-	/* create Pushs */
 	ir_entity *entity = transfer->identifier;
 	bool frame_use = transfer->type == STACK_ACCESS && transfer->direction != MOV;
 	ia32_frame_use_t frame_use_t = frame_use ? IA32_FRAME_USE_AUTO : IA32_FRAME_USE_NONE;
 	unsigned entsize = get_type_size(get_entity_type(entity));
 
-	int spm_addr = 0;
-	x86_addr_t addr;
+	int spm_addr_load = 0;
+	int spm_addr_store = 0;
+	x86_addr_t addr_load;
+	x86_addr_t addr_store;
 	if (transfer->direction != IN) {
 		//transfer from spm addr
-		addr = (x86_addr_t) {
+		addr_load = (x86_addr_t) {
 			.immediate = (x86_imm32_t) {
 				.kind   = X86_IMM_VALUE,
 				.entity = NULL,
 			},
 			.variant = X86_ADDR_JUST_IMM,
 		};
-		spm_addr = spm_properties.start_addr + transfer->spm_addr_from;
+		spm_addr_load = spm_properties.start_addr + transfer->spm_addr_from;
+		if (transfer->direction == OUT) {
+			addr_store = (x86_addr_t) {
+				.immediate = (x86_imm32_t) {
+					.kind   = frame_use ? X86_IMM_FRAMEENT : X86_IMM_ADDR,
+					.entity = entity,
+				},
+				.variant = X86_ADDR_JUST_IMM,
+			};
+		}
+		else {
+			addr_store = addr_load;
+			spm_addr_store = spm_properties.start_addr + transfer->spm_addr_to;
+		}
 	}
 	else {
 		//transfer from ram entity
-		addr = (x86_addr_t) {
+		addr_load = (x86_addr_t) {
 			.immediate = (x86_imm32_t) {
 				.kind   = frame_use ? X86_IMM_FRAMEENT : X86_IMM_ADDR,
 				.entity = entity,
 			},
 			.variant = X86_ADDR_JUST_IMM,
 		};
+		addr_store = (x86_addr_t) {
+			.immediate = (x86_imm32_t) {
+				.kind   = X86_IMM_VALUE,
+				.entity = NULL,
+			},
+			.variant = X86_ADDR_JUST_IMM,
+		};
+		spm_addr_store = spm_properties.start_addr + transfer->spm_addr_to;
 	}
 	int offset = 0;
-	ir_node *push;
+	ir_node *load, *store, *load_res;
 	do {
 		x86_insn_size_t const size = entsize2insnsize(entsize);
-		addr.immediate.offset = spm_addr + offset;
-		if (size != X86_SIZE_8) {
-			push = create_push(before, *sp, before_mem, addr, size);
-			set_ia32_frame_use(push, frame_use_t);
-			printf("Create %s for %s %d+%d (%d)\n", gdb_node_helper(push), get_entity_name(entity), spm_addr, offset, entsize);
-			*sp = create_spproj(push, pn_ia32_Push_stack);
-		}
-		else {
-			ir_node  *block = get_nodes_block(before);
-			push = create_push(before, *sp, before_mem, addr, X86_SIZE_16);
-			set_ia32_frame_use(push, frame_use_t);
-			printf("Create %s for %s %d+%d (%d)\n", gdb_node_helper(push), get_entity_name(entity), spm_addr, offset, entsize);
-			*sp = create_spproj(push, pn_ia32_Push_stack);
-			ir_node *const incsp = ia32_new_IncSP(block, *sp, -1, false); //inc sp by -1 byte
-			printf("Create %s for %s\n", gdb_node_helper(incsp), get_entity_name(entity));
-			sched_add_after(push, incsp);
-			*sp = incsp;
-			push = incsp;//incsp is now predecessor of next node
-		}
+		addr_load.immediate.offset = spm_addr_load + offset;
+		addr_store.immediate.offset = spm_addr_store + offset;
+
+		load = create_load(before, *before_mem, addr_load, size);
+		//arch_set_irn_register(load, mov_register);
+		arch_set_irn_register_out(load, pn_ia32_Load_res, mov_register);
+		*before_mem = be_new_Proj(load, pn_ia32_Load_M);
+		load_res = be_new_Proj_reg(load, pn_ia32_Load_res, mov_register);
+		store = create_store(before, *before_mem, load_res, addr_store, size);
+		*before_mem = be_new_Proj(store, pn_ia32_Store_M);
+		if (transfer->direction == OUT)
+			set_ia32_frame_use(store, frame_use_t);
+		else if (transfer->direction == IN)
+			set_ia32_frame_use(load, frame_use_t);
+		printf("Create %s and %s for %s %d:%d+%d (%d)\n", gdb_node_helper(load), gdb_node_helper(store), get_entity_name(entity), spm_addr_load, spm_addr_store, offset, entsize);
 
 		unsigned size_bytes = x86_bytes_from_size(size);
 		offset  += size_bytes;
 		entsize -= size_bytes;
 	}
 	while (entsize > 0);
-	return push;
-	//set_irn_n(node, i, new_r_Bad(irg, mode_X));
-
-}
-
-static ir_node *spm_create_pop(ir_node *before, ir_node *before_mem, ir_node **sp, spm_transfer *transfer)
-{
-	/* create Pushs */
-	ir_entity *entity = transfer->identifier;
-	bool frame_use = transfer->type == STACK_ACCESS && transfer->direction != MOV;
-	ia32_frame_use_t frame_use_t = frame_use ? IA32_FRAME_USE_AUTO : IA32_FRAME_USE_NONE;
-	unsigned entsize = get_type_size(get_entity_type(entity));
-
-	int spm_addr = 0;
-	x86_addr_t addr;
-	if (transfer->direction != OUT) {
-		//transfer to spm addr
-		addr = (x86_addr_t) {
-			.immediate = (x86_imm32_t) {
-				.kind   = X86_IMM_VALUE,
-				.entity = NULL,
-			},
-			.variant = X86_ADDR_JUST_IMM,
-		};
-		spm_addr = spm_properties.start_addr + transfer->spm_addr_to;
-	}
-	else {
-		//transfer to ram entity
-		addr = (x86_addr_t) {
-			.immediate = (x86_imm32_t) {
-				.kind   = frame_use ? X86_IMM_FRAMEENT : X86_IMM_ADDR,
-				.entity = entity,
-			},
-			.variant = X86_ADDR_JUST_IMM,
-		};
-	}
-	int offset = entsize;
-	ir_node *pop;
-	do {
-		x86_insn_size_t const size = entsize2insnsize(entsize);
-		unsigned size_bytes = x86_bytes_from_size(size);
-		offset  -= size_bytes;
-		entsize -= size_bytes;
-		addr.immediate.offset = spm_addr + offset;
-		if (size != X86_SIZE_8) {
-			pop = create_pop(before, *sp, addr, size);
-			set_ia32_frame_use(pop, frame_use_t);
-			printf("Create %s for %s\n", gdb_node_helper(pop), get_entity_name(entity));
-			*sp  = create_spproj(pop, pn_ia32_PopMem_stack);
-			//TODO: necessary?
-			if (entsize <= 0) {
-				ir_node *const keep = be_new_Keep_one(*sp);
-				sched_add_after(pop, keep);
-			}
-		}
-		else {
-			//Store byte then incSP
-			ir_node  *block = get_nodes_block(before);
-			pop = create_popb_mov(before, *sp, before_mem, addr);
-			set_ia32_frame_use(pop, frame_use_t);
-			printf("Create %s for %s\n", gdb_node_helper(pop), get_entity_name(entity));
-			ir_node *const incsp = ia32_new_IncSP(block, *sp, 1, false); //inc sp by 1 byte
-			printf("Create %s for %s\n", gdb_node_helper(incsp), get_entity_name(entity));
-			sched_add_after(pop, incsp);
-			*sp = incsp;
-			pop = incsp;
-		}
-
-	}
-	while (entsize > 0);
-
-	return pop;
-	//set_irn_n(node, i, new_r_Bad(irg, mode_X));
 }
 
 static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **transfers)
@@ -1516,22 +1469,14 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 	ir_graph *irg = get_irn_irg(irn);
 	ir_node  *sp = be_get_Start_proj(irg, &ia32_registers[REG_ESP]);
 	ir_node *mem = be_get_Start_mem(irg);
+	create_regpush(before, &sp);
 	for (size_t i = 0; i < ARR_LEN(transfers); i++) {
-		ir_node *pop;
 		spm_transfer *transfer = transfers[i];
-		spm_create_push(before, mem, &sp, transfer);
-		pop = spm_create_pop(before, mem, &sp, transfer);
 
-		/*Create mem proj for next user */
-		if ( i < ARR_LEN(transfers) - 1) {
-			if (is_ia32_PopMem(pop))
-				mem = be_new_Proj(pop, pn_ia32_PopMem_M);
-			else
-				mem = be_new_Proj(pop, pn_ia32_Store_M);
-		}
-
+		spm_create_transfer_movs(before, &mem, transfer);
 		free(transfer);
 	}
+	create_regpop(before, &sp, mem);
 }
 
 static void spm_insert_allocation_copy_instrs(ir_node *irn, alloc_result *alloc_res)
