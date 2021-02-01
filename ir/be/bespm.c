@@ -1,8 +1,10 @@
 #include "be_t.h"
+#include "belive.h"
 #include "bemodule.h"
 #include "besched.h"
 #include "bespill.h"
 #include "bespm.h"
+#include "bessaconstr.h"
 #include "bestack.h"
 #include "callgraph.h"
 #include "cgana.h"
@@ -11,6 +13,7 @@
 #include "ia32_bearch_t.h"
 #include "ia32_new_nodes.h"
 #include "ia32_transform.h"
+#include "iredges.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
 #include "irloop.h"
@@ -22,6 +25,7 @@
 #include "pdeq.h"
 #include "pmap.h"
 #include "pset_new.h"
+#include "target_t.h"
 #include "util.h"
 #include "xmalloc.h"
 
@@ -1288,21 +1292,25 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	}
 }
 
-static const arch_register_t *mov_register = &ia32_registers[REG_EAX];
+static const arch_register_t *mov_register = &ia32_registers[REG_EBX];
+static ir_node       **register_values;
 
 static ir_node *create_spproj(ir_node *const pred, unsigned const pos)
 {
 	return be_new_Proj_reg(pred, pos, &ia32_registers[REG_ESP]);
 }
 
-static ir_node *create_regpush(ir_node *schedpoint, ir_node **sp)
+static ir_node *create_regpush(ir_node *schedpoint, ir_node **mem, ir_node *val, ir_node **sp)
 {
 	dbg_info *dbgi  = NULL;//get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(schedpoint);
+	ir_graph *irg   = get_irn_irg(schedpoint);
+	ir_node  *noreg = ia32_new_NoReg_gp(irg);
 
-	ir_node *push = new_bd_ia32_PushEax(dbgi, block, *sp);
-	arch_set_irn_register(push, &ia32_registers[REG_ESP]);
-	//*sp = create_spproj(push, pn_ia32_PushEax_stack);
+	ir_node *push = new_bd_ia32_Push(dbgi, block, noreg, noreg, *mem, val, *sp, X86_SIZE_32);
+	//arch_set_irn_register(push, &ia32_registers[REG_ESP]);
+	*sp = create_spproj(push, pn_ia32_Push_stack);
+	*mem = be_new_Proj(push, pn_ia32_Push_M);
 
 	sched_add_before(schedpoint, push);
 	return push;
@@ -1321,7 +1329,7 @@ static ir_node *create_regpop(ir_node *schedpoint, ir_node **sp, ir_node *mem)
 	ir_node *const val  = be_new_Proj_reg(pop, pn_ia32_Pop_res, mov_register);
 	ir_node *const keep = be_new_Keep_one(val);
 	sched_add_before(schedpoint, keep);
-	return pop;
+	return val;
 }
 
 static ir_node *create_store(ir_node *schedpoint, ir_node *mem,
@@ -1469,14 +1477,30 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 	ir_graph *irg = get_irn_irg(irn);
 	ir_node  *sp = be_get_Start_proj(irg, &ia32_registers[REG_ESP]);
 	ir_node *mem = be_get_Start_mem(irg);
-	create_regpush(before, &sp);
+	ir_node  *val   = register_values[mov_register->global_index];
+	if (!val)
+		val = be_get_Start_proj(irg, mov_register);
+	create_regpush(before, &mem, val, &sp);
 	for (size_t i = 0; i < ARR_LEN(transfers); i++) {
 		spm_transfer *transfer = transfers[i];
 
 		spm_create_transfer_movs(before, &mem, transfer);
 		free(transfer);
 	}
-	create_regpop(before, &sp, mem);
+	ir_node *pop_proj = create_regpop(before, &sp, mem);
+
+	be_ssa_construction_env_t ssa_constr_env;
+	be_ssa_construction_init(&ssa_constr_env, irg);
+	be_ssa_construction_add_copy(&ssa_constr_env, val);
+	be_ssa_construction_add_copy(&ssa_constr_env, pop_proj);
+	be_ssa_construction_fix_users(&ssa_constr_env, val);
+
+	ir_node **new_phis = be_ssa_construction_get_new_phis(&ssa_constr_env);
+	for (size_t i = 0; i < ARR_LEN(new_phis); i++) {
+		arch_set_irn_register(new_phis[i], mov_register);
+	}
+
+	be_ssa_construction_destroy(&ssa_constr_env);
 }
 
 static void spm_insert_allocation_copy_instrs(ir_node *irn, alloc_result *alloc_res)
@@ -1504,6 +1528,55 @@ static void spm_insert_allocation_copy_instrs(ir_node *irn, alloc_result *alloc_
 	DEL_ARR_F(transfers);
 }
 
+/* Copy of bepeephole code */
+static void clear_reg_value(ir_node *node)
+{
+	if (!mode_is_data(get_irn_mode(node)))
+		return;
+
+	const arch_register_t *reg = arch_get_irn_register(node);
+	if (reg == NULL) {
+		panic("no register assigned at %+F", node);
+	}
+	if (reg->is_virtual)
+		return;
+
+	unsigned reg_idx = reg->global_index;
+	register_values[reg_idx] = NULL;
+}
+
+static void set_reg_value(ir_node *node)
+{
+	if (!mode_is_data(get_irn_mode(node)))
+		return;
+
+	const arch_register_t *reg = arch_get_irn_register(node);
+	if (reg == NULL) {
+		panic("no register assigned at %+F", node);
+	}
+	if (reg->is_virtual)
+		return;
+
+	unsigned reg_idx = reg->global_index;
+	register_values[reg_idx] = node;
+}
+
+static void clear_defs(ir_node *node)
+{
+	/* clear values defined */
+	be_foreach_value(node, value,
+	                 clear_reg_value(value);
+	                );
+}
+
+static void set_uses(ir_node *node)
+{
+	/* set values used */
+	foreach_irn_in(node, i, in) {
+		set_reg_value(in);
+	}
+}
+
 static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pmap *block_data_map)
 {
 	ir_graph *irg = get_irn_irg(blk);
@@ -1512,6 +1585,16 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 	node_data *next_callee = NULL;
 	if (!list_empty(callees))
 		next_callee = list_entry(callees->next, node_data, list);
+	/* liveness analysis as we need one free register and ensure SSA afterwards */
+	be_assure_live_sets(irg);
+	be_lv_t *lv = be_get_irg_liveness(irg);
+	/* construct initial register assignment */
+	register_values = XMALLOCN(ir_node *, ir_target.isa->n_registers);
+	memset(register_values, 0, sizeof(ir_node *) * ir_target.isa->n_registers);
+	be_lv_foreach(lv, blk, be_lv_state_end, node) {
+		set_reg_value(node);
+	}
+
 	//insert copies at start of block
 	alloc_result *alloc_res = blk_data->allocation_results[0];
 	ir_node *before = sched_next(blk);
@@ -1519,6 +1602,10 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 	spm_insert_allocation_copy_instrs(before, alloc_res);
 	if (next_callee) {
 		sched_foreach(blk, irn) {
+			/* update registers */
+			clear_defs(irn);
+			set_uses(irn);
+
 			if (irn == next_callee->identifier) {
 				//insert compensation code before call node
 				if (blk_data->compensation_callees != NULL) {
@@ -1547,6 +1634,8 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 	if (alloc_res->compensation_transfers) {
 		spm_insert_copy_instrs_before_irn(sched_last(blk), alloc_res->compensation_transfers);//TODO: jump over keeps (see be_spill add reload)?
 	}
+
+	free(register_values);
 }
 
 typedef struct node_perm_info {
