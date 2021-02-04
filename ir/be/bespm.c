@@ -1292,7 +1292,7 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	}
 }
 
-static const arch_register_t *mov_register = &ia32_registers[REG_EBX];
+static const arch_register_t *mov_register = &ia32_registers[REG_EAX];
 static ir_node       **register_values;
 
 static ir_node *create_spproj(ir_node *const pred, unsigned const pos)
@@ -1478,29 +1478,31 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 	ir_node  *sp = be_get_Start_proj(irg, &ia32_registers[REG_ESP]);
 	ir_node *mem = be_get_Start_mem(irg);
 	ir_node  *val   = register_values[mov_register->global_index];
-	if (!val)
-		val = be_get_Start_proj(irg, mov_register);
-	create_regpush(before, &mem, val, &sp);
+	printf("eax node: %s\n", gdb_node_helper(val));
+	if (val)
+		create_regpush(before, &mem, val, &sp);
 	for (size_t i = 0; i < ARR_LEN(transfers); i++) {
 		spm_transfer *transfer = transfers[i];
 
 		spm_create_transfer_movs(before, &mem, transfer);
 		free(transfer);
 	}
-	ir_node *pop_proj = create_regpop(before, &sp, mem);
+	if (val) {
+		ir_node *pop_proj = create_regpop(before, &sp, mem);
 
-	be_ssa_construction_env_t ssa_constr_env;
-	be_ssa_construction_init(&ssa_constr_env, irg);
-	be_ssa_construction_add_copy(&ssa_constr_env, val);
-	be_ssa_construction_add_copy(&ssa_constr_env, pop_proj);
-	be_ssa_construction_fix_users(&ssa_constr_env, val);
+		be_ssa_construction_env_t ssa_constr_env;
+		be_ssa_construction_init(&ssa_constr_env, irg);
+		be_ssa_construction_add_copy(&ssa_constr_env, val);
+		be_ssa_construction_add_copy(&ssa_constr_env, pop_proj);
+		be_ssa_construction_fix_users(&ssa_constr_env, val);
 
-	ir_node **new_phis = be_ssa_construction_get_new_phis(&ssa_constr_env);
-	for (size_t i = 0; i < ARR_LEN(new_phis); i++) {
-		arch_set_irn_register(new_phis[i], mov_register);
+		ir_node **new_phis = be_ssa_construction_get_new_phis(&ssa_constr_env);
+		for (size_t i = 0; i < ARR_LEN(new_phis); i++) {
+			arch_set_irn_register(new_phis[i], mov_register);
+		}
+
+		be_ssa_construction_destroy(&ssa_constr_env);
 	}
-
-	be_ssa_construction_destroy(&ssa_constr_env);
 }
 
 static void spm_insert_allocation_copy_instrs(ir_node *irn, alloc_result *alloc_res)
@@ -1581,10 +1583,10 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 {
 	ir_graph *irg = get_irn_irg(blk);
 	list_head *callees = blk_data->node_lists;
-	int cur_callee_cnt = 1;
+	int alloc_idx = blk_data->callee_cnt;
 	node_data *next_callee = NULL;
 	if (!list_empty(callees))
-		next_callee = list_entry(callees->next, node_data, list);
+		next_callee = list_entry(callees->prev, node_data, list);
 	/* liveness analysis as we need one free register and ensure SSA afterwards */
 	be_assure_live_sets(irg);
 	be_lv_t *lv = be_get_irg_liveness(irg);
@@ -1595,13 +1597,14 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 		set_reg_value(node);
 	}
 
-	//insert copies at start of block
-	alloc_result *alloc_res = blk_data->allocation_results[0];
-	ir_node *before = sched_next(blk);
-	before = get_irg_start_block(irg) == blk ? sched_next(before) : before;
-	spm_insert_allocation_copy_instrs(before, alloc_res);
+	/* we insert code at the end of block, then moving upwards */
+	alloc_result *alloc_res = blk_data->allocation_results[alloc_idx];
+	//insert compensation code for joins
+	if (alloc_res->compensation_transfers) {
+		spm_insert_copy_instrs_before_irn(sched_last(blk), alloc_res->compensation_transfers);//TODO: jump over keeps (see be_spill add reload)?
+	}
 	if (next_callee) {
-		sched_foreach(blk, irn) {
+		sched_foreach_reverse(blk, irn) {
 			/* update registers */
 			clear_defs(irn);
 			set_uses(irn);
@@ -1610,7 +1613,7 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 				//insert compensation code before call node
 				if (blk_data->compensation_callees != NULL) {
 					if (pset_new_contains(blk_data->compensation_callees, next_callee->identifier)) {
-						ir_entity *callee = (ir_entity *) next_callee->identifier;
+						ir_entity *callee = (ir_entity *) next_callee->identifier; //TODO: before ident was node? what is it rly?
 						ir_node *callee_start = get_irg_start_block(get_entity_irg(callee));
 						block_data *callee_data = pmap_get(block_data, block_data_map, callee_start);
 						alloc_result *callee_alloc = callee_data->allocation_results[0];
@@ -1621,19 +1624,19 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 				}
 
 				//insert copies after each call node
-				next_callee = list_entry(next_callee->list.next, node_data, list); //TODO: At end of list id is garbage
-				alloc_res = blk_data->allocation_results[cur_callee_cnt];
-				cur_callee_cnt++;
-				if (cur_callee_cnt > blk_data->callee_cnt)
-					break;
+				next_callee = list_entry(next_callee->list.prev, node_data, list); //TODO: At end of list id is garbage
+				alloc_res = blk_data->allocation_results[alloc_idx];
+				alloc_idx--;
 				spm_insert_allocation_copy_instrs(sched_next(irn), alloc_res); //TODO:sched_next at end is block. does add_before work here?
 			}
 		}
 	}
-	//insert compensation code for joins
-	if (alloc_res->compensation_transfers) {
-		spm_insert_copy_instrs_before_irn(sched_last(blk), alloc_res->compensation_transfers);//TODO: jump over keeps (see be_spill add reload)?
-	}
+	//insert copies at start of block
+	assert(alloc_idx == 0);
+	alloc_res = blk_data->allocation_results[alloc_idx];
+	ir_node *before = sched_next(blk);
+	before = get_irg_start_block(irg) == blk ? sched_next(before) : before;
+	spm_insert_allocation_copy_instrs(before, alloc_res);
 
 	free(register_values);
 }
@@ -1937,7 +1940,6 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 	spm_adjust_to_allocations(block_data_map, walk_env.loop_info);
 	/*Have to adjust stack as we created push/pop cascades */
 	foreach_irp_irg(i, irg) {
-		be_dump(DUMP_BE, irg, "spm-ante-sp-fix");
 		be_fix_stack_nodes(irg, &ia32_registers[REG_ESP]);
 		be_dump(DUMP_BE, irg, "spm");
 	}
