@@ -20,6 +20,7 @@
 #include "irnode.h"
 #include "irnode_t.h"
 #include "irouts.h"
+#include "irprintf.h"
 #include "irprog_t.h"
 #include "irtools.h"
 #include "pdeq.h"
@@ -1461,7 +1462,7 @@ static void spm_create_transfer_movs(ir_node *before, ir_node **before_mem, spm_
 			set_ia32_frame_use(store, frame_use_t);
 		else if (transfer->direction == IN)
 			set_ia32_frame_use(load, frame_use_t);
-		printf("Create %s and %s for %s %d:%d+%d (%d)\n", gdb_node_helper(load), gdb_node_helper(store), get_entity_name(entity), spm_addr_load, spm_addr_store, offset, entsize);
+		ir_printf("Create %+F and %+F for %s %d:%d+%d (%d)\n", load, store, get_entity_name(entity), spm_addr_load, spm_addr_store, offset, entsize);
 
 		unsigned size_bytes = x86_bytes_from_size(size);
 		offset  += size_bytes;
@@ -1472,11 +1473,13 @@ static void spm_create_transfer_movs(ir_node *before, ir_node **before_mem, spm_
 
 static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **transfers)
 {
+	assert(ARR_LEN(transfers) > 0);
 	ir_node *before = irn;
 	printf("before: %s\n", gdb_node_helper(irn));
 	ir_graph *irg = get_irn_irg(irn);
 	ir_node  *sp = be_get_Start_proj(irg, &ia32_registers[REG_ESP]);
-	ir_node *mem = be_get_Start_mem(irg);
+	ir_node *mem = get_irg_no_mem(irg);
+	assert(mem);
 	ir_node  *val   = register_values[mov_register->global_index];
 	printf("eax node: %s\n", gdb_node_helper(val));
 	if (val)
@@ -1502,6 +1505,10 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 		}
 
 		be_ssa_construction_destroy(&ssa_constr_env);
+	}
+	else {
+		ir_node *keep = be_new_Keep_one(mem);
+		sched_add_before(before, keep);
 	}
 }
 
@@ -1733,6 +1740,9 @@ static void spm_adjust_to_allocations(pmap *block_data_map, pmap *loop_info)
 
 	foreach_pmap(loop_info, cur_entry) {
 		loop_data *l_data = cur_entry->value;
+		if (ARR_LEN(l_data->transfers) == 0)
+			continue;
+		ir_printf("Insert copy instr for loop: %+F\n", (ir_loop *) cur_entry->key);
 		//find predblock of loop header
 		ir_node *header = l_data->loop_header;
 		ir_node *pre_header_block = NULL;
@@ -1741,7 +1751,18 @@ static void spm_adjust_to_allocations(pmap *block_data_map, pmap *loop_info)
 				pre_header_block = get_Block_cfgpred_block(header, i);
 		}
 		assert(pre_header_block);
+		/* liveness analysis as we need one free register and ensure SSA afterwards */
+		ir_graph *irg = get_irn_irg(pre_header_block);
+		be_assure_live_sets(irg);
+		be_lv_t *lv = be_get_irg_liveness(irg);
+		/* liveness analysis as we need one free register and ensure SSA afterwards */
+		register_values = XMALLOCN(ir_node *, ir_target.isa->n_registers);
+		memset(register_values, 0, sizeof(ir_node *) * ir_target.isa->n_registers);
+		be_lv_foreach(lv, pre_header_block, be_lv_state_end, node) {
+			set_reg_value(node);
+		}
 		spm_insert_copy_instrs_before_irn(sched_last(pre_header_block), l_data->transfers);
+		free(register_values);
 	}
 }
 
