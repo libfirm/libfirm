@@ -33,6 +33,8 @@
 #include <math.h>
 #include <stdbool.h>
 
+#define irn_method_name(irn) get_entity_name(get_irg_entity(get_irn_irg(irn)))
+
 typedef struct timestamp timestamp;
 
 typedef struct alloc_result alloc_result;
@@ -218,7 +220,10 @@ static spm_content *list_next_spm_content(spm_content *element, list_head *head)
 static void print_spm_content_list(list_head *head)
 {
 	list_for_each_entry(spm_content, var, head, list) {
-		printf("(%d, s:%d, g:%d),", var->addr, var->content->size, var->gap_size);
+		if (var->content->identifier)
+			printf("(%s, a:%d, s:%d, g:%d),", get_entity_name(var->content->identifier), var->addr, var->content->size, var->gap_size);
+		else
+			printf("(a:%d, s:%d, g:%d),", var->addr, var->content->size, var->gap_size);
 	}
 	printf("\n");
 }
@@ -270,25 +275,34 @@ static node_data *spm_collect_node_data(ir_node *node, block_data *b_data)
 	if (n_data) {
 		if (n_data->data_type == CALLEE) {
 			b_data->callee_cnt++;
-			list_add(&n_data->list, b_data->node_lists);
+			list_add_tail(&n_data->list, b_data->node_lists);
 		}
 		else {
-			//sort non callee node data by size (between two callee nodes)
-			list_for_each_entry(node_data, n_data_iter, b_data->node_lists, list) {
-				if (n_data_iter->data_type == CALLEE) {
-					list_add_tail(&n_data->list, &n_data_iter->list);
-				}
-				if (n_data_iter->size < n_data->size) { //does node always gets insterted here?
-					list_add_tail(&n_data->list, &n_data_iter->list);
-				}
-				if (n_data_iter->identifier == n_data->identifier) {
-					n_data_iter->access_cnt++;
-					n_data_iter->modified |= n_data->modified;
-					free(n_data);
-				}
-			}
 			if (list_empty(b_data->node_lists)) {
 				list_add(&n_data->list, b_data->node_lists);
+			}
+			else {
+				//sort non callee node data by size (between two callee nodes)
+				list_for_each_entry(node_data, n_data_iter, b_data->node_lists, list) {
+					if (n_data_iter->data_type == CALLEE) {
+						list_add_tail(&n_data->list, &n_data_iter->list);
+						break;
+					}
+					if (n_data_iter->size < n_data->size) { //does node always gets insterted here?
+						list_add_tail(&n_data->list, &n_data_iter->list);
+						break;
+					}
+					if (n_data_iter->identifier == n_data->identifier) {
+						n_data_iter->access_cnt++;
+						n_data_iter->modified |= n_data->modified;
+						free(n_data);
+						break;
+					}
+					if (n_data_iter->list.next == b_data->node_lists) {
+						list_add_tail(&n_data->list, b_data->node_lists);
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -741,7 +755,7 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
 	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
-	printf("calc alloc block %s\n", gdb_node_helper(block));
+	printf("calc alloc block %s of %s\n", gdb_node_helper(block), irn_method_name(block));
 
 	alloc_result *result = create_alloc_result();
 	result->retain_set = XMALLOC(pset_new_t);
@@ -1259,7 +1273,7 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	//calc allocation
 	alloc_result *cur_alloc = spm_calc_alloc_block(env);
 	blk_data->allocation_results[branch->finished_callees] = cur_alloc;
-	printf("Finished block alloc for %s:%d:\n", gdb_node_helper(block), branch->finished_callees);
+	printf("Finished block alloc for %s of %s:%d:\n", gdb_node_helper(block), irn_method_name(block), branch->finished_callees);
 	print_spm_content_list(&cur_alloc->spm_content_head);
 	//inside loop-handling
 	for (size_t i = 0; i < ARR_LEN(branch->cur_loops); i++) {
@@ -1353,16 +1367,18 @@ static ir_node *create_spproj(ir_node *const pred, unsigned const pos)
 	return be_new_Proj_reg(pred, pos, &ia32_registers[REG_ESP]);
 }
 
-static ir_node *create_regpush(ir_node *schedpoint, ir_node **mem, ir_node *val, ir_node **sp)
+static ir_node *create_regpush(ir_node *schedpoint, ir_node **mem, ir_node *val, ir_node *sp)
 {
 	dbg_info *dbgi  = NULL;//get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(schedpoint);
 	ir_graph *irg   = get_irn_irg(schedpoint);
 	ir_node  *noreg = ia32_new_NoReg_gp(irg);
 
-	ir_node *push = new_bd_ia32_Push(dbgi, block, noreg, noreg, *mem, val, *sp, X86_SIZE_32);
+	ir_node *push = new_bd_ia32_Push(dbgi, block, noreg, noreg, *mem, val, sp, X86_SIZE_32);
 	//arch_set_irn_register(push, &ia32_registers[REG_ESP]);
-	*sp = create_spproj(push, pn_ia32_Push_stack);
+	ir_node *proj_sp = create_spproj(push, pn_ia32_Push_stack);
+	ir_node *const keep_sp = be_new_Keep_one(proj_sp);
+	sched_add_before(schedpoint, keep_sp);
 	*mem = be_new_Proj(push, pn_ia32_Push_M);
 
 	sched_add_before(schedpoint, push);
@@ -1370,14 +1386,16 @@ static ir_node *create_regpush(ir_node *schedpoint, ir_node **mem, ir_node *val,
 	return push;
 }
 
-static ir_node *create_regpop(ir_node *schedpoint, ir_node **sp, ir_node *mem)
+static ir_node *create_regpop(ir_node *schedpoint, ir_node *sp, ir_node *mem)
 {
 	dbg_info *dbgi  = NULL;//get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(schedpoint);
 
 	ir_node *pop = new_bd_ia32_Pop(dbgi, block,
-	                               mem, *sp, X86_SIZE_32);
-	*sp = create_spproj(pop, pn_ia32_Pop_stack);
+	                               mem, sp, X86_SIZE_32);
+	ir_node *proj_sp = create_spproj(pop, pn_ia32_Pop_stack);
+	ir_node *const keep_sp = be_new_Keep_one(proj_sp);
+	sched_add_before(schedpoint, keep_sp);
 
 	sched_add_before(schedpoint, pop);
 	ir_node *const val  = be_new_Proj_reg(pop, pn_ia32_Pop_res, mov_register);
@@ -1537,7 +1555,7 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 	ir_node  *val   = register_values[mov_register->global_index];
 	printf("eax node: %s\n", gdb_node_helper(val));
 	if (val)
-		create_regpush(before, &mem, val, &sp);
+		create_regpush(before, &mem, val, sp);
 	for (size_t i = 0; i < ARR_LEN(transfers); i++) {
 		spm_transfer *transfer = transfers[i];
 
@@ -1545,7 +1563,7 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 		free(transfer);
 	}
 	if (val) {
-		ir_node *pop_proj = create_regpop(before, &sp, mem);
+		ir_node *pop_proj = create_regpop(before, sp, mem);
 
 		be_ssa_construction_env_t ssa_constr_env;
 		be_ssa_construction_init(&ssa_constr_env, irg);
@@ -1646,8 +1664,9 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 	list_head *callees = blk_data->node_lists;
 	int alloc_idx = blk_data->callee_cnt;
 	node_data *next_callee = NULL;
+	/* callee list has to be reverse iterated, as sched list is as well */
 	if (!list_empty(callees))
-		next_callee = list_entry(callees->next, node_data, list);
+		next_callee = list_entry(callees->prev, node_data, list);
 	/* liveness analysis as we need one free register and ensure SSA afterwards */
 	be_assure_live_sets(irg);
 	be_lv_t *lv = be_get_irg_liveness(irg);
@@ -1660,15 +1679,17 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 
 	/* we insert code at the end of block, then moving upwards */
 	alloc_result *alloc_res = blk_data->allocation_results[alloc_idx];
-	//insert compensation code for joins
-	if (alloc_res->compensation_transfers) {
-		spm_insert_copy_instrs_before_irn(sched_last(blk), alloc_res->compensation_transfers);//TODO: jump over keeps (see be_spill add reload)?
-	}
 	if (next_callee) {
 		sched_foreach_reverse(blk, irn) {
 			/* update registers */
 			clear_defs(irn);
 			set_uses(irn);
+			if (sched_next(irn) == blk) { //This is end of block
+				//insert compensation code for joins
+				if (alloc_res->compensation_transfers) {
+					spm_insert_copy_instrs_before_irn(irn, alloc_res->compensation_transfers);//TODO: jump over keeps (see be_spill add reload)?
+				}
+			}
 
 
 			//TODO: method should not depend on ia32 specific code
@@ -1692,7 +1713,7 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 				}
 
 				//insert copies after each call node
-				next_callee = list_entry(next_callee->list.next, node_data, list); //TODO: At end of list id is garbage
+				next_callee = list_entry(next_callee->list.prev, node_data, list);
 				alloc_res = blk_data->allocation_results[alloc_idx];
 				alloc_idx--;
 				spm_insert_allocation_copy_instrs(sched_next(irn), alloc_res); //TODO:sched_next at end is block. does add_before work here?
@@ -1844,7 +1865,7 @@ static void debug_print_block_data(pmap *block_data_map, bool call_list_only)
 	foreach_pmap(block_data_map, cur_entry) {
 		const ir_node *blk = cur_entry->key;
 		block_data *blk_data = cur_entry->value;
-		printf("%s\n", gdb_node_helper(blk));
+		printf("%s in %s\n", gdb_node_helper(blk), irn_method_name(blk));
 		printf("\tCallee count: %d\n", blk_data->callee_cnt);
 		printf("\tMax exec freq: %f\n", blk_data->max_exec_freq);
 		for (int i = 0; i < blk_data->callee_cnt + 2; i++) {
@@ -1993,11 +2014,11 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 		assure_loopinfo(irg);
 		spm_collect_irg_data(irg, block_data_map);
 	}
-	printf("AFTER COLLECTING IRG DATA:\n");
-	debug_print_block_data(block_data_map, true);
+	//printf("AFTER COLLECTING IRG DATA:\n");
+	//debug_print_block_data(block_data_map, true);
 	spm_calc_blocks_access_freq(block_data_map);
-	printf("AFTER CALC BLOCK ACC FREQ:\n");
-	debug_print_block_data(block_data_map, false);
+	//printf("AFTER CALC BLOCK ACC FREQ:\n");
+	//debug_print_block_data(block_data_map, false);
 	spm_glb_exec_freq_walk(block_data_map);
 	printf("AFTER GLB EXEC FREQ CALC:\n");
 	debug_print_block_data(block_data_map, false);
