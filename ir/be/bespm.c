@@ -992,13 +992,15 @@ static void spm_join_cond_blocks(dprg_walk_env *env)
 	join_pred_allocations(env, branch->last_block);
 }
 
-static void pmap_del_and_free(pmap *map, void *key)
+static bool pmap_del_and_free(pmap *map, void *key)
 {
 	void *element = pmap_get(void, map, key);
 	if (element) {
 		pmap_insert(map, key, NULL);
 		free(element);
+		return true;
 	}
+	return false;
 }
 
 static int spm_content_cmp(const void *p1, const void *p2)
@@ -1039,6 +1041,11 @@ static void spm_join_loop(dprg_walk_env *env)
 		return;
 	QSORT_ARR(loop_vars, spm_content_cmp);
 
+	bool needs_transfer_in[loop_var_cnt];
+	for (size_t i = 0; i < loop_var_cnt; i++) {
+		needs_transfer_in[i] = false;
+	}
+
 	pset_new_t vars_to_evict;
 	pset_new_init(&vars_to_evict);
 	for (size_t i = 0; i < ARR_LEN(l_data->blocks); i++) {
@@ -1046,15 +1053,16 @@ static void spm_join_loop(dprg_walk_env *env)
 		block_data *loop_b_data = pmap_get(block_data, env->block_data_map, loop_block);
 		for (int j = 0; j <= loop_b_data->callee_cnt; j++) {
 			alloc_result *alloc = loop_b_data->allocation_results[j];
-			bool handled_all_loop_vars = false;
-			if (alloc == last_loop_alloc)
-				continue;
 
 			//Loop vars will be transferred into spm before loop header
 			for (size_t k  = 0; k < loop_var_cnt; k++) {
-				pmap_del_and_free(alloc->copy_in, loop_vars[k]->content);
-				pmap_del_and_free(alloc->swapout_set, loop_vars[k]->content);
+
+				needs_transfer_in[k] |= pmap_del_and_free(alloc->copy_in, loop_vars[k]->content);
+				pmap_del_and_free(alloc->swapout_set, loop_vars[k]->content); //TODO:also for last_loop_alloc?
 			}
+			bool handled_all_loop_vars = false;
+			if (alloc == last_loop_alloc)
+				continue;
 			//For each loop var we make sure it at the right place in alloc
 			size_t k = 0;
 			spm_content *loop_var = loop_vars[k];
@@ -1133,6 +1141,18 @@ static void spm_join_loop(dprg_walk_env *env)
 				//if so, evict as well, as replacing var is calculated to be more beneficial
 
 			}
+			if (!handled_all_loop_vars) {
+				while (k != loop_var_cnt) {
+					//Remaining loop_vars will be added to end of list
+					spm_content *new_spm_content = XMALLOC(spm_content);
+					list_add_tail(&new_spm_content->list, &alloc->spm_content_head);
+					new_spm_content->addr = loop_var->addr;
+					new_spm_content->content = loop_var->content;
+					new_spm_content->gap_size = loop_var->gap_size;
+					alloc->free_space -= loop_var->content->size;
+					loop_var = loop_vars[++k];
+				}
+			}
 			printf("Loopvar adjustment %s:%d\n", gdb_node_helper(loop_block), j);
 			print_spm_content_list(&alloc->spm_content_head);
 		}
@@ -1149,9 +1169,11 @@ static void spm_join_loop(dprg_walk_env *env)
 		free(loop_var);
 	}
 	for (size_t k  = 0; k < ARR_LEN(loop_vars); k++) {
-		spm_content *loop_var = loop_vars[k];
-		spm_transfer *transfer_in = create_spm_transfer_in(loop_var);
-		ARR_APP1(spm_transfer *, l_data->transfers, transfer_in);
+		if (needs_transfer_in[k]) {
+			spm_content *loop_var = loop_vars[k];
+			spm_transfer *transfer_in = create_spm_transfer_in(loop_var);
+			ARR_APP1(spm_transfer *, l_data->transfers, transfer_in);
+		}
 	}
 }
 
@@ -1382,7 +1404,7 @@ static ir_node *create_regpush(ir_node *schedpoint, ir_node **mem, ir_node *val,
 	*mem = be_new_Proj(push, pn_ia32_Push_M);
 
 	sched_add_before(schedpoint, push);
-	ir_printf("Create %+F\n", push);
+	//ir_printf("Create %+F\n", push);
 	return push;
 }
 
@@ -1401,7 +1423,7 @@ static ir_node *create_regpop(ir_node *schedpoint, ir_node *sp, ir_node *mem)
 	ir_node *const val  = be_new_Proj_reg(pop, pn_ia32_Pop_res, mov_register);
 	ir_node *const keep = be_new_Keep_one(val);
 	sched_add_before(schedpoint, keep);
-	ir_printf("Create %+F\n", pop);
+	//ir_printf("Create %+F\n", pop);
 	return val;
 }
 
@@ -1534,7 +1556,7 @@ static void spm_create_transfer_movs(ir_node *before, ir_node **before_mem, spm_
 			set_ia32_frame_use(store, frame_use_t);
 		else if (transfer->direction == IN)
 			set_ia32_frame_use(load, frame_use_t);
-		ir_printf("Create %+F and %+F for %s %d:%d+%d (%d)\n", load, store, get_entity_name(entity), spm_addr_load, spm_addr_store, offset, entsize);
+		//ir_printf("Create %+F and %+F for %s %d:%d+%d (%d)\n", load, store, get_entity_name(entity), spm_addr_load, spm_addr_store, offset, entsize);
 
 		unsigned size_bytes = x86_bytes_from_size(size);
 		offset  += size_bytes;
@@ -1547,13 +1569,13 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 {
 	assert(ARR_LEN(transfers) > 0);
 	ir_node *before = irn;
-	printf("before: %s\n", gdb_node_helper(irn));
+	//printf("before: %s\n", gdb_node_helper(irn));
 	ir_graph *irg = get_irn_irg(irn);
 	ir_node  *sp = be_get_Start_proj(irg, &ia32_registers[REG_ESP]);
 	ir_node *mem = get_irg_no_mem(irg);
 	assert(mem);
 	ir_node  *val   = register_values[mov_register->global_index];
-	printf("eax node: %s\n", gdb_node_helper(val));
+	//printf("eax node: %s\n", gdb_node_helper(val));
 	if (val)
 		create_regpush(before, &mem, val, sp);
 	for (size_t i = 0; i < ARR_LEN(transfers); i++) {
@@ -1562,6 +1584,7 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 		spm_create_transfer_movs(before, &mem, transfer);
 		free(transfer);
 	}
+	printf("%ld transfers inserted.\n", ARR_LEN(transfers));
 	if (val) {
 		ir_node *pop_proj = create_regpop(before, sp, mem);
 
