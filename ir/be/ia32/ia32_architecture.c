@@ -35,8 +35,10 @@ static bool              use_sse4_2           = false;
 static bool              use_sse4a            = false;
 static bool              use_sse5             = false;
 static bool              use_ssse3            = false;
-static cpu_arch_features arch                 = cpu_generic;
-static cpu_arch_features opt_arch             = 0;
+static x86_cpu           arch_val             = cpu_generic;
+static x86_cpu           opt_arch_val         = cpu_autodetect;
+static cpu_arch_features arch;
+static cpu_arch_features opt_arch;
 static int               fpu_arch             = 0;
 static bool              opt_cc               = true;
 static bool              opt_unsafe_floatconv = false;
@@ -102,11 +104,11 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 };
 
 static lc_opt_enum_int_var_t arch_var = {
-	(int*) &arch, arch_items
+	(int*) &arch_val, arch_items
 };
 
 static lc_opt_enum_int_var_t opt_arch_var = {
-	(int*) &opt_arch, arch_items
+	(int*) &opt_arch_val, arch_items
 };
 
 typedef enum ia32_fpu_mode_t {
@@ -335,7 +337,7 @@ static void set_arch_costs(void)
 		arch_costs = &size_cost;
 		return;
 	}
-	switch (opt_arch & arch_mask) {
+	switch (opt_arch.arch) {
 	case arch_i386:      arch_costs = &i386_cost;       break;
 	case arch_i486:      arch_costs = &i486_cost;       break;
 	case arch_pentium:   arch_costs = &pentium_cost;    break;
@@ -393,16 +395,19 @@ int ia32_evaluate_insn(insn_kind kind, const ir_mode *mode, ir_tarval *tv)
 
 void ia32_setup_cg_config(void)
 {
+	arch = cpu_arch_feature_defs[arch_val];
+	opt_arch = cpu_arch_feature_defs[opt_arch_val];
+
 	if (use_softfloat)
 		fpu_arch = IA32_FPU_SOFTFLOAT;
 
 #ifdef NATIVE_X86
-	if (arch == cpu_autodetect) {
+	if (arch_val == cpu_autodetect) {
 		arch = autodetect_arch();
 		opt_arch = arch;
 	}
 #endif
-	if (opt_arch == 0)
+	if (opt_arch_val == cpu_autodetect)
 		opt_arch = arch;
 
 	set_arch_costs();
@@ -412,33 +417,33 @@ void ia32_setup_cg_config(void)
 	c->optimize_size        = opt_size != 0;
 	/* on newer intel cpus mov, pop is often faster than leave although it has a
 	 * longer opcode */
-	c->use_leave            = flags(opt_arch, arch_i386 | arch_all_amd | arch_core2) || opt_size;
+	c->use_leave            = arch_flags(opt_arch, arch_i386 | arch_all_amd | arch_core2) || opt_size;
 	/* P4s don't like inc/decs because they only partially write the flags
 	 * register which produces false dependencies */
-	c->use_incdec           = !flags(opt_arch, arch_netburst | arch_nocona | arch_core2 | arch_geode) || opt_size;
+	c->use_incdec           = !arch_flags(opt_arch, arch_netburst | arch_nocona | arch_core2 | arch_geode) || opt_size;
 	c->use_softfloat        = (fpu_arch & IA32_FPU_SOFTFLOAT) != 0;
-	c->use_sse2             = (fpu_arch & IA32_FPU_SSE2) != 0 && flags(arch, arch_feature_sse2);
-	c->use_ffreep           = flags(opt_arch, arch_athlon_plus);
-	c->use_femms            = flags(opt_arch, arch_athlon_plus) && flags(arch, arch_feature_3DNow);
-	c->use_fucomi           = flags(arch, arch_feature_p6_insn);
-	c->use_cmov             = flags(arch, arch_feature_cmov) && use_cmov;
-	c->use_modeD_moves      = flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro | arch_geode);
-	c->use_add_esp_4        = flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 |             arch_geode)                         && !opt_size;
-	c->use_add_esp_8        = flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro | arch_geode | arch_i386 | arch_i486) && !opt_size;
-	c->use_sub_esp_4        = flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro)                                      && !opt_size;
-	c->use_sub_esp_8        = flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro |              arch_i386 | arch_i486) && !opt_size;
-	c->use_imul_mem_imm32   = !flags(opt_arch, arch_k8 | arch_k10) || opt_size;
-	c->use_pxor             = flags(opt_arch, arch_netburst);
-	c->use_mov_0            = flags(opt_arch, arch_k6) && !opt_size;
-	c->use_short_sex_eax    = !flags(opt_arch, arch_k6) || opt_size;
-	c->use_pad_return       = flags(opt_arch, arch_athlon_plus) && !opt_size;
-	c->use_bt               = flags(opt_arch, arch_core2 | arch_athlon_plus) || opt_size;
-	c->use_fisttp           = flags(opt_arch & arch, arch_feature_sse3);
-	c->use_sse_prefetch     = flags(arch, (arch_feature_3DNowE | arch_feature_sse1));
-	c->use_3dnow_prefetch   = flags(arch, arch_feature_3DNow);
-	c->use_popcnt           = flags(arch, arch_feature_popcnt);
-	c->use_bswap            = (arch & arch_mask) >= arch_i486;
-	c->use_cmpxchg          = (arch & arch_mask) != arch_i386;
+	c->use_sse2             = (fpu_arch & IA32_FPU_SSE2) != 0 && feature_flags(arch, arch_feature_sse2);
+	c->use_ffreep           = arch_flags(opt_arch, arch_athlon_plus);
+	c->use_femms            = arch_flags(opt_arch, arch_athlon_plus) && feature_flags(arch, arch_feature_3DNow);
+	c->use_fucomi           = feature_flags(arch, arch_feature_p6_insn);
+	c->use_cmov             = feature_flags(arch, arch_feature_cmov) && use_cmov;
+	c->use_modeD_moves      = arch_flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro | arch_geode);
+	c->use_add_esp_4        = arch_flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 |             arch_geode)                         && !opt_size;
+	c->use_add_esp_8        = arch_flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro | arch_geode | arch_i386 | arch_i486) && !opt_size;
+	c->use_sub_esp_4        = arch_flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro)                                      && !opt_size;
+	c->use_sub_esp_8        = arch_flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro |              arch_i386 | arch_i486) && !opt_size;
+	c->use_imul_mem_imm32   = !arch_flags(opt_arch, arch_k8 | arch_k10) || opt_size;
+	c->use_pxor             = arch_flags(opt_arch, arch_netburst);
+	c->use_mov_0            = arch_flags(opt_arch, arch_k6) && !opt_size;
+	c->use_short_sex_eax    = !arch_flags(opt_arch, arch_k6) || opt_size;
+	c->use_pad_return       = arch_flags(opt_arch, arch_athlon_plus) && !opt_size;
+	c->use_bt               = arch_flags(opt_arch, arch_core2 | arch_athlon_plus) || opt_size;
+	c->use_fisttp           = feature_flags(opt_arch, arch_feature_sse3) && feature_flags(arch, arch_feature_sse3);
+	c->use_sse_prefetch     = feature_flags(arch, (arch_feature_3DNowE | arch_feature_sse1));
+	c->use_3dnow_prefetch   = feature_flags(arch, arch_feature_3DNow);
+	c->use_popcnt           = feature_flags(arch, arch_feature_popcnt);
+	c->use_bswap            = (arch.arch) >= arch_i486;
+	c->use_cmpxchg          = (arch.arch) != arch_i386;
 	c->optimize_cc          = opt_cc;
 	c->use_unsafe_floatconv = opt_unsafe_floatconv;
 	c->emit_machcode        = emit_machcode;
@@ -448,8 +453,8 @@ void ia32_setup_cg_config(void)
 	c->label_alignment_max_skip = arch_costs->label_alignment_max_skip;
 
 	c->label_alignment_factor =
-		flags(opt_arch, arch_i386 | arch_i486) || opt_size ? 0 :
-		opt_arch & arch_all_amd                            ? 3 :
+		arch_flags(opt_arch, arch_i386 | arch_i486) || opt_size ? 0 :
+		arch_flags(opt_arch, arch_all_amd) ? 3 :
 		2;
 }
 

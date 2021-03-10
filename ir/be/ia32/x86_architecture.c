@@ -75,9 +75,58 @@ enum {
 	CPUID_FEAT_EDX_PBE       = 1 << 31
 };
 
+cpu_arch_features cpu_arch_feature_defs[cpu_max] = {
+	[cpu_generic]             = {arch_generic32, arch_feature_none},
+	[cpu_generic64]           = {arch_generic32, arch_64bit_insn},
+
+	/* Intel CPUs */
+	[cpu_i386]                = {arch_i386, arch_feature_none},
+	[cpu_i486]                = {arch_i486, arch_feature_none},
+	[cpu_pentium]             = {arch_pentium, arch_feature_none},
+	[cpu_pentium_mmx]         = {arch_pentium, arch_mmx_insn},
+	[cpu_pentium_pro_generic] = {arch_ppro, arch_feature_p6_insn},
+	[cpu_pentium_pro]         = {arch_ppro, arch_feature_cmov | arch_feature_p6_insn},
+	[cpu_pentium_2]           = {arch_ppro, arch_feature_cmov | arch_feature_p6_insn | arch_mmx_insn},
+	[cpu_pentium_3]           = {arch_ppro, arch_feature_cmov | arch_feature_p6_insn | arch_sse1_insn},
+	[cpu_pentium_m]           = {arch_ppro, arch_feature_cmov | arch_feature_p6_insn | arch_sse2_insn},
+	[cpu_netburst_generic]    = {arch_netburst, arch_feature_p6_insn},
+	[cpu_pentium_4]           = {arch_netburst, arch_feature_cmov | arch_feature_p6_insn | arch_sse2_insn},
+	[cpu_prescott]            = {arch_nocona, arch_feature_cmov | arch_feature_p6_insn | arch_sse3_insn},
+	[cpu_nocona]              = {arch_nocona, arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn},
+	[cpu_core2_generic]       = {arch_core2, arch_feature_p6_insn},
+	[cpu_core2]               = {arch_core2, arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_ssse3_insn},
+	[cpu_penryn]              = {arch_core2, arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_sse4_1_insn},
+	[cpu_atom_generic]        = {arch_atom, arch_feature_p6_insn},
+	[cpu_atom]                = {arch_atom, arch_feature_cmov | arch_feature_p6_insn | arch_ssse3_insn},
+
+
+	/* AMD CPUs */
+	[cpu_k6_generic]     = {arch_k6, arch_feature_none},
+	[cpu_k6]             = {arch_k6, arch_mmx_insn},
+	[cpu_k6_PLUS]        = {arch_k6, arch_3DNow_insn},
+	[cpu_geode_generic]  = {arch_geode, arch_feature_none},
+	[cpu_geode]          = {arch_geode, arch_sse1_insn | arch_3DNowE_insn},
+	[cpu_athlon_generic] = {arch_athlon, arch_feature_p6_insn},
+	[cpu_athlon_old]     = {arch_athlon, arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn},
+	[cpu_athlon]         = {arch_athlon, arch_sse1_insn | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn},
+	[cpu_athlon64]       = {arch_athlon, arch_sse2_insn | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn},
+	[cpu_k8_generic]     = {arch_k8, arch_feature_p6_insn},
+	[cpu_k8]             = {arch_k8, arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn},
+	[cpu_k8_sse3]        = {arch_k8, arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn},
+	[cpu_k10_generic]    = {arch_k10, arch_feature_p6_insn},
+	[cpu_k10]            = {arch_k10, arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_feature_popcnt | arch_64bit_insn | arch_sse4a_insn},
+
+	/* other CPUs */
+	[cpu_winchip_c6] = {arch_i486, arch_feature_mmx},
+	[cpu_winchip2]   = {arch_i486, arch_feature_mmx | arch_feature_3DNow},
+	[cpu_c3]         = {arch_i486, arch_feature_mmx | arch_feature_3DNow},
+	[cpu_c3_2]       = {arch_ppro, arch_feature_cmov | arch_feature_p6_insn | arch_sse1_insn}, /* really no 3DNow! */
+
+};
+
 static cpu_arch_features auto_detect_Intel(x86_cpu_info_t const *info)
 {
-	cpu_arch_features auto_arch = cpu_generic;
+	x86_cpu auto_arch = cpu_generic;
 
 	unsigned family = info->cpu_ext_family + info->cpu_family;
 	unsigned model  = (info->cpu_ext_model << 4) | info->cpu_model;
@@ -144,12 +193,12 @@ static cpu_arch_features auto_detect_Intel(x86_cpu_info_t const *info)
 		break;
 	}
 
-	return auto_arch;
+	return cpu_arch_feature_defs[auto_arch];
 }
 
 static cpu_arch_features auto_detect_AMD(x86_cpu_info_t const *info)
 {
-	cpu_arch_features auto_arch = cpu_generic;
+	x86_cpu auto_arch = cpu_generic;
 
 	unsigned family, model;
 
@@ -219,7 +268,7 @@ static cpu_arch_features auto_detect_AMD(x86_cpu_info_t const *info)
 		break;
 	}
 
-	return auto_arch;
+	return cpu_arch_feature_defs[auto_arch];
 }
 
 typedef union {
@@ -300,7 +349,7 @@ static bool x86_toggle_cpuid(void)
 
 cpu_arch_features autodetect_arch(void)
 {
-	cpu_arch_features auto_arch = cpu_generic;
+	cpu_arch_features auto_arch = cpu_arch_feature_defs[cpu_generic];
 
 	/* We use the cpuid instruction to detect the CPU features */
 	if (x86_toggle_cpuid()) {
@@ -333,36 +382,41 @@ cpu_arch_features autodetect_arch(void)
 		} else if (streq(vendorid, "AuthenticAMD")) {
 			auto_arch = auto_detect_AMD(&cpu_info);
 		} else if (streq(vendorid, "Geode by NSC")) {
-			auto_arch = cpu_geode_generic;
+			auto_arch = cpu_arch_feature_defs[cpu_geode_generic];
 		}
 
 		if (cpu_info.edx_features & CPUID_FEAT_EDX_CMOV)
-			auto_arch |= arch_feature_cmov;
+			auto_arch.features |= arch_feature_cmov;
 		if (cpu_info.edx_features & CPUID_FEAT_EDX_MMX)
-			auto_arch |= arch_feature_mmx;
+			auto_arch.features |= arch_feature_mmx;
 		if (cpu_info.edx_features & CPUID_FEAT_EDX_SSE)
-			auto_arch |= arch_feature_sse1;
+			auto_arch.features |= arch_feature_sse1;
 		if (cpu_info.edx_features & CPUID_FEAT_EDX_SSE2)
-			auto_arch |= arch_feature_sse2;
+			auto_arch.features |= arch_feature_sse2;
 
 		if (cpu_info.ecx_features & CPUID_FEAT_ECX_SSE3)
-			auto_arch |= arch_feature_sse3;
+			auto_arch.features |= arch_feature_sse3;
 		if (cpu_info.ecx_features & CPUID_FEAT_ECX_SSSE3)
-			auto_arch |= arch_feature_ssse3;
+			auto_arch.features |= arch_feature_ssse3;
 		if (cpu_info.ecx_features & CPUID_FEAT_ECX_SSE4_1)
-			auto_arch |= arch_feature_sse4_1;
+			auto_arch.features |= arch_feature_sse4_1;
 		if (cpu_info.ecx_features & CPUID_FEAT_ECX_SSE4_2)
-			auto_arch |= arch_feature_sse4_2;
+			auto_arch.features |= arch_feature_sse4_2;
 		if (cpu_info.ecx_features & CPUID_FEAT_ECX_POPCNT)
-			auto_arch |= arch_feature_popcnt;
+			auto_arch.features |= arch_feature_popcnt;
 		if (cpu_info.ecx_features & CPUID_FEAT_ECX_FMA)
-			auto_arch |= arch_feature_fma;
+			auto_arch.features |= arch_feature_fma;
 	}
 
 	return auto_arch;
 }
 
-bool flags(cpu_arch_features features, cpu_arch_features flags)
+bool arch_flags(cpu_arch_features features, x86_cpu_architectures flags)
 {
-	return (features & flags) != 0;
+	return (features.arch & flags) != 0;
+}
+
+bool feature_flags(cpu_arch_features features, x86_cpu_features flags)
+{
+	return (features.features & flags) != 0;
 }

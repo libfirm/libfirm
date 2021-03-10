@@ -9,8 +9,10 @@
 
 amd64_code_gen_config_t amd64_cg_config;
 
-static cpu_arch_features arch                 = cpu_generic64;
-static cpu_arch_features opt_arch             = 0;
+static x86_cpu           arch_val             = cpu_generic64;
+static x86_cpu           opt_arch_val         = cpu_autodetect;
+static cpu_arch_features arch;
+static cpu_arch_features opt_arch;
 static bool              use_red_zone         = false;
 static bool              use_scalar_fma3      = false;
 
@@ -26,11 +28,11 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 };
 
 static lc_opt_enum_int_var_t arch_var = {
-	(int*) &arch, arch_items
+	(int*) &arch_val, arch_items
 };
 
 static lc_opt_enum_int_var_t opt_arch_var = {
-	(int*) &opt_arch, arch_items
+	(int*) &opt_arch_val, arch_items
 };
 
 static const lc_opt_table_entry_t amd64_architecture_options[] = {
@@ -43,20 +45,22 @@ static const lc_opt_table_entry_t amd64_architecture_options[] = {
 
 void amd64_setup_cg_config(void)
 {
+	arch = cpu_arch_feature_defs[arch_val];
+	opt_arch = cpu_arch_feature_defs[opt_arch_val];
 
 	/* auto detection code only works if we're on an x86 cpu obviously */
 #ifdef NATIVE_X86
-	if (arch == cpu_autodetect) {
+	if (arch_val == cpu_autodetect) {
 		arch = autodetect_arch();
 		opt_arch = arch;
 	}
 #endif
-	if (opt_arch == 0)
+	if (opt_arch_val == cpu_autodetect)
 		opt_arch = arch;
 
 	amd64_code_gen_config_t *const c = &amd64_cg_config;
 	memset(c, 0, sizeof(*c));
-	c->use_scalar_fma3      = flags(arch, arch_feature_fma) && use_scalar_fma3;
+	c->use_scalar_fma3      = feature_flags(arch, arch_feature_fma) && use_scalar_fma3;
 }
 
 void amd64_init_architecture(void)
