@@ -45,56 +45,95 @@ static bool              opt_unsafe_floatconv = false;
 
 /* instruction set architectures. */
 static const lc_opt_enum_int_items_t arch_items[] = {
-	{ "i386",         cpu_i386 },
-	{ "i486",         cpu_i486 },
-	{ "i586",         cpu_pentium },
-	{ "pentium",      cpu_pentium },
-	{ "pentium-mmx",  cpu_pentium_mmx },
-	{ "i686",         cpu_pentium_pro },
-	{ "pentiumpro",   cpu_pentium_pro },
-	{ "pentium2",     cpu_pentium_2 },
-	{ "p2",           cpu_pentium_2 },
-	{ "pentium3",     cpu_pentium_3 },
-	{ "pentium3m",    cpu_pentium_3 },
-	{ "p3",           cpu_pentium_3 },
-	{ "pentium-m",    cpu_pentium_m },
-	{ "pm",           cpu_pentium_m },
-	{ "pentium4",     cpu_pentium_4 },
-	{ "pentium4m",    cpu_pentium_4 },
-	{ "p4",           cpu_pentium_4 },
-	{ "prescott",     cpu_prescott },
-	{ "nocona",       cpu_nocona },
-	{ "merom",        cpu_core2 },
-	{ "core2",        cpu_core2 },
-	{ "penryn",       cpu_penryn },
-	{ "atom",         cpu_atom },
+	{ "i386",           cpu_i386 },
+	{ "i486",           cpu_i486 },
+	{ "i586",           cpu_pentium },
+	{ "pentium",        cpu_pentium },
+	{ "pentium-mmx",    cpu_pentium_mmx },
+	{ "i686",           cpu_pentium_pro },
+	{ "pentiumpro",     cpu_pentium_pro },
+	{ "pentium2",       cpu_pentium_2 },
+	{ "p2",             cpu_pentium_2 },
+	{ "pentium3",       cpu_pentium_3 },
+	{ "pentium3m",      cpu_pentium_3 },
+	{ "p3",             cpu_pentium_3 },
+	{ "pentium-m",      cpu_pentium_m },
+	{ "pm",             cpu_pentium_m },
+	{ "pentium4",       cpu_pentium_4 },
+	{ "pentium4m",      cpu_pentium_4 },
+	{ "p4",             cpu_pentium_4 },
+	{ "prescott",       cpu_prescott },
+	{ "nocona",         cpu_nocona },
+	{ "merom",          cpu_core2 },
+	{ "core2",          cpu_core2 },
+	{ "penryn",         cpu_penryn },
+	{ "atom",           cpu_atom },
+	{ "bonnell",        cpu_atom },
+	{ "silvermont",     cpu_silvermont },
+	{ "slm",            cpu_silvermont },
+	{ "goldmont",       cpu_goldmont },
+	{ "goldmont-plus",  cpu_goldmont_plus },
+	{ "tremont",        cpu_tremont },
+	{ "knl",            cpu_knl },
+	{ "knm",            cpu_knm },
+	{ "nehalem",        cpu_nehalem },
+	{ "corei7",         cpu_nehalem },
+	{ "westmere",       cpu_westmere },
+	{ "sandybridge",    cpu_sandybridge },
+	{ "corei7-avx",     cpu_sandybridge },
+	{ "ivybridge",      cpu_ivybridge },
+	{ "core-avx-i",     cpu_ivybridge },
+	{ "haswell",        cpu_haswell },
+	{ "core-avx2",      cpu_haswell },
+	{ "broadwell",      cpu_broadwell },
+	{ "skylake",        cpu_skylake },
+	{ "skylake-avx512", cpu_skylake_avx512 },
+	{ "skx",            cpu_skylake_avx512 },
+	{ "cascadelake",    cpu_cascade_lake },
+	{ "cooperlake",     cpu_cooperlake },
+	{ "cannonlake",     cpu_cannonlake },
+	{ "icelake-client", cpu_icelake_client },
+	{ "icelake-server", cpu_icelake_server },
+	{ "tigerlake",      cpu_tigerlake },
+	{ "sapphirerapids", cpu_sapphirerapids },
+	{ "alderlake",      cpu_alderlake },
 
-	{ "k6",           cpu_k6 },
-	{ "k6-2",         cpu_k6_PLUS },
-	{ "k6-3",         cpu_k6_PLUS },
-	{ "geode",        cpu_geode },
-	{ "athlon",       cpu_athlon_old },
-	{ "athlon-tbird", cpu_athlon },
-	{ "athlon-4",     cpu_athlon },
-	{ "athlon-xp",    cpu_athlon },
-	{ "athlon-mp",    cpu_athlon },
-	{ "athlon64",     cpu_athlon64 },
-	{ "k8",           cpu_k8 },
-	{ "opteron",      cpu_k8 },
-	{ "athlon-fx",    cpu_k8 },
-	{ "k8-sse3",      cpu_k8_sse3 },
-	{ "opteron-sse3", cpu_k8_sse3 },
-	{ "k10",          cpu_k10 },
-	{ "barcelona",    cpu_k10 },
-	{ "amdfam10",     cpu_k10 },
+	{ "k6",             cpu_k6 },
+	{ "k6-2",           cpu_k6_PLUS },
+	{ "k6-3",           cpu_k6_PLUS },
+	{ "geode",          cpu_geode },
+	{ "athlon",         cpu_athlon_old },
+	{ "athlon-tbird",   cpu_athlon },
+	{ "athlon-4",       cpu_athlon },
+	{ "athlon-xp",      cpu_athlon },
+	{ "athlon-mp",      cpu_athlon },
+	{ "athlon64",       cpu_athlon64 },
+	{ "k8",             cpu_k8 },
+	{ "opteron",        cpu_k8 },
+	{ "athlon-fx",      cpu_k8 },
+	{ "k8-sse3",        cpu_k8_sse3 },
+	{ "opteron-sse3",   cpu_k8_sse3 },
+	{ "athlon64-sse3",  cpu_k8_sse3 },
+	{ "k10",            cpu_k10 },
+	{ "barcelona",      cpu_k10 },
+	{ "amdfam10",       cpu_k10 },
+	{ "btver1",         cpu_btver1 },
+	{ "btver2",         cpu_btver2 },
+	{ "bdver1",         cpu_bdver1 },
+	{ "bdver2",         cpu_bdver2 },
+	{ "bdver3",         cpu_bdver3 },
+	{ "bdver4",         cpu_bdver4 },
+	{ "znver1",         cpu_znver1 },
+	{ "znver2",         cpu_znver2 },
+	{ "znver3",         cpu_znver3 },
 
-	{ "winchip-c6",   cpu_winchip_c6, },
-	{ "winchip2",     cpu_winchip2 },
-	{ "c3",           cpu_c3 },
-	{ "c3-2",         cpu_c3_2 },
+	{ "winchip-c6",     cpu_winchip_c6, },
+	{ "winchip2",       cpu_winchip2 },
+	{ "c3",             cpu_c3 },
+	{ "c3-2",           cpu_c3_2 },
 
-	{ "generic",      cpu_generic },
-	{ "generic32",    cpu_generic },
+	{ "generic",        cpu_generic },
+	{ "generic32",      cpu_generic },
 
 #ifdef NATIVE_X86
 	{ "native",       cpu_autodetect },
@@ -351,7 +390,7 @@ static void set_arch_costs(void)
 	case arch_k8:        arch_costs = &k8_cost;         break;
 	case arch_k10:       arch_costs = &k10_cost;        break;
 	default:
-	case arch_generic32: arch_costs = &generic32_cost;  break;
+	case arch_generic:   arch_costs = &generic32_cost;  break;
 	}
 }
 
@@ -420,24 +459,24 @@ void ia32_setup_cg_config(void)
 	c->use_leave            = arch_flags(opt_arch, arch_i386 | arch_all_amd | arch_core2) || opt_size;
 	/* P4s don't like inc/decs because they only partially write the flags
 	 * register which produces false dependencies */
-	c->use_incdec           = !arch_flags(opt_arch, arch_netburst | arch_nocona | arch_core2 | arch_geode) || opt_size;
+	c->use_incdec           = !arch_flags(opt_arch, arch_netburst | arch_nocona | arch_core2_plus | arch_atom_plus | arch_geode) || opt_size;
 	c->use_softfloat        = (fpu_arch & IA32_FPU_SOFTFLOAT) != 0;
 	c->use_sse2             = (fpu_arch & IA32_FPU_SSE2) != 0 && feature_flags(arch, arch_feature_sse2);
 	c->use_ffreep           = arch_flags(opt_arch, arch_athlon_plus);
 	c->use_femms            = arch_flags(opt_arch, arch_athlon_plus) && feature_flags(arch, arch_feature_3DNow);
-	c->use_fucomi           = feature_flags(arch, arch_feature_p6_insn);
+	c->use_fucomi           = feature_flags(arch, arch_feature_fcmov);
 	c->use_cmov             = feature_flags(arch, arch_feature_cmov) && use_cmov;
-	c->use_modeD_moves      = arch_flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro | arch_geode);
-	c->use_add_esp_4        = arch_flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 |             arch_geode)                         && !opt_size;
-	c->use_add_esp_8        = arch_flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro | arch_geode | arch_i386 | arch_i486) && !opt_size;
-	c->use_sub_esp_4        = arch_flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro)                                      && !opt_size;
-	c->use_sub_esp_8        = arch_flags(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro |              arch_i386 | arch_i486) && !opt_size;
+	c->use_modeD_moves      = arch_flags(opt_arch, arch_generic | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2_plus | arch_atom_plus | arch_ppro | arch_geode);
+	c->use_add_esp_4        = arch_flags(opt_arch, arch_generic | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2_plus | arch_atom_plus | arch_geode) && !opt_size;
+	c->use_add_esp_8        = arch_flags(opt_arch, arch_generic | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2_plus | arch_atom_plus | arch_ppro | arch_geode | arch_i386 | arch_i486) && !opt_size;
+	c->use_sub_esp_4        = arch_flags(opt_arch, arch_generic | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2_plus | arch_atom_plus | arch_ppro) && !opt_size;
+	c->use_sub_esp_8        = arch_flags(opt_arch, arch_generic | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2_plus | arch_atom_plus | arch_ppro | arch_i386 | arch_i486) && !opt_size;
 	c->use_imul_mem_imm32   = !arch_flags(opt_arch, arch_k8 | arch_k10) || opt_size;
 	c->use_pxor             = arch_flags(opt_arch, arch_netburst);
 	c->use_mov_0            = arch_flags(opt_arch, arch_k6) && !opt_size;
 	c->use_short_sex_eax    = !arch_flags(opt_arch, arch_k6) || opt_size;
-	c->use_pad_return       = arch_flags(opt_arch, arch_athlon_plus) && !opt_size;
-	c->use_bt               = arch_flags(opt_arch, arch_core2 | arch_athlon_plus) || opt_size;
+	c->use_pad_return       = arch_flags(opt_arch, arch_athlon | arch_k8 | arch_k10) && !opt_size;
+	c->use_bt               = arch_flags(opt_arch, arch_core2_plus | arch_atom_plus | arch_athlon_plus) || opt_size;
 	c->use_fisttp           = feature_flags(opt_arch, arch_feature_sse3) && feature_flags(arch, arch_feature_sse3);
 	c->use_sse_prefetch     = feature_flags(arch, (arch_feature_3DNowE | arch_feature_sse1));
 	c->use_3dnow_prefetch   = feature_flags(arch, arch_feature_3DNow);

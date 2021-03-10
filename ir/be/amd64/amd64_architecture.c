@@ -1,3 +1,8 @@
+/**
+ * @file
+ * @brief   AMD64 architecture specific options
+ * @author  Johannes Bucher
+ */
 #include "amd64_architecture.h"
 
 #include <stdbool.h>
@@ -18,10 +23,66 @@ static bool              use_scalar_fma3      = false;
 
 /* instruction set architectures. */
 static const lc_opt_enum_int_items_t arch_items[] = {
-	{ "generic",      cpu_generic64 },
+	{ "generic",        cpu_generic64 },
+	{ "x86-64",         cpu_generic64 },
+
+	{ "nocona",         cpu_nocona },
+	{ "merom",          cpu_core2 },
+	{ "core2",          cpu_core2 },
+	{ "penryn",         cpu_penryn },
+	{ "atom",           cpu_atom },
+	{ "bonnell",        cpu_atom },
+	{ "silvermont",     cpu_silvermont },
+	{ "slm",            cpu_silvermont },
+	{ "goldmont",       cpu_goldmont },
+	{ "goldmont-plus",  cpu_goldmont_plus },
+	{ "tremont",        cpu_tremont },
+	{ "knl",            cpu_knl },
+	{ "knm",            cpu_knm },
+	{ "nehalem",        cpu_nehalem },
+	{ "corei7",         cpu_nehalem },
+	{ "westmere",       cpu_westmere },
+	{ "sandybridge",    cpu_sandybridge },
+	{ "corei7-avx",     cpu_sandybridge },
+	{ "ivybridge",      cpu_ivybridge },
+	{ "core-avx-i",     cpu_ivybridge },
+	{ "haswell",        cpu_haswell },
+	{ "core-avx2",      cpu_haswell },
+	{ "broadwell",      cpu_broadwell },
+	{ "skylake",        cpu_skylake },
+	{ "skylake-avx512", cpu_skylake_avx512 },
+	{ "skx",            cpu_skylake_avx512 },
+	{ "cascadelake",    cpu_cascade_lake },
+	{ "cooperlake",     cpu_cooperlake },
+	{ "cannonlake",     cpu_cannonlake },
+	{ "icelake-client", cpu_icelake_client },
+	{ "icelake-server", cpu_icelake_server },
+	{ "tigerlake",      cpu_tigerlake },
+	{ "sapphirerapids", cpu_sapphirerapids },
+	{ "alderlake",      cpu_alderlake },
+
+	{ "athlon64",       cpu_athlon64 },
+	{ "k8",             cpu_k8 },
+	{ "opteron",        cpu_k8 },
+	{ "athlon-fx",      cpu_k8 },
+	{ "k8-sse3",        cpu_k8_sse3 },
+	{ "opteron-sse3",   cpu_k8_sse3 },
+	{ "athlon64-sse3",  cpu_k8_sse3 },
+	{ "k10",            cpu_k10 },
+	{ "barcelona",      cpu_k10 },
+	{ "amdfam10",       cpu_k10 },
+	{ "btver1",         cpu_btver1 },
+	{ "btver2",         cpu_btver2 },
+	{ "bdver1",         cpu_bdver1 },
+	{ "bdver2",         cpu_bdver2 },
+	{ "bdver3",         cpu_bdver3 },
+	{ "bdver4",         cpu_bdver4 },
+	{ "znver1",         cpu_znver1 },
+	{ "znver2",         cpu_znver2 },
+	{ "znver3",         cpu_znver3 },
 
 #ifdef NATIVE_X86
-	{ "native",       cpu_autodetect },
+	{ "native",         cpu_autodetect },
 #endif
 
 	{ NULL,           0 }
@@ -36,8 +97,8 @@ static lc_opt_enum_int_var_t opt_arch_var = {
 };
 
 static const lc_opt_table_entry_t amd64_architecture_options[] = {
-	LC_OPT_ENT_ENUM_INT("arch",             "select the instruction architecture",                &arch_var),
-	LC_OPT_ENT_ENUM_INT("tune",             "optimize for instruction architecture",              &opt_arch_var),
+	LC_OPT_ENT_ENUM_INT("arch",             "select the instruction architecture",                 &arch_var),
+	LC_OPT_ENT_ENUM_INT("tune",             "optimize for instruction architecture",               &opt_arch_var),
 	LC_OPT_ENT_BOOL    ("no-red-zone",      "gcc compatibility",                                  &use_red_zone),
 	LC_OPT_ENT_BOOL    ("fma",              "support FMA3 code generation",                       &use_scalar_fma3),
 	LC_OPT_LAST
