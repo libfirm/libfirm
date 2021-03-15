@@ -641,7 +641,7 @@ static void spm_force_insert(dprg_walk_env *env, alloc_result *result, node_data
 	spm_content **best_fit_gap_el = NEW_ARR_FZ(spm_content *, 1);
 	int cur_min_gap_size = INT_MAX;
 	//start at first real element (after sentinel)
-	spm_content *prev = list_entry(&result->spm_content_head.next, spm_content, list);
+	spm_content *prev = list_entry(result->spm_content_head.next, spm_content, list);
 	spm_content *sentinel = prev;
 	printf("swapin size: %d\n", swapin->size);
 	print_spm_content_list(&result->spm_content_head);
@@ -678,16 +678,16 @@ static void spm_force_insert(dprg_walk_env *env, alloc_result *result, node_data
 	if (!best_swapout_candidate) //TODO: maybe have to do more than that
 		return;
 	//TODO: dont go by sizes, instead define a swapout region in the list
-	prev = list_entry(&best_swapout_candidate->list.prev, spm_content, list);
+	prev = list_entry(best_swapout_candidate->list.prev, spm_content, list);
 	int swapout_size = prev->gap_size + best_swapout_candidate->content->size + best_swapout_candidate->gap_size;
-	spm_content *next = list_entry(&best_swapout_candidate->list.next, spm_content, list);
+	spm_content *next = list_entry(best_swapout_candidate->list.next, spm_content, list);
 	list_del(&best_swapout_candidate->list);
 	pmap_insert(result->swapout_set, best_swapout_candidate->content, create_spm_transfer_out(best_swapout_candidate));
 	free(best_swapout_candidate);
 	while (swapout_size < swapin->size) {
 		swapout_size += next->content->size + next->gap_size;
 		spm_content *tmp = next;
-		next = list_entry(&next->list.next, spm_content, list);
+		next = list_entry(next->list.next, spm_content, list);
 		list_del(&tmp->list);
 		pmap_insert(result->swapout_set, tmp->content, create_spm_transfer_out(tmp));
 		free(tmp);
@@ -1071,7 +1071,7 @@ static void spm_join_loop(dprg_walk_env *env)
 			list_for_each_entry_safe(spm_content, var, tmp, &alloc->spm_content_head, list) {
 				if (var == sentinel)
 					continue;
-				if (var->addr != loop_var->addr) {
+				if (handled_all_loop_vars || var->addr != loop_var->addr) {
 					for (size_t l  = 0; l < loop_var_cnt; l++) {
 						//Loop var is at wrong place, we delete it here from alloc
 						if (var->content == loop_vars[l]->content) {
@@ -1084,7 +1084,7 @@ static void spm_join_loop(dprg_walk_env *env)
 					}
 				}
 				if (handled_all_loop_vars)
-					continue; //TODO: why not break?
+					continue;
 				//Currently looked at loop var should be further back in list
 				if (var->addr < loop_var->addr)
 					continue;
@@ -1233,6 +1233,7 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 			//TODO: avoid code duplication
 			ir_node *succ_block = get_Block_cfg_out(block, i);
 			ir_loop *innerst_loop = branch->cur_loops[ARR_LEN(branch->cur_loops) - 1];
+			assert(innerst_loop);
 			//only push block outside current loop onto queue
 			ir_loop *succ_loop = get_irn_loop(succ_block);
 			if (succ_loop) {
@@ -1257,6 +1258,7 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 			out_branch->cur_loops = ARR_SETLEN(ir_loop *, branch->cur_loops, ARR_LEN(branch->cur_loops) - 1);
 			branch->cur_loops = NEW_ARR_F(ir_loop *, 0);
 			deq_push_pointer_right(&env->workqueue, out_branch);
+			break;
 		}
 		return;
 	}
