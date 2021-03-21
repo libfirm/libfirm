@@ -103,10 +103,11 @@ struct alloc_result {
 struct node_data {
 	node_data_type data_type;
 	list_head list;
+	ir_node *irn;
 	void *identifier; //TODO: change?
 	int size; //in bytes
 	bool modified;
-	bool write_first; //TODO: write happens before every read in region
+	bool write_first;
 	int access_cnt;
 	double freq_per_byte; // = access_cnt / size
 };
@@ -115,9 +116,10 @@ typedef struct block_data {
 	list_head *node_lists;
 	int callee_cnt;
 	double max_exec_freq;
+	double exec_freq;
 	alloc_result **allocation_results;
 	pset_new_t *compensation_callees; //callees which have to be surrounded by compensation code
-	pset_new_t *dead_set; //Vars last accessed in this block //TODO: Array?
+	pset_new_t *dead_set; //Vars last accessed in this block
 } block_data;
 
 typedef struct loop_data {
@@ -153,6 +155,8 @@ static struct spm_properties_t spm_properties = {
 };
 
 static pmap *spm_var_infos;
+
+static pset_new_t recursive_functions;
 
 
 node_data *(*retrieve_spm_node_data)(ir_node *);
@@ -228,51 +232,22 @@ static void print_spm_content_list(list_head *head)
 	printf("\n");
 }
 
-static pmap *middleend_irgs;
-
 void spm_calculate_dprg_info()
 {
 	analyse_loop_nesting_depth();
-	/*
-		//store middleend irg -> entity mapping so
-		//we can later do a mapping from middleend irg to beirg.
-		//Necessary as callgraph data is stored with pointers to irgs
-		middleend_irgs = pmap_create();
-		foreach_irp_irg(i, irg) {
-			if(get_irg_entity(irg)) {
-				pmap_insert(middleend_irgs, irg, get_irg_entity(irg));
-				printf("Insterted: (%p,%p) %s\n", irg, get_irg_entity(irg), gdb_node_helper(get_irg_entity(irg)));
-			}
-		}*/
-}
-/*
-static void fix_call_graph_data(void)
-{
+	pset_new_init(&recursive_functions);
 	foreach_irp_irg(i, irg) {
-		printf("graph %s\n", gdb_node_helper(irg));
-		printf("caller\n");
-		for(unsigned i = 0; i < ARR_LEN(irg->callers); i++) {
-			ir_graph *old_irg = irg->callers[i];
-			printf("Looking up: %p\n", old_irg);
-			if(pmap_contains(middleend_irgs, old_irg))
-				irg->callers[i] =  get_entity_irg(pmap_get(ir_entity, middleend_irgs, old_irg));
-		}
-		printf("callee\n");
-		for(unsigned i = 0; i < ARR_LEN(irg->callees); i++) {
-			ir_graph *old_irg = irg->callees[i]->irg;
-			printf("Looking up: %p\n", old_irg);
-			if(pmap_contains(middleend_irgs, old_irg))
-				irg->callees[i]->irg =  get_entity_irg(pmap_get(ir_entity, middleend_irgs, old_irg));
-		}
-
+		if (has_irg_callee_backedge(irg))
+			pset_new_insert(&recursive_functions, get_irg_entity(irg));
 	}
-	pmap_destroy(middleend_irgs);
 }
-*/
+
 static node_data *spm_collect_node_data(ir_node *node, block_data *b_data)
 {
 	node_data *n_data = retrieve_spm_node_data(node);
 	if (n_data) {
+		//ir_printf("got %+F for irn %+F\n", (ir_entity *) n_data->identifier, node);
+		n_data->irn = node;
 		if (n_data->data_type == CALLEE) {
 			b_data->callee_cnt++;
 			list_add_tail(&n_data->list, b_data->node_lists);
@@ -373,8 +348,7 @@ static void spm_collect_irg_data(ir_graph *irg, void *env)
 typedef struct callgraph_walk_env {
 	double irg_freq;
 	pmap *block_data_map;
-	pmap *call_blocks;
-	bool is_in_recursion;
+	bool recursive;
 } callgraph_walk_env;
 
 static void spm_calc_glb_exec_freq(ir_graph *irg, void *env);
@@ -384,31 +358,35 @@ static void spm_calc_glb_blk_exec_freq(ir_node *block, void *env)
 	callgraph_walk_env *c_env = env;
 	double freq = c_env->irg_freq * get_block_execfreq(block);
 	block_data *b_data = pmap_get(block_data, c_env->block_data_map, block);
+	if (c_env->recursive)
+		b_data->exec_freq += freq * 10;
+	else
+		b_data->exec_freq += freq;
+
 	if (freq > b_data->max_exec_freq)
 		b_data->max_exec_freq = freq;
 
 	list_head *node_list = &b_data->node_lists[0];
 
 	list_for_each_entry(node_data, n_data, node_list, list) {
-		ir_graph *irg = get_entity_irg((ir_entity *) n_data->identifier);
-		if (!irg)
+		ir_entity *entity = (ir_entity *) n_data->identifier;
+		ir_graph *irg = get_entity_irg(entity);
+		/* don't step into recursion */
+		if (!irg || irg == get_irn_irg(block))
 			continue;
-		ir_node *start_block = get_irg_start_block(irg);
-		block_data *callee_data = pmap_get(block_data, c_env->block_data_map, start_block);
-		if (freq > callee_data->max_exec_freq) {
-			callee_data->max_exec_freq = freq;
-			//pmap_insert(c_env->call_blocks, irg, callee_data);
-			callgraph_walk_env callg_env = {
-				.irg_freq = freq,
-				.block_data_map = c_env->block_data_map,
-				.call_blocks = NULL,//pmap_create(),
-				.is_in_recursion = false,//is_irg_callee_backedge(irg, i),
-			};
-			spm_calc_glb_exec_freq(irg, &callg_env);
-		}
+		//ir_node *start_block = get_irg_start_block(irg);
+		//block_data *callee_data = pmap_get(block_data, c_env->block_data_map, start_block);
+		//callee_data->max_exec_freq = freq;
+		callgraph_walk_env callg_env = {
+			.irg_freq = freq,
+			.block_data_map = c_env->block_data_map,
+			.recursive = pset_new_contains(&recursive_functions, entity),
+		};
+		spm_calc_glb_exec_freq(irg, &callg_env);
 	}
 
-	if (!c_env->is_in_recursion)
+	//TODO: recursion handling will be different
+	if (!c_env->recursive)
 		return;
 
 	//in recursion we delete all node_data in access lists.
@@ -427,26 +405,6 @@ static void spm_calc_glb_exec_freq(ir_graph *irg, void *env)
 	irg_block_walk_graph(irg, spm_calc_glb_blk_exec_freq, NULL, env);
 }
 
-/* Next two functions copied from callgraph.c and edited */
-static void glb_exec_freq_walk(ir_graph *irg, void *env)
-{
-	callgraph_walk_env *callg_env = env;
-	spm_calc_glb_exec_freq(irg, env);
-	/*
-		for (size_t i = 0, n_callees = get_irg_n_callees(irg); i < n_callees; i++) {
-			ir_graph *m = get_irg_callee(irg, i);
-			if (pmap_contains(callg_env->call_blocks, m)) {
-				callgraph_walk_env c_env = {
-					.irg_freq = pmap_get(block_data, callg_env->call_blocks, m)->max_exec_freq,
-					.block_data_map = callg_env->block_data_map,
-					.call_blocks = NULL;//pmap_create(),
-					.is_in_recursion = false;//is_irg_callee_backedge(irg, i),
-				};
-				glb_exec_freq_walk(m, &c_env);
-				//pmap_destroy(c_env.call_blocks);
-			}
-		}*/
-}
 
 static void spm_glb_exec_freq_walk(pmap *block_data_map)
 {
@@ -456,25 +414,11 @@ static void spm_glb_exec_freq_walk(pmap *block_data_map)
 			callgraph_walk_env c_env = {
 				.irg_freq = 1.0,
 				.block_data_map = block_data_map,
-				.call_blocks = NULL,//pmap_create(),
-				.is_in_recursion = false,
+				.recursive = pset_new_contains(&recursive_functions, get_irg_entity(irg)),
 			};
 			spm_calc_glb_exec_freq(irg, &c_env);
-			//pmap_destroy(c_env.call_blocks);
 		}
 	}
-
-	/* in case of unreachable call loops we haven't visited some irgs yet */
-	/*foreach_irp_irg(i, irg) {
-		callgraph_walk_env c_env = {
-			.irg_freq = 1.0,
-			.block_data_map = block_data_map,
-			.call_blocks = pmap_create(),
-			.is_in_recursion = false,
-		};
-		glb_exec_freq_walk(irg, &c_env);
-		pmap_destroy(c_env.call_blocks);
-	}*/
 }
 //TODO: Rename function. does a bit more than accessfreq
 static void spm_calc_blocks_access_freq(pmap *block_data_map)
@@ -525,22 +469,11 @@ static void spm_calc_blocks_access_freq(pmap *block_data_map)
 	}
 }
 
-static int get_set_size_in_bytes(pset_new_t *node_data_set)
-{
-	pset_new_iterator_t iter;
-	node_data *el;
-	int size = 0;
-	foreach_pset_new(node_data_set, node_data *, el, iter) {
-		size += el->size;
-	}
-	return size;
-}
-
 static double get_spm_benefit(dprg_walk_env *env, alloc_result *alloc_res, node_data *n_data, node_data *swapout_candidate)
 {
 	timestamp *branch = env->cur_branch;
 	block_data *blk_data = pmap_get(block_data, env->block_data_map, branch->block);
-	double block_exec_freq = blk_data->max_exec_freq;
+	double block_exec_freq = blk_data->exec_freq;
 	double latency_gain = block_exec_freq * n_data->access_cnt * spm_properties.latency_diff;
 
 	double migration_overhead = spm_properties.throughput_spm * n_data->size; //TODO: find approximation
@@ -560,23 +493,6 @@ static double get_spm_benefit(dprg_walk_env *env, alloc_result *alloc_res, node_
 	}
 	double latency_loss = swapout_acc_cnt * block_exec_freq * spm_properties.latency_diff;
 	return latency_gain - latency_loss - migration_overhead;
-}
-
-static node_data *get_node_data_by_spm_var(dprg_walk_env *env, spm_var_info *var_info)
-{
-	block_data *blk_data = pmap_get(block_data, env->block_data_map, env->cur_branch->block);
-	list_head *node_list = &blk_data->node_lists[env->cur_branch->finished_callees + 1];
-
-	list_for_each_entry(node_data, n_data, node_list, list) {
-		if (n_data->identifier == var_info->identifier)
-			return n_data;
-	}
-	return NULL; //Should really never happen
-}
-
-static int spm_var_cmp(const void *p1, const void *p2)
-{
-	return QSORT_CMP((*(spm_var_info * const *) p1)->size, (*(spm_var_info * const *) p2)->size);
 }
 
 static spm_transfer *create_spm_transfer_in(spm_content *content)
@@ -862,22 +778,31 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 	return result;
 }
 
-static ir_entity *get_next_call_from_block(dprg_walk_env *env)
+typedef struct call_site_t {
+	ir_node *irn;
+	ir_entity *callee;
+} call_site_t;
+
+static call_site_t get_next_call_from_block(dprg_walk_env *env)
 {
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
 	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
 	int callee_cnt = blk_data->callee_cnt;
+	call_site_t call_site = { .irn = NULL, .callee = NULL, };
 	if (!callee_cnt || callee_cnt == branch->finished_callees)
-		return NULL;
+		return call_site;
 
 	int i = 0;
 	list_for_each_entry(node_data, n_data, blk_data->node_lists, list) {
-		if (i == branch->finished_callees)
-			return (ir_entity *) n_data->identifier;
+		if (i == branch->finished_callees) {
+			call_site.irn = n_data->irn;
+			call_site.callee = (ir_entity *) n_data->identifier;
+			return call_site;
+		}
 		i++;
 	}
-	return NULL;
+	return call_site;
 }
 
 static spm_content *find_var_in_spm_content(list_head *spm_list, spm_var_info *var)
@@ -1230,7 +1155,6 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 		alloc_result *cur_alloc = get_last_block_allocation(blk_data);
 		int n_outs = get_Block_n_cfg_outs(block);
 		for (int i = 0; i < n_outs; i++) {
-			//TODO: avoid code duplication
 			ir_node *succ_block = get_Block_cfg_out(block, i);
 			ir_loop *innerst_loop = branch->cur_loops[ARR_LEN(branch->cur_loops) - 1];
 			assert(innerst_loop);
@@ -1308,7 +1232,6 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 		loop_data *l_data = pmap_get(loop_data, env->loop_info, loop);
 		assert(l_data);
 		ARR_APP1(ir_node *, l_data->blocks, block);
-		//TODO: possibly insert whole entry
 		foreach_pmap(cur_alloc->copy_in, entry) {
 			spm_var_info *var_info = (spm_var_info *) entry->key;
 			if (var_info->data_type == NON_STACK_ACCESS  || loop_irg == get_irn_irg(block))
@@ -1317,13 +1240,15 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	}
 
 	//handle next call or successor blocks when end of block is reached
-	ir_entity *callee = get_next_call_from_block(env);
+	call_site_t call_site = get_next_call_from_block(env);
+	ir_entity *callee = call_site.callee;
 	if (callee) {
 		ir_graph *irg = get_entity_irg(callee);
 		ir_node *start_block = get_irg_start_block(irg);
 		//Skip irg, if already visited with higher block_freq
 		block_data *start_block_data = pmap_get(block_data, env->block_data_map, start_block);
-		if (fabs(start_block_data->max_exec_freq - block_exec_freq) < 0.01f ) { //TODO: float compare okay? (does freq has to be float?)
+		if (fabs(start_block_data->max_exec_freq - block_exec_freq) < 0.01f && !Block_block_visited(start_block)) {
+			mark_Block_block_visited(start_block);
 			timestamp *new_branch = XMALLOC(timestamp);
 			timestamp *branch_copy = XMALLOC(timestamp);
 			*branch_copy = *branch;
@@ -1344,7 +1269,7 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 				blk_data->compensation_callees = XMALLOC(pset_new_t);
 				pset_new_init(blk_data->compensation_callees);
 			}
-			pset_new_insert(blk_data->compensation_callees, callee);
+			pset_new_insert(blk_data->compensation_callees, call_site.irn);
 			//Add current block again, just as we would after handling the callee
 			branch->finished_callees++;
 			timestamp *branch_copy = XMALLOC(timestamp);
@@ -1406,7 +1331,7 @@ static ir_node *create_regpush(ir_node *schedpoint, ir_node **mem, ir_node *val,
 	*mem = be_new_Proj(push, pn_ia32_Push_M);
 
 	sched_add_before(schedpoint, push);
-	//ir_printf("Create %+F\n", push);
+	ir_printf("Create %+F\n", push);
 	return push;
 }
 
@@ -1425,7 +1350,7 @@ static ir_node *create_regpop(ir_node *schedpoint, ir_node *sp, ir_node *mem)
 	ir_node *const val  = be_new_Proj_reg(pop, pn_ia32_Pop_res, mov_register);
 	ir_node *const keep = be_new_Keep_one(val);
 	sched_add_before(schedpoint, keep);
-	//ir_printf("Create %+F\n", pop);
+	ir_printf("Create %+F\n", pop);
 	return val;
 }
 
@@ -1558,7 +1483,7 @@ static void spm_create_transfer_movs(ir_node *before, ir_node **before_mem, spm_
 			set_ia32_frame_use(store, frame_use_t);
 		else if (transfer->direction == IN)
 			set_ia32_frame_use(load, frame_use_t);
-		//ir_printf("Create %+F and %+F for %s %d:%d+%d (%d)\n", load, store, get_entity_name(entity), spm_addr_load, spm_addr_store, offset, entsize);
+		ir_printf("Create %+F and %+F for %s %d:%d+%d (%d)\n", load, store, get_entity_name(entity), spm_addr_load, spm_addr_store, offset, entsize);
 
 		unsigned size_bytes = x86_bytes_from_size(size);
 		offset  += size_bytes;
@@ -1571,13 +1496,13 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 {
 	assert(ARR_LEN(transfers) > 0);
 	ir_node *before = irn;
-	//printf("before: %s\n", gdb_node_helper(irn));
+	printf("before: %s\n", gdb_node_helper(irn));
 	ir_graph *irg = get_irn_irg(irn);
 	ir_node  *sp = be_get_Start_proj(irg, &ia32_registers[REG_ESP]);
 	ir_node *mem = get_irg_no_mem(irg);
 	assert(mem);
 	ir_node  *val   = register_values[mov_register->global_index];
-	//printf("eax node: %s\n", gdb_node_helper(val));
+	printf("eax node: %s\n", gdb_node_helper(val));
 	if (val)
 		create_regpush(before, &mem, val, sp);
 	for (size_t i = 0; i < ARR_LEN(transfers); i++) {
@@ -1716,23 +1641,23 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 				}
 			}
 
-
-			//TODO: method should not depend on ia32 specific code
 			if (!is_ia32_Call(irn))
 				continue;
 
 			ir_node *callee = get_irn_n(irn, n_ia32_Call_callee);
 			ir_entity *callee_ent = get_ia32_immediate_attr_const(callee)->imm.entity;
-			if (callee_ent == next_callee->identifier) {
+			if (callee_ent == next_callee->identifier &&
+			        irn == next_callee->irn) {
 				//insert compensation code before call node
 				if (blk_data->compensation_callees != NULL) {
-					if (pset_new_contains(blk_data->compensation_callees, next_callee->identifier)) {
+					if (pset_new_contains(blk_data->compensation_callees, irn)) {
 						ir_entity *callee = (ir_entity *) next_callee->identifier;
 						ir_node *callee_start = get_irg_start_block(get_entity_irg(callee));
 						block_data *callee_data = pmap_get(block_data, block_data_map, callee_start);
 						alloc_result *callee_alloc = callee_data->allocation_results[0];
 						spm_transfer **transfers = join_allocations(callee_alloc, alloc_res);
-						spm_insert_copy_instrs_before_irn(irn, transfers);
+						if (ARR_LEN(transfers) > 0)
+							spm_insert_copy_instrs_before_irn(irn, transfers);
 						DEL_ARR_F(transfers);
 					}
 				}
@@ -1760,37 +1685,34 @@ typedef struct node_perm_info {
 	spm_var_info *var_info;
 } node_perm_info;
 
-//TODO: move ia32 code to ia32 folder
 static void ia32_set_spm_addr(ir_node *irn, int addr)
 {
 	if (is_ia32_Store(irn)) {
 		ir_node *immediate = get_irn_n(irn, 3);
-		if (is_ia32_Immediate(immediate)) {
+		if (is_ia32_Immediate(immediate) &&
+		        get_ia32_immediate_attr_const(immediate)->imm.entity) {
 			ia32_immediate_attr_t *attr
 			    = get_ia32_immediate_attr(immediate);
 			attr->imm.entity = NULL;
 			attr->imm.offset += spm_properties.start_addr + addr;
 			attr->imm.kind = X86_IMM_VALUE;
+			return;
 		}
 	}
-	else {
-		ia32_attr_t *attr = get_ia32_attr(irn);
-		uint64_t old_offset = attr->addr.immediate.offset;
-		attr->addr = (x86_addr_t) {
-			.immediate = (x86_imm32_t) {
-				.kind   = X86_IMM_VALUE,
-				.entity = NULL,
-				.offset = spm_properties.start_addr + addr + old_offset,
-			},
-			.variant = X86_ADDR_JUST_IMM,
-		};
-	}
+	ia32_attr_t *attr = get_ia32_attr(irn);
+	uint64_t old_offset = attr->addr.immediate.offset;
+	attr->addr = (x86_addr_t) {
+		.immediate = (x86_imm32_t) {
+			.kind   = X86_IMM_VALUE,
+			.entity = NULL,
+			.offset = spm_properties.start_addr + addr + old_offset,
+		},
+		.variant = X86_ADDR_JUST_IMM,
+	};
 }
 
 static void spm_adjust_mem_accesses_for_alloc(node_perm_info *nodes, alloc_result *alloc_res)
 {
-	//TODO: walk over spm alloc list
-	//if el is in nodes array, change node and free node_perm_info (set NULL in array)
 	size_t nodes_cnt = ARR_LEN(nodes);
 	unsigned int addr_changed_cnt = 0;
 	list_for_each_entry(spm_content, var, &alloc_res->spm_content_head, list) {
@@ -1809,7 +1731,7 @@ static void spm_adjust_mem_accesses_for_alloc(node_perm_info *nodes, alloc_resul
 static void spm_adjust_mem_accesses(ir_node *blk, block_data *blk_data)
 {
 	int callee_cnt = 0;
-	node_perm_info *vars_in_spm = NEW_ARR_F(node_perm_info, 0); //TODO: dont use pointer array
+	node_perm_info *vars_in_spm = NEW_ARR_F(node_perm_info, 0);
 	alloc_result *alloc_res;
 
 	sched_foreach(blk, irn) {
@@ -1836,6 +1758,7 @@ static void spm_adjust_mem_accesses(ir_node *blk, block_data *blk_data)
 			perm_info.irn = irn;
 			perm_info.var_info = var_info;
 			ARR_APP1(node_perm_info, vars_in_spm, perm_info);
+			printf("marked for change: %s\n", gdb_node_helper(irn));
 		}
 	}
 	spm_adjust_mem_accesses_for_alloc(vars_in_spm, alloc_res);
@@ -1893,6 +1816,7 @@ static void debug_print_block_data(pmap *block_data_map, bool call_list_only)
 		printf("%s in %s\n", gdb_node_helper(blk), irn_method_name(blk));
 		printf("\tCallee count: %d\n", blk_data->callee_cnt);
 		printf("\tMax exec freq: %f\n", blk_data->max_exec_freq);
+		printf("\tExec freq: %f\n", blk_data->exec_freq);
 		for (int i = 0; i < blk_data->callee_cnt + 2; i++) {
 			if (i == 0) {
 				printf("\tCallee List:\n");
@@ -2062,6 +1986,10 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 		.cur_loops = NEW_ARR_F(ir_loop *, 0),
 	};
 
+	foreach_irp_irg(i, irg) {
+		ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
+		inc_irg_block_visited(irg);
+	}
 	dprg_walk_env walk_env;
 	deq_init(&walk_env.workqueue);
 	walk_env.cur_branch = &main_info;
@@ -2077,6 +2005,9 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 		DEL_ARR_F(cur_branch->cur_loops);
 		free(cur_branch);
 	}
+	foreach_irp_irg(i, irg) {
+		ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
+	}
 	printf("FINAL DATA:\n");
 	debug_print_block_data(block_data_map, false);
 	debug_print_loop_data(walk_env.loop_info);
@@ -2091,6 +2022,7 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 	free_block_data_map(block_data_map);
 	free_spm_var_infos();
 	free_loop_info(walk_env.loop_info);
+	pset_new_destroy(&recursive_functions);
 }
 
 static const lc_opt_table_entry_t options[] = {

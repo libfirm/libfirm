@@ -1423,7 +1423,6 @@ static node_data *ia32_retrieve_spm_node_data(ir_node *node) {
 		ir_node *imm_node = get_irn_n(node, n_ia32_Store_val);
 		if(is_ia32_Immediate(imm_node)) {
 			ir_entity *store_ent = get_ia32_immediate_attr_const(imm_node)->imm.entity;
-			//TODO: nodes can have read and write node data?!
 			if(store_ent)
 				return spm_get_mem_read_node_data(store_ent, get_type_size(get_entity_type(store_ent)));
 		}
@@ -1440,7 +1439,6 @@ static node_data *ia32_retrieve_spm_node_data(ir_node *node) {
 				else
 					data = spm_get_mem_write_node_data(entity, size);
 
-				//TODO: do we really need info, if spill or not?
 				return data;
 			}
 		}
@@ -1452,7 +1450,9 @@ static bool spm;
 
 static void ia32_generate_code(FILE *output, const char *cup_name)
 {
-	spm_calculate_dprg_info();
+	if(spm)
+		spm_calculate_dprg_info();
+
 	ia32_tv_ent = pmap_create();
 
 	be_begin(output, cup_name);
