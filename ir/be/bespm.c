@@ -20,18 +20,23 @@
 #include "irnode.h"
 #include "irnode_t.h"
 #include "irouts.h"
+#include "irouts_t.h"
 #include "irprintf.h"
 #include "irprog_t.h"
 #include "irtools.h"
 #include "pdeq.h"
 #include "pmap.h"
 #include "pset_new.h"
+#include "scalar_replace.h"
 #include "target_t.h"
 #include "util.h"
 #include "xmalloc.h"
 
 #include <math.h>
 #include <stdbool.h>
+
+#define DEBUG 1
+#define DEBUG_PRINT(...) if(DEBUG) ir_printf(__VA_ARGS__);
 
 #define irn_method_name(irn) get_entity_name(get_irg_entity(get_irn_irg(irn)))
 
@@ -104,7 +109,7 @@ struct node_data {
 	node_data_type data_type;
 	list_head list;
 	ir_node *irn;
-	void *identifier; //TODO: change?
+	void *identifier;
 	int size; //in bytes
 	bool modified;
 	bool write_first;
@@ -140,23 +145,24 @@ typedef struct drpg_walk_env {
 struct spm_properties_t {
 	int start_addr;
 	int size;
-	int latency_diff; //ram_lat - spm_lat
+	double latency_diff; //ram_lat - spm_lat
 	double throughput_ram;
 	double throughput_spm;
 };
 #define ONE_MB 1024 * 1024
-//TODO: better initial values
+
 static struct spm_properties_t spm_properties = {
 	.start_addr = 512 * ONE_MB,
 	.size = ONE_MB,
-	.latency_diff = 20,
-	.throughput_ram = 1.0f,
-	.throughput_spm = 1.0f,
+	.latency_diff = 0.00000002, //20ns
+	.throughput_ram = 1 / 0.0000000155, // 1 byte/15.5ns
+	.throughput_spm = 1 / 0.0000000155,
 };
 
 static pmap *spm_var_infos;
 
 static pset_new_t recursive_functions;
+static pset_new_t address_taken_entities;
 
 
 node_data *(*retrieve_spm_node_data)(ir_node *);
@@ -224,12 +230,14 @@ static spm_content *list_next_spm_content(spm_content *element, list_head *head)
 static void print_spm_content_list(list_head *head)
 {
 	list_for_each_entry(spm_content, var, head, list) {
-		if (var->content->identifier)
-			printf("(%s, a:%d, s:%d, g:%d),", get_entity_name(var->content->identifier), var->addr, var->content->size, var->gap_size);
-		else
-			printf("(a:%d, s:%d, g:%d),", var->addr, var->content->size, var->gap_size);
+		if (var->content->identifier) {
+			DEBUG_PRINT("(%s, a:%d, s:%d, g:%d),", get_entity_name(var->content->identifier), var->addr, var->content->size, var->gap_size);
+		}
+		else {
+			DEBUG_PRINT("(a:%d, s:%d, g:%d),", var->addr, var->content->size, var->gap_size);
+		}
 	}
-	printf("\n");
+	DEBUG_PRINT("\n");
 }
 
 void spm_calculate_dprg_info()
@@ -237,8 +245,39 @@ void spm_calculate_dprg_info()
 	analyse_loop_nesting_depth();
 	pset_new_init(&recursive_functions);
 	foreach_irp_irg(i, irg) {
-		if (has_irg_callee_backedge(irg))
+		if (has_irg_caller_backedge(irg))
 			pset_new_insert(&recursive_functions, get_irg_entity(irg));
+	}
+	pset_new_init(&address_taken_entities);
+	foreach_irp_irg(i, irg) {
+		assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
+		                      | IR_GRAPH_PROPERTY_CONSISTENT_OUTS
+		                      | IR_GRAPH_PROPERTY_NO_TUPLES);
+		assure_irg_outs(irg);
+		/* copied from scalar_replace */
+
+		/* Check the ir_graph for Member nodes. If the entity of Member isn't a
+		 * scalar replacement set the link of this entity to ADDRESS_TAKEN. */
+		ir_node *irg_frame = get_irg_frame(irg);
+		ir_type *frame_tp = get_irg_frame_type(irg);
+		foreach_irn_out_r(irg_frame, i, succ) {
+			if (!is_Member(succ))
+				continue;
+
+			/* we are only interested in entities on the frame, NOT on the value
+			 * type */
+			ir_entity *ent = get_Member_entity(succ);
+			if (get_entity_owner(ent) != frame_tp)
+				continue;
+
+			/* we can handle arrays, structs and atomic types yet */
+			ir_type *ent_type = get_entity_type(ent);
+			if (is_aggregate_type(ent_type) || is_atomic_type(ent_type)) {
+				if (is_address_taken(succ)) {
+					pset_new_insert(&address_taken_entities, ent);
+				}
+			}
+		}
 	}
 }
 
@@ -246,13 +285,17 @@ static node_data *spm_collect_node_data(ir_node *node, block_data *b_data)
 {
 	node_data *n_data = retrieve_spm_node_data(node);
 	if (n_data) {
-		//ir_printf("got %+F for irn %+F\n", (ir_entity *) n_data->identifier, node);
+		//DEBUG_PRINT("got %+F for irn %+F\n", (ir_entity *) n_data->identifier, node);
 		n_data->irn = node;
 		if (n_data->data_type == CALLEE) {
 			b_data->callee_cnt++;
 			list_add_tail(&n_data->list, b_data->node_lists);
 		}
 		else {
+			if (pset_new_contains(&address_taken_entities, (ir_entity *) n_data->identifier)) {
+				free(n_data);
+				return NULL;
+			}
 			if (list_empty(b_data->node_lists)) {
 				list_add(&n_data->list, b_data->node_lists);
 			}
@@ -385,18 +428,16 @@ static void spm_calc_glb_blk_exec_freq(ir_node *block, void *env)
 		spm_calc_glb_exec_freq(irg, &callg_env);
 	}
 
-	//TODO: recursion handling will be different
 	if (!c_env->recursive)
 		return;
 
-	//in recursion we delete all node_data in access lists.
-	//Very conservative, as code executed in recursive function won't access spm.
+	//in recursion we delete all stack access node_data in access lists.
 	for (int i = 1; i < b_data->callee_cnt + 2; i++) {
 		node_list = &b_data->node_lists[i];
 		list_for_each_entry_safe(node_data, n_data, tmp, node_list, list) {
-			free(n_data);
+			if (n_data->data_type == STACK_ACCESS)
+				free(n_data);
 		}
-		INIT_LIST_HEAD(node_list);
 	}
 }
 
@@ -420,12 +461,11 @@ static void spm_glb_exec_freq_walk(pmap *block_data_map)
 		}
 	}
 }
-//TODO: Rename function. does a bit more than accessfreq
+
 static void spm_calc_blocks_access_freq(pmap *block_data_map)
 {
 	foreach_pmap(block_data_map, cur_entry) {
 		block_data *blk_data = cur_entry->value;
-		//TODO: alloc_results init doesn't fit in here?
 		blk_data->allocation_results = NEW_ARR_FZ(alloc_result *, blk_data->callee_cnt + 1);
 		//idx 0: call nodes, idx 1 to x are mem_access in between
 		bool node_list_empty = list_empty(blk_data->node_lists);
@@ -476,12 +516,14 @@ static double get_spm_benefit(dprg_walk_env *env, alloc_result *alloc_res, node_
 	double block_exec_freq = blk_data->exec_freq;
 	double latency_gain = block_exec_freq * n_data->access_cnt * spm_properties.latency_diff;
 
-	double migration_overhead = spm_properties.throughput_spm * n_data->size; //TODO: find approximation
+	double migration_overhead = n_data->size / spm_properties.throughput_spm;
+	if (n_data->write_first)
+		migration_overhead = 0;
 	//Access_cnt of swapout candidate in this block
 	int swapout_acc_cnt = 0;
 	if (swapout_candidate) {
 		if (pset_new_contains(alloc_res->modified_set, swapout_candidate))
-			migration_overhead += spm_properties.throughput_ram * swapout_candidate->size;
+			migration_overhead += swapout_candidate->size / spm_properties.throughput_ram;
 
 		list_head *node_list = &blk_data->node_lists[branch->finished_callees + 1];
 		list_for_each_entry(node_data, n_data_iter, node_list, list) {
@@ -499,7 +541,7 @@ static spm_transfer *create_spm_transfer_in(spm_content *content)
 {
 	spm_transfer *transfer = XMALLOC(spm_transfer);
 	transfer->spm_addr_to = content->addr;
-	transfer->identifier = (ir_entity *) content->content->identifier; //TODO: should always be ir_entity
+	transfer->identifier = (ir_entity *) content->content->identifier;
 	transfer->direction = IN;
 	transfer->type = content->content->data_type;
 	return transfer;
@@ -540,6 +582,117 @@ static spm_content *spm_content_insert(spm_var_info *var_info, int gap, spm_cont
 #define no_candidate(alloc_res, candidate) (pset_new_contains(alloc_res->retain_set, candidate) \
 		|| pmap_contains(alloc_res->copy_in, candidate))
 
+static void get_access_distances_r(timestamp *t_stamp, pmap *d_map, pset_new_t *visited_endblocks,
+                                   pmap *b_d_map, int cur_dist, int dist_to_go)
+{
+	if (dist_to_go == 0)
+		return;
+
+	ir_node *block = t_stamp->block;
+
+	block_data *blk_data = pmap_get(block_data, b_d_map, block);
+	list_head *node_list = &blk_data->node_lists[t_stamp->finished_callees + 1];
+
+
+	if (t_stamp->finished_callees > blk_data->callee_cnt)
+		return;
+	if (!list_empty(node_list)) {
+		list_for_each_entry(node_data, n_data, node_list, list) {
+			if (pmap_contains(d_map, n_data->identifier)) {
+				int cur_min_dist = *(pmap_get(int, d_map, n_data->identifier));
+				if (cur_min_dist < cur_dist)
+					continue;
+			}
+			int *heap_int = malloc(sizeof(int));
+			*heap_int = cur_dist;
+			pmap_insert(d_map, n_data->identifier, heap_int);
+		}
+	}
+	/* Following code is partially copied from walk function */
+
+	//At end of irg next block is caller block again
+	if (get_irg_end_block(get_irn_irg(block)) == block) {
+		if (pset_new_contains(visited_endblocks, block))
+			return;
+
+		pset_new_insert(visited_endblocks, block);
+		timestamp *caller = t_stamp->caller_timestamp;
+		if (!caller)
+			return;
+		caller->finished_callees++;
+		get_access_distances_r(caller, d_map, visited_endblocks, b_d_map, cur_dist + 1, dist_to_go - 1);
+		return;
+	}
+
+	ir_entity *callee = NULL;
+
+	int i = 0;
+	list_for_each_entry(node_data, n_data, blk_data->node_lists, list) {
+		if (i == t_stamp->finished_callees) {
+			callee = (ir_entity *) n_data->identifier;
+		}
+		i++;
+	}
+
+	//handle next call or successor blocks when end of block is reached
+	if (callee) {
+		ir_graph *irg = get_entity_irg(callee);
+		ir_node *start_block = get_irg_start_block(irg);
+
+		timestamp new_branch;
+		new_branch.caller_timestamp = t_stamp;
+		new_branch.finished_callees = 0;
+		new_branch.last_block = block;
+		new_branch.block = start_block;
+		get_access_distances_r(&new_branch, d_map, visited_endblocks, b_d_map, cur_dist + 1, dist_to_go - 1);
+	}
+	else {
+		int n_outs = get_Block_n_cfg_outs(block);
+		for (int i = 0; i < n_outs; i++) {
+			ir_node *succ_block = get_Block_cfg_out(block, i);
+			timestamp out_branch;
+			out_branch.block = succ_block;
+			out_branch.last_block = block;
+			out_branch.caller_timestamp = t_stamp->caller_timestamp;
+			out_branch.finished_callees = 0;
+			get_access_distances_r(&out_branch, d_map, visited_endblocks, b_d_map, cur_dist + 1, dist_to_go - 1);
+		}
+	}
+}
+
+#define MAX_ACCESS_DISTANCE 10
+
+static pmap *get_access_distances(dprg_walk_env *env)
+{
+	pmap *d_map = pmap_create();
+	pset_new_t *visited_endblocks = XMALLOC(pset_new_t);
+	pset_new_init(visited_endblocks);
+	timestamp t_stamp = *(env->cur_branch);
+	get_access_distances_r(&t_stamp, d_map, visited_endblocks, env->block_data_map, 0, MAX_ACCESS_DISTANCE);
+	pset_new_destroy(visited_endblocks);
+	free(visited_endblocks);
+	return d_map;
+}
+
+static int get_access_dist(pmap *acc_dist_map, void *identifier)
+{
+	if (pmap_contains(acc_dist_map, identifier))
+		return *(pmap_get(int, acc_dist_map, identifier));
+	else
+		return MAX_ACCESS_DISTANCE;
+}
+
+static node_data *get_node_data_by_spm_var(dprg_walk_env *env, spm_var_info *var_info)
+{
+	block_data *blk_data = pmap_get(block_data, env->block_data_map, env->cur_branch->block);
+	list_head *node_list = &blk_data->node_lists[env->cur_branch->finished_callees + 1];
+
+	list_for_each_entry(node_data, n_data, node_list, list) {
+		if (n_data->identifier == var_info->identifier)
+			return n_data;
+	}
+	return NULL; //Should really never happen
+}
 //How to use spm_content allocation:
 //next use is stored for every var
 //window of spwapin size is dragged over spm_list to get the element(s) furthest away from use
@@ -549,17 +702,24 @@ static spm_content *spm_content_insert(spm_var_info *var_info, int gap, spm_cont
 //This will lead to eviction of possible more vars then necessary, if write to (var + gap) leaves small gap, whereas (var + var) leaves smaller/no gap
 //
 //new idea: calc benefit for each window start and include compaction/other movements into evaluation
+//
+//TODO: use swap window, it has property min_access_distance, sizeof el mit min_acc_d.
+//we choose window mit groesster min_access_distance and if several exist that with smalles sizeof min_acc_d.
+//There we just choose the first one.
+//if min_access_distance ==1 dann für alle muss benefit > 0 sein
 static void spm_force_insert(dprg_walk_env *env, alloc_result *result, node_data *swapin)
 {
 	(void) env;
 
-	//TODO: better walk of list. right now it doesn't work. list_entry use not safe. use safe version
-	spm_content **best_fit_gap_el = NEW_ARR_FZ(spm_content *, 1);
-	int cur_min_gap_size = INT_MAX;
+	pmap *access_distance_map = get_access_distances(env);
+
+	spm_content **best_min_acc_dist = NEW_ARR_FZ(spm_content *, 1);
+	int *mad_counts = NEW_ARR_FZ(int, 1);
+	int cur_min_acc_dist = 0;
 	//start at first real element (after sentinel)
 	spm_content *prev = list_entry(result->spm_content_head.next, spm_content, list);
 	spm_content *sentinel = prev;
-	printf("swapin size: %d\n", swapin->size);
+	DEBUG_PRINT("swapin size: %d\n", swapin->size);
 	print_spm_content_list(&result->spm_content_head);
 	list_for_each_entry(spm_content, var, &result->spm_content_head, list) {
 		//list starts with sentinel, but we want to start at first elmnt after it
@@ -567,33 +727,60 @@ static void spm_force_insert(dprg_walk_env *env, alloc_result *result, node_data
 			continue;
 		int swapout_size = prev->gap_size + var->content->size + var->gap_size;
 		spm_content *next = var;
+		int min_acc_dist = get_access_dist(access_distance_map, next->content->identifier);
+		int mad_count = 1;
 		while (swapout_size < swapin->size) {
 			next = list_next_spm_content(next, &result->spm_content_head);
 			if (!next || no_candidate(result, next))
 				break;
+			int acc_dist = get_access_dist(access_distance_map, next->content->identifier);
+			if (acc_dist == 0) {
+				node_data *data = get_node_data_by_spm_var(env, next->content);
+				if (get_spm_benefit(env, result, swapin, data) <= 0.0)
+					break;
+			}
+			if (acc_dist == min_acc_dist)
+				mad_count++;
+			if (acc_dist < min_acc_dist) {
+				min_acc_dist = acc_dist;
+				mad_count = 1;
+			}
 			swapout_size += next->content->size + next->gap_size;
 		}
 		int new_gap = swapout_size - swapin->size;
 		if (new_gap < 0)
-			continue;
-		if (new_gap < cur_min_gap_size) {
-			DEL_ARR_F(best_fit_gap_el);
-			best_fit_gap_el = NEW_ARR_F(spm_content *, 1);
-			best_fit_gap_el[0] = var;
-			cur_min_gap_size = new_gap;
+			break;
+
+		if (min_acc_dist > cur_min_acc_dist) {
+			DEL_ARR_F(best_min_acc_dist);
+			DEL_ARR_F(mad_counts);
+			best_min_acc_dist = NEW_ARR_F(spm_content *, 1);
+			mad_counts = NEW_ARR_F(int, 1);
+			best_min_acc_dist[0] = var;
+			mad_counts[0] = mad_count;
+			cur_min_acc_dist = min_acc_dist;
 		}
-		else if (new_gap == cur_min_gap_size) {
-			ARR_APP1(spm_content *, best_fit_gap_el, var);
+		else if (min_acc_dist == cur_min_acc_dist) {
+			ARR_APP1(spm_content *, best_min_acc_dist, var);
+			ARR_APP1(int, mad_counts, mad_count);
 		}
 		prev = var;
 	}
 
-	//TODO: if best_fit_gap_el size > 1 calculate next uses
-	//TODO: find benefit has to be integrated as well here
-	spm_content *best_swapout_candidate = best_fit_gap_el[0];
-	if (!best_swapout_candidate) //TODO: maybe have to do more than that
+	if (best_min_acc_dist[0] == NULL)
 		return;
-	//TODO: dont go by sizes, instead define a swapout region in the list
+	int min_mad_count = INT_MAX;
+	int min_mad_idx = 0;
+	for (size_t i = 0; i < ARR_LEN(mad_counts); i++) {
+		if (min_mad_count > mad_counts[i]) {
+			min_mad_count = mad_counts[i];
+			min_mad_idx = i;
+		}
+	}
+
+	spm_content *best_swapout_candidate = best_min_acc_dist[min_mad_idx];
+	if (!best_swapout_candidate)
+		return;
 	prev = list_entry(best_swapout_candidate->list.prev, spm_content, list);
 	int swapout_size = prev->gap_size + best_swapout_candidate->content->size + best_swapout_candidate->gap_size;
 	spm_content *next = list_entry(best_swapout_candidate->list.next, spm_content, list);
@@ -617,6 +804,13 @@ static void spm_force_insert(dprg_walk_env *env, alloc_result *result, node_data
 	if (swapin->write_first)
 		pset_new_insert(result->write_first_set, swapin_info);
 	result->free_space += new_gap;
+
+	DEL_ARR_F(best_min_acc_dist);
+	DEL_ARR_F(mad_counts);
+	foreach_pmap(access_distance_map, entry) {
+		free(entry->value);
+	}
+	pmap_destroy(access_distance_map);
 }
 
 static bool spm_try_best_fit_insert(alloc_result *result, node_data *var)
@@ -642,7 +836,7 @@ static bool spm_try_best_fit_insert(alloc_result *result, node_data *var)
 			pset_new_insert(result->modified_set, el_info);
 		if (var->write_first)
 			pset_new_insert(result->write_first_set, el_info);
-		printf("best fit insert: ");
+		DEBUG_PRINT("best fit insert: ");
 		print_spm_content_list(&result->spm_content_head);
 		return true;
 	}
@@ -671,7 +865,7 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
 	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
-	printf("calc alloc block %s of %s\n", gdb_node_helper(block), irn_method_name(block));
+	DEBUG_PRINT("calc alloc block %s of %s\n", gdb_node_helper(block), irn_method_name(block));
 
 	alloc_result *result = create_alloc_result();
 	result->retain_set = XMALLOC(pset_new_t);
@@ -683,13 +877,11 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 		prev_blk_data = pmap_get(block_data, env->block_data_map, branch->last_block);
 	}
 
-	//Handle deadset at beginning of block (TODO: deadset also per region?!)
-	//TODO: how to handle end of call? (do deadset handling also at end of function)
 	bool handle_deadset = prev_blk_data && branch->finished_callees == 0 && prev_blk_data->dead_set;
 	int deadset_size = 0;
 	//fill result with pred_result values
 	if (pred_result) {
-		printf("pred content: ");
+		DEBUG_PRINT("pred content: ");
 		print_spm_content_list(&pred_result->spm_content_head);
 		pset_insert_set(result->modified_set, pred_result->modified_set);
 		//build spm_content
@@ -721,7 +913,6 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 		list_add_tail(&sentinel->list, &result->spm_content_head);
 	}
 
-	//TODO: spm_var_info pointer in node_data to avoid hashmap
 	pset_new_iterator_t iter;
 	node_data *el;
 	if (prev_blk_data && branch->finished_callees == 0 && prev_blk_data->dead_set) {
@@ -737,25 +928,25 @@ static alloc_result *spm_calc_alloc_block(dprg_walk_env *env)
 	list_head *node_list = &blk_data->node_lists[branch->finished_callees + 1];
 
 	list_for_each_entry(node_data, n_data, node_list, list) {
-		if (n_data->size > spm_properties.size)
-			continue;
+		if (n_data->size < spm_properties.size) {
 
-		spm_var_info *el_info = pmap_get(spm_var_info, spm_var_infos, n_data->identifier);
-		if (pset_new_contains(result->spm_set, el_info)) {
-			if (!pmap_contains(result->swapout_set, el_info)) {
-				pset_new_insert(result->retain_set, el_info);
-				if (n_data->modified)
-					pset_new_insert(result->modified_set, el_info);
-			}
-		}
-		else {
-			if (n_data->size <= result->free_space) {
-				if (get_spm_benefit(env, result, n_data, NULL) > 0.0f)
-					if (!spm_try_best_fit_insert(result, n_data))
-						spm_force_insert(env, result, n_data);
+			spm_var_info *el_info = pmap_get(spm_var_info, spm_var_infos, n_data->identifier);
+			if (pset_new_contains(result->spm_set, el_info)) {
+				if (!pmap_contains(result->swapout_set, el_info)) {
+					pset_new_insert(result->retain_set, el_info);
+					if (n_data->modified)
+						pset_new_insert(result->modified_set, el_info);
+				}
 			}
 			else {
-				spm_force_insert(env, result, n_data);
+				if (n_data->size <= result->free_space) {
+					if (get_spm_benefit(env, result, n_data, NULL) > 0.0f)
+						if (!spm_try_best_fit_insert(result, n_data))
+							spm_force_insert(env, result, n_data);
+				}
+				else {
+					spm_force_insert(env, result, n_data);
+				}
 			}
 		}
 	}
@@ -816,7 +1007,6 @@ static spm_content *find_var_in_spm_content(list_head *spm_list, spm_var_info *v
 
 static spm_transfer **join_allocations(alloc_result *base_alloc, alloc_result *adj_alloc)
 {
-	//TODO: Clean-up
 	spm_transfer **transfers = NEW_ARR_F(spm_transfer *, 0);
 
 	spm_transfer *transfer;
@@ -871,6 +1061,55 @@ static spm_transfer **join_allocations(alloc_result *base_alloc, alloc_result *a
 	return transfers;
 }
 
+static spm_transfer **join_allocations_incl_comp(alloc_result *base_alloc, alloc_result *adj_alloc)
+{
+	//copy base alloc, apply comp transfers of original base alloc, call join. delete copy, return
+
+	//compensation transfers are ordered in array
+	spm_transfer **comp_transfers = base_alloc->compensation_transfers;
+	if (comp_transfers && ARR_LEN(comp_transfers) > 0) {
+		int cur_comp_t = 0;
+		alloc_result *result = create_alloc_result();
+		list_for_each_entry(spm_content, var, &base_alloc->spm_content_head, list) {
+			spm_transfer *t = comp_transfers[cur_comp_t];
+			int gap_end = var->addr - var->gap_size;
+			while (t->direction == IN && var->addr < t->spm_addr_to) {
+				spm_var_info *content = pmap_get(spm_var_info, spm_var_infos, t->identifier);
+				spm_content *spm_content_el = XMALLOC(spm_content);
+				spm_content_el->addr = t->spm_addr_to;
+				spm_content_el->gap_size = gap_end - (t->spm_addr_to + content->size);
+				spm_content_el->content = content;
+				list_add_tail(&spm_content_el->list, &result->spm_content_head);
+				pset_new_insert(result->spm_set, spm_content_el->content);
+
+				t = comp_transfers[++cur_comp_t];
+				while (t->direction == MOV)
+					t = comp_transfers[++cur_comp_t];
+			}
+			if (t->direction == OUT && t->identifier == var->content->identifier) {
+				t = comp_transfers[++cur_comp_t];
+				while (t->direction == MOV)
+					t = comp_transfers[++cur_comp_t];
+			}
+			else {
+				spm_content *spm_content_el = XMALLOC(spm_content);
+				spm_content_el->addr = var->addr;
+				spm_content_el->gap_size = var->gap_size;
+				spm_content_el->content = var->content;
+				list_add_tail(&spm_content_el->list, &result->spm_content_head);
+				pset_new_insert(result->spm_set, spm_content_el->content);
+			}
+		}
+
+		spm_transfer **transfers = join_allocations(result, adj_alloc);
+
+		return transfers;
+	}
+	else {
+		return join_allocations(base_alloc, adj_alloc);
+	}
+}
+
 static void join_pred_allocations(dprg_walk_env *env, ir_node *base_block)
 {
 	timestamp *branch = env->cur_branch;
@@ -912,7 +1151,7 @@ static void spm_join_cond_blocks(dprg_walk_env *env)
 {
 	timestamp *branch = env->cur_branch;
 	//ir_node *block = branch->block;
-	//We select block of last timestamp as base block TODO: Better choice?
+	//We select block of last timestamp as base block
 	//Idea: select allocation which enhances perf of block the most (iterate var_accesses of block)
 	join_pred_allocations(env, branch->last_block);
 }
@@ -935,8 +1174,6 @@ static int spm_content_cmp(const void *p1, const void *p2)
 
 static void spm_join_loop(dprg_walk_env *env)
 {
-	//TODO: handling of modified set?
-	//TODO: needs a bit of cleanup
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
 	//1. get last alloc inside loop
@@ -983,7 +1220,7 @@ static void spm_join_loop(dprg_walk_env *env)
 			for (size_t k  = 0; k < loop_var_cnt; k++) {
 
 				needs_transfer_in[k] |= pmap_del_and_free(alloc->copy_in, loop_vars[k]->content);
-				pmap_del_and_free(alloc->swapout_set, loop_vars[k]->content); //TODO:also for last_loop_alloc?
+				pmap_del_and_free(alloc->swapout_set, loop_vars[k]->content);
 			}
 			bool handled_all_loop_vars = false;
 			if (alloc == last_loop_alloc)
@@ -992,7 +1229,6 @@ static void spm_join_loop(dprg_walk_env *env)
 			size_t k = 0;
 			spm_content *loop_var = loop_vars[k];
 			spm_content *sentinel = list_entry(alloc->spm_content_head.next, spm_content, list);
-			//TODO: check code again. jump over sentinel is ugly
 			list_for_each_entry_safe(spm_content, var, tmp, &alloc->spm_content_head, list) {
 				if (var == sentinel)
 					continue;
@@ -1078,14 +1314,12 @@ static void spm_join_loop(dprg_walk_env *env)
 					loop_var = loop_vars[++k];
 				}
 			}
-			printf("Loopvar adjustment %s:%d\n", gdb_node_helper(loop_block), j);
+			DEBUG_PRINT("Loopvar adjustment %s:%d\n", gdb_node_helper(loop_block), j);
 			print_spm_content_list(&alloc->spm_content_head);
 		}
 	}
 	//4. Before loop header loop_vars have to be transferred to spm and vars_to_evict possibly written back
 	//use loop_data transfers
-	//TODO: make sure eviction transfers happen before transfer in
-	//TODO: check whether vars_to_evict are really in spm at moment of eviction!?
 	pset_new_iterator_t iter;
 	spm_content *loop_var;
 	foreach_pset_new(&vars_to_evict, spm_content *, loop_var, iter) {
@@ -1102,11 +1336,26 @@ static void spm_join_loop(dprg_walk_env *env)
 	}
 }
 
+static void handle_recursive_function(dprg_walk_env *env, ir_graph *rec_func)
+{
+	(void) rec_func;
+	timestamp *branch = env->cur_branch;
+	ir_node *block = branch->block;
+	block_data *blk_data = pmap_get(block_data, env->block_data_map, block);
+
+	list_head *node_list = &blk_data->node_lists[branch->finished_callees + 1];
+	(void) node_list;
+	//we insert all access n_data zu node_list
+	//access cnt anpassen damit find_benefit funktiont passend (anpassen um differenz in block_exec_freq)
+	//insert nach angepasster freq/byte
+	//list_for_each_entry(node_data, n_data, node_list, list) {
+}
+
 static void ensure_pred_blocks_visited(dprg_walk_env *env)
 {
 	timestamp *branch = env->cur_branch;
 	ir_node *block = branch->block;
-	//printf("%s\n", gdb_node_helper(block));
+	//DEBUG_PRINT("%s\n", gdb_node_helper(block));
 	for (int i = 0; i < get_Block_n_cfgpreds(block); i++) {
 		bool loop_detected = false;
 		//Loop detection here:
@@ -1149,6 +1398,7 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	if (branch->finished_callees == 0 && blk_data->allocation_results[0] != NULL && branch->finished_preds != FINISHED_LOOP) {
 		return;
 	}
+
 	if (branch->finished_preds == FINISHED_LOOP) {
 		spm_join_loop(env);
 
@@ -1219,9 +1469,26 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	}
 	double block_exec_freq = blk_data->max_exec_freq;
 	//calc allocation
+	call_site_t call_site = get_next_call_from_block(env);
+	ir_entity *callee = call_site.callee;
+	/*check whether next callee is entry to recursion */
+	if (pset_new_contains(&recursive_functions, callee)) {
+		/* at call site to recursive function we do the following,
+		 * when call site is not compensated:
+		 * We pretend all global var accesses happen before call.
+		 * This moves transfers in front of all site
+		 * and out of recursive function.*/
+		ir_graph *irg = get_entity_irg(callee);
+		ir_node *start_block = get_irg_start_block(irg);
+		block_data *start_block_data = pmap_get(block_data, env->block_data_map, start_block);
+		if (fabs(start_block_data->max_exec_freq - block_exec_freq) < 0.01f && !Block_block_visited(start_block)) {
+			handle_recursive_function(env, irg);
+		}
+	}
+
 	alloc_result *cur_alloc = spm_calc_alloc_block(env);
 	blk_data->allocation_results[branch->finished_callees] = cur_alloc;
-	printf("Finished block alloc for %s of %s:%d:\n", gdb_node_helper(block), irn_method_name(block), branch->finished_callees);
+	DEBUG_PRINT("Finished block alloc for %s of %s:%d:\n", gdb_node_helper(block), irn_method_name(block), branch->finished_callees);
 	print_spm_content_list(&cur_alloc->spm_content_head);
 	//inside loop-handling
 	for (size_t i = 0; i < ARR_LEN(branch->cur_loops); i++) {
@@ -1240,8 +1507,6 @@ static void spm_mem_alloc_block(dprg_walk_env *env)
 	}
 
 	//handle next call or successor blocks when end of block is reached
-	call_site_t call_site = get_next_call_from_block(env);
-	ir_entity *callee = call_site.callee;
 	if (callee) {
 		ir_graph *irg = get_entity_irg(callee);
 		ir_node *start_block = get_irg_start_block(irg);
@@ -1331,7 +1596,7 @@ static ir_node *create_regpush(ir_node *schedpoint, ir_node **mem, ir_node *val,
 	*mem = be_new_Proj(push, pn_ia32_Push_M);
 
 	sched_add_before(schedpoint, push);
-	ir_printf("Create %+F\n", push);
+	DEBUG_PRINT("Create %+F\n", push);
 	return push;
 }
 
@@ -1350,7 +1615,7 @@ static ir_node *create_regpop(ir_node *schedpoint, ir_node *sp, ir_node *mem)
 	ir_node *const val  = be_new_Proj_reg(pop, pn_ia32_Pop_res, mov_register);
 	ir_node *const keep = be_new_Keep_one(val);
 	sched_add_before(schedpoint, keep);
-	ir_printf("Create %+F\n", pop);
+	DEBUG_PRINT("Create %+F\n", pop);
 	return val;
 }
 
@@ -1483,7 +1748,7 @@ static void spm_create_transfer_movs(ir_node *before, ir_node **before_mem, spm_
 			set_ia32_frame_use(store, frame_use_t);
 		else if (transfer->direction == IN)
 			set_ia32_frame_use(load, frame_use_t);
-		ir_printf("Create %+F and %+F for %s %d:%d+%d (%d)\n", load, store, get_entity_name(entity), spm_addr_load, spm_addr_store, offset, entsize);
+		DEBUG_PRINT("Create %+F and %+F for %s %d:%d+%d (%d)\n", load, store, get_entity_name(entity), spm_addr_load, spm_addr_store, offset, entsize);
 
 		unsigned size_bytes = x86_bytes_from_size(size);
 		offset  += size_bytes;
@@ -1496,13 +1761,13 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 {
 	assert(ARR_LEN(transfers) > 0);
 	ir_node *before = irn;
-	printf("before: %s\n", gdb_node_helper(irn));
+	DEBUG_PRINT("before: %s\n", gdb_node_helper(irn));
 	ir_graph *irg = get_irn_irg(irn);
 	ir_node  *sp = be_get_Start_proj(irg, &ia32_registers[REG_ESP]);
 	ir_node *mem = get_irg_no_mem(irg);
 	assert(mem);
 	ir_node  *val   = register_values[mov_register->global_index];
-	printf("eax node: %s\n", gdb_node_helper(val));
+	DEBUG_PRINT("eax node: %s\n", gdb_node_helper(val));
 	if (val)
 		create_regpush(before, &mem, val, sp);
 	for (size_t i = 0; i < ARR_LEN(transfers); i++) {
@@ -1511,7 +1776,7 @@ static void spm_insert_copy_instrs_before_irn(ir_node *irn, spm_transfer **trans
 		spm_create_transfer_movs(before, &mem, transfer);
 		free(transfer);
 	}
-	printf("%ld transfers inserted.\n", ARR_LEN(transfers));
+	DEBUG_PRINT("%ld transfers inserted.\n", ARR_LEN(transfers));
 	if (val) {
 		ir_node *pop_proj = create_regpop(before, sp, mem);
 
@@ -1637,7 +1902,7 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 			if (sched_next(irn) == blk) { //This is end of block
 				//insert compensation code for joins
 				if (alloc_res->compensation_transfers) {
-					spm_insert_copy_instrs_before_irn(irn, alloc_res->compensation_transfers);//TODO: jump over keeps (see be_spill add reload)?
+					spm_insert_copy_instrs_before_irn(irn, alloc_res->compensation_transfers);
 				}
 			}
 
@@ -1648,17 +1913,29 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 			ir_entity *callee_ent = get_ia32_immediate_attr_const(callee)->imm.entity;
 			if (callee_ent == next_callee->identifier &&
 			        irn == next_callee->irn) {
-				//insert compensation code before call node
 				if (blk_data->compensation_callees != NULL) {
 					if (pset_new_contains(blk_data->compensation_callees, irn)) {
+						//insert compensation code before call node
 						ir_entity *callee = (ir_entity *) next_callee->identifier;
-						ir_node *callee_start = get_irg_start_block(get_entity_irg(callee));
+						ir_graph *callee_irg = get_entity_irg(callee);
+						ir_node *callee_start = get_irg_start_block(callee_irg);
 						block_data *callee_data = pmap_get(block_data, block_data_map, callee_start);
 						alloc_result *callee_alloc = callee_data->allocation_results[0];
 						spm_transfer **transfers = join_allocations(callee_alloc, alloc_res);
 						if (ARR_LEN(transfers) > 0)
 							spm_insert_copy_instrs_before_irn(irn, transfers);
 						DEL_ARR_F(transfers);
+
+						//insert compensation code after call node
+						ir_node *last_callee_block = get_Block_cfgpred_block(get_irg_end_block(callee_irg), 0);
+						block_data *last_callee_data = pmap_get(block_data, block_data_map, last_callee_block);
+						alloc_result *last_callee_alloc = get_last_block_allocation(last_callee_data);
+						alloc_result *next_alloc_res = blk_data->allocation_results[alloc_idx];
+						transfers = join_allocations_incl_comp(next_alloc_res, last_callee_alloc);
+						if (ARR_LEN(transfers) > 0)
+							spm_insert_copy_instrs_before_irn(sched_next(irn), transfers);
+						DEL_ARR_F(transfers);
+
 					}
 				}
 
@@ -1666,7 +1943,7 @@ static void spm_insert_block_copy_instrs(ir_node *blk, block_data *blk_data, pma
 				next_callee = list_entry(next_callee->list.prev, node_data, list);
 				alloc_res = blk_data->allocation_results[alloc_idx];
 				alloc_idx--;
-				spm_insert_allocation_copy_instrs(sched_next(irn), alloc_res); //TODO:sched_next at end is block. does add_before work here?
+				spm_insert_allocation_copy_instrs(sched_next(irn), alloc_res);
 			}
 		}
 	}
@@ -1758,7 +2035,7 @@ static void spm_adjust_mem_accesses(ir_node *blk, block_data *blk_data)
 			perm_info.irn = irn;
 			perm_info.var_info = var_info;
 			ARR_APP1(node_perm_info, vars_in_spm, perm_info);
-			printf("marked for change: %s\n", gdb_node_helper(irn));
+			DEBUG_PRINT("marked for change: %s\n", gdb_node_helper(irn));
 		}
 	}
 	spm_adjust_mem_accesses_for_alloc(vars_in_spm, alloc_res);
@@ -1769,7 +2046,7 @@ static void spm_adjust_to_allocations(pmap *block_data_map, pmap *loop_info)
 {
 	foreach_pmap(block_data_map, cur_entry) {
 		ir_node *blk = (ir_node *) cur_entry->key;
-		printf("Insert copy instr for %s\n", gdb_node_helper(blk));
+		DEBUG_PRINT("Insert copy instr for %s\n", gdb_node_helper(blk));
 		block_data *blk_data = cur_entry->value;
 		if (blk_data->allocation_results[0] == NULL)
 			continue;
@@ -1783,7 +2060,7 @@ static void spm_adjust_to_allocations(pmap *block_data_map, pmap *loop_info)
 		loop_data *l_data = cur_entry->value;
 		if (ARR_LEN(l_data->transfers) == 0)
 			continue;
-		ir_printf("Insert copy instr for loop: %+F\n", (ir_loop *) cur_entry->key);
+		DEBUG_PRINT("Insert copy instr for loop: %+F\n", (ir_loop *) cur_entry->key);
 		//find predblock of loop header
 		ir_node *header = l_data->loop_header;
 		ir_node *pre_header_block = NULL;
@@ -1802,40 +2079,56 @@ static void spm_adjust_to_allocations(pmap *block_data_map, pmap *loop_info)
 		be_lv_foreach(lv, pre_header_block, be_lv_state_end, node) {
 			set_reg_value(node);
 		}
-		spm_insert_copy_instrs_before_irn(sched_last(pre_header_block), l_data->transfers);
+
+
+		//we only move data in if not already happend in possible outer loop
+		block_data *b_data = pmap_get(block_data, block_data_map, pre_header_block);
+		alloc_result *last_alloc = get_last_block_allocation(b_data);
+		spm_transfer **transfers = NEW_ARR_F(spm_transfer *, 0);
+		for (size_t i = 0; i < ARR_LEN(l_data->transfers); i++) {
+			spm_transfer *t = l_data->transfers[i];
+			spm_var_info *content = pmap_get(spm_var_info, spm_var_infos, t->identifier);
+			//we assume here that we would have trasfered var to same place again.
+			//not shure whether thats really always the case
+			if (pset_new_contains(last_alloc->spm_set, content) && t->direction == IN)
+				continue;
+			ARR_APP1(spm_transfer *, transfers, t);
+		}
+		spm_insert_copy_instrs_before_irn(sched_last(pre_header_block), transfers);
+		DEL_ARR_F(transfers);
 		free(register_values);
 	}
 }
 
 static void debug_print_block_data(pmap *block_data_map, bool call_list_only)
 {
-	printf("--- BLOCK DATA ---\n");
+	DEBUG_PRINT("--- BLOCK DATA ---\n");
 	foreach_pmap(block_data_map, cur_entry) {
 		const ir_node *blk = cur_entry->key;
 		block_data *blk_data = cur_entry->value;
-		printf("%s in %s\n", gdb_node_helper(blk), irn_method_name(blk));
-		printf("\tCallee count: %d\n", blk_data->callee_cnt);
-		printf("\tMax exec freq: %f\n", blk_data->max_exec_freq);
-		printf("\tExec freq: %f\n", blk_data->exec_freq);
+		DEBUG_PRINT("%s in %s\n", gdb_node_helper(blk), irn_method_name(blk));
+		DEBUG_PRINT("\tCallee count: %d\n", blk_data->callee_cnt);
+		DEBUG_PRINT("\tMax exec freq: %f\n", blk_data->max_exec_freq);
+		DEBUG_PRINT("\tExec freq: %f\n", blk_data->exec_freq);
 		for (int i = 0; i < blk_data->callee_cnt + 2; i++) {
 			if (i == 0) {
-				printf("\tCallee List:\n");
+				DEBUG_PRINT("\tCallee List:\n");
 				list_for_each_entry(node_data, n_data, &blk_data->node_lists[i], list) {
-					printf("\t\t%s\n", get_entity_name((ir_entity *) n_data->identifier));
+					DEBUG_PRINT("\t\t%s\n", get_entity_name((ir_entity *) n_data->identifier));
 				}
 				if (call_list_only)
 					break;
 			}
 			else {
-				printf("\tNode List %d:\n", i - 1);
+				DEBUG_PRINT("\tNode List %d:\n", i - 1);
 				list_for_each_entry(node_data, n_data, &blk_data->node_lists[i], list) {
-					printf("\t\tEntity:%s, ", get_entity_name((ir_entity *) n_data->identifier));
-					printf("Size: %d, Acc_cnt: %d", n_data->size, n_data->access_cnt);
+					DEBUG_PRINT("\t\tEntity:%s, ", get_entity_name((ir_entity *) n_data->identifier));
+					DEBUG_PRINT("Size: %d, Acc_cnt: %d", n_data->size, n_data->access_cnt);
 					if (n_data->modified)
-						printf(", Modified");
+						DEBUG_PRINT(", Modified");
 					if (n_data->write_first)
-						printf(", WriteFirst");
-					printf("\n");
+						DEBUG_PRINT(", WriteFirst");
+					DEBUG_PRINT("\n");
 				}
 			}
 		}
@@ -1844,36 +2137,36 @@ static void debug_print_block_data(pmap *block_data_map, bool call_list_only)
 		if (blk_data->allocation_results[0] == NULL)
 			continue;
 		for (int i = 0; i < blk_data->callee_cnt + 1; i++) {
-			printf("Allocation Nr. %d:\n", i);
+			DEBUG_PRINT("Allocation Nr. %d:\n", i);
 			alloc_result *alloc = blk_data->allocation_results[i];
-			printf("Copy in: ");
+			DEBUG_PRINT("Copy in: ");
 			foreach_pmap(alloc->copy_in, copy_entry) {
 				spm_transfer *transfer = copy_entry->value;
 				if (transfer)
-					printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->spm_addr_from, transfer->spm_addr_to);
+					DEBUG_PRINT("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->spm_addr_from, transfer->spm_addr_to);
 			}
-			printf("\nSwapout: ");
+			DEBUG_PRINT("\nSwapout: ");
 			foreach_pmap(alloc->swapout_set, swap_entry) {
 				spm_transfer *transfer = swap_entry->value;
 				if (transfer)
-					printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->spm_addr_from, transfer->spm_addr_to);
+					DEBUG_PRINT("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->spm_addr_from, transfer->spm_addr_to);
 			}
-			printf("\n");
+			DEBUG_PRINT("\n");
 		}
 	}
 }
 
 static void debug_print_loop_data(pmap *loop_info)
 {
-	printf("--- LOOP DATA ---\n");
+	DEBUG_PRINT("--- LOOP DATA ---\n");
 	foreach_pmap(loop_info, cur_entry) {
-		printf("%s:", gdb_node_helper((ir_loop *) cur_entry->key));
+		DEBUG_PRINT("%s:", gdb_node_helper((ir_loop *) cur_entry->key));
 		loop_data *l_data = cur_entry->value;
 		for (size_t i = 0; i < ARR_LEN(l_data->transfers); i++) {
 			spm_transfer *transfer = l_data->transfers[i];
-			printf("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->spm_addr_from, transfer->spm_addr_to);
+			DEBUG_PRINT("%s (%d -> %d); ", get_entity_name((ir_entity *) transfer->identifier), transfer->spm_addr_from, transfer->spm_addr_to);
 		}
-		printf("\n");
+		DEBUG_PRINT("\n");
 	}
 }
 
@@ -1963,13 +2256,13 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 		assure_loopinfo(irg);
 		spm_collect_irg_data(irg, block_data_map);
 	}
-	//printf("AFTER COLLECTING IRG DATA:\n");
+	//DEBUG_PRINT("AFTER COLLECTING IRG DATA:\n");
 	//debug_print_block_data(block_data_map, true);
 	spm_calc_blocks_access_freq(block_data_map);
-	//printf("AFTER CALC BLOCK ACC FREQ:\n");
+	//DEBUG_PRINT("AFTER CALC BLOCK ACC FREQ:\n");
 	//debug_print_block_data(block_data_map, false);
 	spm_glb_exec_freq_walk(block_data_map);
-	printf("AFTER GLB EXEC FREQ CALC:\n");
+	DEBUG_PRINT("AFTER GLB EXEC FREQ CALC:\n");
 	debug_print_block_data(block_data_map, false);
 
 	//find main method (only one entry point possible?)
@@ -2008,7 +2301,7 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 	foreach_irp_irg(i, irg) {
 		ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	}
-	printf("FINAL DATA:\n");
+	DEBUG_PRINT("FINAL DATA:\n");
 	debug_print_block_data(block_data_map, false);
 	debug_print_loop_data(walk_env.loop_info);
 	spm_adjust_to_allocations(block_data_map, walk_env.loop_info);
@@ -2023,12 +2316,13 @@ void spm_find_memory_allocation(node_data * (*func)(ir_node *))
 	free_spm_var_infos();
 	free_loop_info(walk_env.loop_info);
 	pset_new_destroy(&recursive_functions);
+	pset_new_destroy(&address_taken_entities);
 }
 
 static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_INT("start_addr", "start address of SPM",  &spm_properties.start_addr),
 	LC_OPT_ENT_INT("size", "SPM size",  &spm_properties.size),
-	LC_OPT_ENT_INT("latency_diff", "SPM latency difference to RAM",  &spm_properties.latency_diff),
+	LC_OPT_ENT_DBL("latency_diff", "SPM latency difference to RAM",  &spm_properties.latency_diff),
 	LC_OPT_ENT_DBL("tp_ram",    "throughput of RAM", &spm_properties.throughput_ram),
 	LC_OPT_ENT_DBL("tp_spm",    "throughput of SPM", &spm_properties.throughput_spm),
 	LC_OPT_LAST
