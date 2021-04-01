@@ -237,7 +237,7 @@ static void riscv_introduce_prologue(ir_graph *const irg, unsigned size, bool om
 	ir_node *const start    = get_irg_start(irg);
 	ir_node *const block    = get_nodes_block(start);
 	ir_node *const start_sp = be_get_Start_proj(irg, &riscv_registers[REG_SP]);
-	ir_node *const start_fp = be_get_Start_proj(irg, &riscv_registers[REG_FP]);
+	ir_node *const start_fp = be_get_Start_proj(irg, &riscv_registers[REG_S0]);
 
 	if (!omit_fp) {
 		ir_node *const mem        = get_irg_initial_mem(irg);
@@ -278,7 +278,7 @@ static void riscv_introduce_prologue(ir_graph *const irg, unsigned size, bool om
 
 			/* set current fp */
 			ir_node *const curr_fp = be_new_Copy(block, add);
-			arch_set_irn_register(curr_fp, &riscv_registers[REG_FP]);
+			arch_set_irn_register(curr_fp, &riscv_registers[REG_S0]);
 			sched_add_after(store_fp, curr_fp);
 			edges_reroute_except(start_fp, curr_fp, store_fp);
 		} else {
@@ -291,7 +291,7 @@ static void riscv_introduce_prologue(ir_graph *const irg, unsigned size, bool om
 			ir_node *const curr_fp = new_bd_riscv_addi(NULL, block, inc_sp, NULL, aligned);
 			sched_add_after(store_fp, curr_fp);
 			edges_reroute_except(start_fp, curr_fp, store_fp);
-			arch_set_irn_register(curr_fp, &riscv_registers[REG_FP]);
+			arch_set_irn_register(curr_fp, &riscv_registers[REG_S0]);
 		}
 
 		be_keep_if_unused(inc_sp);
@@ -306,7 +306,7 @@ static void riscv_introduce_epilogue(ir_node *const ret, unsigned const size, bo
 {
 	ir_node *const block  = get_nodes_block(ret);
 	if (!omit_fp) {
-		int const n_fp = be_get_input_pos_for_req(ret, &riscv_single_reg_req_gp_fp);
+		int const n_fp = be_get_input_pos_for_req(ret, &riscv_single_reg_req_gp_s0);
 		ir_node  *curr_fp  = get_irn_n(ret, n_fp);
 		ir_node  *curr_mem = get_irn_n(ret, n_riscv_ret_mem);
 
@@ -324,7 +324,7 @@ static void riscv_introduce_epilogue(ir_node *const ret, unsigned const size, bo
 
 		/* set fp to old fp */
 		ir_node *const restored_fp = be_new_Copy(block, old_fp);
-		arch_set_irn_register(restored_fp, &riscv_registers[REG_FP]);
+		arch_set_irn_register(restored_fp, &riscv_registers[REG_S0]);
 		sched_add_before(ret, restored_fp);
 
 		set_irn_n(ret, n_fp,            restored_fp);
