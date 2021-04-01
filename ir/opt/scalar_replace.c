@@ -146,12 +146,35 @@ static ir_type *get_addr_type(const ir_node *addr)
 	}
 }
 
-typedef struct {
-	unsigned max_members;
-	ir_node **copybs;
-} copyb_walk_env_t;
+static pset *copybs;
+/* TODO: Ask the backend for the maximum size */
+static unsigned copyb_max_members = 8;
 
-static void lower_copyb_node(ir_node *copyb)
+/* we need special addresses that serve as address taken / copyb-only marker */
+static char _x;
+static char _y;
+static void *ADDRESS_TAKEN = &_x;
+static void *COPYB_ONLY = &_y;
+
+static ir_node *link_chain_insert_loop_free(ir_node *insert, ir_node *link) {
+	for (ir_node *member = link, *next; member != NULL; member = next) {
+		next = (ir_node *) get_irn_link(member);
+		if (member == insert) {
+			// member already in chain
+			return link;
+		}
+	}
+	set_irn_link(insert, link);
+	return insert;
+}
+
+/**
+ * Transforms CopyB nodes to sequences of load and stores.  Unlike the
+ * lowering in lower/lower_copyb.c, this one here uses Member nodes
+ * instead of directly computing addresses. It also does not coalesce
+ * the loads and stores into larger operations.
+ */
+static void transform_copyb(ir_node *copyb, ir_entity *src_link_ent, ir_entity *dst_link_ent, bool sr_src, bool sr_dst)
 {
 	ir_node       *block       = get_nodes_block(copyb);
 	ir_node       *src         = get_CopyB_src(copyb);
@@ -159,8 +182,21 @@ static void lower_copyb_node(ir_node *copyb)
 	ir_node       *mem         = get_CopyB_mem(copyb);
 	dbg_info      *dbgi        = get_irn_dbg_info(copyb);
 	ir_type       *ty          = get_CopyB_type(copyb);
-	bool           is_volatile = get_CopyB_volatility(copyb) == volatility_is_volatile;
-	ir_cons_flags  flags       = is_volatile ? cons_volatile : cons_none;
+	ir_cons_flags  flags       = cons_none;
+	assert(get_CopyB_volatility(copyb) == volatility_non_volatile);
+
+	ir_node *src_link;
+	ir_node *dst_link;
+	if (sr_src) {
+		src_link = get_entity_link(src_link_ent);
+		if (src_link == COPYB_ONLY)
+			src_link = NULL;
+	}
+	if (sr_dst) {
+		dst_link = get_entity_link(dst_link_ent);
+		if (dst_link == COPYB_ONLY)
+			dst_link = NULL;
+	}
 
 	size_t n_members = get_compound_n_members(ty);
 
@@ -172,8 +208,14 @@ static void lower_copyb_node(ir_node *copyb)
 			member_mode = mode_P;
 		}
 
-		ir_node *src_member = new_rd_Member(dbgi, block, src,  member);
+		ir_node *src_member = new_rd_Member(dbgi, block, src, member);
 		ir_node *dst_member = new_rd_Member(dbgi, block, dst, member);
+		/* insert generated Member nodes into link chain */
+		if (sr_src)
+			src_link = link_chain_insert_loop_free(src_member, src_link);
+		if (sr_dst)
+			dst_link = link_chain_insert_loop_free(dst_member, dst_link);
+
 		ir_node *load       = new_rd_Load(dbgi, block, mem, src_member, member_mode, member_type, flags);
 		mem                 = new_rd_Proj(dbgi, load, mode_M, pn_Load_M);
 		ir_node *res        = new_rd_Proj(dbgi, load, member_mode, pn_Load_res);
@@ -181,71 +223,45 @@ static void lower_copyb_node(ir_node *copyb)
 		mem                 = new_rd_Proj(dbgi, store, mode_M, pn_Store_M);
 	}
 
+	if (sr_src)
+		set_entity_link(src_link_ent, src_link);
+	if (sr_dst)
+		set_entity_link(dst_link_ent, dst_link);
+
 	exchange(copyb, mem);
 }
 
-/**
- * Post-Walker: find CopyB nodes.
- */
-static void find_copyb_nodes(ir_node *irn, void *ctx)
+
+static bool copyb_suitable(ir_node *copyb)
 {
-	copyb_walk_env_t *env = (copyb_walk_env_t*) ctx;
+	ir_node *irg_frame = get_irg_frame(get_irn_irg(copyb));
+	ir_node *src = get_CopyB_src(copyb);
+	ir_node *dst = get_CopyB_dst(copyb);
 
-	if (!is_CopyB(irn))
-		return;
+	if (get_CopyB_volatility(copyb) == volatility_is_volatile)
+		return false;
 
-	ir_node *irg_frame = get_irg_frame(get_irn_irg(irn));
-	ir_node *src = get_CopyB_src(irn);
-	ir_node *dst = get_CopyB_dst(irn);
+	assert((is_Member(src) && get_Member_ptr(src) == irg_frame) ||
+	       (is_Member(dst) && get_Member_ptr(dst) == irg_frame));
 
-	if (!is_Member(src) || get_Member_ptr(src) != irg_frame ||
-	    !is_Member(dst) || get_Member_ptr(dst) != irg_frame)
-		return;
-
-	ir_type *tp = get_CopyB_type(irn);
+	ir_type *tp = get_CopyB_type(copyb);
 
 	if (!is_compound_type(tp))
-		return;
+		return false;
 
 	size_t members = get_compound_n_members(tp);
 
-	if (members > env->max_members)
-		return;
+	if (members > copyb_max_members)
+		return false;
 
 	for (size_t m = 0; m < members; m++) {
 		ir_entity *member = get_compound_member(tp, m);
 		ir_type *mtp = get_entity_type(member);
 
 		if (!is_atomic_type(mtp))
-			return;
+			return false;
 	}
-
-	ARR_APP1(ir_node*, env->copybs, irn);
-}
-
-/**
- * Lowers CopyB nodes to sequences of load and stores.  Unlike the
- * function in lower/lower_copyb.c, this one here uses Member nodes
- * instead of directly computing addresses. It also does not coalesce
- * the loads and stores into larger operations.
- */
-static void lower_CopyB_to_Member(ir_graph *irg, unsigned max_members)
-{
-	copyb_walk_env_t env = {
-		.max_members = max_members,
-		.copybs = NEW_ARR_F(ir_node*, 0)
-	};
-	irg_walk_graph(irg, NULL, find_copyb_nodes, &env);
-
-	bool changed = false;
-	for (size_t i = 0, n = ARR_LEN(env.copybs); i != n; ++i) {
-		lower_copyb_node(env.copybs[i]);
-		changed = true;
-	}
-	confirm_irg_properties(irg, changed ? IR_GRAPH_PROPERTIES_CONTROL_FLOW
-	                       : IR_GRAPH_PROPERTIES_ALL);
-
-	DEL_ARR_F(env.copybs);
+	return true;
 }
 
 /*
@@ -303,6 +319,12 @@ bool is_address_taken(ir_node *node)
 				return true;
 			break;
 		}
+		case iro_CopyB: {
+			bool res = copyb_suitable(succ);
+			if (!res)
+				return true;
+			break;
+		}
 
 		default:
 			/* another op, the address is taken */
@@ -312,14 +334,11 @@ bool is_address_taken(ir_node *node)
 	return false;
 }
 
-/* we need a special address that serves as an address taken marker */
-static char _x;
-static void *ADDRESS_TAKEN = &_x;
-
 typedef enum leaf_state_t {
 	POSSIBLE_LEAF        = 0,
 	HAS_CHILD_LOAD_STORE = (1u << 0),
 	HAS_CHILD_SELS       = (1u << 1),
+	HAS_CHILD_COPYB      = (1u << 2),
 } leaf_state_t;
 
 /**
@@ -333,8 +352,12 @@ static leaf_state_t link_all_leaf_members(ir_entity *ent, ir_node *sel)
 	/** A leaf Sel is a Sel that is used directly by a Load or Store. */
 	leaf_state_t state = POSSIBLE_LEAF;
 	foreach_irn_out_r(sel, i, succ) {
-		if (is_Load(succ) || is_Store(succ)) {
+		if (is_Load(succ) || is_Store(succ) || is_CopyB(succ)) {
 			state |= HAS_CHILD_LOAD_STORE;
+			if (is_CopyB(succ)) {
+				state |= HAS_CHILD_COPYB;
+				pset_insert_ptr(copybs, succ);
+			}
 			continue;
 		}
 		if (is_Member(succ)) {
@@ -364,8 +387,22 @@ static leaf_state_t link_all_leaf_members(ir_entity *ent, ir_node *sel)
 		return HAS_CHILD_LOAD_STORE | HAS_CHILD_SELS;
 
 	/* we know we are at a leaf, because this function is only called if
-	 * the address is NOT taken, so sel's successor(s) must be Loads or
-	 * Stores */
+	 * the address is NOT taken, so Sel's successor(s) must be Loads, Stores
+	 * or CopyBs */
+	if (state & HAS_CHILD_COPYB && link == NULL) {
+		/* first Sel for this entity has a CopyB successor; mark that we only
+		 * found such Sels yet */
+		set_entity_link(ent, COPYB_ONLY);
+		return state;
+	} else if (state & HAS_CHILD_COPYB) {
+		/* skip sels/members with CopyB successors, as those are replaced with
+		 * new member nodes when transforming the CopyB node */
+		return state;
+	} else if (link == COPYB_ONLY) {
+		/* we found a Sel/Member with a Load/Store successor, correctly terminate the link chain
+		 * if we encountered only CopyBs as successors up to this point */
+		link = NULL;
+	}
 	set_irn_link(sel, link);
 	set_entity_link(ent, sel);
 	return state;
@@ -386,6 +423,7 @@ static leaf_state_t link_all_leaf_members(ir_entity *ent, ir_node *sel)
  */
 static bool find_possible_replacements(ir_graph *irg)
 {
+	DB((dbg, LEVEL_3, "checking %+F for possible replacements\n", irg));
 	/* First, clear the link field of all interesting entities. */
 	ir_type *frame_tp = get_irg_frame_type(irg);
 	for (size_t i = get_compound_n_members(frame_tp); i-- > 0;) {
@@ -409,7 +447,7 @@ static bool find_possible_replacements(ir_graph *irg)
 		if (get_entity_link(ent) == ADDRESS_TAKEN)
 			continue;
 
-		DBG((dbg, LEVEL_3, "Checking if %+F is suitable... ", ent));
+		DB((dbg, LEVEL_3, "  Checking if %+F is suitable... ", ent));
 
 		/* we can handle arrays, structs and atomic types yet */
 		ir_type *ent_type = get_entity_type(ent);
@@ -425,14 +463,14 @@ static bool find_possible_replacements(ir_graph *irg)
 				if (get_entity_link(ent) == NULL)
 					++res;
 				link_all_leaf_members(ent, succ);
-				DB((dbg, LEVEL_3, "Mabye\n"));
+				DB((dbg, LEVEL_3, "Maybe\n"));
 			}
 		} else {
 			DB((dbg, LEVEL_3, "No, unsupported type\n"));
 		}
 	}
 
-	DB((dbg, LEVEL_3, "Found %i replacement candidates\n", res));
+	DB((dbg, LEVEL_3, "  Found %i replacement candidates\n", res));
 	return res != 0;
 }
 
@@ -484,7 +522,7 @@ static unsigned allocate_value_numbers(pset *members, ir_entity *ent,
 {
 	set *pathes = new_set(path_cmp, 8);
 
-	DB((dbg, SET_LEVEL_3, "  Visiting Sel nodes of entity %+F\n", ent));
+	DB((dbg, LEVEL_3, "  Visiting Sel nodes of entity %+F\n", ent));
 	/* visit all Member nodes in the chain of the entity */
 	for (ir_node *member = (ir_node*)get_entity_link(ent), *next;
 	     member != NULL; member = next) {
@@ -498,7 +536,7 @@ static unsigned allocate_value_numbers(pset *members, ir_entity *ent,
 
 		if (path != NULL) {
 			set_vnum(member, path->vnum);
-			DB((dbg, SET_LEVEL_3, "  %+F represents value %u\n", member,
+			DB((dbg, LEVEL_3, "  %+F represents value %u\n", member,
 			    path->vnum));
 		} else {
 			key->vnum = vnum++;
@@ -506,7 +544,7 @@ static unsigned allocate_value_numbers(pset *members, ir_entity *ent,
 			(void)set_insert(path_t, pathes, key, path_size(key), path_hash(key));
 
 			set_vnum(member, key->vnum);
-			DB((dbg, SET_LEVEL_3, "  %+F represents value %u\n", member,
+			DB((dbg, LEVEL_3, "  %+F represents value %u\n", member,
 			    key->vnum));
 
 			ARR_EXTO(ir_mode *, *modes, (key->vnum + 15) & ~15);
@@ -518,14 +556,14 @@ static unsigned allocate_value_numbers(pset *members, ir_entity *ent,
 
 #ifdef DEBUG_libfirm
 			/* Debug output */
-			DB((dbg, SET_LEVEL_2, "  %F", key->path[0].ent));
+			DB((dbg, LEVEL_2, "  %F", key->path[0].ent));
 			for (unsigned i = 1; i < key->path_len; ++i) {
 				if (is_entity(key->path[i].ent))
-					DB((dbg, SET_LEVEL_2, ".%F", key->path[i].ent));
+					DB((dbg, LEVEL_2, ".%F", key->path[i].ent));
 				else
-					DB((dbg, SET_LEVEL_2, "[%ld]", get_tarval_long(key->path[i].tv)));
+					DB((dbg, LEVEL_2, "[%ld]", get_tarval_long(key->path[i].tv)));
 			}
-			DB((dbg, SET_LEVEL_2, " = %u (%s)\n", PTR_TO_INT(get_irn_link(member)), get_mode_name((*modes)[key->vnum])));
+			DB((dbg, LEVEL_2, " = %u (%s)\n", PTR_TO_INT(get_irn_link(member)), get_mode_name((*modes)[key->vnum])));
 #endif /* DEBUG_libfirm */
 		}
 		free(key);
@@ -564,7 +602,7 @@ static void walker(ir_node *node, void *ctx)
 		unsigned vnum = get_vnum(addr);
 		assert(vnum < env->nvals);
 
-		DB((dbg, SET_LEVEL_3, "replacing %+F by value %u\n", node, vnum));
+		DB((dbg, LEVEL_3, "  replacing %+F by value %u\n", node, vnum));
 
 		ir_node  *block = get_nodes_block(node);
 		ir_graph *irg   = get_irn_irg(node);
@@ -609,7 +647,7 @@ static void walker(ir_node *node, void *ctx)
 		unsigned vnum = get_vnum(addr);
 		assert(vnum < env->nvals);
 
-		DB((dbg, SET_LEVEL_3, "replacing %+F by value %u\n", node, vnum));
+		DB((dbg, LEVEL_3, "  replacing %+F by value %u\n", node, vnum));
 
 		ir_node  *block = get_nodes_block(node);
 		ir_graph *irg   = get_irn_irg(node);
@@ -639,6 +677,24 @@ static void walker(ir_node *node, void *ctx)
 	}
 }
 
+static ir_entity *get_member_root_entity(ir_node *member) {
+	if (!is_Member(member))
+		return NULL;
+
+	ir_entity *ent = get_Member_entity(member);
+	// if entity has a link set, it is an entity on the frame
+	if (get_entity_link(ent) != NULL) {
+		assert(get_entity_owner(ent) == get_irg_frame_type(get_irn_irg(member)));
+		return ent;
+	}
+
+	path_t *p = find_path(member, 0);
+	if (is_entity(p->path[0].ent)) {
+		return p->path[0].ent;
+	}
+	return ent;
+}
+
 /**
  * Make scalar replacement.
  *
@@ -656,7 +712,7 @@ static void do_scalar_replacements(ir_graph *irg, pset *members, unsigned nvals,
 	 * second step: walk over the graph blockwise in topological order
 	 * and fill the array as much as possible.
 	 */
-	DB((dbg, SET_LEVEL_3, "Substituting Loads and Stores in %+F\n", irg));
+	DB((dbg, LEVEL_3, "Substituting Loads and Stores in %+F\n", irg));
 	env_t env;
 	env.nvals  = nvals;
 	env.modes  = modes;
@@ -673,10 +729,6 @@ static void do_scalar_replacements(ir_graph *irg, pset *members, unsigned nvals,
  */
 void scalar_replacement_opt(ir_graph *irg)
 {
-	/* TODO: Ask the backend for the maximum size */
-	lower_CopyB_to_Member(irg, 8);
-	be_after_transform(irg, "hl-lower-copyb");
-
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_OUTS
 	                         | IR_GRAPH_PROPERTY_NO_TUPLES);
@@ -684,11 +736,12 @@ void scalar_replacement_opt(ir_graph *irg)
 	/* we use the link field to store the VNUM */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
+	copybs = pset_new_ptr(8);
 
 	/* Find possible scalar replacements */
 	bool changed = false;
 	if (find_possible_replacements(irg)) {
-		DB((dbg, SET_LEVEL_1, "Scalar Replacement: %+F\n", irg));
+		DB((dbg, LEVEL_1, "Scalar Replacement: %+F\n", irg));
 
 		/* Insert in set the scalar replacements. */
 		ir_node  *irg_frame = get_irg_frame(irg);
@@ -697,6 +750,24 @@ void scalar_replacement_opt(ir_graph *irg)
 		set      *set_ent   = new_set(ent_cmp, 8);
 		pset     *sels      = pset_new_ptr(8);
 		ir_type  *frame_tp  = get_irg_frame_type(irg);
+
+		/* replace relevant CopyBs with pairs of load and store nodes */
+		foreach_pset(copybs, ir_node, copyb) {
+			ir_node *copyb_src = get_CopyB_src(copyb);
+			ir_node *copyb_dst = get_CopyB_dst(copyb);
+
+			ir_entity *src_ent = get_member_root_entity(copyb_src);
+			ir_entity *dst_ent = get_member_root_entity(copyb_dst);
+			ir_node *src_link  = src_ent != NULL ? get_entity_link(src_ent) : NULL;
+			ir_node *dst_link  = dst_ent != NULL ? get_entity_link(dst_ent) : NULL;
+			bool scalar_replace_src = src_link != NULL && src_link != ADDRESS_TAKEN;
+			bool scalar_replace_dst = dst_link != NULL && dst_link != ADDRESS_TAKEN;
+
+			if (scalar_replace_src || scalar_replace_dst) {
+				DB((dbg, LEVEL_3, "  transforming %+F into Loads and Stores\n", copyb));
+				transform_copyb(copyb, src_ent, dst_ent, scalar_replace_src, scalar_replace_dst);
+			}
+		}
 
 		foreach_irn_out_r(irg_frame, i, succ) {
 			if (!is_Member(succ))
@@ -720,11 +791,11 @@ void scalar_replacement_opt(ir_graph *irg)
 			ir_type *ent_type = get_entity_type(ent);
 
 			if (is_Array_type(ent_type)) {
-				DB((dbg, SET_LEVEL_1, "  found array %F\n", ent));
+				DB((dbg, LEVEL_1, "  found array %F\n", ent));
 			} else if (is_compound_type(ent_type)) {
-				DB((dbg, SET_LEVEL_1, "  found struct %F\n", ent));
+				DB((dbg, LEVEL_1, "  found struct %F\n", ent));
 			} else if (is_atomic_type(ent_type)) {
-				DB((dbg, SET_LEVEL_1, "  found atomic value %F\n", ent));
+				DB((dbg, LEVEL_1, "  found atomic value %F\n", ent));
 			} else {
 				panic("neither an array nor a struct or atomic value found in scalar replace");
 			}
@@ -733,7 +804,7 @@ void scalar_replacement_opt(ir_graph *irg)
 			nvals = allocate_value_numbers(sels, ent, nvals, &modes);
 		}
 
-		DB((dbg, SET_LEVEL_1, "  %u values will be needed\n", nvals));
+		DB((dbg, LEVEL_1, "  %u values will be needed\n", nvals));
 
 		/* If scalars were found. */
 		if (nvals > 0) {
@@ -749,6 +820,7 @@ void scalar_replacement_opt(ir_graph *irg)
 		del_set(set_ent);
 		DEL_ARR_F(modes);
 	}
+	del_pset(copybs);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
