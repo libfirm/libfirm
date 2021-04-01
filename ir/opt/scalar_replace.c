@@ -151,6 +151,10 @@ typedef struct {
 	ir_node **copybs;
 } copyb_walk_env_t;
 
+static pset *copybs;
+/* TODO: Ask the backend for the maximum size */
+static unsigned copyb_max_members = 8;
+
 static void lower_copyb_node(ir_node *copyb)
 {
 	ir_node       *block       = get_nodes_block(copyb);
@@ -180,6 +184,55 @@ static void lower_copyb_node(ir_node *copyb)
 		ir_node *store      = new_rd_Store(dbgi, block, mem, dst_member, res, member_type, flags);
 		mem                 = new_rd_Proj(dbgi, store, mode_M, pn_Store_M);
 	}
+
+	exchange(copyb, mem);
+}
+
+static void lower_copyb_node_new(ir_node *copyb, bool sr_src, bool sr_dst)
+{
+	ir_node       *block       = get_nodes_block(copyb);
+	ir_node       *src         = get_CopyB_src(copyb);
+	ir_node       *dst         = get_CopyB_dst(copyb);
+	ir_node       *mem         = get_CopyB_mem(copyb);
+	dbg_info      *dbgi        = get_irn_dbg_info(copyb);
+	ir_type       *ty          = get_CopyB_type(copyb);
+	bool           is_volatile = get_CopyB_volatility(copyb) == volatility_is_volatile;
+	ir_cons_flags  flags       = is_volatile ? cons_volatile : cons_none;
+
+	ir_node *src_link  = get_entity_link(get_Member_entity(src));
+	ir_node *dst_link  = get_entity_link(get_Member_entity(dst));
+
+	size_t n_members = get_compound_n_members(ty);
+
+	for (size_t m = 0; m < n_members; m++) {
+		ir_entity *member      = get_compound_member(ty, m);
+		ir_type   *member_type = get_entity_type(member);
+		ir_mode   *member_mode = get_type_mode(member_type);
+		if (member_mode == NULL) {
+			member_mode = mode_P;
+		}
+
+		ir_node *src_member = new_rd_Member(dbgi, block, src, member);
+		ir_node *dst_member = new_rd_Member(dbgi, block, dst, member);
+		if (sr_src) {
+			set_irn_link(src_member, src_link);
+			src_link = src_member;
+		}
+		if (sr_dst) {
+			set_irn_link(dst_member, dst_link);
+			dst_link = dst_member;
+		}
+		ir_node *load       = new_rd_Load(dbgi, block, mem, src_member, member_mode, member_type, flags);
+		mem                 = new_rd_Proj(dbgi, load, mode_M, pn_Load_M);
+		ir_node *res        = new_rd_Proj(dbgi, load, member_mode, pn_Load_res);
+		ir_node *store      = new_rd_Store(dbgi, block, mem, dst_member, res, member_type, flags);
+		mem                 = new_rd_Proj(dbgi, store, mode_M, pn_Store_M);
+	}
+
+	if (sr_src)
+		set_entity_link(get_Member_entity(src), src_link);
+	if (sr_dst)
+		set_entity_link(get_Member_entity(dst), dst_link);
 
 	exchange(copyb, mem);
 }
@@ -221,6 +274,36 @@ static void find_copyb_nodes(ir_node *irn, void *ctx)
 	}
 
 	ARR_APP1(ir_node*, env->copybs, irn);
+}
+
+static bool copyb_suitable(ir_node *copyb)
+{
+	ir_node *irg_frame = get_irg_frame(get_irn_irg(copyb));
+	ir_node *src = get_CopyB_src(copyb);
+	ir_node *dst = get_CopyB_dst(copyb);
+
+	if (!is_Member(src) || get_Member_ptr(src) != irg_frame ||
+	    !is_Member(dst) || get_Member_ptr(dst) != irg_frame)
+		return false;
+
+	ir_type *tp = get_CopyB_type(copyb);
+
+	if (!is_compound_type(tp))
+		return false;
+
+	size_t members = get_compound_n_members(tp);
+
+	if (members > copyb_max_members)
+		return false;
+
+	for (size_t m = 0; m < members; m++) {
+		ir_entity *member = get_compound_member(tp, m);
+		ir_type *mtp = get_entity_type(member);
+
+		if (!is_atomic_type(mtp))
+			return false;
+	}
+	return true;
 }
 
 /**
@@ -303,6 +386,12 @@ bool is_address_taken(ir_node *node)
 				return true;
 			break;
 		}
+		case iro_CopyB: {
+			bool res = copyb_suitable(succ);
+			if (!res)
+				return true;
+			break;
+		}
 
 		default:
 			/* another op, the address is taken */
@@ -320,6 +409,7 @@ typedef enum leaf_state_t {
 	POSSIBLE_LEAF        = 0,
 	HAS_CHILD_LOAD_STORE = (1u << 0),
 	HAS_CHILD_SELS       = (1u << 1),
+	HAS_CHILD_COPYB      = (1u << 2),
 } leaf_state_t;
 
 /**
@@ -333,8 +423,12 @@ static leaf_state_t link_all_leaf_members(ir_entity *ent, ir_node *sel)
 	/** A leaf Sel is a Sel that is used directly by a Load or Store. */
 	leaf_state_t state = POSSIBLE_LEAF;
 	foreach_irn_out_r(sel, i, succ) {
-		if (is_Load(succ) || is_Store(succ)) {
+		if (is_Load(succ) || is_Store(succ) || is_CopyB(succ)) {
 			state |= HAS_CHILD_LOAD_STORE;
+			if (is_CopyB(succ)) {
+				state |= HAS_CHILD_COPYB;
+				pset_insert_ptr(copybs, succ); //TODO move to end?
+			}
 			continue;
 		}
 		if (is_Member(succ)) {
@@ -366,6 +460,12 @@ static leaf_state_t link_all_leaf_members(ir_entity *ent, ir_node *sel)
 	/* we know we are at a leaf, because this function is only called if
 	 * the address is NOT taken, so sel's successor(s) must be Loads or
 	 * Stores */
+	if (state & HAS_CHILD_COPYB) {
+		/* skip sels/members with CopyB successors, as those are replaced with new member nodes
+		 * when lowering the CopyB node
+		 * TODO: breaks for chains with only such member nodes (entity will have link NULL) */
+		return state;
+	}
 	set_irn_link(sel, link);
 	set_entity_link(ent, sel);
 	return state;
@@ -425,7 +525,7 @@ static bool find_possible_replacements(ir_graph *irg)
 				if (get_entity_link(ent) == NULL)
 					++res;
 				link_all_leaf_members(ent, succ);
-				DB((dbg, LEVEL_3, "Mabye\n"));
+				DB((dbg, LEVEL_3, "Maybe\n"));
 			}
 		} else {
 			DB((dbg, LEVEL_3, "No, unsupported type\n"));
@@ -674,8 +774,8 @@ static void do_scalar_replacements(ir_graph *irg, pset *members, unsigned nvals,
 void scalar_replacement_opt(ir_graph *irg)
 {
 	/* TODO: Ask the backend for the maximum size */
-	lower_CopyB_to_Member(irg, 8);
-	be_after_transform(irg, "hl-lower-copyb");
+	//lower_CopyB_to_Member(irg, 8);
+	//be_after_transform(irg, "hl-lower-copyb");
 
 	assure_irg_properties(irg, IR_GRAPH_PROPERTY_NO_UNREACHABLE_CODE
 	                         | IR_GRAPH_PROPERTY_CONSISTENT_OUTS
@@ -684,6 +784,9 @@ void scalar_replacement_opt(ir_graph *irg)
 	/* we use the link field to store the VNUM */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
+
+
+	copybs = pset_new_ptr(8);
 
 	/* Find possible scalar replacements */
 	bool changed = false;
@@ -697,6 +800,17 @@ void scalar_replacement_opt(ir_graph *irg)
 		set      *set_ent   = new_set(ent_cmp, 8);
 		pset     *sels      = pset_new_ptr(8);
 		ir_type  *frame_tp  = get_irg_frame_type(irg);
+
+		/* replace CopyBs with pairs of load and store nodes */
+		foreach_pset(copybs, ir_node, copyb) {
+			ir_node *src_link = get_entity_link(get_Member_entity(get_CopyB_src(copyb)));
+			ir_node *dst_link = get_entity_link(get_Member_entity(get_CopyB_dst(copyb)));
+			bool scalar_replace_src = src_link != NULL && src_link != ADDRESS_TAKEN;
+			bool scalar_replace_dst = dst_link != NULL && dst_link != ADDRESS_TAKEN;
+			if (scalar_replace_src || scalar_replace_dst) {
+				lower_copyb_node_new(copyb, scalar_replace_src, scalar_replace_dst);
+			}
+		}
 
 		foreach_irn_out_r(irg_frame, i, succ) {
 			if (!is_Member(succ))
@@ -746,6 +860,7 @@ void scalar_replacement_opt(ir_graph *irg)
 			changed = true;
 		}
 		del_pset(sels);
+		del_pset(copybs);
 		del_set(set_ent);
 		DEL_ARR_F(modes);
 	}
