@@ -29,6 +29,7 @@
 #include "lower_alloc.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
+#include "lower_mode_b.h"
 #include "lower_softfloat.h"
 #include "lowering.h"
 #include "platform_t.h"
@@ -556,6 +557,8 @@ static void riscv_lower_for_target(void)
 	be_after_irp_transform("lower-64");
 
 	foreach_irp_irg(i, irg) {
+		ir_lower_mode_b(irg, mode_gp);
+		be_after_transform(irg, "lower-modeb");
 		lower_alloc(irg, RISCV_PO2_STACK_ALIGNMENT);
 		be_after_transform(irg, "lower-alloc");
 	}
