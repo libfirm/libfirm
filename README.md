@@ -73,4 +73,4 @@ Mailing list: https://lists.ira.uni-karlsruhe.de/mailman/listinfo/firm
 
 Bugtracker: http://pp.ipd.kit.edu/~firm/bugs
 
-Internet relay chat: irc://chat.freenode.net/#firm
+Internet relay chat: `#firm` on `irc.libera.chat` 
