@@ -7,10 +7,12 @@
 #endif
 
 {% if spec.external %}
-{% set FIRM_API="" %}
+{% set FIRM_API=""-%}
+{% set FIRM_API_VARIABLE="extern "-%}
 #include <libfirm/firm_types.h>
 {% else %}
 {% set FIRM_API="FIRM_API "-%}
+{% set FIRM_API_VARIABLE="FIRM_API "-%}
 {% endif %}
 
 /** The opcodes of the libFirm predefined operations.
@@ -145,7 +147,7 @@ ir_node **get_{{node.name}}_{{node.input_name}}_arr(ir_node *node);
 {% endfor -%}
 
 /** {{node.name}} opcode */
-{{FIRM_API}} ir_op *op_{{node.name}};
+{{FIRM_API_VARIABLE}} ir_op *op_{{node.name}};
 
 /** Returns opcode for {{node.name}} nodes. */
 {{FIRM_API}} ir_op *get_op_{{node.name}}(void);

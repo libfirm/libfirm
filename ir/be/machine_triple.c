@@ -127,6 +127,8 @@ ir_machine_triple_t *ir_get_host_machine_triple(void)
 		"sparc";
 #elif defined(__arm__)
 		"arm";
+#elif defined(__aarch64__)
+		"aarch64";
 #else
 		"unknown";
 #endif

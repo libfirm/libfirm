@@ -1074,6 +1074,9 @@ void init_fltcalc(unsigned precision)
 #elif LDBL_MANT_DIG == 53
 	assert(sizeof(long double) == 8);
 	long_double_desc = (float_descriptor_t) { 11, 52, 0 };
+#elif LDBL_MANT_DIG == 113
+	assert(sizeof(long double) == 16);
+	long_double_desc = (float_descriptor_t) { 15, 112, 0 };
 #else
 #error "Unsupported long double format"
 #endif

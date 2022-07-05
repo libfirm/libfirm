@@ -242,6 +242,22 @@ static void amd64_emit_am(const ir_node *const node, bool indirect_star)
 		be_emit_cstring(", ");
 		goto emit_addr_reg;
 	}
+	case AMD64_OP_REG_REG_ADDR: {
+		x86_emit_addr(node, &attr->addr);
+		be_emit_cstring(", ");
+		const arch_register_t *reg1 = arch_get_irn_register_in(node, 1);
+		emit_register_mode(reg1, attr->base.size);
+		be_emit_cstring(", ");
+		const arch_register_t *reg0 = arch_get_irn_register_in(node, 0);
+		emit_register_mode(reg0, attr->base.size);
+		return;
+	}
+	case AMD64_OP_REG_REG_REG: {
+		const arch_register_t *reg2 = arch_get_irn_register_in(node, 2);
+		emit_register_mode(reg2, attr->base.size);
+		be_emit_cstring(", ");
+		// fallthrough
+	}
 	case AMD64_OP_REG_REG: {
 		const arch_register_t *reg1 = arch_get_irn_register_in(node, 1);
 		emit_register_mode(reg1, attr->base.size);

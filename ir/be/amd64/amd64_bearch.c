@@ -8,8 +8,8 @@
  * @brief    The main amd64 backend driver file.
  */
 #include "amd64_abi.h"
+#include "amd64_architecture.h"
 #include "amd64_bearch_t.h"
-
 #include "amd64_emitter.h"
 #include "amd64_finish.h"
 #include "amd64_new_nodes.h"
@@ -770,6 +770,7 @@ static void amd64_init_types(void)
 
 static void amd64_init(void)
 {
+	amd64_setup_cg_config();
 	amd64_init_types();
 	amd64_register_init();
 	amd64_create_opcodes();
@@ -832,13 +833,15 @@ arch_isa_if_t const amd64_isa_if = {
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)
 void be_init_arch_amd64(void)
 {
-	static const lc_opt_table_entry_t options[] = {
+	/*static const lc_opt_table_entry_t options[] = {
 		LC_OPT_ENT_BOOL("no-red-zone", "gcc compatibility",                &amd64_use_red_zone),
+		LC_OPT_ENT_BOOL("fma",         "support FMA3 code generation",     &use_scalar_fma3),
 		LC_OPT_LAST
 	};
 	lc_opt_entry_t *be_grp    = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *amd64_grp = lc_opt_get_grp(be_grp, "amd64");
-	lc_opt_add_table(amd64_grp, options);
+	lc_opt_add_table(amd64_grp, options);*/
 
 	amd64_init_transform();
+	amd64_init_architecture();
 }

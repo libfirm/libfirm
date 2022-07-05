@@ -39,7 +39,7 @@ static unsigned const regs_param_gp[] = {
 static ir_node *initial_va_list;
 
 static unsigned const callee_saves[] = {
-	REG_FP,
+	REG_S0,
 	REG_S1,
 	REG_S2,
 	REG_S3,
@@ -78,7 +78,7 @@ static ir_node *get_Start_sp(ir_graph *const irg)
 
 static ir_node *get_Start_fp(ir_graph *const irg)
 {
-	return be_get_Start_proj(irg, &riscv_registers[REG_FP]);
+	return be_get_Start_proj(irg, &riscv_registers[REG_S0]);
 }
 
 ir_node *get_Start_zero(ir_graph *const irg)
@@ -1145,7 +1145,7 @@ static ir_node *gen_Start(ir_node *const node)
 			outs[reg->global_index] = BE_START_REG;
 	}
 	if (!cur_cconv.omit_fp)
-		outs[REG_FP] = BE_START_IGNORE;
+		outs[REG_S0] = BE_START_IGNORE;
 
 	return be_new_Start(irg, outs);
 }

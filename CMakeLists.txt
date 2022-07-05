@@ -348,6 +348,7 @@ add_backend(ia32
 	ir/be/ia32/ia32_pic.c
 	ir/be/ia32/ia32_transform.c
 	ir/be/ia32/x86_address_mode.c
+	ir/be/ia32/x86_architecture.c
 	ir/be/ia32/x86_asm.c
 	ir/be/ia32/x86_cconv.c
 	ir/be/ia32/x86_node.c
@@ -374,6 +375,7 @@ add_backend(sparc
 	ir/be/sparc/sparc_transform.c
 )
 add_backend(amd64
+	ir/be/amd64/amd64_architecture.c
 	ir/be/amd64/amd64_bearch.c
 	ir/be/amd64/amd64_cconv.c
 	ir/be/amd64/amd64_emitter.c

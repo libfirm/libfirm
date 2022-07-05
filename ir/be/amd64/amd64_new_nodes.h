@@ -46,6 +46,8 @@ static inline bool amd64_has_addr_attr(amd64_op_mode_t const op_mode)
 	case AMD64_OP_ADDR:
 	case AMD64_OP_REG:
 	case AMD64_OP_IMM32:
+	case AMD64_OP_REG_REG_REG:
+	case AMD64_OP_REG_REG_ADDR:
 		return true;
 	default:
 		return amd64_has_binop_attr(op_mode);
@@ -59,6 +61,7 @@ static inline bool amd64_loads(const ir_node *node)
 	case AMD64_OP_ADDR:
 		return !is_amd64_lea(node);
 	case AMD64_OP_REG_ADDR:
+	case AMD64_OP_REG_REG_ADDR:
 		return true;
 	/* Note: AMD64_OP_ADDR_REG, AMD64_OP_X87_ADDR_REG are stores */
 	default:
