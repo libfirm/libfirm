@@ -1,68 +1,47 @@
-# -*- coding: utf-8 -*-
+"""The optimizer tries to constant fold expressions and modify the AST
+in place so that it should be faster to evaluate.
+
+Because the AST does not contain all the scoping information and the
+compiler has to find that out, we cannot do all the optimizations we
+want. For example, loop unrolling doesn't work because unrolled loops
+would have a different scope. The solution would be a second syntax tree
+that stored the scoping rules.
 """
-    jinja2.optimizer
-    ~~~~~~~~~~~~~~~~
+import typing as t
 
-    The jinja optimizer is currently trying to constant fold a few expressions
-    and modify the AST in place so that it should be easier to evaluate it.
+from . import nodes
+from .visitor import NodeTransformer
 
-    Because the AST does not contain all the scoping information and the
-    compiler has to find that out, we cannot do all the optimizations we
-    want.  For example loop unrolling doesn't work because unrolled loops would
-    have a different scoping.
-
-    The solution would be a second syntax tree that has the scoping rules stored.
-
-    :copyright: (c) 2010 by the Jinja Team.
-    :license: BSD.
-"""
-from jinja2 import nodes
-from jinja2.visitor import NodeTransformer
+if t.TYPE_CHECKING:
+    from .environment import Environment
 
 
-def optimize(node, environment):
+def optimize(node: nodes.Node, environment: "Environment") -> nodes.Node:
     """The context hint can be used to perform an static optimization
     based on the context given."""
     optimizer = Optimizer(environment)
-    return optimizer.visit(node)
+    return t.cast(nodes.Node, optimizer.visit(node))
 
 
 class Optimizer(NodeTransformer):
-
-    def __init__(self, environment):
+    def __init__(self, environment: "t.Optional[Environment]") -> None:
         self.environment = environment
 
-    def visit_If(self, node):
-        """Eliminate dead code."""
-        # do not optimize ifs that have a block inside so that it doesn't
-        # break super().
-        if node.find(nodes.Block) is not None:
-            return self.generic_visit(node)
-        try:
-            val = self.visit(node.test).as_const()
-        except nodes.Impossible:
-            return self.generic_visit(node)
-        if val:
-            body = node.body
-        else:
-            body = node.else_
-        result = []
-        for node in body:
-            result.extend(self.visit_list(node))
-        return result
+    def generic_visit(
+        self, node: nodes.Node, *args: t.Any, **kwargs: t.Any
+    ) -> nodes.Node:
+        node = super().generic_visit(node, *args, **kwargs)
 
-    def fold(self, node):
-        """Do constant folding."""
-        node = self.generic_visit(node)
-        try:
-            return nodes.Const.from_untrusted(node.as_const(),
-                                              lineno=node.lineno,
-                                              environment=self.environment)
-        except nodes.Impossible:
-            return node
+        # Do constant folding. Some other nodes besides Expr have
+        # as_const, but folding them causes errors later on.
+        if isinstance(node, nodes.Expr):
+            try:
+                return nodes.Const.from_untrusted(
+                    node.as_const(args[0] if args else None),
+                    lineno=node.lineno,
+                    environment=self.environment,
+                )
+            except nodes.Impossible:
+                pass
 
-    visit_Add = visit_Sub = visit_Mul = visit_Div = visit_FloorDiv = \
-    visit_Pow = visit_Mod = visit_And = visit_Or = visit_Pos = visit_Neg = \
-    visit_Not = visit_Compare = visit_Getitem = visit_Getattr = visit_Call = \
-    visit_Filter = visit_Test = visit_CondExpr = fold
-    del fold
+        return node

@@ -1,5 +1,5 @@
 from jinjautil import export_filter, export
-from jinja2._compat import string_types
+#from jinja2._compat import string_types use str instead
 from filters import arguments
 import imp
 import sys
@@ -123,7 +123,7 @@ def setnodedefaults(node):
     # as a list of (name, comment) tuples. Normalize it to Input objects
     new_ins = []
     for i in node.ins:
-        if isinstance(i, string_types):
+        if isinstance(i, str):
             i = Input(i)
         elif isinstance(i, tuple):
             i = Input(name=i[0], comment=i[1])
@@ -132,7 +132,7 @@ def setnodedefaults(node):
     if hasattr(node, "outs"):
         new_outs = []
         for o in node.outs:
-            if isinstance(o, string_types):
+            if isinstance(o, str):
                 o = Output(o)
             elif isinstance(o, tuple):
                 o = Output(name=o[0], comment=o[1])

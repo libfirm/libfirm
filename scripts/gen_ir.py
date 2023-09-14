@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#
+#!/usr/bin/env python3
+# NOTE : Now working with Python 3.5 and up
 # This file is part of libFirm.
 # Copyright (C) 2012 Karlsruhe Institute of Technology.
 import sys
@@ -8,7 +8,9 @@ sys.dont_write_bytecode = True
 import argparse
 from jinja2 import Environment
 import filters
-import imp
+# imp is deprecated and will be removed in Python 3.13, using importlib instead
+#import imp
+import importlib.util
 import jinjautil
 
 
@@ -38,9 +40,20 @@ def main(argv):
     loader.includedirs += config.includedirs
 
     # Load specfile
-    imp.load_source('spec', config.specfile)
+    #imp.load_source('spec', config.specfile)
+    module_name = 'spec'
+    module_path = config.specfile
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
     for num, extrafile in enumerate(config.extra):
-        imp.load_source('extra%s' % (num,), extrafile)
+        #imp.load_source('extra%s' % (num,), extrafile)
+        module_name = 'extra%s' % (num,)
+        module_path = extrafile
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
 
     env = Environment(loader=loader, keep_trailing_newline=True)
     env.globals.update(jinjautil.exports)
