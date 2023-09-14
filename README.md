@@ -17,7 +17,7 @@ Building and Installation
 
 Prerequisites for the build:
 
-* Python (>=3.3 are supported)
+* Python (>=3.5 are supported)
 * Perl
 * an ANSI C99 compiler (gcc, clang, icc are known to work)
 * Git
