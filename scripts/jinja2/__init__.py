@@ -1,70 +1,37 @@
-# -*- coding: utf-8 -*-
+"""Jinja is a template engine written in pure Python. It provides a
+non-XML syntax that supports inline expressions and an optional
+sandboxed environment.
 """
-    jinja2
-    ~~~~~~
+from .bccache import BytecodeCache as BytecodeCache
+from .bccache import FileSystemBytecodeCache as FileSystemBytecodeCache
+from .bccache import MemcachedBytecodeCache as MemcachedBytecodeCache
+from .environment import Environment as Environment
+from .environment import Template as Template
+from .exceptions import TemplateAssertionError as TemplateAssertionError
+from .exceptions import TemplateError as TemplateError
+from .exceptions import TemplateNotFound as TemplateNotFound
+from .exceptions import TemplateRuntimeError as TemplateRuntimeError
+from .exceptions import TemplatesNotFound as TemplatesNotFound
+from .exceptions import TemplateSyntaxError as TemplateSyntaxError
+from .exceptions import UndefinedError as UndefinedError
+from .loaders import BaseLoader as BaseLoader
+from .loaders import ChoiceLoader as ChoiceLoader
+from .loaders import DictLoader as DictLoader
+from .loaders import FileSystemLoader as FileSystemLoader
+from .loaders import FunctionLoader as FunctionLoader
+from .loaders import ModuleLoader as ModuleLoader
+from .loaders import PackageLoader as PackageLoader
+from .loaders import PrefixLoader as PrefixLoader
+from .runtime import ChainableUndefined as ChainableUndefined
+from .runtime import DebugUndefined as DebugUndefined
+from .runtime import make_logging_undefined as make_logging_undefined
+from .runtime import StrictUndefined as StrictUndefined
+from .runtime import Undefined as Undefined
+from .utils import clear_caches as clear_caches
+from .utils import is_undefined as is_undefined
+from .utils import pass_context as pass_context
+from .utils import pass_environment as pass_environment
+from .utils import pass_eval_context as pass_eval_context
+from .utils import select_autoescape as select_autoescape
 
-    Jinja2 is a template engine written in pure Python.  It provides a
-    Django inspired non-XML syntax but supports inline expressions and
-    an optional sandboxed environment.
-
-    Nutshell
-    --------
-
-    Here a small example of a Jinja2 template::
-
-        {% extends 'base.html' %}
-        {% block title %}Memberlist{% endblock %}
-        {% block content %}
-          <ul>
-          {% for user in users %}
-            <li><a href="{{ user.url }}">{{ user.username }}</a></li>
-          {% endfor %}
-          </ul>
-        {% endblock %}
-
-
-    :copyright: (c) 2010 by the Jinja Team.
-    :license: BSD, see LICENSE for more details.
-"""
-__docformat__ = 'restructuredtext en'
-__version__ = '2.8-dev'
-
-# high level interface
-from jinja2.environment import Environment, Template
-
-# loaders
-from jinja2.loaders import BaseLoader, FileSystemLoader, PackageLoader, \
-     DictLoader, FunctionLoader, PrefixLoader, ChoiceLoader, \
-     ModuleLoader
-
-# bytecode caches
-from jinja2.bccache import BytecodeCache, FileSystemBytecodeCache, \
-     MemcachedBytecodeCache
-
-# undefined types
-from jinja2.runtime import Undefined, DebugUndefined, StrictUndefined, \
-     make_logging_undefined
-
-# exceptions
-from jinja2.exceptions import TemplateError, UndefinedError, \
-     TemplateNotFound, TemplatesNotFound, TemplateSyntaxError, \
-     TemplateAssertionError
-
-# decorators and public utilities
-from jinja2.filters import environmentfilter, contextfilter, \
-     evalcontextfilter
-from jinja2.utils import Markup, escape, clear_caches, \
-     environmentfunction, evalcontextfunction, contextfunction, \
-     is_undefined
-
-__all__ = [
-    'Environment', 'Template', 'BaseLoader', 'FileSystemLoader',
-    'PackageLoader', 'DictLoader', 'FunctionLoader', 'PrefixLoader',
-    'ChoiceLoader', 'BytecodeCache', 'FileSystemBytecodeCache',
-    'MemcachedBytecodeCache', 'Undefined', 'DebugUndefined',
-    'StrictUndefined', 'TemplateError', 'UndefinedError', 'TemplateNotFound',
-    'TemplatesNotFound', 'TemplateSyntaxError', 'TemplateAssertionError',
-    'ModuleLoader', 'environmentfilter', 'contextfilter', 'Markup', 'escape',
-    'environmentfunction', 'contextfunction', 'clear_caches', 'is_undefined',
-    'evalcontextfilter', 'evalcontextfunction', 'make_logging_undefined',
-]
+__version__ = "3.2.0.dev0"
