@@ -458,7 +458,6 @@ elseif(WIN32 OR MINGW)
 	target_link_libraries(firm LINK_PUBLIC regex winmm)
 endif()
 
-enable_testing()
 add_custom_target(
 		check
 		${CMAKE_CTEST_COMMAND} -C $<CONFIG>
