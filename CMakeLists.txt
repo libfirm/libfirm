@@ -12,6 +12,8 @@ set(PROJECT_DESCRIPTION "library implementing the intermediate representation Fi
 
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS true)
+
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DDEBUG_libfirm")
 
 set(SOURCES
@@ -476,19 +478,31 @@ endforeach(test)
 set(INSTALL_HEADERS
 	include/libfirm/adt/array.h
 	include/libfirm/adt/bipartite.h
+	include/libfirm/adt/bitfiddle.h
+	include/libfirm/adt/bitset.h
+	include/libfirm/adt/compiler.h
+	include/libfirm/adt/cpset.h
+	include/libfirm/adt/deq.h
+	include/libfirm/adt/fourcc.h
 	include/libfirm/adt/funcattr.h
 	include/libfirm/adt/gaussjordan.h
 	include/libfirm/adt/gaussseidel.h
 	include/libfirm/adt/hashptr.h
+	include/libfirm/adt/hashset.c.h
+	include/libfirm/adt/hashset.h
 	include/libfirm/adt/hungarian.h
 	include/libfirm/adt/list.h
 	include/libfirm/adt/obst.h
 	include/libfirm/adt/obstack.h
+	include/libfirm/adt/pdeq.h
 	include/libfirm/adt/pmap.h
 	include/libfirm/adt/pqueue.h
+	include/libfirm/adt/pset_new.h
 	include/libfirm/adt/pset.h
+	include/libfirm/adt/raw_bitset.h
 	include/libfirm/adt/set.h
 	include/libfirm/adt/unionfind.h
+	include/libfirm/adt/util.h
 	include/libfirm/adt/xmalloc.h
 	include/libfirm/analyze_irg_args.h
 	include/libfirm/be.h
@@ -504,7 +518,6 @@ set(INSTALL_HEADERS
 	include/libfirm/firm_types.h
 	include/libfirm/heights.h
 	include/libfirm/ident.h
-	include/libfirm/irarch.h
 	include/libfirm/ircgopt.h
 	include/libfirm/ircons.h
 	include/libfirm/irconsconfirm.h
@@ -579,3 +592,15 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/support/libfirm.pc.in
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libfirm.pc"
 	DESTINATION lib/pkgconfig
 )
+
+# uninstall target
+if(NOT TARGET uninstall)
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    IMMEDIATE @ONLY)
+
+  add_custom_target(uninstall
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+endif()
+
