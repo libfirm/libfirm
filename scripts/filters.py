@@ -6,7 +6,7 @@ import re
 
 
 def filtjoin(string, joinstring):
-    args = re.split('\s*\n\s*', string)
+    args = re.split(r"\s*\n\s*", string)
     if args[0] == '':
         args = args[1:]
     if len(args) > 0 and args[-1] == '':
