@@ -171,7 +171,7 @@ static void test_mixed(void)
 }
 
 typedef void (*push_func)(deq_t *deq, unsigned n, char *refp);
-typedef void (*pop_func)(deq_t *deq, unsigned n, char *refp);
+typedef void (*pop_func)(deq_t *deq, unsigned n, const char *refp);
 static void test_mixed_4(push_func push0, pop_func pop0,
                          push_func push1, pop_func pop1)
 {
