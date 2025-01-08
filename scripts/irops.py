@@ -1,7 +1,6 @@
 from jinjautil import export_filter, export
 #from jinja2._compat import string_types use str instead
 from filters import arguments
-import imp
 import sys
 
 
