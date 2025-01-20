@@ -13,7 +13,7 @@
  *
  *  This analysis computes all entities representing methods that
  *  can be called at a Call node.  Further it computes a set of
- *  methods that are 'free', i.e., their adress is handled by
+ *  methods that are 'free', i.e., their address is handled by
  *  the program directly, or they are visible external.
  */
 #ifndef FIRM_ANA_CGANA_H
