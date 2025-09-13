@@ -2484,15 +2484,29 @@ static ir_node *conv_x87_to_sse(dbg_info *dbgi, ir_node *block, ir_node *op,
 
 static ir_node *conv_int_to_x87(dbg_info *dbgi, ir_node *block, ir_node *val)
 {
-	ir_mode        *const mode    = get_irn_mode(val);
-	ir_node        *const new_val = extend_if_necessary(dbgi, block, val);
-	x86_insn_size_t const size    = get_size_32_64_from_mode(mode);
-	if (!mode_is_signed(mode))
-		panic("unsigned int -> x87 NIY");
+	ir_mode        *mode = get_irn_mode(val);
+	x86_insn_size_t size = get_size_32_64_from_mode(mode);
 
 	ir_node *in[5];
 	int      n_in = 0;
 	x86_addr_t addr;
+	ir_node *  new_val;
+
+	if (mode_is_signed(mode)) {
+		new_val = extend_if_necessary(dbgi, block, val);
+
+	} else if (size == X86_SIZE_32) {
+		new_val = gen_extend(dbgi, block, val, mode);
+		mode    = get_irn_mode(new_val);
+		size    = X86_SIZE_64;
+
+	} else if ((size == X86_SIZE_64) && !mode_is_signed(mode)) {
+		panic("unsigned long long -> x87 NIY");
+
+	} else {
+		new_val = extend_if_necessary(dbgi, block, val);
+	}
+
 	store_to_temp(new_bd_amd64_mov_store, reg_reg_mem_reqs, &addr, dbgi, block,
 	              in, &n_in, new_val, size);
 	assert(n_in < (int)ARRAY_SIZE(in));

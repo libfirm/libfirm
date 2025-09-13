@@ -275,7 +275,7 @@ void amd64_cconv_init(void)
 	if (amd64_use_x64_abi)
 		be_cconv_add_regs(default_callee_saves, x64_callee_saves, ARRAY_SIZE(x64_callee_saves));
 
-	static const arch_register_t* const param_regs_list[] = {
+	static const arch_register_t* const param_regs_list_amd64[] = {
 		&amd64_registers[REG_RDI],
 		&amd64_registers[REG_RSI],
 		&amd64_registers[REG_RDX],
@@ -283,8 +283,15 @@ void amd64_cconv_init(void)
 		&amd64_registers[REG_R8],
 		&amd64_registers[REG_R9],
 	};
-	param_regs   = amd64_use_x64_abi ? &param_regs_list[2] : param_regs_list;
-	n_param_regs = ARRAY_SIZE(param_regs_list) - (amd64_use_x64_abi ? 2 : 0);
+
+	static const arch_register_t* const param_regs_list_x64[] = {
+		&amd64_registers[REG_RCX],
+		&amd64_registers[REG_RDX],
+		&amd64_registers[REG_R8],
+		&amd64_registers[REG_R9],
+	};
+	param_regs   = amd64_use_x64_abi ? param_regs_list_x64 : param_regs_list_amd64;
+	n_param_regs = amd64_use_x64_abi ? 4 : 6;
 
 	n_float_param_regs = amd64_use_x64_abi ? 4 : ARRAY_SIZE(float_param_regs);
 }
